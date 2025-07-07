@@ -37,6 +37,8 @@ export default function Wallets() {
   const [selectedWallet, setSelectedWallet] = useState<any>(null);
   const [amount, setAmount] = useState("");
   const [targetCurrency, setTargetCurrency] = useState("");
+  const [depositMethod, setDepositMethod] = useState("");
+  const [withdrawMethod, setWithdrawMethod] = useState("bank_transfer");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -54,6 +56,7 @@ export default function Wallets() {
       });
       setDepositModalOpen(false);
       setAmount("");
+      setDepositMethod("");
     },
     onError: () => {
       toast({
@@ -103,6 +106,8 @@ export default function Wallets() {
       setTransferModalOpen(false);
       setAmount("");
       setTargetCurrency("");
+      setDepositMethod("");
+      setWithdrawMethod("bank_transfer");
     },
     onError: () => {
       toast({
@@ -114,7 +119,14 @@ export default function Wallets() {
   });
 
   const handleDeposit = () => {
-    if (!amount || !selectedWallet) return;
+    if (!amount || !selectedWallet || !depositMethod) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter amount and select deposit method.",
+        variant: "destructive",
+      });
+      return;
+    }
     const depositAmount = parseFloat(amount);
     if (depositAmount <= 0) {
       toast({
@@ -387,6 +399,18 @@ export default function Wallets() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
+              <Label htmlFor="deposit-method">Deposit Method</Label>
+              <Select value={depositMethod} onValueChange={setDepositMethod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select deposit method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="payid">💳 PayID</SelectItem>
+                  <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <Label htmlFor="deposit-amount">Amount</Label>
               <Input
                 id="deposit-amount"
@@ -395,7 +419,34 @@ export default function Wallets() {
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Enter amount"
               />
+              {selectedWallet && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Current balance: {selectedWallet.balance} {selectedWallet.currency}
+                </p>
+              )}
             </div>
+            {depositMethod && (
+              <div className="p-3 bg-muted rounded-lg">
+                <h4 className="font-medium mb-2">
+                  {depositMethod === 'payid' ? 'PayID Instructions' : 'Bank Transfer Instructions'}
+                </h4>
+                {depositMethod === 'payid' ? (
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>• Use your registered PayID: your-email@example.com</p>
+                    <p>• Transfer will be processed instantly</p>
+                    <p>• No additional fees for PayID transfers</p>
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>• Account Name: Your Wealth Management Platform</p>
+                    <p>• BSB: 123-456</p>
+                    <p>• Account Number: 987654321</p>
+                    <p>• Reference: {selectedWallet?.currency}-DEPOSIT-{Date.now().toString().slice(-6)}</p>
+                    <p>• Processing time: 1-3 business days</p>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="flex space-x-2">
               <Button 
                 onClick={handleDeposit}
@@ -423,6 +474,17 @@ export default function Wallets() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
+              <Label htmlFor="withdraw-method">Withdrawal Method</Label>
+              <Select value={withdrawMethod} onValueChange={setWithdrawMethod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select withdrawal method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <Label htmlFor="withdraw-amount">Amount</Label>
               <Input
                 id="withdraw-amount"
@@ -436,6 +498,15 @@ export default function Wallets() {
                   Available: {selectedWallet.availableBalance} {selectedWallet.currency}
                 </p>
               )}
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <h4 className="font-medium mb-2">Bank Transfer Instructions</h4>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p>• Funds will be transferred to your registered bank account</p>
+                <p>• Processing time: 1-3 business days</p>
+                <p>• Withdrawal fee: $25.00</p>
+                <p>• Please ensure your bank details are up to date</p>
+              </div>
             </div>
             <div className="flex space-x-2">
               <Button 
