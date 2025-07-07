@@ -10,7 +10,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useWallets } from "@/hooks/use-portfolio";
-import { TrendingUp, Building, CreditCard, Rocket, Bitcoin, DollarSign, Clock, Shield, Filter, X } from "lucide-react";
+import { TrendingUp, Building, CreditCard, Rocket, Bitcoin, DollarSign, Clock, Shield, Filter, X, ChevronDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const categoryIcons = {
@@ -245,16 +245,22 @@ export default function Investments() {
           <Card className="flex flex-col h-32">
             <CardContent className="p-4 flex flex-col justify-between h-full">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1">
                   <h3 className="text-xs font-medium text-gray-500">Available Capital</h3>
                   <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
-                    <SelectTrigger className="w-16 h-5 text-xs border-0 p-0 focus:ring-0 bg-transparent">
-                      <SelectValue />
+                    <SelectTrigger className="w-auto h-6 text-xs border border-green-200 rounded px-2 py-1 focus:ring-1 focus:ring-green-500 bg-green-50 hover:bg-green-100 transition-colors">
+                      <SelectValue className="font-semibold text-green-700" />
+                      <ChevronDown className="w-3 h-3 ml-1 text-green-600" />
                     </SelectTrigger>
                     <SelectContent>
                       {availableCurrencies.map((currency) => (
                         <SelectItem key={currency.currency} value={currency.currency}>
-                          {currency.currency}
+                          <div className="flex items-center justify-between w-full">
+                            <span className="font-medium">{currency.currency}</span>
+                            <span className="text-xs text-gray-500 ml-2">
+                              {currency.symbol}{currency.balance.toLocaleString()}
+                            </span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
