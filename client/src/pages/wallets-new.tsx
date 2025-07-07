@@ -142,11 +142,13 @@ export default function Wallets() {
       return response.json();
     },
     onSuccess: () => {
+      console.log("Deposit successful, showing toast and closing modal");
       toast({
-        title: "Deposit Successful",
-        description: `${amount} ${selectedWallet?.currency} added to your wallet`,
+        title: "✅ Deposit Successful",
+        description: `${amount} ${selectedWallet?.currency} has been added to your wallet`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/portfolio'] });
       setDepositModalOpen(false);
       setAmount('');
       setDepositMethod('');
