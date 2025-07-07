@@ -3173,4 +3173,156 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Use DatabaseStorage for production functionality
+import { db } from "./db";
+import { users, portfolios, wallets, transactions, fxRates, aiRecommendations, investmentProducts, userInvestments } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
+
+export class DatabaseStorage implements IStorage {
+  // Users
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async updateUser(id: number, updateUser: Partial<InsertUser>): Promise<User | undefined> {
+    const [user] = await db.update(users).set(updateUser).where(eq(users.id, id)).returning();
+    return user || undefined;
+  }
+
+  // Portfolios
+  async getPortfolio(userId: number): Promise<Portfolio | undefined> {
+    const [portfolio] = await db.select().from(portfolios).where(eq(portfolios.userId, userId));
+    return portfolio || undefined;
+  }
+
+  async createPortfolio(insertPortfolio: InsertPortfolio): Promise<Portfolio> {
+    const [portfolio] = await db.insert(portfolios).values(insertPortfolio).returning();
+    return portfolio;
+  }
+
+  async updatePortfolio(userId: number, updatePortfolio: Partial<InsertPortfolio>): Promise<Portfolio | undefined> {
+    const [portfolio] = await db.update(portfolios).set(updatePortfolio).where(eq(portfolios.userId, userId)).returning();
+    return portfolio || undefined;
+  }
+
+  // Wallets
+  async getWallets(userId: number): Promise<Wallet[]> {
+    return await db.select().from(wallets).where(eq(wallets.userId, userId));
+  }
+
+  async getWallet(userId: number, currency: string): Promise<Wallet | undefined> {
+    const [wallet] = await db.select().from(wallets).where(
+      and(eq(wallets.userId, userId), eq(wallets.currency, currency))
+    );
+    return wallet || undefined;
+  }
+
+  async createWallet(insertWallet: InsertWallet): Promise<Wallet> {
+    const [wallet] = await db.insert(wallets).values(insertWallet).returning();
+    return wallet;
+  }
+
+  async updateWallet(id: number, updateWallet: Partial<InsertWallet>): Promise<Wallet | undefined> {
+    const [wallet] = await db.update(wallets).set(updateWallet).where(eq(wallets.id, id)).returning();
+    return wallet || undefined;
+  }
+
+  // Transactions
+  async getTransactions(userId: number, limit?: number): Promise<Transaction[]> {
+    let query = db.select().from(transactions).where(eq(transactions.userId, userId));
+    if (limit) {
+      query = query.limit(limit);
+    }
+    return await query;
+  }
+
+  async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
+    const [transaction] = await db.insert(transactions).values(insertTransaction).returning();
+    return transaction;
+  }
+
+  async updateTransaction(id: number, updateTransaction: Partial<InsertTransaction>): Promise<Transaction | undefined> {
+    const [transaction] = await db.update(transactions).set(updateTransaction).where(eq(transactions.id, id)).returning();
+    return transaction || undefined;
+  }
+
+  // FX Rates
+  async getFxRates(): Promise<FxRate[]> {
+    return await db.select().from(fxRates);
+  }
+
+  async getFxRate(baseCurrency: string, targetCurrency: string): Promise<FxRate | undefined> {
+    const [rate] = await db.select().from(fxRates).where(
+      and(eq(fxRates.baseCurrency, baseCurrency), eq(fxRates.targetCurrency, targetCurrency))
+    );
+    return rate || undefined;
+  }
+
+  async createFxRate(insertFxRate: InsertFxRate): Promise<FxRate> {
+    const [rate] = await db.insert(fxRates).values(insertFxRate).returning();
+    return rate;
+  }
+
+  async updateFxRate(id: number, updateFxRate: Partial<InsertFxRate>): Promise<FxRate | undefined> {
+    const [rate] = await db.update(fxRates).set(updateFxRate).where(eq(fxRates.id, id)).returning();
+    return rate || undefined;
+  }
+
+  // AI Recommendations
+  async getAiRecommendations(userId: number): Promise<AiRecommendation[]> {
+    return await db.select().from(aiRecommendations).where(eq(aiRecommendations.userId, userId));
+  }
+
+  async createAiRecommendation(insertRecommendation: InsertAiRecommendation): Promise<AiRecommendation> {
+    const [recommendation] = await db.insert(aiRecommendations).values(insertRecommendation).returning();
+    return recommendation;
+  }
+
+  async markRecommendationAsRead(id: number): Promise<void> {
+    await db.update(aiRecommendations).set({ isRead: true }).where(eq(aiRecommendations.id, id));
+  }
+
+  // Investment Products
+  async getInvestmentProducts(filters?: { category?: string; riskProfile?: string; liquidity?: string }): Promise<InvestmentProduct[]> {
+    let query = db.select().from(investmentProducts);
+    // Add filtering logic if needed
+    return await query;
+  }
+
+  async getInvestmentProduct(id: number): Promise<InvestmentProduct | undefined> {
+    const [product] = await db.select().from(investmentProducts).where(eq(investmentProducts.id, id));
+    return product || undefined;
+  }
+
+  async getUserInvestments(userId: number): Promise<UserInvestment[]> {
+    return await db.select().from(userInvestments).where(eq(userInvestments.userId, userId));
+  }
+
+  async createUserInvestment(insertInvestment: InsertUserInvestment): Promise<UserInvestment> {
+    const [investment] = await db.insert(userInvestments).values(insertInvestment).returning();
+    return investment;
+  }
+
+  async updateUserInvestment(id: number, updateInvestment: Partial<InsertUserInvestment>): Promise<UserInvestment | undefined> {
+    const [investment] = await db.update(userInvestments).set(updateInvestment).where(eq(userInvestments.id, id)).returning();
+    return investment || undefined;
+  }
+}
+
+export const storage = new DatabaseStorage();
