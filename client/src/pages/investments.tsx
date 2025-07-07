@@ -171,7 +171,7 @@ export default function Investments() {
                 <DollarSign className="w-4 h-4 text-primary" />
               </div>
               <div className="mt-auto">
-                <p className="text-2xl font-bold">${totalInvested.toLocaleString()}</p>
+                <p className="text-xl font-bold whitespace-nowrap">${totalInvested.toLocaleString()}</p>
               </div>
             </CardContent>
           </Card>
@@ -182,7 +182,7 @@ export default function Investments() {
                 <TrendingUp className="w-4 h-4 text-green-600" />
               </div>
               <div className="mt-auto">
-                <p className="text-2xl font-bold">${totalCurrentValue.toLocaleString()}</p>
+                <p className="text-xl font-bold whitespace-nowrap">${totalCurrentValue.toLocaleString()}</p>
               </div>
             </CardContent>
           </Card>
@@ -193,14 +193,13 @@ export default function Investments() {
                 <TrendingUp className="w-4 h-4 text-secondary" />
               </div>
               <div className="mt-auto">
-                <p className={`text-2xl font-bold ${totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <p className={`text-xl font-bold whitespace-nowrap ${totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   ${totalReturn.toLocaleString()}
                 </p>
-                <div className="flex items-center space-x-2 mt-2">
-                  <span className={`text-sm ${totalReturnPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <div className="flex items-center space-x-1 mt-1">
+                  <span className={`text-xs ${totalReturnPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {totalReturnPercent >= 0 ? '+' : ''}{totalReturnPercent.toFixed(2)}%
                   </span>
-                  <span className="text-xs text-gray-500">return</span>
                 </div>
               </div>
             </CardContent>
@@ -212,11 +211,11 @@ export default function Investments() {
                 <DollarSign className="w-4 h-4 text-green-600" />
               </div>
               <div className="mt-auto">
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-xl font-bold text-green-600 whitespace-nowrap">
                   ${wallets?.find(w => w.currency === 'USD')?.availableBalance ? parseFloat(wallets.find(w => w.currency === 'USD')!.availableBalance).toLocaleString() : '0'}
                 </p>
-                <div className="flex items-center space-x-2 mt-2">
-                  <span className="text-sm text-gray-600">USD wallet balance</span>
+                <div className="flex items-center mt-1">
+                  <span className="text-xs text-gray-600">USD balance</span>
                 </div>
               </div>
             </CardContent>
