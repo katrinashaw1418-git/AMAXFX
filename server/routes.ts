@@ -503,15 +503,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fee = convertedAmount * 0.005; // 0.5% fee
       const finalAmount = convertedAmount - fee;
       
-      // Update balances
+      // Update balances with proper numeric conversion
+      const newSourceBalance = (parseFloat(sourceWallet.balance) - amount).toFixed(2);
+      const newSourceAvailable = (parseFloat(sourceWallet.availableBalance) - amount).toFixed(2);
+      
       await storage.updateWallet(sourceWallet.id, {
-        balance: sourceWallet.balance - amount,
-        availableBalance: sourceWallet.availableBalance - amount
+        balance: newSourceBalance,
+        availableBalance: newSourceAvailable
       });
       
+      const newTargetBalance = (parseFloat(targetWallet.balance) + finalAmount).toFixed(2);
+      const newTargetAvailable = (parseFloat(targetWallet.availableBalance) + finalAmount).toFixed(2);
+      
       await storage.updateWallet(targetWallet.id, {
-        balance: targetWallet.balance + finalAmount,
-        availableBalance: targetWallet.availableBalance + finalAmount
+        balance: newTargetBalance,
+        availableBalance: newTargetAvailable
       });
       
       // Create transaction record

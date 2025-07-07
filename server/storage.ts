@@ -60,7 +60,7 @@ export class MemStorage implements IStorage {
   private userInvestments: Map<number, UserInvestment[]> = new Map();
   private currentUserId = 1;
   private currentPortfolioId = 1;
-  private currentWalletId = 11;
+  private currentWalletId = 12;
   private currentTransactionId = 13;
   private currentFxRateId = 49;
   private currentAiRecommendationId = 1;
@@ -1302,7 +1302,15 @@ export class MemStorage implements IStorage {
     for (const [userId, userWallets] of Array.from(this.wallets.entries())) {
       const walletIndex = userWallets.findIndex((w: Wallet) => w.id === id);
       if (walletIndex !== -1) {
-        const updatedWallet = { ...userWallets[walletIndex], ...updateWallet, updatedAt: new Date() };
+        const currentWallet = userWallets[walletIndex];
+        // Ensure balance and availableBalance are properly handled as strings
+        const updatedWallet = { 
+          ...currentWallet, 
+          ...updateWallet,
+          balance: updateWallet.balance !== undefined ? updateWallet.balance.toString() : currentWallet.balance,
+          availableBalance: updateWallet.availableBalance !== undefined ? updateWallet.availableBalance.toString() : currentWallet.availableBalance,
+          updatedAt: new Date() 
+        };
         userWallets[walletIndex] = updatedWallet;
         this.wallets.set(userId, userWallets);
         return updatedWallet;

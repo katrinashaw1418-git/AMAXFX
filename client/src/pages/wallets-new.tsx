@@ -130,10 +130,10 @@ export default function Wallets() {
                       <td className="p-4">
                         <div>
                           <div className="font-medium">
-                            {wallet.config?.symbol}{wallet.balance.toLocaleString()}
+                            {wallet.config?.symbol}{wallet.balance ? parseFloat(wallet.balance).toLocaleString() : '0.00'}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            Available: {wallet.config?.symbol}{wallet.availableBalance.toLocaleString()}
+                            Available: {wallet.config?.symbol}{wallet.availableBalance ? parseFloat(wallet.availableBalance).toLocaleString() : '0.00'}
                           </div>
                         </div>
                       </td>
@@ -142,7 +142,7 @@ export default function Wallets() {
                           <Tooltip>
                             <TooltipTrigger>
                               <div className="text-muted-foreground">
-                                ≈ ${(wallet.balance * 1.1).toLocaleString()}
+                                ≈ ${wallet.balance ? (parseFloat(wallet.balance) * 1.1).toLocaleString() : '0.00'}
                               </div>
                             </TooltipTrigger>
                             <TooltipContent>
