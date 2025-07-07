@@ -1,0 +1,95 @@
+Goal
+Deliver a secure, dual-channel platform that enables users to:
+
+Trade crypto and fiat FX
+
+Store assets in multi-currency wallets
+
+Receive AI-driven wealth insights
+
+Onboard through eKYC
+
+Operate across jurisdictions (Canada, UK, US, Australia)
+
+🔧 Core Features of the MVP
+1. 🛂 User Onboarding & Compliance
+eKYC (ID upload, face match, address proof)
+
+Jurisdiction-specific onboarding flow
+
+Role-based access (HNWI, advisor, admin)
+
+2. 💱 Dual-Channel FX & Crypto Services
+FX: Fiat transfers between currencies (e.g., USD↔CAD, USD↔RMB)
+
+Crypto: Buy/sell BTC, ETH via VirgoCX APIs
+
+FX + Crypto wallet balances with real-time rates
+
+Transaction history and fees
+
+3. 💼 AI-Powered Wealth Dashboard
+Overview: Portfolio split across fiat and crypto
+
+AI-generated asset allocation suggestion
+
+Risk profiling questionnaire and dynamic scoring
+
+Example: “Your risk profile = Moderate | Suggested: 40% Crypto, 30% USD MMFs, 30% International Equities”
+
+4. 🔐 Wallet & Account Management
+Multi-currency wallets (USD, CAD, AUD, BTC, ETH)
+
+Deposit/withdraw (fiat via wire, crypto via wallet address)
+
+Secure custody integration (Fireblocks, BitGo, or VirgoCX internal custody)
+
+5. 🧾 Admin & Compliance Portal
+View client KYC and documents
+
+Approve or reject onboarding
+
+Monitor flagged transactions
+
+Basic audit trail
+
+🧱 Technical Architecture
+Frontend (Web App)
+React with TypeScript
+
+Tailwind CSS or Material UI
+
+Mobile-responsive layout
+
+Backend
+Node.js (Express or NestJS)
+
+PostgreSQL for relational data
+
+Redis for caching FX/crypto rates
+
+AI Layer
+Python microservice for portfolio optimization (simple rules + ML later)
+
+Inputs: User risk score, asset prices, AUM
+
+Outputs: Suggested allocations and performance projections
+
+Third-Party Integrations
+VirgoCX API for crypto trading
+
+Currencylayer / OpenExchange for FX rates
+
+Sumsub / Jumio / Veriff for KYC
+
+Plaid / Finicity / Tink (optional) for fiat bank linking
+
+Security
+End-to-end encryption
+
+2FA + device authentication
+
+Audit logs and access control
+
+Compliance: GDPR, PIPEDA, AML guidelines (FINTRAC, FCA, SEC)
+

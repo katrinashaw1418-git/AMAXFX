@@ -1,0 +1,89 @@
+Project Objective
+You're building a comprehensive cross-border wealth management platform that integrates traditional finance and cryptocurrency services, targeted at:
+
+High-net-worth individuals (HNWIs)
+
+The global Chinese diaspora
+
+SMEs and corporate clients with cross-border needs
+
+It’s a phased rollout leveraging partnerships (VirgoCX, Kennedy Partners, Urban Catalyst, etc.) with a goal to unify remittance, FX, wealth advisory, and crypto in a dual-rail platform (traditional + crypto).
+
+🛠️ Core Functionalities Needed
+🔹 Phase 1: MVP Launch
+FX remittance (traditional and crypto rails)
+
+Crypto wallet (VirgoCX integration)
+
+AI-powered wealth advisory
+
+Basic multi-currency account (fiat + crypto)
+
+eKYC and compliance features
+
+🔹 Phase 2: Full Wealth Platform
+Multi-currency wallet (fiat & crypto)
+
+AI-driven portfolio allocation across traditional and digital assets
+
+Yield generation products (e.g., crypto-backed lending)
+
+Tax-efficient investment tools
+
+Global mobility & education-linked financial planning
+
+🔹 Phase 3: Fintech Infrastructure
+APIs for:
+
+FX
+
+Compliance (KYC/AML)
+
+Payments
+
+Wealth analytics
+
+Cryptocurrency debit and Visa cards
+
+Tokenized investment products
+
+White-label solutions for B2B partners
+
+B2B platform for eCommerce, education agencies, import/export businesses
+
+🧱 Type of Application
+You're building a multi-tiered system:
+
+Tier	Description
+Client Portal (Web/Mobile)	For HNWIs and diaspora clients to manage FX, investments, wallets
+Back Office Dashboard	For advisors, compliance officers, admin
+API Layer	For fintechs, businesses, white-label clients
+Data & AI Engine	For wealth advisory, portfolio optimization, and transaction routing
+Blockchain Integration	For crypto trading, transfers, custody, tokenization
+
+💡 Key Features / Requirements
+Seamless crypto-fiat conversion
+
+Real-time FX rates, competitive spreads
+
+Integrated AI wealth management (robo-advisory)
+
+Cross-border transaction tracking
+
+Multi-jurisdictional KYC/AML compliance
+
+Support for tokenized assets and DeFi tools
+
+Visa/Mastercard crypto card issuance
+
+Developer SDKs / sandbox for third-party integrations
+
+📈 Scope Clarification
+This platform does include:
+✅ Cross-border financial services
+✅ Wealth management tools
+✅ Trading platform features (crypto + FX)
+✅ Data-driven AI portfolio advisory
+✅ API-driven fintech integration
+✅ Business-specific financial tools (e.g., tuition corridors, supply chain FX)
+
