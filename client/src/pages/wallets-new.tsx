@@ -28,16 +28,40 @@ const useExchangeRateDisplay = (fromCurrency: string, toCurrency: string) => {
   return `1 ${fromCurrency} = ${displayRate} ${toCurrency}`;
 };
 
-const useConversionAmount = (fromCurrency: string, toCurrency: string, amount: string) => {
+// Exchange Rate Display Component for Transfer Modal
+function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrency: string; toCurrency: string; amount: string }) {
   const { data: fxRate } = useFxRate(fromCurrency, toCurrency);
-  if (!fxRate || !amount) return `0.00 ${toCurrency}`;
   
+  if (!fxRate) {
+    return (
+      <div className="flex justify-between items-center text-sm">
+        <span className="text-gray-600">Loading exchange rate...</span>
+      </div>
+    );
+  }
+
   const rate = parseFloat(fxRate.rate);
-  const convertedAmount = parseFloat(amount) * rate * 0.995; // 0.5% fee
-  const displayAmount = convertedAmount > 1 ? convertedAmount.toFixed(2) : convertedAmount.toFixed(6);
+  const displayRate = rate > 1 ? rate.toFixed(2) : rate.toFixed(6);
   
-  return `${displayAmount} ${toCurrency}`;
-};
+  let convertedAmount = '0.00';
+  if (amount && parseFloat(amount) > 0) {
+    const converted = parseFloat(amount) * rate * 0.995; // 0.5% fee
+    convertedAmount = converted > 1 ? converted.toFixed(2) : converted.toFixed(6);
+  }
+
+  return (
+    <>
+      <div className="flex justify-between items-center text-sm">
+        <span className="text-gray-600">Exchange Rate:</span>
+        <span className="font-mono">1 {fromCurrency} = {displayRate} {toCurrency}</span>
+      </div>
+      <div className="flex justify-between items-center text-sm mt-1">
+        <span className="text-gray-600">You'll receive:</span>
+        <span className="font-medium text-green-600">{convertedAmount} {toCurrency}</span>
+      </div>
+    </>
+  );
+}
 
 // Component to display wallet balance in selected currency
 function WalletValueDisplay({ wallet, displayCurrency }: { wallet: any, displayCurrency: string }) {
@@ -1194,26 +1218,7 @@ export default function Wallets() {
             {/* Exchange Rate & Conversion Preview */}
             {selectedWallet && toCurrency && amount && toCurrency !== selectedWallet.currency && (
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">Exchange Rate:</span>
-                  <span className="font-mono">
-                    {(() => {
-                      const rate = exchangeRates.find(r => r.baseCurrency === selectedWallet.currency && r.targetCurrency === toCurrency);
-                      return rate ? `1 ${selectedWallet.currency} = ${rate.rate} ${toCurrency}` : 'Loading...';
-                    })()}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-sm mt-1">
-                  <span className="text-gray-600">You'll receive:</span>
-                  <span className="font-medium text-green-600">
-                    {(() => {
-                      const rate = exchangeRates.find(r => r.baseCurrency === selectedWallet.currency && r.targetCurrency === toCurrency);
-                      if (!rate || !amount) return '0';
-                      const converted = (parseFloat(amount) * rate.rate).toFixed(4);
-                      return `${converted} ${toCurrency}`;
-                    })()}
-                  </span>
-                </div>
+                <ExchangeRateDisplay fromCurrency={selectedWallet.currency} toCurrency={toCurrency} amount={amount} />
                 <div className="flex justify-between items-center text-xs text-gray-500 mt-1">
                   <span>Transfer fee: 0.5%</span>
                   <span>Processing: Instant</span>
