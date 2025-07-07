@@ -56,5 +56,5 @@ export const api = {
     fetch("/api/user-investments").then(res => res.json()),
 
   createInvestment: (data: { productId: number; amount: number }) =>
-    apiRequest("POST", "/api/investments", data),
+    apiRequest("POST", "/api/investments", data).then(res => res.json()),
 };
