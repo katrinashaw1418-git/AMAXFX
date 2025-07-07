@@ -492,12 +492,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Get exchange rate (use mock rate if not found)
-      let exchangeRate = 1.23; // Default mock rate
+      // Get exchange rate - must find valid rate or fail
       const rate = await storage.getFxRate(fromCurrency, toCurrency);
-      if (rate) {
-        exchangeRate = rate.rate;
+      if (!rate) {
+        return res.status(400).json({ error: `Exchange rate not found for ${fromCurrency} to ${toCurrency}` });
       }
+      const exchangeRate = parseFloat(rate.rate);
       
       const convertedAmount = amount * exchangeRate;
       const fee = convertedAmount * 0.005; // 0.5% fee
