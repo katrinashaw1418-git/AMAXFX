@@ -312,9 +312,9 @@ export default function Wallets() {
     );
   }
 
-  // Calculate total balance as fiat + crypto (using portfolio data for accuracy)
+  // Calculate total balance as fiat + crypto + stablecoins (using portfolio data for accuracy)
   const totalBalanceUSD = portfolio ? 
-    (parseFloat(portfolio.fiatValue) + parseFloat(portfolio.cryptoValue)) : 0;
+    (parseFloat(portfolio.fiatValue) + parseFloat(portfolio.cryptoValue) + parseFloat(portfolio.stablecoinValue || "0")) : 0;
   
   // Convert to selected currency
   const totalBalance = selectedCurrency === "USD" ? totalBalanceUSD : 
@@ -323,11 +323,14 @@ export default function Wallets() {
   // Convert individual asset values to selected currency
   const fiatValueUSD = portfolio ? parseFloat(portfolio.fiatValue) : 0;
   const cryptoValueUSD = portfolio ? parseFloat(portfolio.cryptoValue) : 0;
+  const stablecoinValueUSD = portfolio ? parseFloat(portfolio.stablecoinValue || "0") : 0;
   
   const fiatValue = selectedCurrency === "USD" ? fiatValueUSD : 
     (exchangeRate ? fiatValueUSD * parseFloat(exchangeRate.rate) : fiatValueUSD);
   const cryptoValue = selectedCurrency === "USD" ? cryptoValueUSD : 
     (exchangeRate ? cryptoValueUSD * parseFloat(exchangeRate.rate) : cryptoValueUSD);
+  const stablecoinValue = selectedCurrency === "USD" ? stablecoinValueUSD : 
+    (exchangeRate ? stablecoinValueUSD * parseFloat(exchangeRate.rate) : stablecoinValueUSD);
   
   // Get currency configuration for display
   const currencyInfo = currencyConfig[selectedCurrency as keyof typeof currencyConfig];
@@ -381,7 +384,7 @@ export default function Wallets() {
               ≈ ${totalBalanceUSD.toLocaleString()} USD • Rate: {parseFloat(exchangeRate.rate).toFixed(4)}
             </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
               <p className="text-sm text-gray-600">Fiat Assets</p>
               <p className="text-lg font-semibold">
@@ -389,6 +392,15 @@ export default function Wallets() {
               </p>
               {selectedCurrency !== "USD" && (
                 <p className="text-xs text-gray-500">≈ ${fiatValueUSD.toLocaleString()} USD</p>
+              )}
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-gray-600">Stablecoins</p>
+              <p className="text-lg font-semibold">
+                {currencySymbol}{stablecoinValue.toLocaleString()}
+              </p>
+              {selectedCurrency !== "USD" && (
+                <p className="text-xs text-gray-500">≈ ${stablecoinValueUSD.toLocaleString()} USD</p>
               )}
             </div>
             <div className="text-center">

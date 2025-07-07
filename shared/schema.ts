@@ -19,6 +19,7 @@ export const portfolios = pgTable("portfolios", {
   userId: integer("user_id").references(() => users.id).notNull(),
   totalValue: decimal("total_value", { precision: 15, scale: 2 }).notNull(),
   cryptoValue: decimal("crypto_value", { precision: 15, scale: 2 }).notNull(),
+  stablecoinValue: decimal("stablecoin_value", { precision: 15, scale: 2 }).default("0.00"),
   fiatValue: decimal("fiat_value", { precision: 15, scale: 2 }).notNull(),
   investmentValue: decimal("investment_value", { precision: 15, scale: 2 }).default("0.00"),
   monthlyPnl: decimal("monthly_pnl", { precision: 15, scale: 2 }).notNull(),

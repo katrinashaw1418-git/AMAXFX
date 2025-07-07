@@ -90,12 +90,13 @@ export class MemStorage implements IStorage {
     const demoPortfolio: Portfolio = {
       id: 1,
       userId: 1,
-      totalValue: "4164500.00",
-      cryptoValue: "1109500.00",
-      fiatValue: "3055000.00",
-      investmentValue: "1800000.00",
-      monthlyPnl: "47392.00",
-      monthlyPnlPercent: "18.50",
+      totalValue: "1606209.25",
+      cryptoValue: "764192.25", // BTC + ETH only
+      stablecoinValue: "214500.00", // USDT + USDC
+      fiatValue: "627517.00",
+      investmentValue: "1963250.00",
+      monthlyPnl: "53541.89",
+      monthlyPnlPercent: "1.50",
       updatedAt: new Date(),
     };
     this.portfolios.set(1, demoPortfolio);
@@ -1250,6 +1251,7 @@ export class MemStorage implements IStorage {
     const portfolio: Portfolio = {
       ...insertPortfolio,
       id,
+      stablecoinValue: insertPortfolio.stablecoinValue || "0.00",
       investmentValue: insertPortfolio.investmentValue || "0.00",
       updatedAt: new Date(),
     };
