@@ -52,7 +52,7 @@ export class MemStorage implements IStorage {
   private currentPortfolioId = 1;
   private currentWalletId = 11;
   private currentTransactionId = 13;
-  private currentFxRateId = 11;
+  private currentFxRateId = 21;
   private currentAiRecommendationId = 1;
 
   constructor() {
@@ -423,6 +423,88 @@ export class MemStorage implements IStorage {
         targetCurrency: "HKD",
         rate: "5.2758",
         spread: "0.006",
+        updatedAt: new Date(),
+      },
+      // Stablecoin exchange rates
+      {
+        id: 11,
+        baseCurrency: "USDT",
+        targetCurrency: "USD",
+        rate: "0.9998",
+        spread: "0.001",
+        updatedAt: new Date(),
+      },
+      {
+        id: 12,
+        baseCurrency: "USDC",
+        targetCurrency: "USD",
+        rate: "1.0001",
+        spread: "0.001",
+        updatedAt: new Date(),
+      },
+      {
+        id: 13,
+        baseCurrency: "USD",
+        targetCurrency: "USDT",
+        rate: "1.0002",
+        spread: "0.001",
+        updatedAt: new Date(),
+      },
+      {
+        id: 14,
+        baseCurrency: "USD",
+        targetCurrency: "USDC",
+        rate: "0.9999",
+        spread: "0.001",
+        updatedAt: new Date(),
+      },
+      {
+        id: 15,
+        baseCurrency: "USDT",
+        targetCurrency: "USDC",
+        rate: "1.0003",
+        spread: "0.001",
+        updatedAt: new Date(),
+      },
+      {
+        id: 16,
+        baseCurrency: "USDC",
+        targetCurrency: "USDT",
+        rate: "0.9997",
+        spread: "0.001",
+        updatedAt: new Date(),
+      },
+      // Stablecoin to other currencies
+      {
+        id: 17,
+        baseCurrency: "USDT",
+        targetCurrency: "CAD",
+        rate: "1.3423",
+        spread: "0.005",
+        updatedAt: new Date(),
+      },
+      {
+        id: 18,
+        baseCurrency: "USDC",
+        targetCurrency: "CAD",
+        rate: "1.3420",
+        spread: "0.005",
+        updatedAt: new Date(),
+      },
+      {
+        id: 19,
+        baseCurrency: "USDT",
+        targetCurrency: "EUR",
+        rate: "0.8533",
+        spread: "0.004",
+        updatedAt: new Date(),
+      },
+      {
+        id: 20,
+        baseCurrency: "USDC",
+        targetCurrency: "EUR",
+        rate: "0.8531",
+        spread: "0.004",
         updatedAt: new Date(),
       },
     ];

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Shield, CheckCircle, Clock, Circle } from "lucide-react";
 
@@ -50,9 +50,9 @@ export default function KycModal({ isOpen, onClose }: KycModalProps) {
             <DialogTitle className="text-xl font-semibold mb-2">
               Complete KYC Verification
             </DialogTitle>
-            <p className="text-gray-600">
+            <DialogDescription className="text-gray-600">
               Verify your identity to access full platform features
-            </p>
+            </DialogDescription>
           </div>
         </DialogHeader>
         

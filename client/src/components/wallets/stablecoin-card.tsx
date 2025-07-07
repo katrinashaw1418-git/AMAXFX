@@ -6,10 +6,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useFxRate } from "@/hooks/use-fx-rates";
+import { api } from "@/lib/api";
 
 interface StablecoinCardProps {
   currency: "USDT" | "USDC";
@@ -26,10 +29,30 @@ interface StablecoinCardProps {
 export default function StablecoinCard({ currency, balance, availableBalance, config }: StablecoinCardProps) {
   const [depositModalOpen, setDepositModalOpen] = useState(false);
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [tradeModalOpen, setTradeModalOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawAddress, setWithdrawAddress] = useState("");
+  const [tradeAmount, setTradeAmount] = useState("");
+  const [targetCurrency, setTargetCurrency] = useState("USD");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Trading currencies
+  const tradeCurrencies = [
+    { code: "USD", name: "US Dollar" },
+    { code: "CAD", name: "Canadian Dollar" },
+    { code: "EUR", name: "Euro" },
+    { code: "GBP", name: "British Pound" },
+    { code: "AUD", name: "Australian Dollar" },
+    { code: "HKD", name: "Hong Kong Dollar" },
+    { code: "BTC", name: "Bitcoin" },
+    { code: "ETH", name: "Ethereum" },
+    { code: "USDT", name: "Tether" },
+    { code: "USDC", name: "USD Coin" },
+  ].filter(c => c.code !== currency); // Remove current currency from options
+
+  // Get FX rate for trading
+  const { data: fxRate, isLoading: rateLoading } = useFxRate(currency, targetCurrency);
 
   // Mock wallet addresses for deposits
   const walletAddress = currency === "USDT" 
@@ -132,6 +155,57 @@ export default function StablecoinCard({ currency, balance, availableBalance, co
         variant: "destructive",
       });
     }
+  };
+
+  // Trade exchange mutation
+  const exchangeMutation = useMutation({
+    mutationFn: (data: { fromCurrency: string; toCurrency: string; amount: number }) =>
+      api.createFxExchange(data),
+    onSuccess: () => {
+      toast({
+        title: "Trade Successful",
+        description: `Successfully traded ${tradeAmount} ${currency} for ${targetCurrency}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      setTradeModalOpen(false);
+      setTradeAmount("");
+    },
+    onError: () => {
+      toast({
+        title: "Trade Failed",
+        description: "Unable to complete trade. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleTrade = async () => {
+    if (!tradeAmount || parseFloat(tradeAmount) <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount to trade",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const amount = parseFloat(tradeAmount);
+    if (amount > parseFloat(availableBalance)) {
+      toast({
+        title: "Insufficient Balance",
+        description: "Trade amount exceeds available balance",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    exchangeMutation.mutate({
+      fromCurrency: currency,
+      toCurrency: targetCurrency,
+      amount: amount,
+    });
   };
 
   return (
@@ -300,20 +374,108 @@ export default function StablecoinCard({ currency, balance, availableBalance, co
             </DialogContent>
           </Dialog>
 
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1"
-            onClick={() => {
-              toast({
-                title: "Coming Soon",
-                description: `${currency} trading will be available soon`,
-              });
-            }}
-          >
-            <ArrowUpDown className="w-3 h-3" />
-            Trade
-          </Button>
+          <Dialog open={tradeModalOpen} onOpenChange={setTradeModalOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1"
+              >
+                <ArrowUpDown className="w-3 h-3" />
+                Trade
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Trade {currency}</DialogTitle>
+                <DialogDescription>
+                  Exchange {currency} for another currency
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>From</Label>
+                    <div className="flex items-center space-x-2 p-3 border rounded-lg bg-gray-50">
+                      <div className={`w-6 h-6 ${config.color} rounded-full flex items-center justify-center text-white text-xs font-bold`}>
+                        {config.flag}
+                      </div>
+                      <span className="font-medium">{currency}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>To</Label>
+                    <Select value={targetCurrency} onValueChange={setTargetCurrency}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tradeCurrencies.map((curr) => (
+                          <SelectItem key={curr.code} value={curr.code}>
+                            {curr.code} - {curr.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Amount</Label>
+                  <div className="relative">
+                    <Input 
+                      type="number" 
+                      placeholder="0.00"
+                      value={tradeAmount}
+                      onChange={(e) => setTradeAmount(e.target.value)}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      {currency}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Available: {config.symbol}{availableBalance}
+                  </p>
+                </div>
+
+                {fxRate && tradeAmount && (
+                  <div className="p-3 bg-gray-50 rounded-lg space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Exchange Rate:</span>
+                      <span className="font-medium">1 {currency} = {parseFloat(fxRate.rate).toFixed(4)} {targetCurrency}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>You'll receive:</span>
+                      <span className="font-medium text-green-600">
+                        {(parseFloat(tradeAmount) * parseFloat(fxRate.rate)).toFixed(2)} {targetCurrency}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Fee:</span>
+                      <span className="font-medium">
+                        {(parseFloat(fxRate.spread) * 100).toFixed(2)}%
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    Trades are executed at current market rates. Fees apply based on trading pair.
+                  </AlertDescription>
+                </Alert>
+
+                <Button 
+                  onClick={handleTrade} 
+                  className="w-full"
+                  disabled={exchangeMutation.isPending || rateLoading || !tradeAmount}
+                >
+                  {exchangeMutation.isPending ? "Processing Trade..." : "Execute Trade"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </CardContent>
     </Card>
