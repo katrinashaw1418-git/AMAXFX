@@ -202,6 +202,7 @@ Changelog:
   - All investment operations update wallet, portfolio, and transaction data in real-time
 - July 07, 2025. Enhanced banking options with geographical restrictions
   - PayID deposit option now clearly marked as "Australia Only" 
+  - Updated PayID instructions with accurate NPP information including email and phone PayIDs
   - Added comprehensive banking details including BSB, Sort Code, and SWIFT codes
   - Bank transfer instructions now include international transfer options
   - Withdrawal functionality fixed with proper balance updates and 5-second refresh intervals

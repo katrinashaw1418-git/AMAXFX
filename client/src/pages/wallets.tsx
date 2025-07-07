@@ -432,9 +432,11 @@ export default function Wallets() {
                 </h4>
                 {depositMethod === 'payid' ? (
                   <div className="text-sm text-muted-foreground space-y-1">
-                    <p>• Available only for Australian bank accounts</p>
-                    <p>• Use your registered PayID: your-email@example.com</p>
-                    <p>• Transfer will be processed instantly</p>
+                    <p>• Available only for Australian NPP-supported banks</p>
+                    <p>• Our PayID: support@wealthplatform.com.au</p>
+                    <p>• Alternative PayID: 0412 345 678</p>
+                    <p>• No need to enter BSB/account details</p>
+                    <p>• Transfers processed instantly 24/7</p>
                     <p>• No additional fees for PayID transfers</p>
                   </div>
                 ) : (
