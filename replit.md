@@ -221,3 +221,10 @@ Changelog:
   - Implemented compact design with smaller fonts, reduced spacing, and shorter input heights
   - Fixed accessibility warnings by adding proper DialogDescription components
   - All forms validate required fields before enabling submission buttons
+- July 07, 2025. Enhanced deposit interface with comprehensive QR code support
+  - Unified all crypto deposits (BTC, ETH, USDT, USDC) to use blockchain addresses
+  - Added visual QR code representations for mobile wallet scanning
+  - Implemented network-specific wallet addresses (Bitcoin SegWit, Ethereum ERC-20)
+  - Enhanced UX with multiple deposit method options (QR scan, address copy, mobile/desktop)
+  - Separated crypto deposits (blockchain) from fiat deposits (traditional banking)
+  - Added proper network warnings and minimum deposit requirements per currency

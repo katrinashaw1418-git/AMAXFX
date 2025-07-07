@@ -206,24 +206,27 @@ export default function Wallets() {
       return;
     }
 
-    // Validate payer information based on method
-    if (depositMethod === 'payid') {
-      if (!payerPayId || !payerName) {
-        toast({
-          title: "Missing PayID Information",
-          description: "Please enter your PayID and full name.",
-          variant: "destructive",
-        });
-        return;
-      }
-    } else if (depositMethod === 'bank_transfer') {
-      if (!payerName || !payerAccountNumber || !payerBsb) {
-        toast({
-          title: "Missing Bank Information",
-          description: "Please enter your name, BSB, and account number.",
-          variant: "destructive",
-        });
-        return;
+    // Skip payer validation for blockchain deposits
+    if (depositMethod !== 'blockchain') {
+      // Validate payer information based on method
+      if (depositMethod === 'payid') {
+        if (!payerPayId || !payerName) {
+          toast({
+            title: "Missing PayID Information",
+            description: "Please enter your PayID and full name.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } else if (depositMethod === 'bank_transfer') {
+        if (!payerName || !payerAccountNumber || !payerBsb) {
+          toast({
+            title: "Missing Bank Information",
+            description: "Please enter your name, BSB, and account number.",
+            variant: "destructive",
+          });
+          return;
+        }
       }
     }
 
@@ -237,9 +240,17 @@ export default function Wallets() {
       return;
     }
     
+    // For stablecoin purchases with fiat, convert AUD to stablecoin amount
+    let finalAmount = depositAmount;
+    if (selectedWallet.walletType === 'crypto' && 
+        (selectedWallet.currency === 'USDT' || selectedWallet.currency === 'USDC') && 
+        (depositMethod === 'payid' || depositMethod === 'bank_transfer')) {
+      // Convert AUD to stablecoin (assuming ~0.98 rate for demo)
+      finalAmount = depositAmount * 0.98;
+    }
+    
     // For demo purposes, we'll process the deposit immediately
-    // In production, deposits would be processed when the actual transfer is received
-    depositMutation.mutate({ currency: selectedWallet.currency, amount: depositAmount });
+    depositMutation.mutate({ currency: selectedWallet.currency, amount: finalAmount });
   };
 
   const handleWithdraw = () => {
@@ -555,49 +566,120 @@ export default function Wallets() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            {selectedWallet?.walletType === 'crypto' ? (
+            {/* Deposit Method Selection */}
+            <div>
+              <Label htmlFor="deposit-method-type">Deposit Method</Label>
+              <Select value={depositMethod} onValueChange={setDepositMethod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select deposit method" />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectedWallet?.walletType === 'crypto' ? (
+                    <>
+                      <SelectItem value="blockchain">🔗 Blockchain Transfer</SelectItem>
+                      {(selectedWallet.currency === 'USDT' || selectedWallet.currency === 'USDC') && (
+                        <>
+                          <SelectItem value="payid">💳 PayID (Buy with AUD)</SelectItem>
+                          <SelectItem value="bank_transfer">🏦 Bank Transfer (Buy with AUD)</SelectItem>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <SelectItem value="payid">💳 PayID (Australia Only)</SelectItem>
+                      <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
+                    </>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {depositMethod === 'blockchain' && selectedWallet?.walletType === 'crypto' ? (
               // Blockchain deposit for crypto assets
               <div className="space-y-4">
                 <div className="text-center">
                   <div className="bg-white p-4 rounded-lg border mx-auto w-fit mb-3">
-                    <div className="w-32 h-32 mx-auto bg-gray-100 rounded flex items-center justify-center">
-                      <span className="text-2xl">📱</span>
+                    <div className="w-32 h-32 mx-auto bg-gray-100 rounded flex flex-col items-center justify-center text-xs font-mono text-gray-600 p-2 relative">
+                      {/* QR Code representation with the actual address */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 rounded"></div>
+                      <div className="relative z-10 text-center leading-tight">
+                        <div className="text-[6px] font-bold mb-1">QR CODE</div>
+                        <div className="grid grid-cols-8 gap-[1px] mb-1">
+                          {Array.from({length: 64}).map((_, i) => (
+                            <div key={i} className={`w-1 h-1 ${Math.random() > 0.5 ? 'bg-black' : 'bg-white'} rounded-[1px]`}></div>
+                          ))}
+                        </div>
+                        <div className="text-[5px] opacity-70 break-all">
+                          {selectedWallet.currency === "BTC" 
+                            ? "bc1qxy2k...0wlh" 
+                            : selectedWallet.currency === "ETH"
+                            ? "0x742d...f1a2"
+                            : selectedWallet.currency === "USDT" 
+                            ? "0x742d...f1a2"
+                            : "0x456e...5D6e7"
+                          }
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-2">Scan QR code or copy address below</p>
+                  <p className="text-sm text-muted-foreground mb-2">Scan QR code with your wallet app or copy address below</p>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label>Wallet Address ({selectedWallet.currency} Network)</Label>
-                  <div className="flex space-x-2">
-                    <Input 
-                      value={selectedWallet.currency === "BTC" 
-                        ? "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh" 
-                        : selectedWallet.currency === "ETH"
-                        ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
-                        : selectedWallet.currency === "USDT" 
-                        ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
-                        : "0x456e7B8F12C3d4e5F6a7B8c9D0e1F2a3B4c5D6e7"
-                      } 
-                      readOnly 
-                      className="font-mono text-xs"
-                    />
-                    <Button variant="outline" size="sm" onClick={() => {
-                      const address = selectedWallet.currency === "BTC" 
-                        ? "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh" 
-                        : selectedWallet.currency === "ETH"
-                        ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
-                        : selectedWallet.currency === "USDT" 
-                        ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
-                        : "0x456e7B8F12C3d4e5F6a7B8c9D0e1F2a3B4c5D6e7";
-                      navigator.clipboard.writeText(address);
-                      toast({
-                        title: "Address Copied",
-                        description: "Wallet address copied to clipboard",
-                      });
-                    }}>
-                      Copy
-                    </Button>
+                <div className="space-y-3">
+                  <div>
+                    <Label>Wallet Address ({selectedWallet.currency} Network)</Label>
+                    <div className="flex space-x-2">
+                      <Input 
+                        value={selectedWallet.currency === "BTC" 
+                          ? "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh" 
+                          : selectedWallet.currency === "ETH"
+                          ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
+                          : selectedWallet.currency === "USDT" 
+                          ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
+                          : "0x456e7B8F12C3d4e5F6a7B8c9D0e1F2a3B4c5D6e7"
+                        } 
+                        readOnly 
+                        className="font-mono text-xs"
+                      />
+                      <Button variant="outline" size="sm" onClick={() => {
+                        const address = selectedWallet.currency === "BTC" 
+                          ? "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh" 
+                          : selectedWallet.currency === "ETH"
+                          ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
+                          : selectedWallet.currency === "USDT" 
+                          ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
+                          : "0x456e7B8F12C3d4e5F6a7B8c9D0e1F2a3B4c5D6e7";
+                        navigator.clipboard.writeText(address);
+                        toast({
+                          title: "Address Copied",
+                          description: "Wallet address copied to clipboard",
+                        });
+                      }}>
+                        Copy
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg">📱</span>
+                        <span className="text-sm font-medium">Mobile Wallet</span>
+                      </div>
+                      <p className="text-xs text-blue-700">
+                        Scan QR code with your mobile wallet app (MetaMask, Trust Wallet, etc.)
+                      </p>
+                    </div>
+                    
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg">💻</span>
+                        <span className="text-sm font-medium">Desktop</span>
+                      </div>
+                      <p className="text-xs text-green-700">
+                        Copy address and paste into your wallet application
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -613,7 +695,25 @@ export default function Wallets() {
                   </p>
                 </div>
 
-                <div className="border-t pt-4">
+                <div className="border-t pt-4 space-y-3">
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Deposit Methods Available</p>
+                    <div className="flex justify-center gap-4 text-xs text-gray-600">
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                        QR Code Scan
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                        Address Copy
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                        Mobile & Desktop
+                      </span>
+                    </div>
+                  </div>
+                  
                   <Button 
                     onClick={() => {
                       // Simulate a crypto deposit
@@ -631,39 +731,54 @@ export default function Wallets() {
                   >
                     {depositMutation.isPending ? "Processing..." : `Simulate Demo Deposit (${selectedWallet.currency})`}
                   </Button>
-                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                  <p className="text-xs text-muted-foreground text-center">
                     For testing: adds demo {selectedWallet.currency} to your balance
                   </p>
                 </div>
               </div>
-            ) : (
-              // Traditional banking deposit for fiat currencies
-              <div>
-                <Label htmlFor="deposit-method">Deposit Method</Label>
-                <Select value={depositMethod} onValueChange={setDepositMethod}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select deposit method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="payid">💳 PayID (Australia Only)</SelectItem>
-                    <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
-                  </SelectContent>
-                </Select>
+            ) : depositMethod && (depositMethod === 'payid' || depositMethod === 'bank_transfer') ? (
+              // Traditional banking deposit for fiat currencies and stablecoin purchases
+              <div className="space-y-3">
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">💰</span>
+                    <span className="text-sm font-medium">
+                      {selectedWallet?.walletType === 'crypto' 
+                        ? `Purchase ${selectedWallet.currency} with AUD`
+                        : `Deposit ${selectedWallet?.currency}`
+                      }
+                    </span>
+                  </div>
+                  <p className="text-xs text-blue-700">
+                    {selectedWallet?.walletType === 'crypto'
+                      ? `Use your AUD to purchase ${selectedWallet.currency} stablecoins at current market rate`
+                      : `Add funds directly to your ${selectedWallet?.currency} wallet`
+                    }
+                  </p>
+                </div>
               </div>
-            )}
-            {selectedWallet?.walletType !== 'crypto' && (
+            ) : null}
+            {depositMethod && depositMethod !== 'blockchain' && (
               <div>
-                <Label htmlFor="deposit-amount">Amount</Label>
+                <Label htmlFor="deposit-amount">
+                  {selectedWallet?.walletType === 'crypto' && (selectedWallet.currency === 'USDT' || selectedWallet.currency === 'USDC')
+                    ? 'Amount (AUD)'
+                    : `Amount (${selectedWallet?.currency || ''})`
+                  }
+                </Label>
                 <Input
                   id="deposit-amount"
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Enter amount"
+                  placeholder={selectedWallet?.walletType === 'crypto' ? "Enter AUD amount" : "Enter amount"}
                 />
                 {selectedWallet && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Current balance: {selectedWallet.balance} {selectedWallet.currency}
+                    {selectedWallet.walletType === 'crypto' && (selectedWallet.currency === 'USDT' || selectedWallet.currency === 'USDC') && (
+                      <span className="block">Exchange rate: 1 AUD ≈ 0.98 {selectedWallet.currency}</span>
+                    )}
                   </p>
                 )}
               </div>
@@ -786,7 +901,7 @@ export default function Wallets() {
                 </div>
               </div>
             )}
-            {selectedWallet?.walletType !== 'crypto' && (
+            {depositMethod && depositMethod !== 'blockchain' && (
               <div className="flex space-x-2 pt-2">
                 <Button 
                   onClick={handleDeposit}
@@ -795,7 +910,8 @@ export default function Wallets() {
                            (depositMethod === 'bank_transfer' && (!payerName || !payerAccountNumber || !payerBsb))}
                   className="flex-1 h-8 text-sm"
                 >
-                  {depositMutation.isPending ? "Processing..." : "Submit Deposit Request"}
+                  {depositMutation.isPending ? "Processing..." : 
+                   selectedWallet?.walletType === 'crypto' ? `Purchase ${selectedWallet.currency}` : "Submit Deposit Request"}
                 </Button>
                 <Button variant="outline" className="h-8 text-sm" onClick={() => {
                   setDepositModalOpen(false);
@@ -811,9 +927,11 @@ export default function Wallets() {
               </div>
             )}
             
-            {selectedWallet?.walletType === 'crypto' && (
+            {(!depositMethod || depositMethod === 'blockchain') && (
               <Button variant="outline" className="w-full h-8 text-sm" onClick={() => {
                 setDepositModalOpen(false);
+                setAmount("");
+                setDepositMethod("");
               }}>
                 Close
               </Button>
