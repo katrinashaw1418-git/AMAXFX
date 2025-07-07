@@ -168,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currency: toCurrency,
           balance: "0.00",
           availableBalance: "0.00",
-          walletType: ['BTC', 'ETH', 'USDT', 'USDC'].includes(toCurrency) ? 'crypto' : 'fiat'
+          walletType: toCurrency === 'BTC' || toCurrency === 'ETH' ? 'crypto' : 'fiat'
         });
       }
 
@@ -207,10 +207,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fromCurrency,
         toCurrency,
         amount: amount.toString(),
-        fee: fee.toString(),
+        fee: fee.toFixed(2),
         exchangeRate: exchangeRate.toString(),
         status: "completed",
-        description: `${fromCurrency} to ${toCurrency} Exchange`
+        description: `${fromCurrency} to ${toCurrency} Exchange`,
       });
 
       res.json({
@@ -220,10 +220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fee,
       });
     } catch (error) {
-      console.error('FX Exchange error:', error);
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-      res.status(500).json({ error: "Failed to process FX exchange", details: error.message });
+      res.status(500).json({ error: "Failed to process FX exchange" });
     }
   });
 
@@ -274,53 +271,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create deposit transaction (new wallet route)
   app.post("/api/wallets/deposit", async (req, res) => {
     try {
-      const { currency, amount, method } = req.body;
+      const { currency, amount, type } = req.body;
       const userId = 1;
       
-      if (!currency || !amount || !method) {
+      if (!currency || !amount) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-      const depositAmount = parseFloat(amount);
-      if (isNaN(depositAmount) || depositAmount <= 0) {
-        return res.status(400).json({ error: "Invalid amount" });
-      }
-
-      // Get or create wallet for the currency
-      let wallet = await storage.getWallet(userId, currency);
+      // Get current wallet
+      const wallet = await storage.getWallet(userId, currency);
       if (!wallet) {
-        // Create new wallet if it doesn't exist
-        wallet = await storage.createWallet({
-          userId,
-          currency,
-          balance: "0",
-          availableBalance: "0",
-          walletType: ['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(currency) ? 'fiat' : 'crypto'
-        });
+        return res.status(404).json({ error: "Wallet not found" });
       }
       
       // Update wallet balance
-      const newBalance = parseFloat(wallet.balance) + depositAmount;
-      const newAvailableBalance = parseFloat(wallet.availableBalance) + depositAmount;
+      const depositAmount = parseFloat(amount);
+      const newBalance = (parseFloat(wallet.balance) + depositAmount).toFixed(2);
+      const newAvailableBalance = (parseFloat(wallet.availableBalance) + depositAmount).toFixed(2);
       
       await storage.updateWallet(wallet.id, {
-        balance: newBalance.toString(),
-        availableBalance: newAvailableBalance.toString()
+        balance: newBalance,
+        availableBalance: newAvailableBalance,
       });
 
       const transaction = await storage.createTransaction({
         userId,
         type: "deposit",
-        fromCurrency: currency,
+        fromCurrency: null,
         toCurrency: currency,
         amount: amount.toString(),
-        fee: 0,
+        fee: "0.00",
+        exchangeRate: null,
         status: "completed",
-        description: `Deposit via ${method}`,
-        metadata: JSON.stringify({ method })
+        description: `${currency} Deposit`,
       });
 
-      res.json({ success: true, message: "Deposit successful", transaction });
+      res.json(transaction);
     } catch (error) {
       res.status(500).json({ error: "Failed to process deposit" });
     }
@@ -331,62 +317,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { currency, amount, description } = req.body;
       const userId = 1;
-      
-      if (!currency || !amount) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
-
-      const withdrawAmount = parseFloat(amount);
-      if (isNaN(withdrawAmount) || withdrawAmount <= 0) {
-        return res.status(400).json({ error: "Invalid amount" });
-      }
-
-      // Get wallet
-      const wallet = await storage.getWallet(userId, currency);
-      if (!wallet) {
-        return res.status(404).json({ error: "Wallet not found" });
-      }
-      
-      // Check if sufficient balance
-      const currentBalance = parseFloat(wallet.availableBalance);
-      if (currentBalance < withdrawAmount) {
-        return res.status(400).json({ error: "Insufficient balance" });
-      }
-      
-      // Update wallet balance
-      const newBalance = parseFloat(wallet.balance) - withdrawAmount;
-      const newAvailableBalance = parseFloat(wallet.availableBalance) - withdrawAmount;
-      
-      await storage.updateWallet(wallet.id, {
-        balance: newBalance.toString(),
-        availableBalance: newAvailableBalance.toString()
-      });
-
-      const transaction = await storage.createTransaction({
-        userId,
-        type: "withdrawal",
-        fromCurrency: currency,
-        toCurrency: currency,
-        amount: withdrawAmount.toString(),
-        fee: 0,
-        status: "completed",
-        description: `Withdrawal via ${method}`,
-        metadata: JSON.stringify({ method })
-      });
-
-      res.json({ success: true, message: "Withdrawal successful", transaction });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to process withdrawal" });
-    }
-  });
-
-  // Create withdrawal transaction (new wallet route)
-  app.post("/api/wallets/withdraw", async (req, res) => {
-    try {
-      const { currency, amount, method } = req.body;
-      const userId = 1;
-      
-      console.log('Withdraw request:', { currency, amount, method });
       
       if (!currency || !amount) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -403,13 +333,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalDeduction = withdrawAmount + fee;
       
       // Check if sufficient balance
-      console.log('Balance check:', { 
-        availableBalance: parseFloat(wallet.availableBalance), 
-        totalDeduction, 
-        withdrawAmount, 
-        fee 
-      });
+      if (parseFloat(wallet.availableBalance) < totalDeduction) {
+        return res.status(400).json({ error: "Insufficient balance" });
+      }
       
+      // Update wallet balance
+      const newBalance = (parseFloat(wallet.balance) - totalDeduction).toFixed(2);
+      const newAvailableBalance = (parseFloat(wallet.availableBalance) - totalDeduction).toFixed(2);
+      
+      await storage.updateWallet(wallet.id, {
+        balance: newBalance,
+        availableBalance: newAvailableBalance,
+      });
+
+      const transaction = await storage.createTransaction({
+        userId,
+        type: "withdrawal",
+        fromCurrency: currency,
+        toCurrency: null,
+        amount: amount.toString(),
+        fee: fee.toFixed(2),
+        exchangeRate: null,
+        status: "completed",
+        description: description || `${currency} Withdrawal`,
+      });
+
+      res.json(transaction);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to process withdrawal" });
+    }
+  });
+
+  // Create withdrawal transaction (new wallet route)
+  app.post("/api/wallets/withdraw", async (req, res) => {
+    try {
+      const { currency, amount, type } = req.body;
+      const userId = 1;
+      
+      if (!currency || !amount) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Get current wallet
+      const wallet = await storage.getWallet(userId, currency);
+      if (!wallet) {
+        return res.status(404).json({ error: "Wallet not found" });
+      }
+      
+      const withdrawAmount = parseFloat(amount);
+      const fee = 25.00;
+      const totalDeduction = withdrawAmount + fee;
+      
+      // Check if sufficient balance
       if (parseFloat(wallet.availableBalance) < totalDeduction) {
         return res.status(400).json({ error: "Insufficient balance" });
       }
@@ -678,8 +653,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to process transfer" });
     }
   });
-
-
 
   return httpServer;
 }
