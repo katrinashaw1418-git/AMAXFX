@@ -555,33 +555,119 @@ export default function Wallets() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <div>
-              <Label htmlFor="deposit-method">Deposit Method</Label>
-              <Select value={depositMethod} onValueChange={setDepositMethod}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select deposit method" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="payid">💳 PayID (Australia Only)</SelectItem>
-                  <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="deposit-amount">Amount</Label>
-              <Input
-                id="deposit-amount"
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Enter amount"
-              />
-              {selectedWallet && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Current balance: {selectedWallet.balance} {selectedWallet.currency}
-                </p>
-              )}
-            </div>
+            {selectedWallet?.walletType === 'crypto' ? (
+              // Blockchain deposit for crypto assets
+              <div className="space-y-4">
+                <div className="text-center">
+                  <div className="bg-white p-4 rounded-lg border mx-auto w-fit mb-3">
+                    <div className="w-32 h-32 mx-auto bg-gray-100 rounded flex items-center justify-center">
+                      <span className="text-2xl">📱</span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">Scan QR code or copy address below</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Wallet Address ({selectedWallet.currency} Network)</Label>
+                  <div className="flex space-x-2">
+                    <Input 
+                      value={selectedWallet.currency === "BTC" 
+                        ? "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh" 
+                        : selectedWallet.currency === "ETH"
+                        ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
+                        : selectedWallet.currency === "USDT" 
+                        ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
+                        : "0x456e7B8F12C3d4e5F6a7B8c9D0e1F2a3B4c5D6e7"
+                      } 
+                      readOnly 
+                      className="font-mono text-xs"
+                    />
+                    <Button variant="outline" size="sm" onClick={() => {
+                      const address = selectedWallet.currency === "BTC" 
+                        ? "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh" 
+                        : selectedWallet.currency === "ETH"
+                        ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
+                        : selectedWallet.currency === "USDT" 
+                        ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
+                        : "0x456e7B8F12C3d4e5F6a7B8c9D0e1F2a3B4c5D6e7";
+                      navigator.clipboard.writeText(address);
+                      toast({
+                        title: "Address Copied",
+                        description: "Wallet address copied to clipboard",
+                      });
+                    }}>
+                      Copy
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-xs text-yellow-800">
+                    ⚠️ Only send {selectedWallet.currency} to this address. 
+                    {selectedWallet.currency === "BTC" ? " Bitcoin network only." : 
+                     selectedWallet.currency === "ETH" ? " Ethereum network only." :
+                     " ERC-20 tokens on Ethereum network only."}
+                    {" "}Minimum deposit: {selectedWallet.currency === "BTC" ? "0.001 BTC" : 
+                                          selectedWallet.currency === "ETH" ? "0.01 ETH" : 
+                                          `10 ${selectedWallet.currency}`}.
+                  </p>
+                </div>
+
+                <div className="border-t pt-4">
+                  <Button 
+                    onClick={() => {
+                      // Simulate a crypto deposit
+                      const amount = selectedWallet.currency === "BTC" ? "0.1" : 
+                                    selectedWallet.currency === "ETH" ? "1.0" : "1000.00";
+                      depositMutation.mutate({
+                        type: "deposit",
+                        currency: selectedWallet.currency,
+                        amount,
+                      });
+                    }} 
+                    variant="outline" 
+                    className="w-full"
+                    disabled={depositMutation.isPending}
+                  >
+                    {depositMutation.isPending ? "Processing..." : `Simulate Demo Deposit (${selectedWallet.currency})`}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    For testing: adds demo {selectedWallet.currency} to your balance
+                  </p>
+                </div>
+              </div>
+            ) : (
+              // Traditional banking deposit for fiat currencies
+              <div>
+                <Label htmlFor="deposit-method">Deposit Method</Label>
+                <Select value={depositMethod} onValueChange={setDepositMethod}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select deposit method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="payid">💳 PayID (Australia Only)</SelectItem>
+                    <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {selectedWallet?.walletType !== 'crypto' && (
+              <div>
+                <Label htmlFor="deposit-amount">Amount</Label>
+                <Input
+                  id="deposit-amount"
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="Enter amount"
+                />
+                {selectedWallet && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Current balance: {selectedWallet.balance} {selectedWallet.currency}
+                  </p>
+                )}
+              </div>
+            )}
             {depositMethod && (
               <div className="space-y-3">
                 <div className="p-3 bg-muted rounded-lg border">
@@ -700,28 +786,38 @@ export default function Wallets() {
                 </div>
               </div>
             )}
-            <div className="flex space-x-2 pt-2">
-              <Button 
-                onClick={handleDeposit}
-                disabled={depositMutation.isPending || !depositMethod || !amount || 
-                         (depositMethod === 'payid' && (!payerPayId || !payerName)) ||
-                         (depositMethod === 'bank_transfer' && (!payerName || !payerAccountNumber || !payerBsb))}
-                className="flex-1 h-8 text-sm"
-              >
-                {depositMutation.isPending ? "Processing..." : "Submit Deposit Request"}
-              </Button>
-              <Button variant="outline" className="h-8 text-sm" onClick={() => {
+            {selectedWallet?.walletType !== 'crypto' && (
+              <div className="flex space-x-2 pt-2">
+                <Button 
+                  onClick={handleDeposit}
+                  disabled={depositMutation.isPending || !depositMethod || !amount || 
+                           (depositMethod === 'payid' && (!payerPayId || !payerName)) ||
+                           (depositMethod === 'bank_transfer' && (!payerName || !payerAccountNumber || !payerBsb))}
+                  className="flex-1 h-8 text-sm"
+                >
+                  {depositMutation.isPending ? "Processing..." : "Submit Deposit Request"}
+                </Button>
+                <Button variant="outline" className="h-8 text-sm" onClick={() => {
+                  setDepositModalOpen(false);
+                  setAmount("");
+                  setDepositMethod("");
+                  setPayerPayId("");
+                  setPayerName("");
+                  setPayerAccountNumber("");
+                  setPayerBsb("");
+                }}>
+                  Close
+                </Button>
+              </div>
+            )}
+            
+            {selectedWallet?.walletType === 'crypto' && (
+              <Button variant="outline" className="w-full h-8 text-sm" onClick={() => {
                 setDepositModalOpen(false);
-                setAmount("");
-                setDepositMethod("");
-                setPayerPayId("");
-                setPayerName("");
-                setPayerAccountNumber("");
-                setPayerBsb("");
               }}>
                 Close
               </Button>
-            </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
