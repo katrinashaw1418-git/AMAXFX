@@ -488,8 +488,8 @@ export default function Wallets() {
                     <tr key={wallet.id} className="border-b hover:bg-gray-50">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <span className="text-lg">{wallet.config?.flag}</span>
-                          <div>
+                          <span className="text-lg flex items-center justify-center w-6 h-6">{wallet.config?.flag}</span>
+                          <div className="flex-1">
                             <div className="font-medium">{wallet.currency}</div>
                             <div className="text-sm text-muted-foreground">{wallet.config?.name}</div>
                           </div>
