@@ -1832,6 +1832,47 @@ export class MemStorage implements IStorage {
         spread: "0.008",
         updatedAt: new Date(),
       },
+      // Missing CAD conversion pairs
+      {
+        id: 180,
+        baseCurrency: "AUD",
+        targetCurrency: "CAD",
+        rate: "0.9055",
+        spread: "0.006",
+        updatedAt: new Date(),
+      },
+      {
+        id: 181,
+        baseCurrency: "HKD",
+        targetCurrency: "CAD",
+        rate: "0.1715",
+        spread: "0.006",
+        updatedAt: new Date(),
+      },
+      {
+        id: 182,
+        baseCurrency: "SGD",
+        targetCurrency: "CAD",
+        rate: "0.9928",
+        spread: "0.006",
+        updatedAt: new Date(),
+      },
+      {
+        id: 183,
+        baseCurrency: "CHF",
+        targetCurrency: "CAD",
+        rate: "1.5174",
+        spread: "0.006",
+        updatedAt: new Date(),
+      },
+      {
+        id: 184,
+        baseCurrency: "JPY",
+        targetCurrency: "CAD",
+        rate: "0.008951",
+        spread: "0.008",
+        updatedAt: new Date(),
+      },
     ];
     
     demoFxRates.forEach(rate => {
