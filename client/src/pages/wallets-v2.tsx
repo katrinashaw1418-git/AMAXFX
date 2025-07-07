@@ -264,8 +264,9 @@ export default function Wallets() {
       return;
     }
 
+    console.log('Withdraw attempt:', { currency: selectedWallet.currency, amount, method: withdrawMethod });
+
     withdrawMutation.mutate({
-      type: "withdraw",
       currency: selectedWallet.currency,
       amount: amount,
       method: withdrawMethod

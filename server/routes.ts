@@ -386,6 +386,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { currency, amount, method } = req.body;
       const userId = 1;
       
+      console.log('Withdraw request:', { currency, amount, method });
+      
       if (!currency || !amount) {
         return res.status(400).json({ error: "Missing required fields" });
       }
@@ -401,6 +403,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalDeduction = withdrawAmount + fee;
       
       // Check if sufficient balance
+      console.log('Balance check:', { 
+        availableBalance: parseFloat(wallet.availableBalance), 
+        totalDeduction, 
+        withdrawAmount, 
+        fee 
+      });
+      
       if (parseFloat(wallet.availableBalance) < totalDeduction) {
         return res.status(400).json({ error: "Insufficient balance" });
       }
