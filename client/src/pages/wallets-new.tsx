@@ -206,10 +206,12 @@ export default function Wallets() {
       console.log("Transfer mutation onSuccess called with data:", data);
       toast({
         title: "✅ Transfer Successful",
-        description: `${amount} ${fromCurrency} converted to ${toCurrency}`,
+        description: `Converted ${amount} ${fromCurrency} to ${data.convertedAmount.toFixed(2)} ${toCurrency}`,
       });
+      // Immediately invalidate and refetch wallet data
       queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
       queryClient.invalidateQueries({ queryKey: ['/api/portfolio'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       setTransferModalOpen(false);
       setAmount('');
       setFromCurrency('');

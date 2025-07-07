@@ -153,19 +153,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Exchange rate not available" });
       }
 
-      // Get both wallets
+      // Get source wallet
       const fromWallet = await storage.getWallet(userId, fromCurrency);
-      const toWallet = await storage.getWallet(userId, toCurrency);
-      
-      if (!fromWallet || !toWallet) {
-        return res.status(404).json({ error: "Wallet not found" });
+      if (!fromWallet) {
+        return res.status(404).json({ error: "Source wallet not found" });
+      }
+
+      // Get or create target wallet
+      let toWallet = await storage.getWallet(userId, toCurrency);
+      if (!toWallet) {
+        console.log(`Creating new wallet for ${toCurrency}`);
+        toWallet = await storage.createWallet({
+          userId,
+          currency: toCurrency,
+          balance: "0.00",
+          availableBalance: "0.00",
+          walletType: toCurrency === 'BTC' || toCurrency === 'ETH' ? 'crypto' : 'fiat'
+        });
       }
 
       const exchangeRate = parseFloat(rate.rate);
-      const spread = parseFloat(rate.spread);
-      const fee = parseFloat(amount) * spread;
       const convertedAmount = parseFloat(amount) * exchangeRate;
-      const totalDeduction = parseFloat(amount) + fee;
+      const fee = convertedAmount * 0.005; // 0.5% fee on converted amount
+      const netConvertedAmount = convertedAmount - fee;
+      const totalDeduction = parseFloat(amount); // Only deduct the original amount from source
 
       // Check if sufficient balance in source wallet
       if (parseFloat(fromWallet.availableBalance) < totalDeduction) {
@@ -181,9 +192,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         availableBalance: newFromAvailableBalance,
       });
 
-      // Update target wallet (add converted amount)
-      const newToBalance = (parseFloat(toWallet.balance) + convertedAmount).toFixed(2);
-      const newToAvailableBalance = (parseFloat(toWallet.availableBalance) + convertedAmount).toFixed(2);
+      // Update target wallet (add net converted amount after fee)
+      const newToBalance = (parseFloat(toWallet.balance) + netConvertedAmount).toFixed(2);
+      const newToAvailableBalance = (parseFloat(toWallet.availableBalance) + netConvertedAmount).toFixed(2);
       
       await storage.updateWallet(toWallet.id, {
         balance: newToBalance,
@@ -204,7 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         transaction,
-        convertedAmount,
+        convertedAmount: netConvertedAmount,
         exchangeRate,
         fee,
       });
