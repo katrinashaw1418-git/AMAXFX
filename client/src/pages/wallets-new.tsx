@@ -1138,30 +1138,24 @@ export default function Wallets() {
       <Dialog open={transferModalOpen} onOpenChange={setTransferModalOpen}>
         <DialogContent className="sm:max-w-[420px] max-h-[80vh] overflow-y-auto p-4">
           <DialogHeader>
-            <DialogTitle>Currency Exchange & Transfer</DialogTitle>
+            <DialogTitle>Transfer {selectedWallet?.currency}</DialogTitle>
             <DialogDescription>
-              Convert currencies at real-time exchange rates with instant processing
+              Transfer your {selectedWallet?.currency} balance to another currency
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <div>
-              <Label htmlFor="transfer-from-currency" className="text-sm">Convert From</Label>
-              <Select value={fromCurrency} onValueChange={setFromCurrency}>
-                <SelectTrigger className="h-8">
-                  <SelectValue placeholder="Select currency to convert from" />
-                </SelectTrigger>
-                <SelectContent>
-                  {wallets.map(wallet => (
-                    <SelectItem key={wallet.id} value={wallet.currency}>
-                      {CurrencyConfig[wallet.currency as keyof typeof CurrencyConfig]?.flag || ''} {wallet.currency} – Balance: {wallet.availableBalance}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Current Balance Display */}
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Available Balance</span>
+                <span className="font-medium">
+                  {selectedWallet?.availableBalance} {selectedWallet?.currency}
+                </span>
+              </div>
             </div>
             
             <div>
-              <Label htmlFor="transfer-amount" className="text-sm">Amount</Label>
+              <Label htmlFor="transfer-amount" className="text-sm">Amount to Transfer</Label>
               <Input
                 id="transfer-amount"
                 type="number"
@@ -1170,17 +1164,16 @@ export default function Wallets() {
                 placeholder="Enter amount"
                 className="h-8"
               />
-              {fromCurrency && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Available: {walletsWithRegions.find(w => w.currency === fromCurrency)?.availableBalance || '0'} {fromCurrency}
-                </p>
-              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                Available: {selectedWallet?.availableBalance} {selectedWallet?.currency}
+              </p>
             </div>
+            
             <div>
-              <Label htmlFor="transfer-to-currency" className="text-sm">Convert To</Label>
+              <Label htmlFor="transfer-to-currency" className="text-sm">Transfer To</Label>
               <Select value={toCurrency} onValueChange={setToCurrency}>
                 <SelectTrigger className="h-8">
-                  <SelectValue placeholder="Select target currency" />
+                  <SelectValue placeholder="Select destination currency" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="USD">🇺🇸 USD – US Dollar</SelectItem>
@@ -1197,13 +1190,47 @@ export default function Wallets() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Exchange Rate & Conversion Preview */}
+            {selectedWallet && toCurrency && amount && toCurrency !== selectedWallet.currency && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Exchange Rate:</span>
+                  <span className="font-mono">
+                    {(() => {
+                      const rate = exchangeRates.find(r => r.baseCurrency === selectedWallet.currency && r.targetCurrency === toCurrency);
+                      return rate ? `1 ${selectedWallet.currency} = ${rate.rate} ${toCurrency}` : 'Loading...';
+                    })()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm mt-1">
+                  <span className="text-gray-600">You'll receive:</span>
+                  <span className="font-medium text-green-600">
+                    {(() => {
+                      const rate = exchangeRates.find(r => r.baseCurrency === selectedWallet.currency && r.targetCurrency === toCurrency);
+                      if (!rate || !amount) return '0';
+                      const converted = (parseFloat(amount) * rate.rate).toFixed(4);
+                      return `${converted} ${toCurrency}`;
+                    })()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs text-gray-500 mt-1">
+                  <span>Transfer fee: 0.5%</span>
+                  <span>Processing: Instant</span>
+                </div>
+              </div>
+            )}
+            
             <div className="flex space-x-2 pt-2">
               <Button 
-                onClick={handleTransfer}
-                disabled={transferMutation.isPending || !fromCurrency || !toCurrency || !amount}
+                onClick={() => {
+                  setFromCurrency(selectedWallet?.currency || '');
+                  handleTransfer();
+                }}
+                disabled={transferMutation.isPending || !selectedWallet || !toCurrency || !amount || toCurrency === selectedWallet?.currency}
                 className="flex-1 h-8 text-sm"
               >
-                {transferMutation.isPending ? "Converting..." : "Convert Now"}
+                {transferMutation.isPending ? "Transferring..." : "Transfer Now"}
               </Button>
               <Button variant="outline" className="h-8 text-sm" onClick={() => setTransferModalOpen(false)}>
                 Cancel
