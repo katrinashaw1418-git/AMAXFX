@@ -324,7 +324,7 @@ export default function Wallets() {
 
     console.log("Starting transfer mutation...");
     transferMutation.mutate({
-      fromCurrency,
+      fromCurrency: selectedWallet?.currency || fromCurrency,
       toCurrency,
       amount: parseFloat(amount)
     });
@@ -1229,11 +1229,6 @@ export default function Wallets() {
               <Button 
                 onClick={() => {
                   if (selectedWallet?.currency && toCurrency && amount) {
-                    console.log("handleTransfer called with:", {
-                      fromCurrency: selectedWallet.currency,
-                      toCurrency: toCurrency,
-                      amount: amount
-                    });
                     setFromCurrency(selectedWallet.currency);
                     handleTransfer();
                   }
