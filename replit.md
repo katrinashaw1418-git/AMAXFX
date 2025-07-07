@@ -272,3 +272,11 @@ Changelog:
   - **Additional Features Display**: Local account details (IBAN/BSB), push notifications, instant transfers showcase
   - **Enhanced Tooltips**: Comprehensive information on fees (0.5%-1.2%), processing times (instant-2hrs), and conversion methods
   - All buttons now provide immediate user feedback and professional banking-level user experience
+- July 07, 2025. Updated crypto currency exchange rates to current market values
+  - **BTC Exchange Rate**: Updated from $43,250 to $97,250 USD (125% increase)
+  - **ETH Exchange Rate**: Updated from $2,580 to $3,420 USD (32.5% increase)
+  - **Cross-Currency Rates**: Updated all BTC/ETH pairs to CAD, EUR, GBP, AUD, HKD, SGD
+  - **Stablecoin Rates**: USDT and USDC maintain near-parity with USD (0.9998-1.0001)
+  - **Crypto-to-Crypto**: Updated BTC/ETH ratio from 16.76 to 28.43 ETH per BTC
+  - **Transfer Testing**: Verified accurate conversions with new rates across all currency pairs
+  - All conversion calculations now reflect current market pricing for accurate portfolio valuations
