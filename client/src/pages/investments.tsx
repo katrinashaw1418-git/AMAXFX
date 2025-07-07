@@ -216,14 +216,14 @@ export default function Investments() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label>Category</Label>
-              <Select value={filters.category || ""} onValueChange={(value) => 
-                setFilters({...filters, category: value || undefined})
+              <Select value={filters.category || "all"} onValueChange={(value) => 
+                setFilters({...filters, category: value === "all" ? undefined : value})
               }>
                 <SelectTrigger>
                   <SelectValue placeholder="All categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   <SelectItem value="real_estate">Real Estate</SelectItem>
                   <SelectItem value="corporate_credit">Corporate Credit</SelectItem>
                   <SelectItem value="venture_capital">Venture Capital</SelectItem>
@@ -233,14 +233,14 @@ export default function Investments() {
             </div>
             <div>
               <Label>Risk Profile</Label>
-              <Select value={filters.riskProfile || ""} onValueChange={(value) => 
-                setFilters({...filters, riskProfile: value || undefined})
+              <Select value={filters.riskProfile || "all"} onValueChange={(value) => 
+                setFilters({...filters, riskProfile: value === "all" ? undefined : value})
               }>
                 <SelectTrigger>
                   <SelectValue placeholder="All risk levels" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Risk Levels</SelectItem>
+                  <SelectItem value="all">All Risk Levels</SelectItem>
                   <SelectItem value="conservative">Conservative</SelectItem>
                   <SelectItem value="moderate">Moderate</SelectItem>
                   <SelectItem value="high">High</SelectItem>
@@ -250,16 +250,17 @@ export default function Investments() {
             </div>
             <div>
               <Label>Liquidity</Label>
-              <Select value={filters.liquidity || ""} onValueChange={(value) => 
-                setFilters({...filters, liquidity: value || undefined})
+              <Select value={filters.liquidity || "all"} onValueChange={(value) => 
+                setFilters({...filters, liquidity: value === "all" ? undefined : value})
               }>
                 <SelectTrigger>
                   <SelectValue placeholder="All liquidity types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
-                  <SelectItem value="quarterly">Quarterly</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
                   <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="quarterly">Quarterly</SelectItem>
                   <SelectItem value="locked">Locked Term</SelectItem>
                   <SelectItem value="illiquid">Long-term Lock-in</SelectItem>
                 </SelectContent>
