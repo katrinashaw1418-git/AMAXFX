@@ -308,20 +308,17 @@ export default function Investments() {
               </div>
               <div className="flex flex-col justify-end h-16">
                 <div className="flex items-end h-6">
-                  {selectedCurrency === 'USD' ? (
-                    <p className="text-lg font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis w-full leading-none">
-                      ${availableBalance.toLocaleString()}
-                    </p>
-                  ) : (
-                    <p className="text-lg font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis w-full leading-none">
-                      ${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()}
-                    </p>
-                  )}
+                  <p className="text-lg font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis w-full leading-none">
+                    {selectedCurrency === 'USD' ? 
+                      `$${availableBalance.toLocaleString()}` : 
+                      `${selectedCurrency} ${availableBalance.toLocaleString()}`
+                    }
+                  </p>
                 </div>
                 <div className="h-4 flex items-center">
                   {selectedCurrency !== 'USD' && (
                     <span className="text-xs text-gray-600">
-                      ({selectedWallet?.symbol && selectedWallet.symbol !== selectedCurrency ? selectedWallet.symbol : ''}{availableBalance.toLocaleString()} {selectedCurrency})
+                      USD {getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()}
                     </span>
                   )}
                 </div>
