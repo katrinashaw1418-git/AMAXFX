@@ -48,6 +48,7 @@ export default function Investments() {
   const [filters, setFilters] = useState<{ category?: string; riskProfile?: string; liquidity?: string }>({});
   const [investmentAmount, setInvestmentAmount] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [selectedCurrency, setSelectedCurrency] = useState("USD");
   const [investModalOpen, setInvestModalOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -63,6 +64,12 @@ export default function Investments() {
   });
 
   const { data: wallets } = useWallets();
+
+  // Fetch FX rates for currency conversion
+  const { data: fxRates } = useQuery({
+    queryKey: ["/api/fx-rates"],
+    queryFn: () => api.getFxRates(),
+  });
 
   const investMutation = useMutation({
     mutationFn: (data: { productId: number; amount: number }) => api.createInvestment(data),
@@ -101,11 +108,23 @@ export default function Investments() {
 
     const amount = parseFloat(investmentAmount);
     const minimumInvestment = parseFloat(selectedProduct.minimumInvestment);
+    
+    // Convert to USD if needed
+    const usdAmount = selectedCurrency === 'USD' ? amount : getUsdEquivalent(amount, selectedCurrency);
 
-    if (amount < minimumInvestment) {
+    if (usdAmount < minimumInvestment) {
       toast({
         title: "Below Minimum",
-        description: `Minimum investment is $${minimumInvestment.toLocaleString()}`,
+        description: `Minimum investment is $${minimumInvestment.toLocaleString()} USD`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (amount > availableBalance) {
+      toast({
+        title: "Insufficient Funds",
+        description: `You have ${selectedWallet?.symbol || selectedCurrency}${availableBalance.toLocaleString()} available in ${selectedCurrency} wallet.`,
         variant: "destructive",
       });
       return;
@@ -113,7 +132,7 @@ export default function Investments() {
 
     investMutation.mutate({
       productId: selectedProduct.id,
-      amount: amount,
+      amount: usdAmount, // Always invest in USD equivalent
     });
   };
 
@@ -127,6 +146,25 @@ export default function Investments() {
   const totalCurrentValue = userInvestments?.reduce((sum: number, inv: any) => sum + parseFloat(inv.currentValue), 0) || 0;
   const totalReturn = totalCurrentValue - totalInvested;
   const totalReturnPercent = totalInvested > 0 ? (totalReturn / totalInvested) * 100 : 0;
+
+  // Currency selection and conversion logic
+  const selectedWallet = wallets?.find(w => w.currency === selectedCurrency);
+  const availableBalance = selectedWallet?.availableBalance ? parseFloat(selectedWallet.availableBalance) : 0;
+
+  // Get available currencies from wallets
+  const availableCurrencies = wallets?.map(wallet => ({
+    currency: wallet.currency,
+    balance: parseFloat(wallet.availableBalance || '0'),
+    displayName: wallet.displayName || wallet.currency,
+    symbol: wallet.symbol || wallet.currency
+  })) || [];
+
+  // Convert to USD for display if not USD
+  const getUsdEquivalent = (amount: number, currency: string): number => {
+    if (currency === 'USD') return amount;
+    const rate = fxRates?.find(r => r.baseCurrency === currency && r.targetCurrency === 'USD')?.exchangeRate || 1;
+    return amount * rate;
+  };
 
   if (productsLoading || investmentsLoading) {
     return (
@@ -209,14 +247,28 @@ export default function Investments() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <h3 className="text-xs font-medium text-gray-500">Available Capital</h3>
-                  <span className="text-xs text-gray-600">USD balance</span>
+                  <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+                    <SelectTrigger className="w-16 h-5 text-xs border-0 p-0 focus:ring-0 bg-transparent">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableCurrencies.map((currency) => (
+                        <SelectItem key={currency.currency} value={currency.currency}>
+                          {currency.currency}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <DollarSign className="w-3 h-3 text-green-600" />
               </div>
               <div className="flex flex-col items-start justify-end h-16">
                 <p className="text-lg font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis w-full leading-tight">
-                  ${wallets?.find(w => w.currency === 'USD')?.availableBalance ? parseFloat(wallets.find(w => w.currency === 'USD')!.availableBalance).toLocaleString() : '0'}
+                  {selectedWallet?.symbol || selectedCurrency}{availableBalance.toLocaleString()}
                 </p>
+                {selectedCurrency !== 'USD' && (
+                  <span className="text-xs text-gray-600">≈ ${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()} USD</span>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -460,25 +512,31 @@ export default function Investments() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="amount">Investment Amount (USD)</Label>
+              <Label htmlFor="amount">Investment Amount ({selectedCurrency})</Label>
               <Input
                 id="amount"
                 type="number"
                 value={investmentAmount}
                 onChange={(e) => setInvestmentAmount(e.target.value)}
-                placeholder="Enter amount"
+                placeholder={`Enter amount in ${selectedCurrency}`}
               />
               {selectedProduct && (
                 <div className="mt-1 space-y-1">
                   <p className="text-xs text-muted-foreground">
-                    Minimum: ${parseFloat(selectedProduct.minimumInvestment).toLocaleString()}
+                    Minimum: ${parseFloat(selectedProduct.minimumInvestment).toLocaleString()} USD
                   </p>
                   <p className="text-xs font-medium text-blue-600">
-                    Capital Invested: ${userInvestments?.filter((inv: any) => inv.productId === selectedProduct.id).reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0).toLocaleString() || '0'}
+                    Capital Invested: ${userInvestments?.filter((inv: any) => inv.productId === selectedProduct.id).reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0).toLocaleString() || '0'} USD
                   </p>
                   <p className="text-xs font-medium text-green-600">
-                    Available to Invest: ${wallets?.find(w => w.currency === 'USD')?.availableBalance ? parseFloat(wallets.find(w => w.currency === 'USD')!.availableBalance).toLocaleString() : '0'}
+                    Available to Invest: {selectedWallet?.symbol || selectedCurrency}{availableBalance.toLocaleString()}
+                    {selectedCurrency !== 'USD' && ` (≈ $${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()} USD)`}
                   </p>
+                  {selectedCurrency !== 'USD' && investmentAmount && (
+                    <p className="text-xs text-orange-600">
+                      Will convert {selectedCurrency}{parseFloat(investmentAmount).toLocaleString()} → ${getUsdEquivalent(parseFloat(investmentAmount), selectedCurrency).toLocaleString()} USD at current exchange rate
+                    </p>
+                  )}
                 </div>
               )}
             </div>
