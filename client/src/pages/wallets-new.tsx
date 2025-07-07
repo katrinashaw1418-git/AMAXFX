@@ -1,17 +1,95 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { useWallets } from "@/hooks/use-portfolio";
-import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { CurrencyConfig } from "@/lib/types";
-import { useFxRate } from "@/hooks/use-fx-rates";
+import { useState } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+// Table components will be created inline since they're not in the UI library
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { CurrencyConfig, SupportedCurrencies, CurrencyRegions, type WalletBalance } from '@/lib/types';
+import { TrendingUp, TrendingDown, Plus, Minus, ArrowRightLeft, ArrowUpDown, Send, Repeat, Info, DollarSign, AlertCircle } from 'lucide-react';
+import { useFxRate } from '@/hooks/use-fx-rates';
+import { useWallets } from '@/hooks/use-portfolio';
+
+// Helper functions for exchange rate display
+const useExchangeRateDisplay = (fromCurrency: string, toCurrency: string) => {
+  const { data: fxRate } = useFxRate(fromCurrency, toCurrency);
+  if (!fxRate) return "Loading...";
+  
+  const rate = parseFloat(fxRate.rate);
+  const displayRate = rate > 1 ? rate.toFixed(2) : rate.toFixed(6);
+  
+  return `1 ${fromCurrency} = ${displayRate} ${toCurrency}`;
+};
+
+// Exchange Rate Display Component for Transfer Modal
+function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrency: string; toCurrency: string; amount: string }) {
+  const { data: fxRate } = useFxRate(fromCurrency, toCurrency);
+  
+  if (!fxRate) {
+    return (
+      <div className="flex justify-between items-center text-sm">
+        <span className="text-gray-600">Loading exchange rate...</span>
+      </div>
+    );
+  }
+
+  const rate = parseFloat(fxRate.rate);
+  const displayRate = rate > 1 ? rate.toFixed(2) : rate.toFixed(6);
+  
+  let convertedAmount = '0.00';
+  let sendingAmount = '0.00';
+  
+  console.log('ExchangeRateDisplay Debug:', { amount, rate, fromCurrency, toCurrency, hasAmount: !!amount });
+  
+  if (amount && amount !== '') {
+    const parsedAmount = parseFloat(amount);
+    console.log('Parsed amount:', parsedAmount);
+    
+    if (!isNaN(parsedAmount) && parsedAmount > 0) {
+      const calculatedAmount = parsedAmount * rate;
+      console.log('Calculated amount before fee:', calculatedAmount);
+      
+      // Apply 0.5% fee
+      const fee = calculatedAmount * 0.005;
+      const finalAmount = calculatedAmount - fee;
+      
+      console.log('Fee:', fee, 'Final amount:', finalAmount);
+      
+      convertedAmount = finalAmount.toFixed(2);
+      sendingAmount = parsedAmount.toFixed(2);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center text-sm">
+        <span className="text-gray-600">Exchange Rate:</span>
+        <span className="font-medium">1 {fromCurrency} = {displayRate} {toCurrency}</span>
+      </div>
+      
+      {amount && amount !== '' && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0 && (
+        <div className="bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-lg border">
+          <div className="text-center space-y-2">
+            <div className="text-sm text-gray-600">What You'll Receive</div>
+            <div className="text-2xl font-bold text-green-600">
+              {CurrencyConfig[toCurrency as keyof typeof CurrencyConfig]?.symbol}{convertedAmount} {toCurrency}
+            </div>
+            <div className="text-xs text-gray-500">
+              Converting {CurrencyConfig[fromCurrency as keyof typeof CurrencyConfig]?.symbol}{sendingAmount} {fromCurrency} • Fee: 0.5%
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Wallets() {
   const { data: wallets = [], isLoading } = useWallets();
@@ -23,6 +101,7 @@ export default function Wallets() {
   const [withdrawMethod, setWithdrawMethod] = useState('');
   const [amount, setAmount] = useState('');
   const [toCurrency, setToCurrency] = useState('');
+  const [fromCurrency, setFromCurrency] = useState('');
   const [displayCurrency, setDisplayCurrency] = useState('USD');
   
   // Form fields for deposit/withdraw
@@ -54,6 +133,11 @@ export default function Wallets() {
       queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
       setDepositModalOpen(false);
       resetForms();
+      
+      // Auto-refresh every 5 seconds
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
+      }, 5000);
     },
     onError: () => {
       toast({
@@ -81,6 +165,11 @@ export default function Wallets() {
       queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
       setWithdrawModalOpen(false);
       resetForms();
+      
+      // Auto-refresh every 5 seconds
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
+      }, 5000);
     },
     onError: () => {
       toast({
@@ -94,25 +183,38 @@ export default function Wallets() {
   // Transfer mutation
   const transferMutation = useMutation({
     mutationFn: async (data: { fromCurrency: string; toCurrency: string; amount: number }) => {
+      console.log('Transfer API call:', data);
       const response = await apiRequest("POST", "/api/fx-exchange", data);
+      console.log('Transfer response status:', response.status);
       if (!response.ok) {
-        throw new Error('Transfer failed');
+        const errorText = await response.text();
+        console.error('Transfer error response:', errorText);
+        throw new Error('Transfer failed: ' + errorText);
       }
-      return response.json();
+      const result = await response.json();
+      console.log('Transfer result:', result);
+      return result;
     },
     onSuccess: (data) => {
+      console.log('Transfer success data:', data);
       toast({
         title: "Transfer Successful",
-        description: `Converted ${amount} ${selectedWallet?.currency} to ${data.convertedAmount.toFixed(2)} ${toCurrency}`,
+        description: `Converted ${amount} ${fromCurrency} to ${data.convertedAmount?.toFixed(2) || 'N/A'} ${toCurrency}`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
       setTransferModalOpen(false);
       resetForms();
+      
+      // Auto-refresh every 5 seconds
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
+      }, 5000);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Transfer error:', error);
       toast({
         title: "Transfer Failed",
-        description: "Please try again later.",
+        description: error.message || "Please try again later.",
         variant: "destructive",
       });
     }
@@ -123,6 +225,7 @@ export default function Wallets() {
     setDepositMethod('');
     setWithdrawMethod('');
     setToCurrency('');
+    setFromCurrency('');
     setPayerPayId('');
     setPayerName('');
     setPayerAccountNumber('');
@@ -170,7 +273,9 @@ export default function Wallets() {
   };
 
   const handleTransfer = () => {
-    if (!selectedWallet || !amount || !toCurrency) {
+    console.log('handleTransfer called', { fromCurrency, toCurrency, amount });
+    
+    if (!fromCurrency || !amount || !toCurrency) {
       toast({
         title: "Missing Information",
         description: "Please fill in all fields.",
@@ -179,10 +284,20 @@ export default function Wallets() {
       return;
     }
 
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     transferMutation.mutate({
-      fromCurrency: selectedWallet.currency,
+      fromCurrency,
       toCurrency,
-      amount: parseFloat(amount)
+      amount: parsedAmount
     });
   };
 
@@ -256,7 +371,7 @@ export default function Wallets() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>Your Wallets</span>
+            <span>Your Balances</span>
             <div className="flex items-center gap-2">
               <Label htmlFor="display-currency" className="text-sm">Display in:</Label>
               <Select value={displayCurrency} onValueChange={setDisplayCurrency}>
@@ -354,6 +469,108 @@ export default function Wallets() {
         </CardContent>
       </Card>
 
+      {/* Transfer or Convert Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Transfer or Convert</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Conversion Interface */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="from-currency">From</Label>
+                  <Select value={fromCurrency} onValueChange={setFromCurrency}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {walletsWithRegions.map((wallet) => (
+                        <SelectItem key={wallet.currency} value={wallet.currency}>
+                          <div className="flex items-center gap-2">
+                            <span>{wallet.config?.flag}</span>
+                            <span>{wallet.currency}</span>
+                            <span className="text-muted-foreground">
+                              ({wallet.config?.symbol}{wallet.balance})
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="convert-amount">Amount</Label>
+                  <Input
+                    id="convert-amount"
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="Enter amount"
+                  />
+                  {fromCurrency && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Available: {CurrencyConfig[fromCurrency as keyof typeof CurrencyConfig]?.symbol}{walletsWithRegions.find(w => w.currency === fromCurrency)?.balance || '0'} {fromCurrency}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="to-currency-convert">To</Label>
+                  <Select value={toCurrency} onValueChange={setToCurrency}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select target currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.keys(CurrencyConfig).map((currency) => {
+                        const config = CurrencyConfig[currency as keyof typeof CurrencyConfig];
+                        return (
+                          <SelectItem key={currency} value={currency}>
+                            <div className="flex items-center gap-2">
+                              <span>{config?.flag}</span>
+                              <span>{currency}</span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>You'll receive</Label>
+                  <div className="p-3 bg-gray-50 rounded-md">
+                    {fromCurrency && toCurrency && amount ? (
+                      <ExchangeRateDisplay 
+                        fromCurrency={fromCurrency}
+                        toCurrency={toCurrency}
+                        amount={amount}
+                      />
+                    ) : (
+                      <span className="text-muted-foreground">Select currencies and amount</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Convert Button */}
+            <Button 
+              onClick={handleTransfer}
+              disabled={!fromCurrency || !amount || !toCurrency || transferMutation.isPending}
+              className="w-full"
+              size="lg"
+            >
+              {transferMutation.isPending ? "Converting..." : "Convert Now"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Deposit Modal */}
       <Dialog open={depositModalOpen} onOpenChange={setDepositModalOpen}>
         <DialogContent className="sm:max-w-[450px] max-h-[80vh] overflow-y-auto p-4">
@@ -441,6 +658,115 @@ export default function Wallets() {
               </div>
             )}
 
+            {/* PayID Form for Australia */}
+            {depositMethod === 'payid' && (
+              <div className="space-y-2">
+                <div>
+                  <Label htmlFor="payer-payid">Your PayID (Email or Mobile)</Label>
+                  <Input
+                    id="payer-payid"
+                    value={payerPayId}
+                    onChange={(e) => setPayerPayId(e.target.value)}
+                    placeholder="yourname@email.com or +61412345678"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="payer-name">Full Name</Label>
+                  <Input
+                    id="payer-name"
+                    value={payerName}
+                    onChange={(e) => setPayerName(e.target.value)}
+                    placeholder="Your full name as registered"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Bank Transfer Form */}
+            {depositMethod === 'bank_transfer' && (
+              <div className="space-y-2">
+                <div>
+                  <Label htmlFor="payer-name-bank">Account Holder Name</Label>
+                  <Input
+                    id="payer-name-bank"
+                    value={payerName}
+                    onChange={(e) => setPayerName(e.target.value)}
+                    placeholder="Your full name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="payer-bsb">BSB (Australia) or Sort Code</Label>
+                  <Input
+                    id="payer-bsb"
+                    value={payerBsb}
+                    onChange={(e) => setPayerBsb(e.target.value)}
+                    placeholder="123-456 or 12-34-56"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="payer-account">Account Number</Label>
+                  <Input
+                    id="payer-account"
+                    value={payerAccountNumber}
+                    onChange={(e) => setPayerAccountNumber(e.target.value)}
+                    placeholder="Your account number"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Credit/Debit Card Form */}
+            {depositMethod === 'card' && (
+              <div className="space-y-2">
+                <div>
+                  <Label htmlFor="card-number">Card Number</Label>
+                  <Input
+                    id="card-number"
+                    value={cardNumber}
+                    onChange={(e) => setCardNumber(e.target.value)}
+                    placeholder="1234 5678 9012 3456"
+                    maxLength={19}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="expiry">Expiry Date</Label>
+                    <Input
+                      id="expiry"
+                      value={expiryDate}
+                      onChange={(e) => setExpiryDate(e.target.value)}
+                      placeholder="MM/YY"
+                      maxLength={5}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="cvv">CVV</Label>
+                    <Input
+                      id="cvv"
+                      value={cvv}
+                      onChange={(e) => setCvv(e.target.value)}
+                      placeholder="123"
+                      maxLength={4}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="cardholder-name">Cardholder Name</Label>
+                  <Input
+                    id="cardholder-name"
+                    value={cardholderName}
+                    onChange={(e) => setCardholderName(e.target.value)}
+                    placeholder="Name on card"
+                  />
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  <p>• Fee: 2.9% + $0.30 AUD per transaction</p>
+                  <p>• Limits: $50 - $10,000 AUD per transaction</p>
+                  <p>• Supported: Visa, Mastercard, American Express</p>
+                </div>
+              </div>
+            )}
+
             <Button 
               onClick={handleDeposit} 
               disabled={depositMutation.isPending}
@@ -490,6 +816,63 @@ export default function Wallets() {
                 </p>
               )}
             </div>
+
+            {/* PayID Form for Australia */}
+            {withdrawMethod === 'payid' && (
+              <div className="space-y-2">
+                <div>
+                  <Label htmlFor="withdraw-payid">Recipient PayID</Label>
+                  <Input
+                    id="withdraw-payid"
+                    value={payerPayId}
+                    onChange={(e) => setPayerPayId(e.target.value)}
+                    placeholder="recipient@email.com or +61412345678"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="withdraw-name">Recipient Name</Label>
+                  <Input
+                    id="withdraw-name"
+                    value={payerName}
+                    onChange={(e) => setPayerName(e.target.value)}
+                    placeholder="Recipient's full name"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Bank Transfer Form */}
+            {withdrawMethod === 'bank_transfer' && (
+              <div className="space-y-2">
+                <div>
+                  <Label htmlFor="withdraw-name-bank">Account Holder Name</Label>
+                  <Input
+                    id="withdraw-name-bank"
+                    value={payerName}
+                    onChange={(e) => setPayerName(e.target.value)}
+                    placeholder="Recipient's full name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="withdraw-bsb">BSB or Sort Code</Label>
+                  <Input
+                    id="withdraw-bsb"
+                    value={payerBsb}
+                    onChange={(e) => setPayerBsb(e.target.value)}
+                    placeholder="123-456 or 12-34-56"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="withdraw-account">Account Number</Label>
+                  <Input
+                    id="withdraw-account"
+                    value={payerAccountNumber}
+                    onChange={(e) => setPayerAccountNumber(e.target.value)}
+                    placeholder="Recipient's account number"
+                  />
+                </div>
+              </div>
+            )}
 
             <Button 
               onClick={handleWithdraw} 
@@ -545,8 +928,24 @@ export default function Wallets() {
               </Select>
             </div>
 
+            {/* Exchange Rate Display */}
+            {selectedWallet && toCurrency && amount && (
+              <div className="mt-4">
+                <ExchangeRateDisplay 
+                  fromCurrency={selectedWallet.currency}
+                  toCurrency={toCurrency}
+                  amount={amount}
+                />
+              </div>
+            )}
+
             <Button 
-              onClick={handleTransfer} 
+              onClick={() => {
+                if (selectedWallet) {
+                  setFromCurrency(selectedWallet.currency);
+                  handleTransfer();
+                }
+              }} 
               disabled={transferMutation.isPending}
               className="w-full mt-4"
             >
@@ -555,167 +954,6 @@ export default function Wallets() {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Transfer or Convert Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Transfer or Convert</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {/* Conversion Interface */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="from-currency">From</Label>
-                  <Select value={selectedWallet?.currency || ''} onValueChange={(value) => {
-                    const wallet = wallets.find(w => w.currency === value);
-                    setSelectedWallet(wallet);
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select currency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {walletsWithRegions.map((wallet) => (
-                        <SelectItem key={wallet.currency} value={wallet.currency}>
-                          <div className="flex items-center gap-2">
-                            <span>{wallet.config?.flag}</span>
-                            <span>{wallet.currency}</span>
-                            <span className="text-muted-foreground">
-                              ({wallet.config?.symbol}{wallet.balance})
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label htmlFor="convert-amount">Amount</Label>
-                  <Input
-                    id="convert-amount"
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="Enter amount"
-                  />
-                  {selectedWallet && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Available: {selectedWallet.config?.symbol}{selectedWallet.balance} {selectedWallet.currency}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="to-currency-convert">To</Label>
-                  <Select value={toCurrency} onValueChange={setToCurrency}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select target currency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.keys(CurrencyConfig).map((currency) => {
-                        const config = CurrencyConfig[currency as keyof typeof CurrencyConfig];
-                        return (
-                          <SelectItem key={currency} value={currency}>
-                            <div className="flex items-center gap-2">
-                              <span>{config?.flag}</span>
-                              <span>{currency}</span>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>You'll receive</Label>
-                  <div className="p-3 bg-gray-50 rounded-md">
-                    <ConversionResult 
-                      fromCurrency={selectedWallet?.currency || ''}
-                      toCurrency={toCurrency}
-                      amount={amount}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Exchange Rate Display */}
-            {selectedWallet && toCurrency && (
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <ExchangeRateInfo 
-                  fromCurrency={selectedWallet.currency}
-                  toCurrency={toCurrency}
-                />
-              </div>
-            )}
-
-            {/* Convert Button */}
-            <Button 
-              onClick={handleTransfer}
-              disabled={!selectedWallet || !amount || !toCurrency || transferMutation.isPending}
-              className="w-full"
-              size="lg"
-            >
-              {transferMutation.isPending ? "Converting..." : "Convert Now"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// Component to show conversion result
-function ConversionResult({ fromCurrency, toCurrency, amount }: { fromCurrency: string; toCurrency: string; amount: string }) {
-  const { data: fxRate } = useFxRate(fromCurrency, toCurrency);
-  
-  if (!fxRate || !amount || !fromCurrency || !toCurrency) {
-    return <span className="text-muted-foreground">--</span>;
-  }
-
-  const rate = parseFloat(fxRate.rate);
-  const inputAmount = parseFloat(amount);
-  const fee = inputAmount * 0.005; // 0.5% fee
-  const convertedAmount = (inputAmount - fee) * rate;
-  const config = CurrencyConfig[toCurrency as keyof typeof CurrencyConfig];
-
-  return (
-    <div className="space-y-1">
-      <div className="text-lg font-semibold text-green-600">
-        {config?.symbol}{convertedAmount.toFixed(2)} {toCurrency}
-      </div>
-      <div className="text-xs text-muted-foreground">
-        Fee: {CurrencyConfig[fromCurrency as keyof typeof CurrencyConfig]?.symbol}{fee.toFixed(2)} (0.5%)
-      </div>
-    </div>
-  );
-}
-
-// Component to show exchange rate info
-function ExchangeRateInfo({ fromCurrency, toCurrency }: { fromCurrency: string; toCurrency: string }) {
-  const { data: fxRate } = useFxRate(fromCurrency, toCurrency);
-  
-  if (!fxRate) {
-    return <span className="text-muted-foreground">Loading rate...</span>;
-  }
-
-  const rate = parseFloat(fxRate.rate);
-  const displayRate = rate > 1 ? rate.toFixed(2) : rate.toFixed(6);
-
-  return (
-    <div className="flex items-center justify-between">
-      <div className="text-sm">
-        <span className="font-medium">Exchange Rate:</span>
-        <span className="ml-2">1 {fromCurrency} = {displayRate} {toCurrency}</span>
-      </div>
-      <div className="text-xs text-muted-foreground">
-        Mid-market rate • Updates every 60 seconds
-      </div>
     </div>
   );
 }
