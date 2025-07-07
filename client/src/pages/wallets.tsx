@@ -308,12 +308,9 @@ export default function Wallets() {
     );
   }
 
-  const totalBalance = wallets?.reduce((sum, wallet) => {
-    if (wallet.walletType === 'fiat') {
-      return sum + parseFloat(wallet.balance);
-    }
-    return sum;
-  }, 0) || 0;
+  // Calculate total balance as fiat + crypto (using portfolio data for accuracy)
+  const totalBalance = portfolio ? 
+    (parseFloat(portfolio.fiatValue) + parseFloat(portfolio.cryptoValue)) : 0;
 
   return (
     <div className="p-6 space-y-6">
@@ -341,9 +338,7 @@ export default function Wallets() {
             <div className="text-center">
               <p className="text-sm text-gray-600">Fiat Assets</p>
               <p className="text-lg font-semibold">
-                ${wallets?.filter(w => w.walletType === 'fiat')
-                  .reduce((sum, w) => sum + parseFloat(w.balance), 0)
-                  .toLocaleString()}
+                ${portfolio?.fiatValue ? parseFloat(portfolio.fiatValue).toLocaleString() : 'Loading...'}
               </p>
             </div>
             <div className="text-center">
