@@ -46,28 +46,17 @@ function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrenc
   let convertedAmount = '0.00';
   let sendingAmount = '0.00';
   
-  // Debug: Log the incoming parameters
-  console.log('ExchangeRateDisplay props:', { amount, fromCurrency, toCurrency, rate });
-  
   if (amount && amount.toString().trim() !== '' && !isNaN(Number(amount))) {
     const amountNumber = Number(amount);
     const rateNumber = Number(rate);
-    const afterFee = amountNumber * 0.995; // Apply 0.5% fee first
-    const converted = afterFee * rateNumber; // Then convert
     
-    convertedAmount = converted.toFixed(2);
+    // Simple calculation: amount × exchange rate - 0.5% fee
+    const grossConverted = amountNumber * rateNumber;
+    const transactionFee = grossConverted * 0.005; // 0.5% fee
+    const netConverted = grossConverted - transactionFee;
+    
+    convertedAmount = netConverted.toFixed(2);
     sendingAmount = amountNumber.toFixed(2);
-    
-    console.log('Calculation successful:', { 
-      input: amount, 
-      amountNumber, 
-      rateNumber, 
-      afterFee, 
-      converted, 
-      convertedAmount 
-    });
-  } else {
-    console.log('Calculation skipped:', { amount, amountValid: !isNaN(Number(amount)) });
   }
 
   return (
@@ -89,11 +78,6 @@ function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrenc
             <span className="text-base font-semibold text-gray-900">You'll receive:</span>
             <span className="text-xl font-bold text-green-600">{convertedAmount || '0.00'} {toCurrency}</span>
           </div>
-        </div>
-        
-        {/* Debug Display */}
-        <div className="text-xs text-gray-400 border-t pt-1">
-          Debug: amount={amount}, rate={rate}
         </div>
       </div>
     </div>
