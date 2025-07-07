@@ -213,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create deposit transaction
+  // Create deposit transaction (legacy route)
   app.post("/api/deposit", async (req, res) => {
     try {
       const { currency, amount, description } = req.body;
@@ -257,7 +257,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create withdrawal transaction
+  // Create deposit transaction (new wallet route)
+  app.post("/api/wallets/deposit", async (req, res) => {
+    try {
+      const { currency, amount, type } = req.body;
+      const userId = 1;
+      
+      if (!currency || !amount) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Get current wallet
+      const wallet = await storage.getWallet(userId, currency);
+      if (!wallet) {
+        return res.status(404).json({ error: "Wallet not found" });
+      }
+      
+      // Update wallet balance
+      const depositAmount = parseFloat(amount);
+      const newBalance = (parseFloat(wallet.balance) + depositAmount).toFixed(2);
+      const newAvailableBalance = (parseFloat(wallet.availableBalance) + depositAmount).toFixed(2);
+      
+      await storage.updateWallet(wallet.id, {
+        balance: newBalance,
+        availableBalance: newAvailableBalance,
+      });
+
+      const transaction = await storage.createTransaction({
+        userId,
+        type: "deposit",
+        fromCurrency: null,
+        toCurrency: currency,
+        amount: amount.toString(),
+        fee: "0.00",
+        exchangeRate: null,
+        status: "completed",
+        description: `${currency} Deposit`,
+      });
+
+      res.json(transaction);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to process deposit" });
+    }
+  });
+
+  // Create withdrawal transaction (legacy route)
   app.post("/api/withdraw", async (req, res) => {
     try {
       const { currency, amount, description } = req.body;
