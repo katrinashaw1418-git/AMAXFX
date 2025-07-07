@@ -245,26 +245,27 @@ export default function Investments() {
           <Card className="flex flex-col h-32">
             <CardContent className="p-4 flex flex-col justify-between h-full">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-1">
-                  <h3 className="text-xs font-medium text-gray-500">Available Capital</h3>
-                  <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
-                    <SelectTrigger className="w-auto h-6 text-xs border border-green-200 rounded px-2 py-1 focus:ring-1 focus:ring-green-500 bg-green-50 hover:bg-green-100 transition-colors">
-                      <SelectValue className="font-semibold text-green-700" />
-                      <ChevronDown className="w-3 h-3 ml-1 text-green-600" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableCurrencies.map((currency) => (
-                        <SelectItem key={currency.currency} value={currency.currency}>
-                          <div className="flex items-center justify-between w-full">
-                            <span className="font-medium">{currency.currency}</span>
-                            <span className="text-xs text-gray-500 ml-2">
-                              {currency.currency === 'USD' ? '$' : currency.symbol || ''}{currency.balance.toLocaleString()}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="flex items-center space-x-1 flex-wrap">
+                  <h3 className="text-xs font-medium text-gray-500 whitespace-nowrap">Available Capital</h3>
+                  <div className="flex-shrink-0">
+                    <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+                      <SelectTrigger className="w-auto min-w-16 h-6 text-xs border border-green-200 rounded px-2 py-1 focus:ring-1 focus:ring-green-500 bg-green-50 hover:bg-green-100 transition-colors font-semibold text-green-700">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableCurrencies.map((currency) => (
+                          <SelectItem key={currency.currency} value={currency.currency}>
+                            <div className="flex items-center justify-between w-full">
+                              <span className="font-medium">{currency.currency}</span>
+                              <span className="text-xs text-gray-500 ml-2">
+                                {currency.currency === 'USD' ? '$' : currency.symbol || ''}{currency.balance.toLocaleString()}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <DollarSign className="w-3 h-3 text-green-600" />
               </div>
