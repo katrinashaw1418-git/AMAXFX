@@ -356,7 +356,7 @@ export default function Wallets() {
 
       {/* Deposit Modal */}
       <Dialog open={depositModalOpen} onOpenChange={setDepositModalOpen}>
-        <DialogContent className="sm:max-w-[450px] max-h-[80vh] overflow-y-auto p-4 z-[100]">
+        <DialogContent className="sm:max-w-[450px] max-h-[80vh] overflow-y-auto p-4">
           <DialogHeader>
             <DialogTitle>Deposit {selectedWallet?.currency}</DialogTitle>
             <DialogDescription>
@@ -559,7 +559,7 @@ export default function Wallets() {
 
       {/* Withdraw Modal */}
       <Dialog open={withdrawModalOpen} onOpenChange={setWithdrawModalOpen}>
-        <DialogContent className="sm:max-w-[400px] p-4 z-[100]">
+        <DialogContent className="sm:max-w-[400px] p-4">
           <DialogHeader>
             <DialogTitle>Withdraw {selectedWallet?.currency}</DialogTitle>
             <DialogDescription>
@@ -609,7 +609,7 @@ export default function Wallets() {
 
       {/* Transfer Modal */}
       <Dialog open={transferModalOpen} onOpenChange={setTransferModalOpen}>
-        <DialogContent className="sm:max-w-[400px] p-4 z-[100]">
+        <DialogContent className="sm:max-w-[400px] p-4">
           <DialogHeader>
             <DialogTitle>Transfer {selectedWallet?.currency}</DialogTitle>
             <DialogDescription>
