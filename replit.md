@@ -326,3 +326,11 @@ Changelog:
   - **Multiple Exchange Rates**: Added DKK support with proper exchange rates to all major currencies
   - **Verified Functionality**: All three buttons (Deposit, Withdraw, Transfer) working with proper API integration
   - **Available Routes**: /wallets-v1 (original), /wallets-v2 (enhanced version with working conversions)
+- July 07, 2025. Created Wallets Version 3 with enhanced debugging and conversion stability
+  - **Version 3 Features**: All Version 2 functionality plus enhanced error handling and logging
+  - **Debug Enhancement**: Added comprehensive logging for withdraw operations and balance validation
+  - **Conversion Stability**: Successfully tested ETH to AUD conversion (1 ETH → 5,074.38 AUD)
+  - **API Verification**: Direct API testing confirmed withdraw functionality works correctly
+  - **Fee Structure**: Consistent $25 USD equivalent fee across all withdrawal operations
+  - **Balance Management**: Proper balance updates with automatic wallet creation for new currencies
+  - **Available Routes**: /wallets-v1 (original), /wallets-v2 (enhanced), /wallets-v3 (debug version)
