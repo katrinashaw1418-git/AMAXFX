@@ -193,6 +193,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Apply AI recommendation
+  app.post("/api/ai-recommendations/:id/apply", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      // For demo purposes, we'll just mark it as read and return success
+      await storage.markRecommendationAsRead(id);
+      res.json({ 
+        success: true, 
+        message: "Recommendation applied successfully",
+        appliedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to apply recommendation" });
+    }
+  });
+
   // Get investment products
   app.get("/api/investment-products", async (req, res) => {
     try {

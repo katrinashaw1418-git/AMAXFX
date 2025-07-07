@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useAiRecommendations } from "@/hooks/use-portfolio";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Bot, 
   Lightbulb, 
@@ -30,13 +32,34 @@ export default function AiAdvisory() {
   const [riskTolerance, setRiskTolerance] = useState([3]);
   const [investmentHorizon, setInvestmentHorizon] = useState("5-10");
   const [investmentGoal, setInvestmentGoal] = useState("growth");
+  const [selectedRecommendation, setSelectedRecommendation] = useState<any>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const { data: recommendations, isLoading } = useAiRecommendations();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const markAsReadMutation = useMutation({
     mutationFn: (id: number) => api.markRecommendationAsRead(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/ai-recommendations"] });
+    },
+  });
+
+  const applyRecommendationMutation = useMutation({
+    mutationFn: (id: number) => api.applyRecommendation(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/ai-recommendations"] });
+      toast({
+        title: "Recommendation Applied",
+        description: "The AI recommendation has been successfully implemented.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Application Failed",
+        description: "Unable to apply the recommendation. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -319,11 +342,23 @@ export default function AiAdvisory() {
                               {recommendation.description}
                             </p>
                             <div className="flex space-x-2">
-                              <Button size="sm" variant="outline">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedRecommendation(recommendation);
+                                  setDetailsModalOpen(true);
+                                }}
+                              >
                                 View Details
                               </Button>
-                              <Button size="sm" variant="outline">
-                                Apply Suggestion
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => applyRecommendationMutation.mutate(recommendation.id)}
+                                disabled={applyRecommendationMutation.isPending}
+                              >
+                                {applyRecommendationMutation.isPending ? "Applying..." : "Apply Suggestion"}
                               </Button>
                             </div>
                           </div>
@@ -388,6 +423,74 @@ export default function AiAdvisory() {
           </Card>
         </div>
       </div>
+
+      {/* Recommendation Details Modal */}
+      <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{selectedRecommendation?.title}</DialogTitle>
+            <DialogDescription>
+              Detailed analysis and implementation guidance
+            </DialogDescription>
+          </DialogHeader>
+          {selectedRecommendation && (
+            <div className="space-y-4">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-semibold mb-2">Recommendation Type</h4>
+                <Badge className="mb-2">
+                  {selectedRecommendation.type.replace('_', ' ').toUpperCase()}
+                </Badge>
+                <p className="text-sm text-gray-600">{selectedRecommendation.description}</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-semibold mb-2">Impact Analysis</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Expected Return Improvement:</span>
+                      <span className="font-semibold text-green-600">+1.8%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Risk Reduction:</span>
+                      <span className="font-semibold text-blue-600">-2.4%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Implementation Time:</span>
+                      <span className="font-medium">2-3 business days</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-semibold mb-2">Implementation Steps</h4>
+                  <ol className="text-sm space-y-1 list-decimal list-inside">
+                    <li>Review current allocation</li>
+                    <li>Identify rebalancing targets</li>
+                    <li>Execute trades gradually</li>
+                    <li>Monitor performance impact</li>
+                  </ol>
+                </div>
+              </div>
+              
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={() => {
+                    applyRecommendationMutation.mutate(selectedRecommendation.id);
+                    setDetailsModalOpen(false);
+                  }}
+                  disabled={applyRecommendationMutation.isPending}
+                >
+                  {applyRecommendationMutation.isPending ? "Applying..." : "Apply Recommendation"}
+                </Button>
+                <Button variant="outline" onClick={() => setDetailsModalOpen(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

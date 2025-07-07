@@ -25,6 +25,9 @@ export const api = {
   getAiRecommendations: () => fetch("/api/ai-recommendations").then(res => res.json()),
   markRecommendationAsRead: (id: number) => 
     apiRequest("PATCH", `/api/ai-recommendations/${id}/read`),
+
+  applyRecommendation: (id: number) =>
+    apiRequest("POST", `/api/ai-recommendations/${id}/apply`),
   
   // Transactions
   createFxExchange: (data: { fromCurrency: string; toCurrency: string; amount: number }) =>
