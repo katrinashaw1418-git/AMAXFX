@@ -117,7 +117,11 @@ export default function Wallets() {
   const { toast } = useToast();
   
   // Always call this hook at the top level to avoid hooks order issues
-  const { data: fxRateData } = useFxRate(fromCurrency || 'USD', toCurrency || 'EUR');
+  const shouldFetchRate = fromCurrency && toCurrency && fromCurrency !== toCurrency;
+  const { data: fxRateData } = useFxRate(
+    shouldFetchRate ? fromCurrency : 'USD', 
+    shouldFetchRate ? toCurrency : 'USD'
+  );
 
   // Deposit mutation
   const depositMutation = useMutation({
@@ -628,13 +632,23 @@ export default function Wallets() {
                     <div className="relative">
                       <div className="h-14 bg-gray-50 border rounded-md flex items-center px-4">
                         <span className="text-2xl font-bold text-gray-900">
-                          {fromCurrency && toCurrency && amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0 && fxRateData ? (
-                            (() => {
+                          {(() => {
+                            if (!fromCurrency || !toCurrency || !amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+                              return "0.00";
+                            }
+                            
+                            if (fromCurrency === toCurrency) {
+                              return parseFloat(amount).toFixed(2);
+                            }
+                            
+                            if (shouldFetchRate && fxRateData) {
                               const rate = parseFloat(fxRateData.rate);
                               const convertedAmount = parseFloat(amount) * rate * 0.995; // 0.5% fee
                               return convertedAmount.toFixed(2);
-                            })()
-                          ) : "0.00"}
+                            }
+                            
+                            return "Loading...";
+                          })()}
                         </span>
                       </div>
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">

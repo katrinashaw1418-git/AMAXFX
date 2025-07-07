@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Layout from "@/components/layout/layout";
 import Dashboard from "@/pages/dashboard";
-import WalletsNew from "@/pages/wallets-new";
+import WalletsNew from "@/pages/wallets-working-backup";
 import FxExchange from "@/pages/fx-exchange";
 import Portfolio from "@/pages/portfolio";
 import AiAdvisory from "@/pages/ai-advisory";
