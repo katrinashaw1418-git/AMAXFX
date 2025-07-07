@@ -257,12 +257,7 @@ export default function Investments() {
                       <SelectContent>
                         {availableCurrencies.map((currency) => (
                           <SelectItem key={currency.currency} value={currency.currency}>
-                            <div className="flex items-center justify-between w-full">
-                              <span className="font-medium">{currency.currency}</span>
-                              <span className="text-xs text-gray-500 ml-2">
-                                {currency.symbol || ''}{currency.balance.toLocaleString()}
-                              </span>
-                            </div>
+                            <span className="font-medium">{currency.currency}</span>
                           </SelectItem>
                         ))}
                       </SelectContent>
