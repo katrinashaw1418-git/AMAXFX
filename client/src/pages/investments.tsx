@@ -164,7 +164,40 @@ export default function Investments() {
   // Convert to USD for display if not USD
   const getUsdEquivalent = (amount: number, currency: string): number => {
     if (currency === 'USD') return amount;
-    const rate = fxRates?.find(r => r.baseCurrency === currency && r.targetCurrency === 'USD')?.exchangeRate || 1;
+    
+    // Look for direct rate from currency to USD
+    let rate = fxRates?.find(r => r.baseCurrency === currency && r.targetCurrency === 'USD')?.rate;
+    
+    // If not found, look for USD to currency rate and invert it
+    if (!rate) {
+      const inverseRate = fxRates?.find(r => r.baseCurrency === 'USD' && r.targetCurrency === currency)?.rate;
+      if (inverseRate) {
+        rate = 1 / parseFloat(inverseRate);
+      }
+    }
+    
+    // Parse the rate as it comes as string from API
+    if (rate) {
+      rate = parseFloat(rate);
+    }
+    
+    // Fallback rates for common currencies if no FX data
+    if (!rate) {
+      const fallbackRates: Record<string, number> = {
+        'CAD': 0.75,
+        'EUR': 1.10,
+        'GBP': 1.25,
+        'AUD': 0.67,
+        'HKD': 0.13,
+        'SGD': 0.74,
+        'BTC': 42000,
+        'ETH': 2500,
+        'USDT': 1.0,
+        'USDC': 1.0
+      };
+      rate = fallbackRates[currency] || 1;
+    }
+    
     return amount * rate;
   };
 
