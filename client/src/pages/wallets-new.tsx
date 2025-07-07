@@ -696,7 +696,7 @@ export default function Wallets() {
                   <SelectValue placeholder="Select deposit method" />
                 </SelectTrigger>
                 <SelectContent>
-                  {selectedWallet?.walletType === 'fiat' ? (
+                  {['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(selectedWallet?.currency) ? (
                     <>
                       <SelectItem value="card">💳 Credit/Debit Card</SelectItem>
                       <SelectItem value="payid">📱 PayID (Australia Only)</SelectItem>
@@ -717,7 +717,7 @@ export default function Wallets() {
             {depositMethod && depositMethod !== 'blockchain' && (
               <div>
                 <Label htmlFor="deposit-amount">
-                  {selectedWallet?.walletType === 'crypto' && (depositMethod === 'payid' || depositMethod === 'bank_transfer')
+                  {!['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(selectedWallet?.currency) && (depositMethod === 'payid' || depositMethod === 'bank_transfer')
                     ? 'Amount (AUD)'
                     : `Amount (${selectedWallet?.currency || ''})`
                   }
@@ -727,12 +727,12 @@ export default function Wallets() {
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder={selectedWallet?.walletType === 'crypto' ? "Enter AUD amount" : "Enter amount"}
+                  placeholder={!['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(selectedWallet?.currency) ? "Enter AUD amount" : "Enter amount"}
                 />
                 {selectedWallet && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Current balance: {selectedWallet.balance} {selectedWallet.currency}
-                    {selectedWallet.walletType === 'crypto' && (
+                    {!['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(selectedWallet?.currency) && (
                       <span className="block">Exchange rate: 1 AUD ≈ {selectedWallet.currency === 'BTC' ? '0.000023 BTC' : selectedWallet.currency === 'ETH' ? '0.00031 ETH' : `0.98 ${selectedWallet.currency}`}</span>
                     )}
                   </p>
@@ -740,7 +740,7 @@ export default function Wallets() {
               </div>
             )}
 
-            {depositMethod === 'blockchain' && selectedWallet?.walletType === 'crypto' ? (
+            {depositMethod === 'blockchain' && !['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(selectedWallet?.currency) ? (
               <div className="space-y-4">
                 <div className="text-center">
                   <div className="bg-white p-4 rounded-lg border mx-auto w-fit mb-3">
@@ -830,7 +830,7 @@ export default function Wallets() {
                   className="flex-1 h-8 text-sm"
                 >
                   {depositMutation.isPending ? "Processing..." : 
-                   selectedWallet?.walletType === 'crypto' ? `Purchase ${selectedWallet.currency}` : "Submit Deposit Request"}
+                   !['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(selectedWallet?.currency) ? `Purchase ${selectedWallet.currency}` : "Submit Deposit Request"}
                 </Button>
                 <Button variant="outline" className="h-8 text-sm" onClick={() => {
                   setDepositModalOpen(false);
