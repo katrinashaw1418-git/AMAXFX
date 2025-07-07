@@ -187,3 +187,9 @@ Changelog:
   - Integrated Singapore Dollar (SGD) across all currency configurations
   - Added SGD wallet with S$28,500 balance and exchange rates to USD/USDT/USDC
   - Improved button layout to fit properly within wallet cards
+- July 07, 2025. Enhanced Daily Liquid Cash Deposit offerings with multiple product tiers
+  - Created 3 separate cash deposit products: High-Yield Savings (4.5-5.5% APY), Money Market Sweep (3.8-4.8% APY), Premium Treasury (2.5-3.5% APY)
+  - Structured products with varying minimum investments: $0, $1,000, and $10,000 respectively
+  - Implemented tiered liquidity options: instant access, same-day, and next-day settlement
+  - Added proper product categorization and filtering support for cash deposits
+  - Fixed investment card button alignment using flexbox layout for consistent positioning
