@@ -914,7 +914,7 @@ export default function Wallets() {
                 )}
               </div>
             )}
-            {depositMethod && (
+            {depositMethod && depositMethod !== 'blockchain' && (
               <div className="space-y-3">
                 <div className="p-3 bg-muted rounded-lg border">
                   <h4 className="font-medium mb-2 text-sm">
