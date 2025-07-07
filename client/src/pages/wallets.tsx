@@ -227,6 +227,8 @@ export default function Wallets() {
           });
           return;
         }
+      } else if (depositMethod === 'card') {
+        // Card deposits don't require additional validation - handled by card processor
       }
     }
 
@@ -711,13 +713,15 @@ export default function Wallets() {
                 <SelectContent>
                   {selectedWallet?.walletType === 'fiat' ? (
                     <>
-                      <SelectItem value="payid">💳 PayID (Australia Only)</SelectItem>
+                      <SelectItem value="card">💳 Credit/Debit Card</SelectItem>
+                      <SelectItem value="payid">📱 PayID (Australia Only)</SelectItem>
                       <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
                     </>
                   ) : (
                     <>
                       <SelectItem value="blockchain">🔗 Blockchain Transfer</SelectItem>
-                      <SelectItem value="payid">💳 PayID (Buy with AUD)</SelectItem>
+                      <SelectItem value="card">💳 Credit/Debit Card</SelectItem>
+                      <SelectItem value="payid">📱 PayID (Buy with AUD)</SelectItem>
                       <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
                     </>
                   )}
@@ -867,7 +871,7 @@ export default function Wallets() {
                   </p>
                 </div>
               </div>
-            ) : depositMethod && (depositMethod === 'payid' || depositMethod === 'bank_transfer') ? (
+            ) : depositMethod && (depositMethod === 'payid' || depositMethod === 'bank_transfer' || depositMethod === 'card') ? (
               // Traditional banking deposit for fiat currencies and stablecoin purchases
               <div className="space-y-3">
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -875,7 +879,7 @@ export default function Wallets() {
                     <span className="text-lg">💰</span>
                     <span className="text-sm font-medium">
                       {selectedWallet?.walletType === 'crypto' 
-                        ? `Purchase ${selectedWallet.currency} with AUD`
+                        ? `Purchase ${selectedWallet.currency} with ${depositMethod === 'card' ? 'Card' : 'AUD'}`
                         : `Deposit ${selectedWallet?.currency}`
                       }
                     </span>
@@ -914,7 +918,7 @@ export default function Wallets() {
                 )}
               </div>
             )}
-            {depositMethod && depositMethod !== 'blockchain' && (
+            {depositMethod && depositMethod !== 'blockchain' && depositMethod !== 'card' && (
               <div className="space-y-3">
                 <div className="p-3 bg-muted rounded-lg border">
                   <h4 className="font-medium mb-2 text-sm">

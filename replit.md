@@ -241,3 +241,9 @@ Changelog:
   - PayID clearly marked as "Australia Only" across all deposit interfaces
   - Bank Transfer deposits available globally without geographic restrictions
   - Cleaner wallet interface focusing on essential information: balances, availability, and action buttons
+- July 07, 2025. Added credit/debit card payment option for deposits
+  - Added card payment as separate option from bank transfers across all wallet types
+  - Fiat wallets: Credit/Debit Card, PayID (Australia Only), Bank Transfer
+  - Crypto/Stablecoins: Blockchain Transfer, Credit/Debit Card, PayID (Buy with AUD), Bank Transfer
+  - Card payments support Visa, Mastercard, American Express with instant processing
+  - Card fees: 2.9% + $0.30 AUD per transaction, limits: $50-$10,000 AUD
