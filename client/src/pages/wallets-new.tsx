@@ -107,26 +107,38 @@ export default function Wallets() {
 
   const transferMutation = useMutation({
     mutationFn: async (data: { fromCurrency: string; toCurrency: string; amount: number }) => {
-      const response = await apiRequest("POST", "/api/wallets/transfer", data);
+      console.log("Making transfer API call with data:", data);
+      const response = await apiRequest("POST", "/api/fx-exchange", data);
+      console.log("Transfer API response status:", response.status);
+      
       if (!response.ok) {
-        throw new Error('Transfer failed');
+        const errorText = await response.text();
+        console.error("Transfer API error:", errorText);
+        throw new Error(`Transfer failed: ${response.status}`);
       }
-      return response.json();
+      
+      const result = await response.json();
+      console.log("Transfer API result:", result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Transfer mutation onSuccess called with data:", data);
       toast({
-        title: "Transfer Successful",
+        title: "✅ Transfer Successful",
         description: `${amount} ${fromCurrency} converted to ${toCurrency}`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/portfolio'] });
+      setTransferModalOpen(false);
       setAmount('');
       setFromCurrency('');
       setToCurrency('');
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Transfer mutation onError called with error:", error);
       toast({
         title: "Transfer Failed",
-        description: "Please try again later.",
+        description: error.message || "Please try again later.",
         variant: "destructive",
       });
     }
@@ -253,7 +265,14 @@ export default function Wallets() {
   };
 
   const handleTransfer = () => {
+    console.log("handleTransfer called with:", {
+      fromCurrency,
+      toCurrency,
+      amount
+    });
+
     if (!fromCurrency || !toCurrency || !amount) {
+      console.log("Validation failed - missing fields");
       toast({
         title: "Missing Information",
         description: "Please fill in all fields.",
@@ -262,6 +281,17 @@ export default function Wallets() {
       return;
     }
 
+    if (fromCurrency === toCurrency) {
+      console.log("Validation failed - same currencies");
+      toast({
+        title: "Invalid Transfer",
+        description: "Please select different currencies.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log("Starting transfer mutation...");
     transferMutation.mutate({
       fromCurrency,
       toCurrency,
@@ -704,7 +734,7 @@ export default function Wallets() {
             className="w-full text-lg py-6"
             size="lg"
           >
-            {transferMutation.isPending ? "Processing..." : "Convert Now"}
+            {transferMutation.isPending ? "Converting..." : "Convert Now"}
           </Button>
         </CardContent>
       </Card>
@@ -1100,9 +1130,9 @@ export default function Wallets() {
       <Dialog open={transferModalOpen} onOpenChange={setTransferModalOpen}>
         <DialogContent className="sm:max-w-[420px] max-h-[80vh] overflow-y-auto p-4">
           <DialogHeader>
-            <DialogTitle>Transfer {selectedWallet?.currency}</DialogTitle>
+            <DialogTitle>Currency Exchange & Transfer</DialogTitle>
             <DialogDescription>
-              Convert to other currencies or send internationally
+              Convert currencies at real-time exchange rates with instant processing
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
