@@ -1192,7 +1192,7 @@ export default function Wallets() {
           <DialogHeader>
             <DialogTitle>Transfer {selectedWallet?.currency}</DialogTitle>
             <DialogDescription>
-              Exchange {selectedWallet?.currency} to another currency
+              Convert to 30+ global currencies or send internationally with Wise-like features
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -1218,14 +1218,56 @@ export default function Wallets() {
                 <SelectTrigger className="h-8">
                   <SelectValue placeholder="Select target currency" />
                 </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(currencyConfig)
-                    .filter(([code]) => code !== selectedWallet?.currency)
-                    .map(([code, config]) => (
-                      <SelectItem key={code} value={code}>
-                        {config.flag} {config.name} ({code})
-                      </SelectItem>
-                    ))}
+                <SelectContent className="max-h-60">
+                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Americas</div>
+                  <SelectItem value="USD">🇺🇸 USD - US Dollar</SelectItem>
+                  <SelectItem value="CAD">🇨🇦 CAD - Canadian Dollar</SelectItem>
+                  <SelectItem value="BRL">🇧🇷 BRL - Brazilian Real</SelectItem>
+                  <SelectItem value="MXN">🇲🇽 MXN - Mexican Peso</SelectItem>
+                  
+                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Europe</div>
+                  <SelectItem value="EUR">🇪🇺 EUR - Euro</SelectItem>
+                  <SelectItem value="GBP">🇬🇧 GBP - British Pound</SelectItem>
+                  <SelectItem value="CHF">🇨🇭 CHF - Swiss Franc</SelectItem>
+                  <SelectItem value="SEK">🇸🇪 SEK - Swedish Krona</SelectItem>
+                  <SelectItem value="NOK">🇳🇴 NOK - Norwegian Krone</SelectItem>
+                  <SelectItem value="DKK">🇩🇰 DKK - Danish Krone</SelectItem>
+                  <SelectItem value="PLN">🇵🇱 PLN - Polish Zloty</SelectItem>
+                  <SelectItem value="CZK">🇨🇿 CZK - Czech Koruna</SelectItem>
+                  <SelectItem value="HUF">🇭🇺 HUF - Hungarian Forint</SelectItem>
+                  <SelectItem value="TRY">🇹🇷 TRY - Turkish Lira</SelectItem>
+                  
+                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Asia</div>
+                  <SelectItem value="JPY">🇯🇵 JPY - Japanese Yen</SelectItem>
+                  <SelectItem value="HKD">🇭🇰 HKD - Hong Kong Dollar</SelectItem>
+                  <SelectItem value="SGD">🇸🇬 SGD - Singapore Dollar</SelectItem>
+                  <SelectItem value="INR">🇮🇳 INR - Indian Rupee</SelectItem>
+                  <SelectItem value="CNY">🇨🇳 CNY - Chinese Yuan</SelectItem>
+                  <SelectItem value="KRW">🇰🇷 KRW - South Korean Won</SelectItem>
+                  <SelectItem value="TWD">🇹🇼 TWD - Taiwan Dollar</SelectItem>
+                  <SelectItem value="THB">🇹🇭 THB - Thai Baht</SelectItem>
+                  <SelectItem value="MYR">🇲🇾 MYR - Malaysian Ringgit</SelectItem>
+                  <SelectItem value="IDR">🇮🇩 IDR - Indonesian Rupiah</SelectItem>
+                  <SelectItem value="PHP">🇵🇭 PHP - Philippine Peso</SelectItem>
+                  <SelectItem value="VND">🇻🇳 VND - Vietnamese Dong</SelectItem>
+                  
+                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Oceania</div>
+                  <SelectItem value="AUD">🇦🇺 AUD - Australian Dollar</SelectItem>
+                  <SelectItem value="NZD">🇳🇿 NZD - New Zealand Dollar</SelectItem>
+                  
+                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Middle East & Africa</div>
+                  <SelectItem value="AED">🇦🇪 AED - UAE Dirham</SelectItem>
+                  <SelectItem value="SAR">🇸🇦 SAR - Saudi Riyal</SelectItem>
+                  <SelectItem value="ILS">🇮🇱 ILS - Israeli Shekel</SelectItem>
+                  <SelectItem value="EGP">🇪🇬 EGP - Egyptian Pound</SelectItem>
+                  <SelectItem value="NGN">🇳🇬 NGN - Nigerian Naira</SelectItem>
+                  <SelectItem value="ZAR">🇿🇦 ZAR - South African Rand</SelectItem>
+                  
+                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Crypto & Stablecoins</div>
+                  <SelectItem value="BTC">₿ BTC - Bitcoin</SelectItem>
+                  <SelectItem value="ETH">Ξ ETH - Ethereum</SelectItem>
+                  <SelectItem value="USDT">🟢 USDT - Tether USD</SelectItem>
+                  <SelectItem value="USDC">🔵 USDC - USD Coin</SelectItem>
                 </SelectContent>
               </Select>
             </div>

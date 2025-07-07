@@ -247,3 +247,11 @@ Changelog:
   - Crypto/Stablecoins: Blockchain Transfer, Credit/Debit Card, PayID (Buy with AUD), Bank Transfer
   - Card payments support Visa, Mastercard, American Express with instant processing
   - Card fees: 2.9% + $0.30 AUD per transaction, limits: $50-$10,000 AUD
+  - Comprehensive card input fields: card number, expiry date, CVV, cardholder name
+- July 07, 2025. Enhanced wallet page with Wise-like multi-currency capabilities
+  - Added support for 30+ global currencies organized by geographic regions
+  - Transfer interface now includes Americas, Europe, Asia, Oceania, Middle East & Africa regions
+  - Enhanced currency selection with flag icons and full currency names
+  - Regional grouping: Americas (USD, CAD, BRL, MXN), Europe (EUR, GBP, CHF, SEK, NOK, etc.), Asia (JPY, HKD, SGD, INR, CNY, etc.)
+  - Comprehensive crypto and stablecoin support within transfer interface
+  - Improved user experience with organized currency dropdown and regional categorization

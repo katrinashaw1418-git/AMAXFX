@@ -1,0 +1,193 @@
+Wise enables you to hold and manage balances in over 50 currencies, including:
+
+Australian Dollar (AUD)
+
+British Pound (GBP)
+
+Canadian Dollar (CAD)
+
+Euro (EUR)
+
+United States Dollar (USD)
+
+Japanese Yen (JPY)
+
+Singapore Dollar (SGD)
+
+New Zealand Dollar (NZD)
+
+Swiss Franc (CHF)
+
+Hong Kong Dollar (HKD)
+
+Norwegian Krone (NOK)
+
+Swedish Krona (SEK)
+
+Danish Krone (DKK)
+
+Polish Zloty (PLN)
+
+Hungarian Forint (HUF)
+
+Czech Koruna (CZK)
+
+Romanian Leu (RON)
+
+Turkish Lira (TRY)
+
+South African Rand (ZAR)
+
+Indian Rupee (INR)
+
+Indonesian Rupiah (IDR)
+
+Malaysian Ringgit (MYR)
+
+Philippine Peso (PHP)
+
+Thai Baht (THB)
+
+Chinese Yuan (CNY)
+
+Brazilian Real (BRL)
+
+Mexican Peso (MXN)
+
+Emirati Dirham (AED)
+
+Israeli Shekel (ILS)
+
+Bulgarian Lev (BGN)
+
+Croatian Kuna (HRK)
+
+Georgian Lari (GEL)
+
+Ukrainian Hryvnia (UAH)
+
+Vietnamese Dong (VND)
+
+Pakistani Rupee (PKR)
+
+Sri Lankan Rupee (LKR)
+
+Bangladeshi Taka (BDT)
+
+Nepalese Rupee (NPR)
+
+Kenyan Shilling (KES)
+
+Ugandan Shilling (UGX)
+
+Tanzanian Shilling (TZS)
+
+Ghanaian Cedi (GHS)
+
+Nigerian Naira (NGN)
+
+Egyptian Pound (EGP)
+
+Moroccan Dirham (MAD)
+
+Tunisian Dinar (TND)
+
+Jordanian Dinar (JOD)
+
+Saudi Riyal (SAR)
+
+Kuwaiti Dinar (KWD)
+
+Qatari Riyal (QAR)
+
+Omani Rial (OMR)
+
+Bahraini Dinar (BHD)
+
+South Korean Won (KRW)
+
+Taiwan Dollar (TWD)
+
+Please note that the availability of certain currencies may be subject to regional restrictions or specific account requirements. For the most up-to-date and comprehensive list of supported currencies, as well as any associated conditions, it's recommended to consult the official Wise Help Centre.
+
+If you need information on specific currencies or have questions about particular features, feel free to ask!
+
+
+
+
+
+
+
+
+
+Sources
+You said:
+if in a interface page, I want to show the currencies balances  I have hold, I also want to use all the other currencies options to transfer in the drop down box, how to make the product features in a wallet layout page
+
+
+ChatGPT said:
+To create a wallet layout interface that shows:
+
+✅ Balances in currencies you currently hold, and
+
+✅ A dropdown with all available Wise-supported currencies for transfers or conversions
+
+— you'll want a clean, scalable layout that separates held balances from available options while supporting actions like send/convert/receive.
+
+🧩 Wallet Page Layout — Product Features Design
+🖥️ Main Sections:
+1. "Your Balances" Section (Held Currencies)
+Currency	Balance	Approx. Value (in base)	Actions
+🇺🇸 USD	$1,234	≈ AUD 1,800	[Send] [Convert] [Add]
+🇪🇺 EUR	€920	≈ AUD 1,500	[Send] [Convert] [Add]
+🇬🇧 GBP	£540	≈ AUD 1,030	[Send] [Convert] [Add]
+
+Show flag icon, currency code, and local balance
+
+Add hover tooltips for exchange rate info
+
+Allow quick-action buttons per row
+
+2. "Transfer or Convert" Section
+🔽 Currency Dropdown (All 50+ Wise Currencies)
+Labeled: "Select Currency to Convert To / Send To"
+
+Grouped alphabetically or by region
+
+Show symbol + name: e.g., 🇯🇵 JPY – Japanese Yen
+
+Dropdown Option Features:
+
+Disabled if temporarily unavailable
+
+Tooltip with “conversion fee” or estimated delivery time
+
+Optionally show fx rate preview
+
+💱 Convert From → To Flow
+css
+Copy
+Edit
+[ From: USD  ]  →  [ To: EUR  ]  [Amount: 100]
+[ Estimated Rate: 1 USD = 0.91 EUR ]
+[ Fee: $0.45 | Receive: €90.55 ]
+[ Convert Now ]
+3. Other Product Features to Include
+Feature	Description
+Multi-Currency Support	Hold and convert between 50+ currencies instantly
+Real-Time FX Rates	Transparent, mid-market rates with low markup
+Instant Transfers	Send to other Wise users or bank accounts instantly in many currencies
+Local Account Details	Get your own IBAN, BSB, Sort Code, etc., for up to 10 currencies
+Push Notifications	Get alerts for large transactions or rate changes
+Currency Watchlist	Option to “watch” a currency pair for target conversion alerts
+
+✅ UI/UX Suggestions
+Use card-based layout for each balance
+
+Pin most-used currencies to top of dropdown
+
+Show currency logos or ISO codes clearly
+
+Include a "Manage Currencies" button to add/remove which balances are shown
+
+For mobile: Use collapsible sections and native pickers for currency dropdowns
