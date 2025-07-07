@@ -90,6 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/fx-exchange", async (req, res) => {
     try {
       const { fromCurrency, toCurrency, amount } = req.body;
+      const userId = 1;
       
       if (!fromCurrency || !toCurrency || !amount) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -100,18 +101,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Exchange rate not available" });
       }
 
+      // Get both wallets
+      const fromWallet = await storage.getWallet(userId, fromCurrency);
+      const toWallet = await storage.getWallet(userId, toCurrency);
+      
+      if (!fromWallet || !toWallet) {
+        return res.status(404).json({ error: "Wallet not found" });
+      }
+
       const exchangeRate = parseFloat(rate.rate);
       const spread = parseFloat(rate.spread);
       const fee = parseFloat(amount) * spread;
       const convertedAmount = parseFloat(amount) * exchangeRate;
+      const totalDeduction = parseFloat(amount) + fee;
+
+      // Check if sufficient balance in source wallet
+      if (parseFloat(fromWallet.availableBalance) < totalDeduction) {
+        return res.status(400).json({ error: "Insufficient balance" });
+      }
+
+      // Update source wallet (deduct amount + fee)
+      const newFromBalance = (parseFloat(fromWallet.balance) - totalDeduction).toFixed(2);
+      const newFromAvailableBalance = (parseFloat(fromWallet.availableBalance) - totalDeduction).toFixed(2);
+      
+      await storage.updateWallet(fromWallet.id, {
+        balance: newFromBalance,
+        availableBalance: newFromAvailableBalance,
+      });
+
+      // Update target wallet (add converted amount)
+      const newToBalance = (parseFloat(toWallet.balance) + convertedAmount).toFixed(2);
+      const newToAvailableBalance = (parseFloat(toWallet.availableBalance) + convertedAmount).toFixed(2);
+      
+      await storage.updateWallet(toWallet.id, {
+        balance: newToBalance,
+        availableBalance: newToAvailableBalance,
+      });
 
       const transaction = await storage.createTransaction({
-        userId: 1,
+        userId,
         type: "exchange",
         fromCurrency,
         toCurrency,
         amount: amount.toString(),
-        fee: fee.toString(),
+        fee: fee.toFixed(2),
         exchangeRate: exchangeRate.toString(),
         status: "completed",
         description: `${fromCurrency} to ${toCurrency} Exchange`,
@@ -132,20 +165,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/deposit", async (req, res) => {
     try {
       const { currency, amount, description } = req.body;
+      const userId = 1;
       
       if (!currency || !amount) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
+      // Get current wallet
+      const wallet = await storage.getWallet(userId, currency);
+      if (!wallet) {
+        return res.status(404).json({ error: "Wallet not found" });
+      }
+      
+      // Update wallet balance
+      const depositAmount = parseFloat(amount);
+      const newBalance = (parseFloat(wallet.balance) + depositAmount).toFixed(2);
+      const newAvailableBalance = (parseFloat(wallet.availableBalance) + depositAmount).toFixed(2);
+      
+      await storage.updateWallet(wallet.id, {
+        balance: newBalance,
+        availableBalance: newAvailableBalance,
+      });
+
       const transaction = await storage.createTransaction({
-        userId: 1,
+        userId,
         type: "deposit",
         fromCurrency: null,
         toCurrency: currency,
         amount: amount.toString(),
         fee: "0.00",
         exchangeRate: null,
-        status: "pending",
+        status: "completed",
         description: description || `${currency} Deposit`,
       });
 
@@ -159,20 +209,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/withdraw", async (req, res) => {
     try {
       const { currency, amount, description } = req.body;
+      const userId = 1;
       
       if (!currency || !amount) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
+      // Get current wallet
+      const wallet = await storage.getWallet(userId, currency);
+      if (!wallet) {
+        return res.status(404).json({ error: "Wallet not found" });
+      }
+      
+      const withdrawAmount = parseFloat(amount);
+      const fee = 25.00;
+      const totalDeduction = withdrawAmount + fee;
+      
+      // Check if sufficient balance
+      if (parseFloat(wallet.availableBalance) < totalDeduction) {
+        return res.status(400).json({ error: "Insufficient balance" });
+      }
+      
+      // Update wallet balance
+      const newBalance = (parseFloat(wallet.balance) - totalDeduction).toFixed(2);
+      const newAvailableBalance = (parseFloat(wallet.availableBalance) - totalDeduction).toFixed(2);
+      
+      await storage.updateWallet(wallet.id, {
+        balance: newBalance,
+        availableBalance: newAvailableBalance,
+      });
+
       const transaction = await storage.createTransaction({
-        userId: 1,
+        userId,
         type: "withdrawal",
         fromCurrency: currency,
         toCurrency: null,
         amount: amount.toString(),
-        fee: "25.00",
+        fee: fee.toFixed(2),
         exchangeRate: null,
-        status: "pending",
+        status: "completed",
         description: description || `${currency} Withdrawal`,
       });
 
