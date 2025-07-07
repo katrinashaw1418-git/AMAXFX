@@ -13,7 +13,7 @@ import { PlusCircle, MinusCircle, ArrowUpDown, Coins, ArrowRight } from "lucide-
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import StablecoinCard from "@/components/wallets/stablecoin-card";
+
 import { useFxRate } from "@/hooks/use-fx-rates";
 
 const currencyConfig = {
@@ -240,13 +240,16 @@ export default function Wallets() {
       return;
     }
     
-    // For stablecoin purchases with fiat, convert AUD to stablecoin amount
+    // For crypto purchases with fiat, convert AUD to crypto amount
     let finalAmount = depositAmount;
-    if (selectedWallet.walletType === 'crypto' && 
-        (selectedWallet.currency === 'USDT' || selectedWallet.currency === 'USDC') && 
-        (depositMethod === 'payid' || depositMethod === 'bank_transfer')) {
-      // Convert AUD to stablecoin (assuming ~0.98 rate for demo)
-      finalAmount = depositAmount * 0.98;
+    if (selectedWallet.walletType === 'crypto' && (depositMethod === 'payid' || depositMethod === 'bank_transfer')) {
+      if (selectedWallet.currency === 'BTC') {
+        finalAmount = depositAmount * 0.000023; // AUD to BTC
+      } else if (selectedWallet.currency === 'ETH') {
+        finalAmount = depositAmount * 0.00031; // AUD to ETH
+      } else if (selectedWallet.currency === 'USDT' || selectedWallet.currency === 'USDC') {
+        finalAmount = depositAmount * 0.98; // AUD to stablecoin
+      }
     }
     
     // For demo purposes, we'll process the deposit immediately
@@ -347,6 +350,11 @@ export default function Wallets() {
   const currencyInfo = currencyConfig[selectedCurrency as keyof typeof currencyConfig];
   const currencySymbol = currencyInfo?.symbol || selectedCurrency;
 
+  // Filter wallets by category
+  const fiatWallets = wallets?.filter(w => w.walletType === 'fiat') || [];
+  const stablecoinWallets = wallets?.filter(w => ['USDT', 'USDC'].includes(w.currency)) || [];
+  const cryptoWallets = wallets?.filter(w => w.walletType === 'crypto' && !['USDT', 'USDC'].includes(w.currency)) || [];
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -431,125 +439,279 @@ export default function Wallets() {
         </CardContent>
       </Card>
 
-      {/* Stablecoins Section */}
-      {wallets?.some(w => ["USDT", "USDC"].includes(w.currency)) && (
-        <div>
-          <div className="flex items-center space-x-2 mb-4">
-            <Coins className="w-5 h-5 text-green-600" />
-            <h2 className="text-lg font-semibold">Stablecoins</h2>
-            <Badge variant="secondary" className="bg-green-100 text-green-700">
-              Low Volatility • Cross-Border Ready
-            </Badge>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {wallets
-              ?.filter(w => ["USDT", "USDC"].includes(w.currency))
-              .map((wallet) => {
-                const config = currencyConfig[wallet.currency as keyof typeof currencyConfig];
-                return (
-                  <StablecoinCard
-                    key={wallet.id}
-                    currency={wallet.currency as "USDT" | "USDC"}
-                    balance={wallet.balance}
-                    availableBalance={wallet.availableBalance}
-                    config={config}
-                  />
-                );
-              })}
-          </div>
-        </div>
-      )}
-
-      {/* Traditional Wallet Cards */}
-      <div>
-        <h2 className="text-lg font-semibold mb-4">All Wallets</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {wallets?.map((wallet) => {
-            const config = currencyConfig[wallet.currency as keyof typeof currencyConfig];
+      {/* Fiat Assets */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <span className="text-blue-600">💵</span>
+          Fiat Assets
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {fiatWallets.map((wallet) => {
+          const config = currencyConfig[wallet.currency as keyof typeof currencyConfig];
           const balance = parseFloat(wallet.balance);
           const availableBalance = parseFloat(wallet.availableBalance);
           const utilizationPercent = balance > 0 ? (availableBalance / balance) * 100 : 0;
           
           return (
-            <Card key={wallet.id} className="relative overflow-hidden">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
+            <Card key={wallet.id} className="p-6 hover:shadow-lg transition-shadow">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-12 h-12 ${config?.color || 'bg-gray-500'} rounded-full flex items-center justify-center text-white font-bold text-lg`}>
+                    {config?.flag || wallet.currency.substring(0, 2)}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-xl">{wallet.currency}</h3>
+                    <p className="text-sm text-gray-600">{config?.name || wallet.currency}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <ExchangeRateDisplay 
+                    fromCurrency={wallet.currency}
+                    toCurrency={selectedCurrency}
+                    amount={balance}
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Balance</span>
+                  <span className="font-semibold text-lg">
+                    {config?.symbol || '$'}{balance.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Available</span>
+                  <span className="font-semibold">
+                    {config?.symbol || '$'}{availableBalance.toLocaleString()}
+                  </span>
+                </div>
+                <Progress value={utilizationPercent} className="h-2" />
+              </div>
+              
+              <div className="flex space-x-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1 text-xs"
+                  onClick={() => {
+                    setSelectedWallet(wallet);
+                    setDepositModalOpen(true);
+                  }}
+                >
+                  Deposit
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1 text-xs"
+                  onClick={() => {
+                    setSelectedWallet(wallet);
+                    setWithdrawModalOpen(true);
+                  }}
+                >
+                  Withdraw
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1 text-xs"
+                  onClick={() => {
+                    setSelectedWallet(wallet);
+                    setTransferModalOpen(true);
+                  }}
+                >
+                  Transfer
+                </Button>
+              </div>
+            </Card>
+          );
+        })}
+        </div>
+      </div>
+
+      {/* Stablecoins */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <span className="text-green-600">🟢</span>
+          Stablecoins
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {stablecoinWallets.map((wallet) => {
+            const config = currencyConfig[wallet.currency as keyof typeof currencyConfig];
+            const balance = parseFloat(wallet.balance);
+            const availableBalance = parseFloat(wallet.availableBalance);
+            const utilizationPercent = balance > 0 ? (availableBalance / balance) * 100 : 0;
+            
+            return (
+              <Card key={wallet.id} className="p-6 hover:shadow-lg transition-shadow">
+                <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${config?.color || 'bg-gray-500'}`}>
-                      <span className="text-white font-bold text-sm">
-                        {config?.flag || wallet.currency.slice(0, 2)}
-                      </span>
+                    <div className={`w-12 h-12 ${config?.color || 'bg-gray-500'} rounded-full flex items-center justify-center text-white font-bold text-lg`}>
+                      {config?.flag || wallet.currency.substring(0, 2)}
                     </div>
                     <div>
-                      <h3 className="font-semibold">{config?.name || wallet.currency}</h3>
-                      <Badge variant={wallet.walletType === 'crypto' ? 'secondary' : 'outline'}>
-                        {wallet.walletType === 'crypto' ? 'Crypto' : 'Fiat'}
-                      </Badge>
+                      <h3 className="font-semibold text-xl">{wallet.currency}</h3>
+                      <p className="text-sm text-gray-600">{config?.name || wallet.currency}</p>
                     </div>
+                  </div>
+                  <div className="text-right">
+                    <ExchangeRateDisplay 
+                      fromCurrency={wallet.currency}
+                      toCurrency={selectedCurrency}
+                      amount={balance}
+                    />
                   </div>
                 </div>
                 
-                <div className="space-y-2 mb-4">
+                <div className="space-y-3 mb-6">
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Balance</span>
-                    <span className="font-semibold">
-                      {wallet.walletType === 'crypto' 
-                        ? `${balance.toFixed(4)} ${wallet.currency}`
-                        : `${config?.symbol || '$'}${balance.toLocaleString()}`
-                      }
+                    <span className="font-semibold text-lg">
+                      {config?.symbol || '$'}{balance.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Available</span>
                     <span className="font-semibold">
-                      {wallet.walletType === 'crypto' 
-                        ? `${availableBalance.toFixed(4)} ${wallet.currency}`
-                        : `${config?.symbol || '$'}${availableBalance.toLocaleString()}`
-                      }
+                      {config?.symbol || '$'}{availableBalance.toLocaleString()}
                     </span>
                   </div>
                   <Progress value={utilizationPercent} className="h-2" />
                 </div>
                 
-                <div className="flex space-x-1">
+                <div className="flex space-x-2">
                   <Button 
                     size="sm" 
                     variant="outline" 
-                    className="flex-1 px-2 text-xs"
+                    className="flex-1 text-xs"
                     onClick={() => {
                       setSelectedWallet(wallet);
                       setDepositModalOpen(true);
                     }}
                   >
-                    <PlusCircle className="w-3 h-3 mr-1" />
                     Deposit
                   </Button>
                   <Button 
                     size="sm" 
                     variant="outline" 
-                    className="flex-1 px-2 text-xs"
+                    className="flex-1 text-xs"
                     onClick={() => {
                       setSelectedWallet(wallet);
                       setWithdrawModalOpen(true);
                     }}
                   >
-                    <MinusCircle className="w-3 h-3 mr-1" />
                     Withdraw
                   </Button>
                   <Button 
                     size="sm" 
                     variant="outline" 
-                    className="flex-1 px-2 text-xs"
+                    className="flex-1 text-xs"
                     onClick={() => {
                       setSelectedWallet(wallet);
                       setTransferModalOpen(true);
                     }}
                   >
-                    <ArrowUpDown className="w-3 h-3 mr-1" />
                     Transfer
                   </Button>
                 </div>
-              </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Crypto Assets */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <span className="text-yellow-600">₿</span>
+          Crypto Assets
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {cryptoWallets.map((wallet) => {
+          const config = currencyConfig[wallet.currency as keyof typeof currencyConfig];
+          const balance = parseFloat(wallet.balance);
+          const availableBalance = parseFloat(wallet.availableBalance);
+          const utilizationPercent = balance > 0 ? (availableBalance / balance) * 100 : 0;
+          
+          return (
+            <Card key={wallet.id} className="p-6 hover:shadow-lg transition-shadow">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-12 h-12 ${config?.color || 'bg-gray-500'} rounded-full flex items-center justify-center text-white font-bold text-lg`}>
+                    {config?.flag || wallet.currency.substring(0, 2)}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-xl">{wallet.currency}</h3>
+                    <p className="text-sm text-gray-600">{config?.name || wallet.currency}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <ExchangeRateDisplay 
+                    fromCurrency={wallet.currency}
+                    toCurrency={selectedCurrency}
+                    amount={balance}
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Balance</span>
+                  <span className="font-semibold text-lg">
+                    {wallet.walletType === 'crypto' 
+                      ? `${balance.toFixed(4)} ${wallet.currency}`
+                      : `${config?.symbol || '$'}${balance.toLocaleString()}`
+                    }
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Available</span>
+                  <span className="font-semibold">
+                    {wallet.walletType === 'crypto' 
+                      ? `${availableBalance.toFixed(4)} ${wallet.currency}`
+                      : `${config?.symbol || '$'}${availableBalance.toLocaleString()}`
+                    }
+                  </span>
+                </div>
+                <Progress value={utilizationPercent} className="h-2" />
+              </div>
+              
+              <div className="flex space-x-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1 text-xs"
+                  onClick={() => {
+                    setSelectedWallet(wallet);
+                    setDepositModalOpen(true);
+                  }}
+                >
+                  Deposit
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1 text-xs"
+                  onClick={() => {
+                    setSelectedWallet(wallet);
+                    setWithdrawModalOpen(true);
+                  }}
+                >
+                  Withdraw
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1 text-xs"
+                  onClick={() => {
+                    setSelectedWallet(wallet);
+                    setTransferModalOpen(true);
+                  }}
+                >
+                  Transfer
+                </Button>
+              </div>
             </Card>
           );
         })}
@@ -574,20 +736,16 @@ export default function Wallets() {
                   <SelectValue placeholder="Select deposit method" />
                 </SelectTrigger>
                 <SelectContent>
-                  {selectedWallet?.walletType === 'crypto' ? (
-                    <>
-                      <SelectItem value="blockchain">🔗 Blockchain Transfer</SelectItem>
-                      {(selectedWallet.currency === 'USDT' || selectedWallet.currency === 'USDC') && (
-                        <>
-                          <SelectItem value="payid">💳 PayID (Buy with AUD)</SelectItem>
-                          <SelectItem value="bank_transfer">🏦 Bank Transfer (Buy with AUD)</SelectItem>
-                        </>
-                      )}
-                    </>
-                  ) : (
+                  {selectedWallet?.walletType === 'fiat' ? (
                     <>
                       <SelectItem value="payid">💳 PayID (Australia Only)</SelectItem>
                       <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
+                    </>
+                  ) : (
+                    <>
+                      <SelectItem value="blockchain">🔗 Blockchain Transfer</SelectItem>
+                      <SelectItem value="payid">💳 PayID (Buy with AUD)</SelectItem>
+                      <SelectItem value="bank_transfer">🏦 Bank Transfer (Buy with AUD)</SelectItem>
                     </>
                   )}
                 </SelectContent>
@@ -761,7 +919,7 @@ export default function Wallets() {
             {depositMethod && depositMethod !== 'blockchain' && (
               <div>
                 <Label htmlFor="deposit-amount">
-                  {selectedWallet?.walletType === 'crypto' && (selectedWallet.currency === 'USDT' || selectedWallet.currency === 'USDC')
+                  {selectedWallet?.walletType === 'crypto'
                     ? 'Amount (AUD)'
                     : `Amount (${selectedWallet?.currency || ''})`
                   }
@@ -776,8 +934,8 @@ export default function Wallets() {
                 {selectedWallet && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Current balance: {selectedWallet.balance} {selectedWallet.currency}
-                    {selectedWallet.walletType === 'crypto' && (selectedWallet.currency === 'USDT' || selectedWallet.currency === 'USDC') && (
-                      <span className="block">Exchange rate: 1 AUD ≈ 0.98 {selectedWallet.currency}</span>
+                    {selectedWallet.walletType === 'crypto' && (
+                      <span className="block">Exchange rate: 1 AUD ≈ {selectedWallet.currency === 'BTC' ? '0.000023 BTC' : selectedWallet.currency === 'ETH' ? '0.00031 ETH' : `0.98 ${selectedWallet.currency}`}</span>
                     )}
                   </p>
                 )}

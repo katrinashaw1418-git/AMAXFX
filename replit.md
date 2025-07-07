@@ -228,3 +228,10 @@ Changelog:
   - Enhanced UX with multiple deposit method options (QR scan, address copy, mobile/desktop)
   - Separated crypto deposits (blockchain) from fiat deposits (traditional banking)
   - Added proper network warnings and minimum deposit requirements per currency
+- July 07, 2025. Unified wallet layout with consistent three-category organization
+  - **Fiat Assets**: USD, CAD, EUR, GBP, AUD, HKD, SGD with PayID/Bank Transfer deposits
+  - **Stablecoins**: USDT, USDC with blockchain, PayID, and bank transfer deposit options
+  - **Crypto Assets**: BTC, ETH with blockchain, PayID, and bank transfer deposit options
+  - All wallets now use consistent big box layout with three buttons (Deposit, Withdraw, Transfer)
+  - Stablecoins and crypto assets support all three deposit channels: QR Code, PayID (Australia), Bank Transfer
+  - Smart currency conversion: AUD to BTC (0.000023), ETH (0.00031), stablecoins (0.98) for fiat purchases
