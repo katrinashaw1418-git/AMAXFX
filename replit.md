@@ -196,6 +196,7 @@ Changelog:
 - July 07, 2025. Completed investment functionality with real-time balance integration
   - Fixed investment transactions to properly deduct from USD wallet balances
   - Enhanced portfolio calculations to include investment values dynamically
-  - Added "Investment Capital" display on all product cards showing available USD funds
-  - Investment modal shows both minimum requirements and available capital
+  - Added "Capital Invested" display showing actual invested amounts per product (starts at $0)
+  - Investment modal shows capital invested, available funds, and minimum requirements
+  - Portfolio overview shows total invested, current value, returns, and available capital
   - All investment operations update wallet, portfolio, and transaction data in real-time

@@ -191,17 +191,26 @@ export default function Investments() {
               <p className={`text-2xl font-bold ${totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 ${totalReturn.toLocaleString()}
               </p>
+              <div className="flex items-center space-x-2 mt-2">
+                <span className={`text-sm ${totalReturnPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {totalReturnPercent >= 0 ? '+' : ''}{totalReturnPercent.toFixed(2)}%
+                </span>
+                <span className="text-xs text-gray-500">return</span>
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-gray-500">Return %</h3>
-                <TrendingUp className="w-4 h-4 text-secondary" />
+                <h3 className="text-sm font-medium text-gray-500">Available Capital</h3>
+                <DollarSign className="w-4 h-4 text-green-600" />
               </div>
-              <p className={`text-2xl font-bold ${totalReturnPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {totalReturnPercent.toFixed(2)}%
+              <p className="text-2xl font-bold text-green-600">
+                ${wallets?.find(w => w.currency === 'USD')?.availableBalance ? parseFloat(wallets.find(w => w.currency === 'USD')!.availableBalance).toLocaleString() : '0'}
               </p>
+              <div className="flex items-center space-x-2 mt-2">
+                <span className="text-sm text-gray-600">USD wallet balance</span>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -320,8 +329,8 @@ export default function Investments() {
                     <span className="font-medium">${minimumInvestment.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Investment Capital:</span>
-                    <span className="font-medium text-green-600">${wallets?.find(w => w.currency === 'USD')?.availableBalance ? parseFloat(wallets.find(w => w.currency === 'USD')!.availableBalance).toLocaleString() : '0'}</span>
+                    <span className="text-sm text-muted-foreground">Capital Invested:</span>
+                    <span className="font-medium text-blue-600">${userInvestments?.filter((inv: any) => inv.productId === product.id).reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0).toLocaleString() || '0'}</span>
                   </div>
                 </div>
 
@@ -457,8 +466,11 @@ export default function Investments() {
                   <p className="text-xs text-muted-foreground">
                     Minimum: ${parseFloat(selectedProduct.minimumInvestment).toLocaleString()}
                   </p>
+                  <p className="text-xs font-medium text-blue-600">
+                    Capital Invested: ${userInvestments?.filter((inv: any) => inv.productId === selectedProduct.id).reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0).toLocaleString() || '0'}
+                  </p>
                   <p className="text-xs font-medium text-green-600">
-                    Investment Capital: ${wallets?.find(w => w.currency === 'USD')?.availableBalance ? parseFloat(wallets.find(w => w.currency === 'USD')!.availableBalance).toLocaleString() : '0'}
+                    Available to Invest: ${wallets?.find(w => w.currency === 'USD')?.availableBalance ? parseFloat(wallets.find(w => w.currency === 'USD')!.availableBalance).toLocaleString() : '0'}
                   </p>
                 </div>
               )}
