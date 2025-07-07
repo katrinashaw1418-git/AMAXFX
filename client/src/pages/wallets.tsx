@@ -454,22 +454,13 @@ export default function Wallets() {
           
           return (
             <Card key={wallet.id} className="p-6 hover:shadow-lg transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-12 h-12 ${config?.color || 'bg-gray-500'} rounded-full flex items-center justify-center text-white font-bold text-lg`}>
-                    {config?.flag || wallet.currency.substring(0, 2)}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-xl">{wallet.currency}</h3>
-                    <p className="text-sm text-gray-600">{config?.name || wallet.currency}</p>
-                  </div>
+              <div className="flex items-center space-x-3 mb-4">
+                <div className={`w-12 h-12 ${config?.color || 'bg-gray-500'} rounded-full flex items-center justify-center text-white font-bold text-lg`}>
+                  {config?.flag || wallet.currency.substring(0, 2)}
                 </div>
-                <div className="text-right">
-                  <ExchangeRateDisplay 
-                    fromCurrency={wallet.currency}
-                    toCurrency={selectedCurrency}
-                    amount={balance}
-                  />
+                <div>
+                  <h3 className="font-semibold text-xl">{wallet.currency}</h3>
+                  <p className="text-sm text-gray-600">{config?.name || wallet.currency}</p>
                 </div>
               </div>
               
@@ -545,22 +536,13 @@ export default function Wallets() {
             
             return (
               <Card key={wallet.id} className="p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-12 h-12 ${config?.color || 'bg-gray-500'} rounded-full flex items-center justify-center text-white font-bold text-lg`}>
-                      {config?.flag || wallet.currency.substring(0, 2)}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-xl">{wallet.currency}</h3>
-                      <p className="text-sm text-gray-600">{config?.name || wallet.currency}</p>
-                    </div>
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className={`w-12 h-12 ${config?.color || 'bg-gray-500'} rounded-full flex items-center justify-center text-white font-bold text-lg`}>
+                    {config?.flag || wallet.currency.substring(0, 2)}
                   </div>
-                  <div className="text-right">
-                    <ExchangeRateDisplay 
-                      fromCurrency={wallet.currency}
-                      toCurrency={selectedCurrency}
-                      amount={balance}
-                    />
+                  <div>
+                    <h3 className="font-semibold text-xl">{wallet.currency}</h3>
+                    <p className="text-sm text-gray-600">{config?.name || wallet.currency}</p>
                   </div>
                 </div>
                 
@@ -636,22 +618,13 @@ export default function Wallets() {
           
           return (
             <Card key={wallet.id} className="p-6 hover:shadow-lg transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-12 h-12 ${config?.color || 'bg-gray-500'} rounded-full flex items-center justify-center text-white font-bold text-lg`}>
-                    {config?.flag || wallet.currency.substring(0, 2)}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-xl">{wallet.currency}</h3>
-                    <p className="text-sm text-gray-600">{config?.name || wallet.currency}</p>
-                  </div>
+              <div className="flex items-center space-x-3 mb-4">
+                <div className={`w-12 h-12 ${config?.color || 'bg-gray-500'} rounded-full flex items-center justify-center text-white font-bold text-lg`}>
+                  {config?.flag || wallet.currency.substring(0, 2)}
                 </div>
-                <div className="text-right">
-                  <ExchangeRateDisplay 
-                    fromCurrency={wallet.currency}
-                    toCurrency={selectedCurrency}
-                    amount={balance}
-                  />
+                <div>
+                  <h3 className="font-semibold text-xl">{wallet.currency}</h3>
+                  <p className="text-sm text-gray-600">{config?.name || wallet.currency}</p>
                 </div>
               </div>
               
