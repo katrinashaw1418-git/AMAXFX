@@ -46,20 +46,31 @@ function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrenc
   let convertedAmount = '0.00';
   if (amount && parseFloat(amount) > 0) {
     const converted = parseFloat(amount) * rate * 0.995; // 0.5% fee
-    convertedAmount = converted > 1 ? converted.toFixed(2) : converted.toFixed(6);
+    convertedAmount = converted > 1 ? converted.toLocaleString() : converted.toFixed(6);
   }
 
   return (
-    <>
+    <div className="space-y-3">
       <div className="flex justify-between items-center text-sm">
         <span className="text-gray-600">Exchange Rate:</span>
         <span className="font-mono">1 {fromCurrency} = {displayRate} {toCurrency}</span>
       </div>
-      <div className="flex justify-between items-center text-sm mt-1">
-        <span className="text-gray-600">You'll receive:</span>
-        <span className="font-medium text-green-600">{convertedAmount} {toCurrency}</span>
+      
+      {/* Conversion Summary Box */}
+      <div className="bg-white rounded-lg border-2 border-green-200 p-3 space-y-2">
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-600">You're sending:</span>
+          <span className="text-sm font-medium">{parseFloat(amount).toLocaleString()} {fromCurrency}</span>
+        </div>
+        
+        <div className="border-t border-gray-100 pt-2">
+          <div className="flex justify-between items-center">
+            <span className="text-base font-semibold text-gray-900">You'll receive:</span>
+            <span className="text-xl font-bold text-green-600">{convertedAmount} {toCurrency}</span>
+          </div>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -1219,9 +1230,9 @@ export default function Wallets() {
 
             {/* Exchange Rate & Conversion Preview */}
             {selectedWallet && toCurrency && amount && toCurrency !== selectedWallet.currency && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="p-4 bg-gradient-to-br from-blue-50 to-green-50 border border-blue-200 rounded-lg">
                 <ExchangeRateDisplay fromCurrency={selectedWallet.currency} toCurrency={toCurrency} amount={amount} />
-                <div className="flex justify-between items-center text-xs text-gray-500 mt-1">
+                <div className="flex justify-between items-center text-xs text-gray-500 mt-3 pt-2 border-t border-gray-200">
                   <span>Transfer fee: 0.5%</span>
                   <span>Processing: Instant</span>
                 </div>
