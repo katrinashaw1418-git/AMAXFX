@@ -34,16 +34,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .filter(w => w.walletType === 'fiat')
         .reduce((sum, w) => sum + parseFloat(w.balance), 0);
       
-      // Calculate crypto value using actual exchange rates (wallet holdings only)
+      // Calculate crypto and stablecoin values separately using actual exchange rates
       let cryptoValue = 0;
+      let stablecoinValue = 0;
+      
       for (const wallet of wallets.filter(w => w.walletType === 'crypto')) {
         const balance = parseFloat(wallet.balance);
         
         if (wallet.currency === "USDT" || wallet.currency === "USDC") {
-          // Stablecoins are 1:1 with USD
-          cryptoValue += balance;
+          // Stablecoins are 1:1 with USD - separate category
+          stablecoinValue += balance;
         } else {
-          // Get actual exchange rate for crypto currencies
+          // Get actual exchange rate for crypto currencies (BTC, ETH, etc.)
           const rate = await storage.getFxRate(wallet.currency, "USD");
           if (rate) {
             cryptoValue += (balance * parseFloat(rate.rate));
@@ -55,8 +57,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const investmentValue = investments
         .reduce((sum, inv) => sum + parseFloat(inv.currentValue), 0);
       
-      // Calculate total portfolio value
-      const totalValue = fiatValue + cryptoValue + investmentValue;
+      // Calculate total portfolio value including stablecoins
+      const totalValue = fiatValue + cryptoValue + stablecoinValue + investmentValue;
       
       // Calculate monthly P&L (simplified for demo)
       const monthlyPnl = totalValue * 0.015; // 1.5% monthly return
@@ -67,6 +69,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         totalValue: totalValue.toFixed(2),
         cryptoValue: cryptoValue.toFixed(2),
+        stablecoinValue: stablecoinValue.toFixed(2),
         fiatValue: fiatValue.toFixed(2),
         investmentValue: investmentValue.toFixed(2),
         monthlyPnl: monthlyPnl.toFixed(2),
