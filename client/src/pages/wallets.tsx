@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { useWallets } from "@/hooks/use-portfolio";
+import { useWallets, usePortfolio } from "@/hooks/use-portfolio";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { PlusCircle, MinusCircle, ArrowUpDown, Coins, ArrowRight } from "lucide-react";
@@ -91,6 +91,7 @@ function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrenc
 
 export default function Wallets() {
   const { data: wallets, isLoading, error } = useWallets();
+  const { data: portfolio } = usePortfolio();
   const [depositModalOpen, setDepositModalOpen] = useState(false);
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [transferModalOpen, setTransferModalOpen] = useState(false);
@@ -348,9 +349,7 @@ export default function Wallets() {
             <div className="text-center">
               <p className="text-sm text-gray-600">Crypto Assets</p>
               <p className="text-lg font-semibold">
-                ${wallets?.filter(w => w.walletType === 'crypto')
-                  .reduce((sum, w) => sum + (parseFloat(w.balance) * 43500), 0) // Mock BTC price
-                  .toLocaleString()}
+                ${portfolio?.cryptoValue ? parseFloat(portfolio.cryptoValue).toLocaleString() : 'Loading...'}
               </p>
             </div>
             <div className="text-center">
