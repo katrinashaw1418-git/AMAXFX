@@ -353,6 +353,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create withdrawal transaction (new wallet route)
+  app.post("/api/wallets/withdraw", async (req, res) => {
+    try {
+      const { currency, amount, type } = req.body;
+      const userId = 1;
+      
+      if (!currency || !amount) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Get current wallet
+      const wallet = await storage.getWallet(userId, currency);
+      if (!wallet) {
+        return res.status(404).json({ error: "Wallet not found" });
+      }
+      
+      const withdrawAmount = parseFloat(amount);
+      const fee = 25.00;
+      const totalDeduction = withdrawAmount + fee;
+      
+      // Check if sufficient balance
+      if (parseFloat(wallet.availableBalance) < totalDeduction) {
+        return res.status(400).json({ error: "Insufficient balance" });
+      }
+      
+      // Update wallet balance
+      const newBalance = (parseFloat(wallet.balance) - totalDeduction).toFixed(2);
+      const newAvailableBalance = (parseFloat(wallet.availableBalance) - totalDeduction).toFixed(2);
+      
+      await storage.updateWallet(wallet.id, {
+        balance: newBalance,
+        availableBalance: newAvailableBalance,
+      });
+
+      const transaction = await storage.createTransaction({
+        userId,
+        type: "withdraw",
+        fromCurrency: currency,
+        toCurrency: null,
+        amount: amount.toString(),
+        fee: fee.toFixed(2),
+        exchangeRate: null,
+        status: "completed",
+        description: `${currency} Withdrawal`,
+      });
+
+      res.json(transaction);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to process withdrawal" });
+    }
+  });
+
   // Mark AI recommendation as read
   app.patch("/api/ai-recommendations/:id/read", async (req, res) => {
     try {

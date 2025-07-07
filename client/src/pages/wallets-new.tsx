@@ -174,26 +174,37 @@ export default function Wallets() {
   // Withdraw mutation
   const withdrawMutation = useMutation({
     mutationFn: async (data: { type: string; currency: string; amount: string }) => {
+      console.log("Making withdraw API call with data:", data);
       const response = await apiRequest("POST", "/api/wallets/withdraw", data);
+      console.log("Withdraw API response status:", response.status);
+      
       if (!response.ok) {
-        throw new Error('Withdrawal failed');
+        const errorText = await response.text();
+        console.error("Withdraw API error:", errorText);
+        throw new Error(`Withdrawal failed: ${response.status}`);
       }
-      return response.json();
+      
+      const result = await response.json();
+      console.log("Withdraw API result:", result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Withdraw mutation onSuccess called with data:", data);
       toast({
-        title: "Withdrawal Successful",
-        description: `${amount} ${selectedWallet?.currency} withdrawn from your wallet`,
+        title: "✅ Withdrawal Successful", 
+        description: `${amount} ${selectedWallet?.currency} has been withdrawn from your wallet`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/portfolio'] });
       setWithdrawModalOpen(false);
       setAmount('');
       setWithdrawMethod('');
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Withdraw mutation onError called with error:", error);
       toast({
         title: "Withdrawal Failed",
-        description: "Please try again later.",
+        description: error.message || "Please try again later.",
         variant: "destructive",
       });
     }
