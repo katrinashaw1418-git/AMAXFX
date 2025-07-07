@@ -235,3 +235,9 @@ Changelog:
   - All wallets now use consistent big box layout with three buttons (Deposit, Withdraw, Transfer)
   - Stablecoins and crypto assets support all three deposit channels: QR Code, PayID (Australia), Bank Transfer
   - Smart currency conversion: AUD to BTC (0.000023), ETH (0.00031), stablecoins (0.98) for fiat purchases
+- July 07, 2025. Improved deposit logic and removed exchange rate clutter
+  - Removed exchange rate information displays from all wallet categories (fiat, stablecoins, crypto)
+  - QR Code deposits now show only blockchain information (no banking details)
+  - PayID clearly marked as "Australia Only" across all deposit interfaces
+  - Bank Transfer deposits available globally without geographic restrictions
+  - Cleaner wallet interface focusing on essential information: balances, availability, and action buttons
