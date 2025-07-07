@@ -718,7 +718,7 @@ export default function Wallets() {
                     <>
                       <SelectItem value="blockchain">🔗 Blockchain Transfer</SelectItem>
                       <SelectItem value="payid">💳 PayID (Buy with AUD)</SelectItem>
-                      <SelectItem value="bank_transfer">🏦 Bank Transfer (Buy with AUD)</SelectItem>
+                      <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
                     </>
                   )}
                 </SelectContent>
