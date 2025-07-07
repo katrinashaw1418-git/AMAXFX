@@ -13,7 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { CurrencyConfig, SupportedCurrencies, CurrencyRegions, type WalletBalance } from '@/lib/types';
-import { TrendingUp, TrendingDown, Plus, Minus, ArrowRightLeft, Send, Repeat, Info, DollarSign, AlertCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Minus, ArrowRightLeft, ArrowUpDown, Send, Repeat, Info, DollarSign, AlertCircle } from 'lucide-react';
 import { useFxRate } from '@/hooks/use-fx-rates';
 import { useWallets } from '@/hooks/use-portfolio';
 
@@ -89,6 +89,16 @@ export default function Wallets() {
   const [toCurrency, setToCurrency] = useState('');
   const [amount, setAmount] = useState('');
   const [displayCurrency, setDisplayCurrency] = useState('USD'); // New state for balance display currency
+  const [selectedWallet, setSelectedWallet] = useState<any>(null);
+  const [depositModalOpen, setDepositModalOpen] = useState(false);
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [transferModalOpen, setTransferModalOpen] = useState(false);
+  const [depositMethod, setDepositMethod] = useState('');
+  const [withdrawMethod, setWithdrawMethod] = useState('');
+  const [payerPayId, setPayerPayId] = useState('');
+  const [payerName, setPayerName] = useState('');
+  const [payerAccountNumber, setPayerAccountNumber] = useState('');
+  const [payerBsb, setPayerBsb] = useState('');
   const { toast } = useToast();
   
   // Exchange rate display helpers
@@ -121,6 +131,96 @@ export default function Wallets() {
       });
     }
   });
+
+  // Deposit mutation
+  const depositMutation = useMutation({
+    mutationFn: async (data: { type: string; currency: string; amount: string }) => {
+      const response = await apiRequest("POST", "/api/wallets/deposit", data);
+      if (!response.ok) {
+        throw new Error('Deposit failed');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Deposit Successful",
+        description: `${amount} ${selectedWallet?.currency} added to your wallet`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
+      setDepositModalOpen(false);
+      setAmount('');
+      setDepositMethod('');
+    },
+    onError: () => {
+      toast({
+        title: "Deposit Failed",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Withdraw mutation
+  const withdrawMutation = useMutation({
+    mutationFn: async (data: { type: string; currency: string; amount: string }) => {
+      const response = await apiRequest("POST", "/api/wallets/withdraw", data);
+      if (!response.ok) {
+        throw new Error('Withdrawal failed');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Withdrawal Successful",
+        description: `${amount} ${selectedWallet?.currency} withdrawn from your wallet`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
+      setWithdrawModalOpen(false);
+      setAmount('');
+      setWithdrawMethod('');
+    },
+    onError: () => {
+      toast({
+        title: "Withdrawal Failed",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleDeposit = () => {
+    if (!selectedWallet || !amount || !depositMethod) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    depositMutation.mutate({
+      type: "deposit",
+      currency: selectedWallet.currency,
+      amount: amount
+    });
+  };
+
+  const handleWithdraw = () => {
+    if (!selectedWallet || !amount || !withdrawMethod) {
+      toast({
+        title: "Missing Information", 
+        description: "Please fill in all fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    withdrawMutation.mutate({
+      type: "withdraw",
+      currency: selectedWallet.currency,
+      amount: amount
+    });
+  };
 
   const handleTransfer = () => {
     if (!fromCurrency || !toCurrency || !amount) {
@@ -235,49 +335,40 @@ export default function Wallets() {
                         <WalletValueDisplay wallet={wallet} displayCurrency={displayCurrency} />
                       </td>
                       <td className="p-4 text-right">
-                        <div className="flex gap-1 justify-end">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="outline" size="sm" onClick={() => setFromCurrency(wallet.currency)}>
-                                  <Send className="w-3 h-3 mr-1" />
-                                  Send
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Send {wallet.currency} to another user or bank account</p>
-                                <p>Processing time: Instant - 2 hours</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="outline" size="sm" onClick={() => setFromCurrency(wallet.currency)}>
-                                  <Repeat className="w-3 h-3 mr-1" />
-                                  Convert
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Convert {wallet.currency} to another currency</p>
-                                <p>Fee: 0.5% - 1.2% | Mid-market rate</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="outline" size="sm" onClick={() => alert('Add funds feature - Connect bank account or credit card')}>
-                                  <Plus className="w-3 h-3 mr-1" />
-                                  Add
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Add money to your {wallet.currency} balance</p>
-                                <p>Bank transfer, card payment, or crypto deposit</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                        <div className="flex gap-2 justify-end">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              setSelectedWallet(wallet);
+                              setDepositModalOpen(true);
+                            }}
+                          >
+                            <Plus className="w-4 h-4 mr-1" />
+                            Deposit
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              setSelectedWallet(wallet);
+                              setWithdrawModalOpen(true);
+                            }}
+                          >
+                            <Minus className="w-4 h-4 mr-1" />
+                            Withdraw
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              setSelectedWallet(wallet);
+                              setTransferModalOpen(true);
+                            }}
+                          >
+                            <ArrowUpDown className="w-4 h-4 mr-1" />
+                            Transfer
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -587,6 +678,310 @@ export default function Wallets() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Deposit Modal */}
+      <Dialog open={depositModalOpen} onOpenChange={setDepositModalOpen}>
+        <DialogContent className="sm:max-w-[450px] max-h-[80vh] overflow-y-auto p-4">
+          <DialogHeader>
+            <DialogTitle>Deposit {selectedWallet?.currency}</DialogTitle>
+            <DialogDescription>
+              Add funds to your {selectedWallet?.currency} wallet
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="deposit-method-type">Deposit Method</Label>
+              <Select value={depositMethod} onValueChange={setDepositMethod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select deposit method" />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectedWallet?.walletType === 'fiat' ? (
+                    <>
+                      <SelectItem value="card">💳 Credit/Debit Card</SelectItem>
+                      <SelectItem value="payid">📱 PayID (Australia Only)</SelectItem>
+                      <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
+                    </>
+                  ) : (
+                    <>
+                      <SelectItem value="blockchain">🔗 Blockchain Transfer</SelectItem>
+                      <SelectItem value="card">💳 Credit/Debit Card</SelectItem>
+                      <SelectItem value="payid">📱 PayID (Buy with AUD)</SelectItem>
+                      <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
+                    </>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {depositMethod && depositMethod !== 'blockchain' && (
+              <div>
+                <Label htmlFor="deposit-amount">
+                  {selectedWallet?.walletType === 'crypto' && (depositMethod === 'payid' || depositMethod === 'bank_transfer')
+                    ? 'Amount (AUD)'
+                    : `Amount (${selectedWallet?.currency || ''})`
+                  }
+                </Label>
+                <Input
+                  id="deposit-amount"
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder={selectedWallet?.walletType === 'crypto' ? "Enter AUD amount" : "Enter amount"}
+                />
+                {selectedWallet && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Current balance: {selectedWallet.balance} {selectedWallet.currency}
+                    {selectedWallet.walletType === 'crypto' && (
+                      <span className="block">Exchange rate: 1 AUD ≈ {selectedWallet.currency === 'BTC' ? '0.000023 BTC' : selectedWallet.currency === 'ETH' ? '0.00031 ETH' : `0.98 ${selectedWallet.currency}`}</span>
+                    )}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {depositMethod === 'blockchain' && selectedWallet?.walletType === 'crypto' ? (
+              <div className="space-y-4">
+                <div className="text-center">
+                  <div className="bg-white p-4 rounded-lg border mx-auto w-fit mb-3">
+                    <div className="w-32 h-32 mx-auto bg-gray-100 rounded flex flex-col items-center justify-center text-xs font-mono text-gray-600 p-2 relative">
+                      <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 rounded"></div>
+                      <div className="relative z-10 text-center leading-tight">
+                        <div className="text-[6px] font-bold mb-1">QR CODE</div>
+                        <div className="grid grid-cols-8 gap-[1px] mb-1">
+                          {Array.from({length: 64}).map((_, i) => (
+                            <div key={i} className={`w-1 h-1 ${Math.random() > 0.5 ? 'bg-black' : 'bg-white'} rounded-[1px]`}></div>
+                          ))}
+                        </div>
+                        <div className="text-[5px] opacity-70 break-all">
+                          {selectedWallet.currency === "BTC" 
+                            ? "bc1qxy2k...0wlh" 
+                            : selectedWallet.currency === "ETH"
+                            ? "0x742d...f1a2"
+                            : selectedWallet.currency === "USDT" 
+                            ? "0x742d...f1a2"
+                            : "0x456e...5D6e7"
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">Scan QR code with your wallet app or copy address below</p>
+                </div>
+                
+                <div className="space-y-3">
+                  <div>
+                    <Label>Wallet Address ({selectedWallet.currency} Network)</Label>
+                    <div className="flex space-x-2">
+                      <Input 
+                        value={selectedWallet.currency === "BTC" 
+                          ? "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh" 
+                          : selectedWallet.currency === "ETH"
+                          ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
+                          : selectedWallet.currency === "USDT" 
+                          ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
+                          : "0x456e7B8F12C3d4e5F6a7B8c9D0e1F2a3B4c5D6e7"
+                        } 
+                        readOnly 
+                        className="font-mono text-xs"
+                      />
+                      <Button variant="outline" size="sm" onClick={() => {
+                        const address = selectedWallet.currency === "BTC" 
+                          ? "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh" 
+                          : selectedWallet.currency === "ETH"
+                          ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
+                          : selectedWallet.currency === "USDT" 
+                          ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
+                          : "0x456e7B8F12C3d4e5F6a7B8c9D0e1F2a3B4c5D6e7";
+                        navigator.clipboard.writeText(address);
+                        toast({
+                          title: "Address Copied",
+                          description: "Wallet address copied to clipboard",
+                        });
+                      }}>
+                        Copy
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={() => {
+                    const demoAmount = selectedWallet.currency === "BTC" ? "0.1" : 
+                                    selectedWallet.currency === "ETH" ? "1.0" : "1000.00";
+                    depositMutation.mutate({
+                      type: "deposit",
+                      currency: selectedWallet.currency,
+                      amount: demoAmount,
+                    });
+                  }} 
+                  variant="outline" 
+                  className="w-full"
+                  disabled={depositMutation.isPending}
+                >
+                  {depositMutation.isPending ? "Processing..." : `Demo Deposit (${selectedWallet.currency})`}
+                </Button>
+              </div>
+            ) : depositMethod && depositMethod !== 'blockchain' && (
+              <div className="flex space-x-2 pt-2">
+                <Button 
+                  onClick={handleDeposit}
+                  disabled={depositMutation.isPending || !depositMethod || !amount}
+                  className="flex-1 h-8 text-sm"
+                >
+                  {depositMutation.isPending ? "Processing..." : 
+                   selectedWallet?.walletType === 'crypto' ? `Purchase ${selectedWallet.currency}` : "Submit Deposit Request"}
+                </Button>
+                <Button variant="outline" className="h-8 text-sm" onClick={() => {
+                  setDepositModalOpen(false);
+                  setAmount("");
+                  setDepositMethod("");
+                }}>
+                  Close
+                </Button>
+              </div>
+            )}
+            
+            {(!depositMethod || depositMethod === 'blockchain') && (
+              <Button variant="outline" className="w-full h-8 text-sm" onClick={() => {
+                setDepositModalOpen(false);
+                setAmount("");
+                setDepositMethod("");
+              }}>
+                Close
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Withdraw Modal */}
+      <Dialog open={withdrawModalOpen} onOpenChange={setWithdrawModalOpen}>
+        <DialogContent className="sm:max-w-[400px] max-h-[80vh] overflow-y-auto p-4">
+          <DialogHeader>
+            <DialogTitle>Withdraw {selectedWallet?.currency}</DialogTitle>
+            <DialogDescription>
+              Withdraw funds from your {selectedWallet?.currency} wallet
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="withdraw-method">Withdrawal Method</Label>
+              <Select value={withdrawMethod} onValueChange={setWithdrawMethod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select withdrawal method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="withdraw-amount">Amount</Label>
+              <Input
+                id="withdraw-amount"
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Enter amount"
+              />
+              {selectedWallet && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Available: {selectedWallet.availableBalance} {selectedWallet.currency}
+                </p>
+              )}
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <h4 className="font-medium mb-2 text-sm">🏦 Bank Transfer Instructions</h4>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>• Funds transferred to your registered bank account</p>
+                <p>• Processing time: 1-3 business days</p>
+                <p>• Withdrawal fee: $25.00</p>
+                <p>• Please ensure your bank details are up to date</p>
+              </div>
+            </div>
+            <div className="flex space-x-2 pt-2">
+              <Button 
+                onClick={handleWithdraw}
+                disabled={withdrawMutation.isPending}
+                className="flex-1 h-8 text-sm"
+              >
+                {withdrawMutation.isPending ? "Processing..." : "Confirm Withdrawal"}
+              </Button>
+              <Button variant="outline" className="h-8 text-sm" onClick={() => setWithdrawModalOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Transfer Modal */}
+      <Dialog open={transferModalOpen} onOpenChange={setTransferModalOpen}>
+        <DialogContent className="sm:max-w-[420px] max-h-[80vh] overflow-y-auto p-4">
+          <DialogHeader>
+            <DialogTitle>Transfer {selectedWallet?.currency}</DialogTitle>
+            <DialogDescription>
+              Convert to other currencies or send internationally
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="transfer-amount" className="text-sm">Amount</Label>
+              <Input
+                id="transfer-amount"
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Enter amount"
+                className="h-8"
+              />
+              {selectedWallet && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Available: {selectedWallet.availableBalance} {selectedWallet.currency}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="transfer-to-currency" className="text-sm">Convert To</Label>
+              <Select value={toCurrency} onValueChange={setToCurrency}>
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="Select target currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USD">🇺🇸 USD – US Dollar</SelectItem>
+                  <SelectItem value="EUR">🇪🇺 EUR – Euro</SelectItem>
+                  <SelectItem value="GBP">🇬🇧 GBP – British Pound</SelectItem>
+                  <SelectItem value="CAD">🇨🇦 CAD – Canadian Dollar</SelectItem>
+                  <SelectItem value="AUD">🇦🇺 AUD – Australian Dollar</SelectItem>
+                  <SelectItem value="HKD">🇭🇰 HKD – Hong Kong Dollar</SelectItem>
+                  <SelectItem value="SGD">🇸🇬 SGD – Singapore Dollar</SelectItem>
+                  <SelectItem value="BTC">₿ BTC – Bitcoin</SelectItem>
+                  <SelectItem value="ETH">Ξ ETH – Ethereum</SelectItem>
+                  <SelectItem value="USDT">🟢 USDT – Tether USD</SelectItem>
+                  <SelectItem value="USDC">🔵 USDC – USD Coin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex space-x-2 pt-2">
+              <Button 
+                onClick={() => {
+                  setFromCurrency(selectedWallet?.currency || '');
+                  handleTransfer();
+                  setTransferModalOpen(false);
+                }}
+                disabled={transferMutation.isPending || !amount || !toCurrency}
+                className="flex-1 h-8 text-sm"
+              >
+                {transferMutation.isPending ? "Processing..." : "Convert"}
+              </Button>
+              <Button variant="outline" className="h-8 text-sm" onClick={() => setTransferModalOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
