@@ -164,52 +164,60 @@ export default function Investments() {
       {/* Portfolio Overview */}
       {userInvestments && userInvestments.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
+          <Card className="flex flex-col h-full">
+            <CardContent className="p-6 flex flex-col flex-grow">
+              <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-medium text-gray-500">Total Invested</h3>
                 <DollarSign className="w-4 h-4 text-primary" />
               </div>
-              <p className="text-2xl font-bold">${totalInvested.toLocaleString()}</p>
+              <div className="mt-auto">
+                <p className="text-2xl font-bold">${totalInvested.toLocaleString()}</p>
+              </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
+          <Card className="flex flex-col h-full">
+            <CardContent className="p-6 flex flex-col flex-grow">
+              <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-medium text-gray-500">Current Value</h3>
                 <TrendingUp className="w-4 h-4 text-green-600" />
               </div>
-              <p className="text-2xl font-bold">${totalCurrentValue.toLocaleString()}</p>
+              <div className="mt-auto">
+                <p className="text-2xl font-bold">${totalCurrentValue.toLocaleString()}</p>
+              </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
+          <Card className="flex flex-col h-full">
+            <CardContent className="p-6 flex flex-col flex-grow">
+              <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-medium text-gray-500">Total Return</h3>
                 <TrendingUp className="w-4 h-4 text-secondary" />
               </div>
-              <p className={`text-2xl font-bold ${totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ${totalReturn.toLocaleString()}
-              </p>
-              <div className="flex items-center space-x-2 mt-2">
-                <span className={`text-sm ${totalReturnPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {totalReturnPercent >= 0 ? '+' : ''}{totalReturnPercent.toFixed(2)}%
-                </span>
-                <span className="text-xs text-gray-500">return</span>
+              <div className="mt-auto">
+                <p className={`text-2xl font-bold ${totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  ${totalReturn.toLocaleString()}
+                </p>
+                <div className="flex items-center space-x-2 mt-2">
+                  <span className={`text-sm ${totalReturnPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {totalReturnPercent >= 0 ? '+' : ''}{totalReturnPercent.toFixed(2)}%
+                  </span>
+                  <span className="text-xs text-gray-500">return</span>
+                </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
+          <Card className="flex flex-col h-full">
+            <CardContent className="p-6 flex flex-col flex-grow">
+              <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-medium text-gray-500">Available Capital</h3>
                 <DollarSign className="w-4 h-4 text-green-600" />
               </div>
-              <p className="text-2xl font-bold text-green-600">
-                ${wallets?.find(w => w.currency === 'USD')?.availableBalance ? parseFloat(wallets.find(w => w.currency === 'USD')!.availableBalance).toLocaleString() : '0'}
-              </p>
-              <div className="flex items-center space-x-2 mt-2">
-                <span className="text-sm text-gray-600">USD wallet balance</span>
+              <div className="mt-auto">
+                <p className="text-2xl font-bold text-green-600">
+                  ${wallets?.find(w => w.currency === 'USD')?.availableBalance ? parseFloat(wallets.find(w => w.currency === 'USD')!.availableBalance).toLocaleString() : '0'}
+                </p>
+                <div className="flex items-center space-x-2 mt-2">
+                  <span className="text-sm text-gray-600">USD wallet balance</span>
+                </div>
               </div>
             </CardContent>
           </Card>
