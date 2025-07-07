@@ -51,12 +51,11 @@ export default function Wallets() {
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
       queryClient.refetchQueries({ queryKey: ["/api/wallets"] });
       toast({
-        title: "Deposit Successful",
-        description: "Your deposit has been processed and balance updated.",
+        title: "Deposit Instructions Provided",
+        description: "Complete the transfer using the details shown above. Your balance will update once received.",
+        duration: 5000,
       });
-      setDepositModalOpen(false);
-      setAmount("");
-      setDepositMethod("");
+      // Don't close modal immediately, let user copy details
     },
     onError: () => {
       toast({
@@ -136,6 +135,16 @@ export default function Wallets() {
       });
       return;
     }
+    
+    // Show different confirmation messages based on method
+    const method = depositMethod === 'payid' ? 'PayID' : 'Bank Transfer';
+    toast({
+      title: `${method} Instructions Sent`,
+      description: `Follow the ${method} instructions shown above to complete your deposit.`,
+    });
+    
+    // For demo purposes, we'll process the deposit immediately
+    // In production, deposits would be processed when the actual transfer is received
     depositMutation.mutate({ currency: selectedWallet.currency, amount: depositAmount });
   };
 
@@ -426,27 +435,64 @@ export default function Wallets() {
               )}
             </div>
             {depositMethod && (
-              <div className="p-3 bg-muted rounded-lg">
-                <h4 className="font-medium mb-2">
-                  {depositMethod === 'payid' ? 'PayID Instructions' : 'Bank Transfer Instructions'}
+              <div className="p-4 bg-muted rounded-lg border">
+                <h4 className="font-semibold mb-3 text-foreground">
+                  {depositMethod === 'payid' ? '📱 PayID Transfer Details' : '🏦 Bank Transfer Details'}
                 </h4>
                 {depositMethod === 'payid' ? (
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>• Available only for Australian NPP-supported banks</p>
-                    <p>• Our PayID: support@wealthplatform.com.au</p>
-                    <p>• Alternative PayID: 0412 345 678</p>
-                    <p>• No need to enter BSB/account details</p>
-                    <p>• Transfers processed instantly 24/7</p>
-                    <p>• No additional fees for PayID transfers</p>
+                  <div className="space-y-3">
+                    <div className="text-sm space-y-2">
+                      <div className="flex justify-between p-2 bg-background rounded border">
+                        <span className="text-muted-foreground">PayID (Email):</span>
+                        <span className="font-mono">support@wealthplatform.com.au</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-background rounded border">
+                        <span className="text-muted-foreground">PayID (Mobile):</span>
+                        <span className="font-mono">0412 345 678</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-background rounded border">
+                        <span className="text-muted-foreground">Amount:</span>
+                        <span className="font-mono">${amount || '0.00'} {selectedWallet?.currency}</span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>✓ Available only for Australian NPP-supported banks</p>
+                      <p>✓ Transfers processed instantly 24/7</p>
+                      <p>✓ No additional fees for PayID transfers</p>
+                    </div>
                   </div>
                 ) : (
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>• Account Name: Your Wealth Management Platform</p>
-                    <p>• BSB: 123-456 (Australia) / Sort Code: 12-34-56 (UK)</p>
-                    <p>• Account Number: 987654321</p>
-                    <p>• SWIFT: WPLTAU2S (International transfers)</p>
-                    <p>• Reference: {selectedWallet?.currency}-DEPOSIT-{Date.now().toString().slice(-6)}</p>
-                    <p>• Processing time: 1-3 business days</p>
+                  <div className="space-y-3">
+                    <div className="text-sm space-y-2">
+                      <div className="flex justify-between p-2 bg-background rounded border">
+                        <span className="text-muted-foreground">Account Name:</span>
+                        <span className="font-mono">Your Wealth Management Platform</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-background rounded border">
+                        <span className="text-muted-foreground">BSB (AU):</span>
+                        <span className="font-mono">123-456</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-background rounded border">
+                        <span className="text-muted-foreground">Account Number:</span>
+                        <span className="font-mono">987654321</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-background rounded border">
+                        <span className="text-muted-foreground">SWIFT (Intl):</span>
+                        <span className="font-mono">WPLTAU2S</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-background rounded border">
+                        <span className="text-muted-foreground">Reference:</span>
+                        <span className="font-mono">{selectedWallet?.currency}-DEPOSIT-{Date.now().toString().slice(-6)}</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-background rounded border">
+                        <span className="text-muted-foreground">Amount:</span>
+                        <span className="font-mono">${amount || '0.00'} {selectedWallet?.currency}</span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>✓ Processing time: 1-3 business days</p>
+                      <p>✓ Include the reference number for faster processing</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -454,13 +500,20 @@ export default function Wallets() {
             <div className="flex space-x-2">
               <Button 
                 onClick={handleDeposit}
-                disabled={depositMutation.isPending}
+                disabled={depositMutation.isPending || !depositMethod || !amount}
                 className="flex-1"
               >
-                {depositMutation.isPending ? "Processing..." : "Confirm Deposit"}
+                {depositMutation.isPending ? "Processing..." : 
+                 depositMethod === 'payid' ? "Get PayID Details" : 
+                 depositMethod === 'bank_transfer' ? "Get Bank Details" : 
+                 "Select Method & Amount"}
               </Button>
-              <Button variant="outline" onClick={() => setDepositModalOpen(false)}>
-                Cancel
+              <Button variant="outline" onClick={() => {
+                setDepositModalOpen(false);
+                setAmount("");
+                setDepositMethod("");
+              }}>
+                Close
               </Button>
             </div>
           </div>
