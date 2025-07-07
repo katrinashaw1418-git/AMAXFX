@@ -69,6 +69,41 @@ export const aiRecommendations = pgTable("ai_recommendations", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const investmentProducts = pgTable("investment_products", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  category: text("category").notNull(), // real_estate, corporate_credit, venture_capital
+  subCategory: text("sub_category").notNull(), // equity_fund, credit_fund, first_mortgage, etc.
+  investmentStrategy: text("investment_strategy").notNull(),
+  targetNetIrr: text("target_net_irr").notNull(),
+  grossIrr: text("gross_irr"),
+  moic: text("moic"), // Multiple of Invested Capital
+  term: text("term").notNull(),
+  structure: text("structure").notNull(),
+  distributions: text("distributions").notNull(),
+  liquidity: text("liquidity").notNull(),
+  minimumInvestment: decimal("minimum_investment", { precision: 15, scale: 2 }).notNull(),
+  riskProfile: text("risk_profile").notNull(), // conservative, moderate, high
+  returnType: text("return_type").notNull(), // income, capital_gains, blended
+  lvr: text("lvr"), // Loan-to-Value Ratio
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const userInvestments = pgTable("user_investments", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  productId: integer("product_id").references(() => investmentProducts.id).notNull(),
+  investedAmount: decimal("invested_amount", { precision: 15, scale: 2 }).notNull(),
+  currentValue: decimal("current_value", { precision: 15, scale: 2 }).notNull(),
+  totalReturn: decimal("total_return", { precision: 15, scale: 2 }).notNull(),
+  returnPercent: decimal("return_percent", { precision: 5, scale: 2 }).notNull(),
+  status: text("status").notNull().default("active"), // active, matured, withdrawn
+  investmentDate: timestamp("investment_date").defaultNow(),
+  maturityDate: timestamp("maturity_date"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -100,6 +135,17 @@ export const insertAiRecommendationSchema = createInsertSchema(aiRecommendations
   createdAt: true,
 });
 
+export const insertInvestmentProductSchema = createInsertSchema(investmentProducts).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUserInvestmentSchema = createInsertSchema(userInvestments).omit({
+  id: true,
+  investmentDate: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -113,3 +159,7 @@ export type FxRate = typeof fxRates.$inferSelect;
 export type InsertFxRate = z.infer<typeof insertFxRateSchema>;
 export type AiRecommendation = typeof aiRecommendations.$inferSelect;
 export type InsertAiRecommendation = z.infer<typeof insertAiRecommendationSchema>;
+export type InvestmentProduct = typeof investmentProducts.$inferSelect;
+export type InsertInvestmentProduct = z.infer<typeof insertInvestmentProductSchema>;
+export type UserInvestment = typeof userInvestments.$inferSelect;
+export type InsertUserInvestment = z.infer<typeof insertUserInvestmentSchema>;

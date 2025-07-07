@@ -35,4 +35,23 @@ export const api = {
   
   createWithdrawal: (data: { currency: string; amount: number; description?: string }) =>
     apiRequest("POST", "/api/withdraw", data),
+
+  // Investment Products
+  getInvestmentProducts: (filters?: { category?: string; riskProfile?: string; liquidity?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.category) params.append('category', filters.category);
+    if (filters?.riskProfile) params.append('riskProfile', filters.riskProfile);
+    if (filters?.liquidity) params.append('liquidity', filters.liquidity);
+    const queryString = params.toString();
+    return fetch(`/api/investment-products${queryString ? `?${queryString}` : ''}`).then(res => res.json());
+  },
+
+  getInvestmentProduct: (id: number) => 
+    fetch(`/api/investment-products/${id}`).then(res => res.json()),
+
+  getUserInvestments: () => 
+    fetch("/api/user-investments").then(res => res.json()),
+
+  createInvestment: (data: { productId: number; amount: number }) =>
+    apiRequest("POST", "/api/investments", data),
 };

@@ -1,8 +1,9 @@
 import { 
-  users, wallets, portfolios, transactions, fxRates, aiRecommendations,
+  users, wallets, portfolios, transactions, fxRates, aiRecommendations, investmentProducts, userInvestments,
   type User, type InsertUser, type Wallet, type InsertWallet, 
   type Portfolio, type InsertPortfolio, type Transaction, type InsertTransaction,
-  type FxRate, type InsertFxRate, type AiRecommendation, type InsertAiRecommendation
+  type FxRate, type InsertFxRate, type AiRecommendation, type InsertAiRecommendation,
+  type InvestmentProduct, type InsertInvestmentProduct, type UserInvestment, type InsertUserInvestment
 } from "@shared/schema";
 
 export interface IStorage {
@@ -39,6 +40,13 @@ export interface IStorage {
   getAiRecommendations(userId: number): Promise<AiRecommendation[]>;
   createAiRecommendation(recommendation: InsertAiRecommendation): Promise<AiRecommendation>;
   markRecommendationAsRead(id: number): Promise<void>;
+
+  // Investment Products
+  getInvestmentProducts(filters?: { category?: string; riskProfile?: string; liquidity?: string }): Promise<InvestmentProduct[]>;
+  getInvestmentProduct(id: number): Promise<InvestmentProduct | undefined>;
+  getUserInvestments(userId: number): Promise<UserInvestment[]>;
+  createUserInvestment(investment: InsertUserInvestment): Promise<UserInvestment>;
+  updateUserInvestment(id: number, investment: Partial<InsertUserInvestment>): Promise<UserInvestment | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -48,12 +56,16 @@ export class MemStorage implements IStorage {
   private transactions: Map<number, Transaction[]> = new Map();
   private fxRates: Map<string, FxRate> = new Map();
   private aiRecommendations: Map<number, AiRecommendation[]> = new Map();
+  private investmentProducts: Map<number, InvestmentProduct> = new Map();
+  private userInvestments: Map<number, UserInvestment[]> = new Map();
   private currentUserId = 1;
   private currentPortfolioId = 1;
   private currentWalletId = 11;
   private currentTransactionId = 13;
   private currentFxRateId = 49;
   private currentAiRecommendationId = 1;
+  private currentInvestmentProductId = 1;
+  private currentUserInvestmentId = 1;
 
   constructor() {
     this.initializeData();
@@ -777,6 +789,198 @@ export class MemStorage implements IStorage {
       },
     ];
     this.aiRecommendations.set(1, demoRecommendations);
+
+    // Create demo investment products
+    const demoInvestmentProducts: InvestmentProduct[] = [
+      {
+        id: 1,
+        name: "Real Estate Equity Fund",
+        category: "real_estate",
+        subCategory: "equity_fund",
+        investmentStrategy: "Structured equity and mezzanine capital deployed into residential and mixed-use development projects, primarily through preferred equity or subordinated positions. Focus on downside protection (typ. 60–70% LVR), co-investment alignment with developers, and disciplined feasibility validation.",
+        targetNetIrr: "9.8–11.0%",
+        grossIrr: null,
+        moic: null,
+        term: "2–6.5 years",
+        structure: "Preferred equity / subordinated debt",
+        distributions: "Capitalising, quarterly, or monthly",
+        liquidity: "Fixed-term, no early redemptions",
+        minimumInvestment: "250000.00",
+        riskProfile: "high",
+        returnType: "capital_gains",
+        lvr: "40–80% (typ. ~70%)",
+        isActive: true,
+        createdAt: new Date(),
+      },
+      {
+        id: 2,
+        name: "Real Estate Credit Fund",
+        category: "real_estate",
+        subCategory: "credit_fund",
+        investmentStrategy: "Diversified exposure to senior and subordinated real estate-backed loans for land subdivisions and construction financing. Provides regular income and controlled exposure across multiple projects and geographies.",
+        targetNetIrr: "~11%",
+        grossIrr: null,
+        moic: null,
+        term: "~10.2 months (rolling)",
+        structure: "Real estate-backed loans",
+        distributions: "Quarterly",
+        liquidity: "Quarterly redemptions (5% NAV cap)",
+        minimumInvestment: "100000.00",
+        riskProfile: "moderate",
+        returnType: "income",
+        lvr: "68%",
+        isActive: true,
+        createdAt: new Date(),
+      },
+      {
+        id: 3,
+        name: "Real Estate First Mortgage Fund",
+        category: "real_estate",
+        subCategory: "first_mortgage",
+        investmentStrategy: "First-ranking mortgage finance to conservative, well-prepared property projects with tight controls, strong fundamentals, and regular servicing income.",
+        targetNetIrr: "~9%",
+        grossIrr: null,
+        moic: null,
+        term: "~9.4 months",
+        structure: "First-ranking mortgage",
+        distributions: "Quarterly",
+        liquidity: "Quarterly redemption",
+        minimumInvestment: "50000.00",
+        riskProfile: "moderate",
+        returnType: "income",
+        lvr: "64%",
+        isActive: true,
+        createdAt: new Date(),
+      },
+      {
+        id: 4,
+        name: "Cash Flow-Based Corporate Credit Fund",
+        category: "corporate_credit",
+        subCategory: "cash_flow_credit",
+        investmentStrategy: "Secured senior lending to companies with strong recurring revenue and positive EBITDA. Terms are tailored to enterprise value and cash flow serviceability, not fixed asset security.",
+        targetNetIrr: "10–12%",
+        grossIrr: null,
+        moic: null,
+        term: "2–3 years",
+        structure: "First lien amortising loan",
+        distributions: "Monthly or quarterly",
+        liquidity: "Locked term",
+        minimumInvestment: "100000.00",
+        riskProfile: "moderate",
+        returnType: "income",
+        lvr: null,
+        isActive: true,
+        createdAt: new Date(),
+      },
+      {
+        id: 5,
+        name: "Security-Backed Corporate Credit Fund",
+        category: "corporate_credit",
+        subCategory: "security_backed_credit",
+        investmentStrategy: "Senior secured loans combined with equity warrants and downside protection via put rights. Structured for both income and potential capital appreciation.",
+        targetNetIrr: "12–15%",
+        grossIrr: null,
+        moic: null,
+        term: "30–39 months",
+        structure: "Senior lien loan + warrant",
+        distributions: "Fixed yield + equity realisation",
+        liquidity: "Locked term",
+        minimumInvestment: "150000.00",
+        riskProfile: "moderate",
+        returnType: "blended",
+        lvr: null,
+        isActive: true,
+        createdAt: new Date(),
+      },
+      {
+        id: 6,
+        name: "VC / Growth Equity Fund",
+        category: "venture_capital",
+        subCategory: "growth_equity",
+        investmentStrategy: "Equity investments into founder-led and management-aligned private companies with growth potential. Structured for long-term capital gains with governance protections and value creation support.",
+        targetNetIrr: "16–20%",
+        grossIrr: "22–25%",
+        moic: "3–4x",
+        term: "5–7+ years",
+        structure: "Equity investment",
+        distributions: "Capital gain at exit",
+        liquidity: "Illiquid / long-term lock-in",
+        minimumInvestment: "500000.00",
+        riskProfile: "high",
+        returnType: "capital_gains",
+        lvr: null,
+        isActive: true,
+        createdAt: new Date(),
+      },
+      {
+        id: 7,
+        name: "Hybrid Capital Fund",
+        category: "venture_capital",
+        subCategory: "hybrid_capital",
+        investmentStrategy: "Structured equity capital with partial cash or PIK returns, plus participation in equity upside. Designed for companies that require non-dilutive growth capital with income and total return alignment.",
+        targetNetIrr: "12–16%",
+        grossIrr: null,
+        moic: null,
+        term: "3–5 years",
+        structure: "Convertible preferred or structured equity",
+        distributions: "Income + capital gains",
+        liquidity: "Locked term",
+        minimumInvestment: "250000.00",
+        riskProfile: "high",
+        returnType: "blended",
+        lvr: null,
+        isActive: true,
+        createdAt: new Date(),
+      },
+    ];
+
+    demoInvestmentProducts.forEach(product => {
+      this.investmentProducts.set(product.id, product);
+    });
+
+    // Create demo user investments
+    const demoUserInvestments: UserInvestment[] = [
+      {
+        id: 1,
+        userId: 1,
+        productId: 2, // Real Estate Credit Fund
+        investedAmount: "500000.00",
+        currentValue: "545000.00",
+        totalReturn: "45000.00",
+        returnPercent: "9.00",
+        status: "active",
+        investmentDate: new Date(Date.now() - 86400000 * 120), // 4 months ago
+        maturityDate: new Date(Date.now() + 86400000 * 180), // 6 months from now
+        updatedAt: new Date(),
+      },
+      {
+        id: 2,
+        userId: 1,
+        productId: 4, // Cash Flow-Based Corporate Credit Fund
+        investedAmount: "300000.00",
+        currentValue: "327000.00",
+        totalReturn: "27000.00",
+        returnPercent: "9.00",
+        status: "active",
+        investmentDate: new Date(Date.now() - 86400000 * 90), // 3 months ago
+        maturityDate: new Date(Date.now() + 86400000 * 630), // ~21 months from now
+        updatedAt: new Date(),
+      },
+      {
+        id: 3,
+        userId: 1,
+        productId: 6, // VC / Growth Equity Fund
+        investedAmount: "750000.00",
+        currentValue: "825000.00",
+        totalReturn: "75000.00",
+        returnPercent: "10.00",
+        status: "active",
+        investmentDate: new Date(Date.now() - 86400000 * 365), // 1 year ago
+        maturityDate: new Date(Date.now() + 86400000 * 1460), // ~4 years from now
+        updatedAt: new Date(),
+      },
+    ];
+    this.userInvestments.set(1, demoUserInvestments);
   }
 
   // User methods
@@ -989,6 +1193,67 @@ export class MemStorage implements IStorage {
         break;
       }
     }
+  }
+
+  // Investment Product methods
+  async getInvestmentProducts(filters?: { category?: string; riskProfile?: string; liquidity?: string }): Promise<InvestmentProduct[]> {
+    const products = Array.from(this.investmentProducts.values()).filter(product => product.isActive);
+    
+    if (!filters) return products;
+    
+    return products.filter(product => {
+      if (filters.category && product.category !== filters.category) return false;
+      if (filters.riskProfile && product.riskProfile !== filters.riskProfile) return false;
+      if (filters.liquidity) {
+        const liquidityMatch = product.liquidity.toLowerCase().includes(filters.liquidity.toLowerCase());
+        if (!liquidityMatch) return false;
+      }
+      return true;
+    });
+  }
+
+  async getInvestmentProduct(id: number): Promise<InvestmentProduct | undefined> {
+    return this.investmentProducts.get(id);
+  }
+
+  async getUserInvestments(userId: number): Promise<UserInvestment[]> {
+    return this.userInvestments.get(userId) || [];
+  }
+
+  async createUserInvestment(insertInvestment: InsertUserInvestment): Promise<UserInvestment> {
+    const id = this.currentUserInvestmentId++;
+    const investment: UserInvestment = {
+      id,
+      userId: insertInvestment.userId,
+      productId: insertInvestment.productId,
+      investedAmount: insertInvestment.investedAmount,
+      currentValue: insertInvestment.currentValue,
+      totalReturn: insertInvestment.totalReturn,
+      returnPercent: insertInvestment.returnPercent,
+      status: insertInvestment.status || "active",
+      investmentDate: new Date(),
+      maturityDate: insertInvestment.maturityDate || null,
+      updatedAt: new Date(),
+    };
+    
+    const userInvestments = this.userInvestments.get(insertInvestment.userId) || [];
+    userInvestments.push(investment);
+    this.userInvestments.set(insertInvestment.userId, userInvestments);
+    
+    return investment;
+  }
+
+  async updateUserInvestment(id: number, updateInvestment: Partial<InsertUserInvestment>): Promise<UserInvestment | undefined> {
+    for (const [userId, userInvestments] of this.userInvestments.entries()) {
+      const investmentIndex = userInvestments.findIndex((inv: UserInvestment) => inv.id === id);
+      if (investmentIndex !== -1) {
+        const updatedInvestment = { ...userInvestments[investmentIndex], ...updateInvestment, updatedAt: new Date() };
+        userInvestments[investmentIndex] = updatedInvestment;
+        this.userInvestments.set(userId, userInvestments);
+        return updatedInvestment;
+      }
+    }
+    return undefined;
   }
 }
 

@@ -1,0 +1,145 @@
+
+🧠 Wealth Management Product Features
+📊 Categorized by Asset Type, Risk Appetite, Target Return & Liquidity
+🏢 1. Real Estate Investment Products
+🔷 Real Estate Equity Fund (Direct Investments)
+Investment Strategy:
+Structured equity and mezzanine capital deployed into residential and mixed-use development projects, primarily through preferred equity or subordinated positions. Focus on downside protection (typ. 60–70% LVR), co-investment alignment with developers, and disciplined feasibility validation.
+
+Typical Structure: Preferred equity / subordinated debt
+
+Target Net IRR: 9.8–11.0%
+
+Investment Term: 2–6.5 years
+
+Loan-to-Value (LVR): 40–80% (typ. ~70%)
+
+Distributions: Capitalising, quarterly, or monthly
+
+Liquidity: Fixed-term, no early redemptions
+
+Minimum Investment: $250,000
+
+Risk Profile: Moderate to High
+
+Return Type: Capital gains
+
+🔷 Real Estate Credit Fund
+Investment Strategy:
+Diversified exposure to senior and subordinated real estate-backed loans for land subdivisions and construction financing. Provides regular income and controlled exposure across multiple projects and geographies.
+
+Target Net IRR: ~11%
+
+Term: ~10.2 months (rolling)
+
+LVR: 68%
+
+Distributions: Quarterly
+
+Liquidity: Quarterly redemptions (5% NAV cap)
+
+Risk Profile: Moderate
+
+Return Type: Yield + downside protection
+
+🔷 Real Estate First Mortgage Fund
+Investment Strategy:
+First-ranking mortgage finance to conservative, well-prepared property projects with tight controls, strong fundamentals, and regular servicing income.
+
+Target Net IRR: ~9%
+
+Term: ~9.4 months
+
+LVR: 64%
+
+Distributions: Quarterly
+
+Liquidity: Quarterly redemption
+
+Risk Profile: Moderate
+
+Return Type: Consistent income
+
+💳 2. Corporate Credit & Fixed Income Products
+🔷 Cash Flow-Based Corporate Credit Fund
+Investment Strategy:
+Secured senior lending to companies with strong recurring revenue and positive EBITDA. Terms are tailored to enterprise value and cash flow serviceability, not fixed asset security.
+
+Target Net IRR: 10–12%
+
+Term: 2–3 years
+
+Structure: First lien amortising loan
+
+Distributions: Monthly or quarterly
+
+Liquidity: Locked term
+
+Risk Profile: Moderate
+
+Return Type: Yield
+
+🔷 Security-Backed Corporate Credit Fund
+Investment Strategy:
+Senior secured loans combined with equity warrants and downside protection via put rights. Structured for both income and potential capital appreciation.
+
+Target Net IRR: 12–15%
+
+Term: 30–39 months
+
+Structure: Senior lien loan + warrant
+
+Distributions: Fixed yield + equity realisation
+
+Liquidity: Locked term
+
+Risk Profile: Moderate
+
+Return Type: Income + equity upside
+
+📈 3. Venture Capital & Private Equity Products
+🔷 VC / Growth Equity Fund
+Investment Strategy:
+Equity investments into founder-led and management-aligned private companies with growth potential. Structured for long-term capital gains with governance protections and value creation support.
+
+Target Net IRR: 16–20%
+
+Gross IRR: 22–25%
+
+MOIC: 3–4x
+
+Term: 5–7+ years
+
+Distributions: Capital gain at exit
+
+Liquidity: Illiquid / long-term lock-in
+
+Risk Profile: High
+
+Return Type: Capital gains
+
+🔷 Hybrid Capital Fund
+Investment Strategy:
+Structured equity capital with partial cash or PIK returns, plus participation in equity upside. Designed for companies that require non-dilutive growth capital with income and total return alignment.
+
+Target Net IRR: 12–16%
+
+Structure: Convertible preferred or structured equity
+
+Return Mix: Income + capital gains
+
+Term: 3–5 years
+
+Liquidity: Locked term
+
+Risk Profile: Balanced to High
+
+Return Type: Blended
+
+🧭 Investor Filtering Options (For App UI)
+Filter	Options
+Risk Appetite	Conservative / Balanced / Growth-Oriented
+Target Return	5–8% / 8–12% / 12%+
+Liquidity	Quarterly / Fixed-Term / Long-Term Lock-In
+Structure	Credit / Equity / Hybrid
+Sector Focus	Real Estate / Private Credit / Growth Equity

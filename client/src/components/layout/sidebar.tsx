@@ -10,6 +10,7 @@ import {
   Bot, 
   History, 
   Shield,
+  Building2,
   Coins,
   User,
   ChevronRight
@@ -25,6 +26,7 @@ const navigation = [
   { name: "Wallets", href: "/wallets", icon: Wallet },
   { name: "FX Exchange", href: "/fx-exchange", icon: ArrowRightLeft },
   { name: "Portfolio", href: "/portfolio", icon: PieChart },
+  { name: "Investments", href: "/investments", icon: Building2 },
   { name: "AI Advisory", href: "/ai-advisory", icon: Bot },
   { name: "Transactions", href: "/transactions", icon: History },
   { name: "Compliance", href: "/compliance", icon: Shield },
