@@ -893,6 +893,56 @@ export default function Wallets() {
                 </div>
               </div>
             ) : null}
+            {depositMethod === 'card' && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg space-y-3">
+                <h4 className="font-medium text-sm">💳 Card Payment Details</h4>
+                <div>
+                  <Label htmlFor="card-number" className="text-xs">Card Number</Label>
+                  <Input
+                    id="card-number"
+                    type="text"
+                    placeholder="1234 5678 9012 3456"
+                    className="h-8 text-sm"
+                    maxLength={19}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="card-expiry" className="text-xs">Expiry Date</Label>
+                    <Input
+                      id="card-expiry"
+                      type="text"
+                      placeholder="MM/YY"
+                      className="h-8 text-sm"
+                      maxLength={5}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="card-cvv" className="text-xs">CVV</Label>
+                    <Input
+                      id="card-cvv"
+                      type="text"
+                      placeholder="123"
+                      className="h-8 text-sm"
+                      maxLength={4}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="card-name" className="text-xs">Cardholder Name</Label>
+                  <Input
+                    id="card-name"
+                    type="text"
+                    placeholder="John Smith"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="p-2 bg-white rounded text-xs text-gray-600">
+                  <p><strong>Accepted:</strong> Visa, Mastercard, American Express</p>
+                  <p><strong>Fee:</strong> 2.9% + $0.30 AUD | <strong>Processing:</strong> Instant (2-3 minutes)</p>
+                </div>
+              </div>
+            )}
             {depositMethod && depositMethod !== 'blockchain' && (
               <div>
                 <Label htmlFor="deposit-amount">
