@@ -320,6 +320,15 @@ export default function Wallets() {
   const totalBalance = selectedCurrency === "USD" ? totalBalanceUSD : 
     (exchangeRate ? totalBalanceUSD * parseFloat(exchangeRate.rate) : totalBalanceUSD);
   
+  // Convert individual asset values to selected currency
+  const fiatValueUSD = portfolio ? parseFloat(portfolio.fiatValue) : 0;
+  const cryptoValueUSD = portfolio ? parseFloat(portfolio.cryptoValue) : 0;
+  
+  const fiatValue = selectedCurrency === "USD" ? fiatValueUSD : 
+    (exchangeRate ? fiatValueUSD * parseFloat(exchangeRate.rate) : fiatValueUSD);
+  const cryptoValue = selectedCurrency === "USD" ? cryptoValueUSD : 
+    (exchangeRate ? cryptoValueUSD * parseFloat(exchangeRate.rate) : cryptoValueUSD);
+  
   // Get currency configuration for display
   const currencyInfo = currencyConfig[selectedCurrency as keyof typeof currencyConfig];
   const currencySymbol = currencyInfo?.symbol || selectedCurrency;
@@ -376,14 +385,20 @@ export default function Wallets() {
             <div className="text-center">
               <p className="text-sm text-gray-600">Fiat Assets</p>
               <p className="text-lg font-semibold">
-                ${portfolio?.fiatValue ? parseFloat(portfolio.fiatValue).toLocaleString() : 'Loading...'}
+                {currencySymbol}{fiatValue.toLocaleString()}
               </p>
+              {selectedCurrency !== "USD" && (
+                <p className="text-xs text-gray-500">≈ ${fiatValueUSD.toLocaleString()} USD</p>
+              )}
             </div>
             <div className="text-center">
               <p className="text-sm text-gray-600">Crypto Assets</p>
               <p className="text-lg font-semibold">
-                ${portfolio?.cryptoValue ? parseFloat(portfolio.cryptoValue).toLocaleString() : 'Loading...'}
+                {currencySymbol}{cryptoValue.toLocaleString()}
               </p>
+              {selectedCurrency !== "USD" && (
+                <p className="text-xs text-gray-500">≈ ${cryptoValueUSD.toLocaleString()} USD</p>
+              )}
             </div>
             <div className="text-center">
               <p className="text-sm text-gray-600">Total Wallets</p>
