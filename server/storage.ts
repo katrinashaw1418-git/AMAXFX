@@ -1430,6 +1430,15 @@ export class MemStorage implements IStorage {
         spread: "0.005",
         updatedAt: new Date(),
       },
+      // Missing GBP to EUR rate
+      {
+        id: 131,
+        baseCurrency: "GBP",
+        targetCurrency: "EUR",
+        rate: "1.0812",
+        spread: "0.004",
+        updatedAt: new Date(),
+      },
     ];
     
     demoFxRates.forEach(rate => {
