@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useWallets } from "@/hooks/use-portfolio";
 import { TrendingUp, Building, CreditCard, Rocket, Bitcoin, DollarSign, Clock, Shield, Filter, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -60,6 +61,8 @@ export default function Investments() {
     queryKey: ["/api/user-investments"],
     queryFn: () => api.getUserInvestments(),
   });
+
+  const { data: wallets } = useWallets();
 
   const investMutation = useMutation({
     mutationFn: (data: { productId: number; amount: number }) => api.createInvestment(data),
@@ -316,6 +319,10 @@ export default function Investments() {
                     <span className="text-sm text-muted-foreground">Min. Investment:</span>
                     <span className="font-medium">${minimumInvestment.toLocaleString()}</span>
                   </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Available Balance:</span>
+                    <span className="font-medium text-green-600">${wallets?.find(w => w.currency === 'USD')?.availableBalance ? parseFloat(wallets.find(w => w.currency === 'USD')!.availableBalance).toLocaleString() : '0'}</span>
+                  </div>
                 </div>
 
                 <div className="flex gap-2 mb-4">
@@ -446,9 +453,14 @@ export default function Investments() {
                 placeholder="Enter amount"
               />
               {selectedProduct && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Minimum: ${parseFloat(selectedProduct.minimumInvestment).toLocaleString()}
-                </p>
+                <div className="mt-1 space-y-1">
+                  <p className="text-xs text-muted-foreground">
+                    Minimum: ${parseFloat(selectedProduct.minimumInvestment).toLocaleString()}
+                  </p>
+                  <p className="text-xs font-medium text-green-600">
+                    Available Balance: ${wallets?.find(w => w.currency === 'USD')?.availableBalance ? parseFloat(wallets.find(w => w.currency === 'USD')!.availableBalance).toLocaleString() : '0'}
+                  </p>
+                </div>
               )}
             </div>
             
