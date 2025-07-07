@@ -151,14 +151,26 @@ export default function Investments() {
   const selectedWallet = wallets?.find(w => w.currency === selectedCurrency);
   const availableBalance = selectedWallet?.availableBalance ? parseFloat(selectedWallet.availableBalance) : 0;
 
-  // Get available currencies from wallets
+  // Get available currencies from wallets with proper symbols
+  const currencySymbols: Record<string, string> = {
+    'USD': '$',
+    'CAD': 'C$',
+    'EUR': '€',
+    'GBP': '£',
+    'AUD': 'A$',
+    'HKD': 'HK$',
+    'SGD': 'S$',
+    'BTC': '₿',
+    'ETH': 'Ξ',
+    'USDT': '₮',
+    'USDC': '◎'
+  };
+
   const availableCurrencies = wallets?.map(wallet => ({
     currency: wallet.currency,
     balance: parseFloat(wallet.availableBalance || '0'),
     displayName: wallet.displayName || wallet.currency,
-    symbol: wallet.currency === 'USD' ? '$' : 
-           (wallet.symbol && wallet.symbol !== wallet.currency && !wallet.symbol.includes(wallet.currency)) ? 
-           wallet.symbol : ''
+    symbol: currencySymbols[wallet.currency] || wallet.currency
   })) || [];
 
   // Convert to USD for display if not USD
@@ -309,16 +321,13 @@ export default function Investments() {
               <div className="flex flex-col justify-end h-16">
                 <div className="flex items-end h-6">
                   <p className="text-lg font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis w-full leading-none">
-                    {selectedCurrency === 'USD' ? 
-                      `$${availableBalance.toLocaleString()}` : 
-                      `${selectedCurrency} ${availableBalance.toLocaleString()}`
-                    }
+                    {currencySymbols[selectedCurrency] || selectedCurrency}{availableBalance.toLocaleString()}
                   </p>
                 </div>
                 <div className="h-4 flex items-center">
                   {selectedCurrency !== 'USD' && (
                     <span className="text-xs text-gray-600">
-                      USD {getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()}
+                      US${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()}
                     </span>
                   )}
                 </div>
