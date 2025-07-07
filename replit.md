@@ -316,3 +316,5 @@ Changelog:
   - **Enhanced Balance Updates**: Immediate wallet balance refresh after successful transfers with proper cache invalidation
   - **Zero-Balance Wallet Hiding**: Wallets with zero balance automatically removed from balance table display
   - **Improved Success Notifications**: Transfer confirmations show exact converted amounts received after fees
+  - **Wallet Sorting**: Crypto currencies (BTC, ETH, USDT, USDC) always appear at bottom of table in fixed order, newly added currencies appear before crypto section
+  - **Version 4 Saved**: Complete transfer system with wallet management, automatic sorting, and zero-balance filtering
