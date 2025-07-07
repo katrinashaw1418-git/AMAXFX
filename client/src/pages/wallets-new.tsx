@@ -135,14 +135,22 @@ export default function Wallets() {
   // Deposit mutation
   const depositMutation = useMutation({
     mutationFn: async (data: { type: string; currency: string; amount: string }) => {
+      console.log("Making deposit API call with data:", data);
       const response = await apiRequest("POST", "/api/wallets/deposit", data);
+      console.log("Deposit API response status:", response.status);
+      
       if (!response.ok) {
-        throw new Error('Deposit failed');
+        const errorText = await response.text();
+        console.error("Deposit API error:", errorText);
+        throw new Error(`Deposit failed: ${response.status}`);
       }
-      return response.json();
+      
+      const result = await response.json();
+      console.log("Deposit API result:", result);
+      return result;
     },
-    onSuccess: () => {
-      console.log("Deposit successful, showing toast and closing modal");
+    onSuccess: (data) => {
+      console.log("Deposit mutation onSuccess called with data:", data);
       toast({
         title: "✅ Deposit Successful",
         description: `${amount} ${selectedWallet?.currency} has been added to your wallet`,
@@ -153,10 +161,11 @@ export default function Wallets() {
       setAmount('');
       setDepositMethod('');
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Deposit mutation onError called with error:", error);
       toast({
         title: "Deposit Failed",
-        description: "Please try again later.",
+        description: error.message || "Please try again later.",
         variant: "destructive",
       });
     }
@@ -191,7 +200,14 @@ export default function Wallets() {
   });
 
   const handleDeposit = () => {
+    console.log("handleDeposit called with:", {
+      selectedWallet: selectedWallet?.currency,
+      amount,
+      depositMethod
+    });
+
     if (!selectedWallet || !amount || !depositMethod) {
+      console.log("Validation failed - missing fields");
       toast({
         title: "Missing Information",
         description: "Please fill in all fields.",
@@ -200,6 +216,7 @@ export default function Wallets() {
       return;
     }
 
+    console.log("Starting deposit mutation...");
     depositMutation.mutate({
       type: "deposit",
       currency: selectedWallet.currency,
