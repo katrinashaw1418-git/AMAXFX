@@ -156,7 +156,9 @@ export default function Investments() {
     currency: wallet.currency,
     balance: parseFloat(wallet.availableBalance || '0'),
     displayName: wallet.displayName || wallet.currency,
-    symbol: wallet.currency === 'USD' ? '$' : (wallet.symbol && wallet.symbol !== wallet.currency ? wallet.symbol : '')
+    symbol: wallet.currency === 'USD' ? '$' : 
+           (wallet.symbol && wallet.symbol !== wallet.currency && !wallet.symbol.includes(wallet.currency)) ? 
+           wallet.symbol : ''
   })) || [];
 
   // Convert to USD for display if not USD
@@ -258,7 +260,7 @@ export default function Investments() {
                             <div className="flex items-center justify-between w-full">
                               <span className="font-medium">{currency.currency}</span>
                               <span className="text-xs text-gray-500 ml-2">
-                                {currency.symbol || currency.currency + ' '}{currency.balance.toLocaleString()}
+                                {currency.symbol || ''}{currency.balance.toLocaleString()}
                               </span>
                             </div>
                           </SelectItem>
