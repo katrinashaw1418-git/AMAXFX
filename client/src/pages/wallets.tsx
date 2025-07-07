@@ -26,8 +26,8 @@ const currencyConfig = {
   SGD: { name: "Singapore Dollar", symbol: "$", color: "bg-red-600", flag: "🇸🇬" },
   BTC: { name: "Bitcoin", symbol: "₿", color: "bg-yellow-500", flag: "₿" },
   ETH: { name: "Ethereum", symbol: "Ξ", color: "bg-purple-500", flag: "Ξ" },
-  USDT: { name: "Tether", symbol: "₮", color: "bg-green-500", flag: "💵" },
-  USDC: { name: "USD Coin", symbol: "◎", color: "bg-blue-400", flag: "🪙" },
+  USDT: { name: "Tether", symbol: "$", color: "bg-green-500", flag: "🟢" },
+  USDC: { name: "USD Coin", symbol: "$", color: "bg-blue-400", flag: "🔵" },
 };
 
 // Exchange Rate Display Component
