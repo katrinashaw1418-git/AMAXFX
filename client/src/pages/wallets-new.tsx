@@ -46,17 +46,34 @@ function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrenc
   let convertedAmount = '0.00';
   let sendingAmount = '0.00';
   
-  if (amount && amount.toString().trim() !== '' && !isNaN(Number(amount))) {
-    const amountNumber = Number(amount);
-    const rateNumber = Number(rate);
+  console.log('ExchangeRateDisplay Debug:', { amount, rate, fromCurrency, toCurrency, hasAmount: !!amount });
+  
+  if (amount && String(amount).trim() !== '') {
+    const amountNumber = parseFloat(String(amount));
+    const rateNumber = parseFloat(rate);
     
-    // Simple calculation: amount × exchange rate - 0.5% fee
-    const grossConverted = amountNumber * rateNumber;
-    const transactionFee = grossConverted * 0.005; // 0.5% fee
-    const netConverted = grossConverted - transactionFee;
-    
-    convertedAmount = netConverted.toFixed(2);
-    sendingAmount = amountNumber.toFixed(2);
+    if (!isNaN(amountNumber) && !isNaN(rateNumber) && amountNumber > 0) {
+      // Simple calculation: amount × exchange rate - 0.5% fee
+      const grossConverted = amountNumber * rateNumber;
+      const transactionFee = grossConverted * 0.005; // 0.5% fee
+      const netConverted = grossConverted - transactionFee;
+      
+      convertedAmount = netConverted.toFixed(2);
+      sendingAmount = amountNumber.toFixed(2);
+      
+      console.log('Calculation Result:', { 
+        amountNumber, 
+        rateNumber, 
+        grossConverted, 
+        transactionFee, 
+        netConverted, 
+        convertedAmount 
+      });
+    } else {
+      console.log('Invalid numbers:', { amountNumber, rateNumber });
+    }
+  } else {
+    console.log('No amount provided');
   }
 
   return (
