@@ -393,12 +393,14 @@ export default function Wallets() {
     });
   };
 
-  // Group wallets by region for better organization
-  const walletsWithRegions = wallets.map(wallet => ({
-    ...wallet,
-    config: CurrencyConfig[wallet.currency as keyof typeof CurrencyConfig],
-    region: CurrencyConfig[wallet.currency as keyof typeof CurrencyConfig]?.region || 'Other'
-  }));
+  // Filter out zero-balance wallets and group by region
+  const walletsWithRegions = wallets
+    .filter(wallet => parseFloat(wallet.balance || '0') > 0) // Hide zero-balance wallets
+    .map(wallet => ({
+      ...wallet,
+      config: CurrencyConfig[wallet.currency as keyof typeof CurrencyConfig],
+      region: CurrencyConfig[wallet.currency as keyof typeof CurrencyConfig]?.region || 'Other'
+    }));
 
   const { data: exchangeRate } = useFxRate(fromCurrency, 'USD');
   const estimatedValue = fromCurrency && amount ? (parseFloat(amount) * (exchangeRate?.rate || 1)) : 0;
