@@ -207,10 +207,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fromCurrency,
         toCurrency,
         amount: amount.toString(),
-        fee: fee.toFixed(2),
+        fee: fee.toString(),
         exchangeRate: exchangeRate.toString(),
         status: "completed",
-        description: `${fromCurrency} to ${toCurrency} Exchange`,
+        description: `${fromCurrency} to ${toCurrency} Exchange`
       });
 
       res.json({
@@ -220,7 +220,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fee,
       });
     } catch (error) {
-      res.status(500).json({ error: "Failed to process FX exchange" });
+      console.error('FX Exchange error:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      res.status(500).json({ error: "Failed to process FX exchange", details: error.message });
     }
   });
 
