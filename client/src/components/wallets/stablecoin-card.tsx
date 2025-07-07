@@ -97,11 +97,7 @@ export default function StablecoinCard({ currency, balance, availableBalance, co
   // Create transaction mutation
   const createTransactionMutation = useMutation({
     mutationFn: async (transactionData: any) => {
-      return await apiRequest('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(transactionData),
-      });
+      return await apiRequest('POST', '/api/transactions', transactionData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });

@@ -1,10 +1,18 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useWallets } from "@/hooks/use-portfolio";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { PlusCircle, MinusCircle, ArrowUpDown, Coins } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 import StablecoinCard from "@/components/wallets/stablecoin-card";
 
 const currencyConfig = {
@@ -22,7 +30,126 @@ const currencyConfig = {
 
 export default function Wallets() {
   const { data: wallets, isLoading, error } = useWallets();
+  const [depositModalOpen, setDepositModalOpen] = useState(false);
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [transferModalOpen, setTransferModalOpen] = useState(false);
+  const [selectedWallet, setSelectedWallet] = useState<any>(null);
+  const [amount, setAmount] = useState("");
+  const [targetCurrency, setTargetCurrency] = useState("");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
+  const depositMutation = useMutation({
+    mutationFn: (data: { currency: string; amount: number }) => api.createDeposit(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      toast({
+        title: "Deposit Successful",
+        description: "Your deposit has been processed.",
+      });
+      setDepositModalOpen(false);
+      setAmount("");
+    },
+    onError: () => {
+      toast({
+        title: "Deposit Failed",
+        description: "Unable to process deposit. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const withdrawMutation = useMutation({
+    mutationFn: (data: { currency: string; amount: number }) => api.createWithdrawal(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      toast({
+        title: "Withdrawal Initiated",
+        description: "Your withdrawal is being processed.",
+      });
+      setWithdrawModalOpen(false);
+      setAmount("");
+    },
+    onError: () => {
+      toast({
+        title: "Withdrawal Failed",
+        description: "Unable to process withdrawal. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const transferMutation = useMutation({
+    mutationFn: (data: { fromCurrency: string; toCurrency: string; amount: number }) => api.createFxExchange(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      toast({
+        title: "Transfer Successful",
+        description: "Your currency exchange has been completed.",
+      });
+      setTransferModalOpen(false);
+      setAmount("");
+      setTargetCurrency("");
+    },
+    onError: () => {
+      toast({
+        title: "Transfer Failed",
+        description: "Unable to process transfer. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeposit = () => {
+    if (!amount || !selectedWallet) return;
+    const depositAmount = parseFloat(amount);
+    if (depositAmount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount greater than 0.",
+        variant: "destructive",
+      });
+      return;
+    }
+    depositMutation.mutate({ currency: selectedWallet.currency, amount: depositAmount });
+  };
+
+  const handleWithdraw = () => {
+    if (!amount || !selectedWallet) return;
+    const withdrawAmount = parseFloat(amount);
+    if (withdrawAmount <= 0 || withdrawAmount > parseFloat(selectedWallet.availableBalance)) {
+      toast({
+        title: "Invalid Amount",
+        description: "Amount must be greater than 0 and not exceed available balance.",
+        variant: "destructive",
+      });
+      return;
+    }
+    withdrawMutation.mutate({ currency: selectedWallet.currency, amount: withdrawAmount });
+  };
+
+  const handleTransfer = () => {
+    if (!amount || !selectedWallet || !targetCurrency) return;
+    const transferAmount = parseFloat(amount);
+    if (transferAmount <= 0 || transferAmount > parseFloat(selectedWallet.availableBalance)) {
+      toast({
+        title: "Invalid Amount",
+        description: "Amount must be greater than 0 and not exceed available balance.",
+        variant: "destructive",
+      });
+      return;
+    }
+    transferMutation.mutate({ 
+      fromCurrency: selectedWallet.currency, 
+      toCurrency: targetCurrency, 
+      amount: transferAmount 
+    });
+  };
+
+  // Early returns after all hooks are defined
   if (isLoading) {
     return (
       <div className="p-6 space-y-6">
@@ -194,16 +321,40 @@ export default function Wallets() {
                   <Progress value={utilizationPercent} className="h-2" />
                 </div>
                 
-                <div className="flex space-x-2">
-                  <Button size="sm" variant="outline" className="flex-1">
+                <div className="flex space-x-1">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1 px-2 text-xs"
+                    onClick={() => {
+                      setSelectedWallet(wallet);
+                      setDepositModalOpen(true);
+                    }}
+                  >
                     <PlusCircle className="w-3 h-3 mr-1" />
                     Deposit
                   </Button>
-                  <Button size="sm" variant="outline" className="flex-1">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1 px-2 text-xs"
+                    onClick={() => {
+                      setSelectedWallet(wallet);
+                      setWithdrawModalOpen(true);
+                    }}
+                  >
                     <MinusCircle className="w-3 h-3 mr-1" />
                     Withdraw
                   </Button>
-                  <Button size="sm" variant="outline" className="flex-1">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1 px-2 text-xs"
+                    onClick={() => {
+                      setSelectedWallet(wallet);
+                      setTransferModalOpen(true);
+                    }}
+                  >
                     <ArrowUpDown className="w-3 h-3 mr-1" />
                     Transfer
                   </Button>
@@ -214,6 +365,141 @@ export default function Wallets() {
         })}
         </div>
       </div>
+
+      {/* Deposit Modal */}
+      <Dialog open={depositModalOpen} onOpenChange={setDepositModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Deposit {selectedWallet?.currency}</DialogTitle>
+            <DialogDescription>
+              Add funds to your {selectedWallet?.currency} wallet
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="deposit-amount">Amount</Label>
+              <Input
+                id="deposit-amount"
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Enter amount"
+              />
+            </div>
+            <div className="flex space-x-2">
+              <Button 
+                onClick={handleDeposit}
+                disabled={depositMutation.isPending}
+                className="flex-1"
+              >
+                {depositMutation.isPending ? "Processing..." : "Confirm Deposit"}
+              </Button>
+              <Button variant="outline" onClick={() => setDepositModalOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Withdraw Modal */}
+      <Dialog open={withdrawModalOpen} onOpenChange={setWithdrawModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Withdraw {selectedWallet?.currency}</DialogTitle>
+            <DialogDescription>
+              Withdraw funds from your {selectedWallet?.currency} wallet
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="withdraw-amount">Amount</Label>
+              <Input
+                id="withdraw-amount"
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Enter amount"
+              />
+              {selectedWallet && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Available: {selectedWallet.availableBalance} {selectedWallet.currency}
+                </p>
+              )}
+            </div>
+            <div className="flex space-x-2">
+              <Button 
+                onClick={handleWithdraw}
+                disabled={withdrawMutation.isPending}
+                className="flex-1"
+              >
+                {withdrawMutation.isPending ? "Processing..." : "Confirm Withdrawal"}
+              </Button>
+              <Button variant="outline" onClick={() => setWithdrawModalOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Transfer Modal */}
+      <Dialog open={transferModalOpen} onOpenChange={setTransferModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Transfer {selectedWallet?.currency}</DialogTitle>
+            <DialogDescription>
+              Exchange {selectedWallet?.currency} to another currency
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="transfer-amount">Amount</Label>
+              <Input
+                id="transfer-amount"
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Enter amount"
+              />
+              {selectedWallet && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Available: {selectedWallet.availableBalance} {selectedWallet.currency}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="target-currency">Target Currency</Label>
+              <Select value={targetCurrency} onValueChange={setTargetCurrency}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select target currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(currencyConfig)
+                    .filter(([code]) => code !== selectedWallet?.currency)
+                    .map(([code, config]) => (
+                      <SelectItem key={code} value={code}>
+                        {config.flag} {config.name} ({code})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex space-x-2">
+              <Button 
+                onClick={handleTransfer}
+                disabled={transferMutation.isPending}
+                className="flex-1"
+              >
+                {transferMutation.isPending ? "Processing..." : "Confirm Transfer"}
+              </Button>
+              <Button variant="outline" onClick={() => setTransferModalOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
