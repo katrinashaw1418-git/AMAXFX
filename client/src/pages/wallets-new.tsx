@@ -115,6 +115,9 @@ export default function Wallets() {
   const [cardholderName, setCardholderName] = useState('');
 
   const { toast } = useToast();
+  
+  // Always call this hook at the top level to avoid hooks order issues
+  const { data: fxRateData } = useFxRate(fromCurrency || 'USD', toCurrency || 'EUR');
 
   // Deposit mutation
   const depositMutation = useMutation({
@@ -625,15 +628,11 @@ export default function Wallets() {
                     <div className="relative">
                       <div className="h-14 bg-gray-50 border rounded-md flex items-center px-4">
                         <span className="text-2xl font-bold text-gray-900">
-                          {fromCurrency && toCurrency && amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0 ? (
+                          {fromCurrency && toCurrency && amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0 && fxRateData ? (
                             (() => {
-                              const { data: fxRate } = useFxRate(fromCurrency, toCurrency);
-                              if (fxRate) {
-                                const rate = parseFloat(fxRate.rate);
-                                const convertedAmount = parseFloat(amount) * rate * 0.995; // 0.5% fee
-                                return convertedAmount.toFixed(2);
-                              }
-                              return "0.00";
+                              const rate = parseFloat(fxRateData.rate);
+                              const convertedAmount = parseFloat(amount) * rate * 0.995; // 0.5% fee
+                              return convertedAmount.toFixed(2);
                             })()
                           ) : "0.00"}
                         </span>
@@ -681,9 +680,8 @@ export default function Wallets() {
                   <div className="text-right">
                     <div className="font-medium">
                       1 {fromCurrency} = {(() => {
-                        const { data: fxRate } = useFxRate(fromCurrency, toCurrency);
-                        if (fxRate) {
-                          const rate = parseFloat(fxRate.rate);
+                        if (fxRateData) {
+                          const rate = parseFloat(fxRateData.rate);
                           return rate > 1 ? rate.toFixed(2) : rate.toFixed(6);
                         }
                         return "Loading...";
@@ -708,9 +706,8 @@ export default function Wallets() {
                         <span>Recipient gets</span>
                         <span>
                           {(() => {
-                            const { data: fxRate } = useFxRate(fromCurrency, toCurrency);
-                            if (fxRate) {
-                              const rate = parseFloat(fxRate.rate);
+                            if (fxRateData) {
+                              const rate = parseFloat(fxRateData.rate);
                               const convertedAmount = parseFloat(amount) * rate * 0.995;
                               return `${CurrencyConfig[toCurrency as keyof typeof CurrencyConfig]?.symbol}${convertedAmount.toFixed(2)} ${toCurrency}`;
                             }
