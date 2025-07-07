@@ -166,6 +166,26 @@ export default function Wallets() {
   // Exchange rate display helpers
   const exchangeRateText = useExchangeRateDisplay(fromCurrency, toCurrency);
 
+  // Get exchange rate for transfer calculation
+  const { data: transferFxRate } = useFxRate(fromCurrency, toCurrency);
+  
+  // Calculate transfer amount with fee
+  const calculateTransferAmount = (amount: string, fromCurrency: string, toCurrency: string) => {
+    if (!amount || !fromCurrency || !toCurrency) return '0.00';
+    
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum) || amountNum <= 0) return '0.00';
+    
+    if (!transferFxRate) return 'Loading...';
+    
+    const rate = parseFloat(transferFxRate.rate);
+    const grossConverted = amountNum * rate;
+    const transactionFee = grossConverted * 0.005; // 0.5% fee
+    const netConverted = grossConverted - transactionFee;
+    
+    return `${netConverted.toFixed(2)} ${toCurrency}`;
+  };
+
   const transferMutation = useMutation({
     mutationFn: async (data: { fromCurrency: string; toCurrency: string; amount: number }) => {
       console.log("Making transfer API call with data:", data);
@@ -730,7 +750,7 @@ export default function Wallets() {
               <div className="flex justify-between items-center bg-white rounded p-2">
                 <span className="font-medium text-gray-800">You'll receive:</span>
                 <span className="font-bold text-lg text-green-600">
-                  Loading...
+                  {calculateTransferAmount(amount, fromCurrency, toCurrency)}
                 </span>
               </div>
               <div className="text-xs text-muted-foreground text-center">
