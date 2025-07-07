@@ -104,8 +104,12 @@ export default function Wallets() {
   const [payerName, setPayerName] = useState("");
   const [payerAccountNumber, setPayerAccountNumber] = useState("");
   const [payerBsb, setPayerBsb] = useState("");
+  const [selectedCurrency, setSelectedCurrency] = useState("USD");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Get exchange rate for selected currency
+  const { data: exchangeRate } = useFxRate("USD", selectedCurrency);
 
   const depositMutation = useMutation({
     mutationFn: (data: { currency: string; amount: number }) => api.createDeposit(data),
@@ -309,8 +313,16 @@ export default function Wallets() {
   }
 
   // Calculate total balance as fiat + crypto (using portfolio data for accuracy)
-  const totalBalance = portfolio ? 
+  const totalBalanceUSD = portfolio ? 
     (parseFloat(portfolio.fiatValue) + parseFloat(portfolio.cryptoValue)) : 0;
+  
+  // Convert to selected currency
+  const totalBalance = selectedCurrency === "USD" ? totalBalanceUSD : 
+    (exchangeRate ? totalBalanceUSD * parseFloat(exchangeRate.rate) : totalBalanceUSD);
+  
+  // Get currency configuration for display
+  const currencyInfo = currencyConfig[selectedCurrency as keyof typeof currencyConfig];
+  const currencySymbol = currencyInfo?.symbol || selectedCurrency;
 
   return (
     <div className="p-6 space-y-6">
@@ -327,13 +339,39 @@ export default function Wallets() {
 
       {/* Total Balance Overview */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Total Balance Overview</CardTitle>
+          <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue>
+                <div className="flex items-center gap-2">
+                  <span>{currencyInfo?.flag || selectedCurrency}</span>
+                  <span>{selectedCurrency}</span>
+                </div>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(currencyConfig).map(([code, config]) => (
+                <SelectItem key={code} value={code}>
+                  <div className="flex items-center gap-2">
+                    <span>{config.flag}</span>
+                    <span>{code}</span>
+                    <span className="text-sm text-gray-500">{config.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </CardHeader>
         <CardContent>
           <div className="text-3xl font-bold text-primary mb-4">
-            ${totalBalance.toLocaleString()}
+            {currencySymbol}{totalBalance.toLocaleString()}
           </div>
+          {selectedCurrency !== "USD" && exchangeRate && (
+            <div className="text-sm text-gray-600 mb-4">
+              ≈ ${totalBalanceUSD.toLocaleString()} USD • Rate: {parseFloat(exchangeRate.rate).toFixed(4)}
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center">
               <p className="text-sm text-gray-600">Fiat Assets</p>
