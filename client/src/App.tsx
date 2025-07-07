@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Layout from "@/components/layout/layout";
 import Dashboard from "@/pages/dashboard";
-import Wallets from "@/pages/wallets";
+import WalletsV1 from "@/pages/wallets-v1";
 import FxExchange from "@/pages/fx-exchange";
 import Portfolio from "@/pages/portfolio";
 import AiAdvisory from "@/pages/ai-advisory";
@@ -19,7 +19,7 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={Dashboard} />
-        <Route path="/wallets" component={Wallets} />
+        <Route path="/wallets" component={WalletsV1} />
         <Route path="/fx-exchange" component={FxExchange} />
         <Route path="/portfolio" component={Portfolio} />
         <Route path="/ai-advisory" component={AiAdvisory} />
