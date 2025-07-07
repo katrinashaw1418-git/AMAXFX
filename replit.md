@@ -303,3 +303,9 @@ Changelog:
   - **Success Validation**: Confirmed transfers work with real balance updates (SGD 333 → AUD 365.23)
   - **All Three Buttons Working**: Deposit ✅, Withdraw ✅, Transfer/Convert ✅
   - **Professional UX**: Success notifications, automatic modal closure, immediate balance updates
+- July 07, 2025. Enhanced transfer interface with comprehensive global currency support
+  - **Added 50+ Exchange Rate Pairs**: Complete support for European (SEK, NOK, DKK, PLN, CZK, HUF), Asian (KRW, TWD, THB, MYR, IDR, PHP, INR, CNY), Americas (BRL, MXN), Oceania (NZD), and Middle East/African currencies (AED, SAR, ILS, EGP, NGN, ZAR)
+  - **Enhanced "What You'll Receive" Display**: Prominent conversion summary box showing sending amount and receiving amount with large, bold green text
+  - **Improved Visual Design**: Gradient background, better spacing, and conversion summary with clear before/after amounts
+  - **Real-time Calculation Debug**: Added comprehensive logging for amount parsing and conversion calculations
+  - **Bank-like Interface**: Professional conversion display similar to major financial institutions

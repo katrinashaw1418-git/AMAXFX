@@ -43,10 +43,17 @@ function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrenc
   const rate = parseFloat(fxRate.rate);
   const displayRate = rate > 1 ? rate.toFixed(2) : rate.toFixed(6);
   
+  console.log('Exchange Rate Debug:', { amount, rate, fromCurrency, toCurrency });
+  
   let convertedAmount = '0.00';
-  if (amount && parseFloat(amount) > 0) {
-    const converted = parseFloat(amount) * rate * 0.995; // 0.5% fee
-    convertedAmount = converted > 1 ? converted.toLocaleString() : converted.toFixed(6);
+  let sendingAmount = '0.00';
+  
+  if (amount && amount.trim() !== '' && !isNaN(parseFloat(amount))) {
+    const amountNumber = parseFloat(amount);
+    const converted = amountNumber * rate * 0.995; // 0.5% fee
+    convertedAmount = converted > 1 ? converted.toFixed(2) : converted.toFixed(6);
+    sendingAmount = amountNumber.toFixed(2);
+    console.log('Calculation:', { amountNumber, rate, converted, convertedAmount });
   }
 
   return (
@@ -60,7 +67,7 @@ function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrenc
       <div className="bg-white rounded-lg border-2 border-green-200 p-3 space-y-2">
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-600">You're sending:</span>
-          <span className="text-sm font-medium">{parseFloat(amount).toLocaleString()} {fromCurrency}</span>
+          <span className="text-sm font-medium">{sendingAmount} {fromCurrency}</span>
         </div>
         
         <div className="border-t border-gray-100 pt-2">
