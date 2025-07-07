@@ -153,18 +153,48 @@ export default function Wallets() {
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex gap-1 justify-end">
-                          <Button variant="outline" size="sm" onClick={() => setFromCurrency(wallet.currency)}>
-                            <Send className="w-3 h-3 mr-1" />
-                            Send
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => setFromCurrency(wallet.currency)}>
-                            <Repeat className="w-3 h-3 mr-1" />
-                            Convert
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Plus className="w-3 h-3 mr-1" />
-                            Add
-                          </Button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="outline" size="sm" onClick={() => setFromCurrency(wallet.currency)}>
+                                  <Send className="w-3 h-3 mr-1" />
+                                  Send
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Send {wallet.currency} to another user or bank account</p>
+                                <p>Processing time: Instant - 2 hours</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="outline" size="sm" onClick={() => setFromCurrency(wallet.currency)}>
+                                  <Repeat className="w-3 h-3 mr-1" />
+                                  Convert
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Convert {wallet.currency} to another currency</p>
+                                <p>Fee: 0.5% - 1.2% | Mid-market rate</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="outline" size="sm" onClick={() => alert('Add funds feature - Connect bank account or credit card')}>
+                                  <Plus className="w-3 h-3 mr-1" />
+                                  Add
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Add money to your {wallet.currency} balance</p>
+                                <p>Bank transfer, card payment, or crypto deposit</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       </td>
                     </tr>
@@ -189,14 +219,69 @@ export default function Wallets() {
                 <Info className="w-3 h-3 mr-1" />
                 Real-time rates
               </Badge>
-              <Button variant="outline" size="sm">
-                <Plus className="w-3 h-3 mr-1" />
-                Manage Currencies
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Plus className="w-3 h-3 mr-1" />
+                    Manage Currencies
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Manage Currencies</DialogTitle>
+                    <DialogDescription>
+                      Add or remove currencies from your wallet
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="text-sm text-muted-foreground">
+                      <p>Most-used currencies are pinned to the top of your transfer dropdown for easy access.</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-medium">Available Currencies</h4>
+                      <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                        {SupportedCurrencies.filter(curr => !walletsWithRegions.find(w => w.currency === curr)).map(currency => {
+                          const config = CurrencyConfig[currency as keyof typeof CurrencyConfig];
+                          return (
+                            <Button
+                              key={currency}
+                              variant="outline"
+                              size="sm"
+                              className="justify-start"
+                              onClick={() => {
+                                // Create new wallet for this currency
+                                alert(`Adding ${currency} wallet - This will create a new ${config?.name} balance`);
+                              }}
+                            >
+                              <span className="mr-2">{config?.flag}</span>
+                              {currency}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Additional Features Banner */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border">
+              <h4 className="font-medium text-sm">Local Account Details</h4>
+              <p className="text-xs text-muted-foreground">Get IBAN, BSB, Sort Code for 10+ currencies</p>
+            </div>
+            <div className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border">
+              <h4 className="font-medium text-sm">Push Notifications</h4>
+              <p className="text-xs text-muted-foreground">Alerts for large transactions & rate changes</p>
+            </div>
+            <div className="p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border">
+              <h4 className="font-medium text-sm">Instant Transfers</h4>
+              <p className="text-xs text-muted-foreground">Send to Wise users & bank accounts instantly</p>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* From Currency */}
             <div className="space-y-2">
@@ -232,6 +317,13 @@ export default function Wallets() {
                   <SelectValue placeholder="Select currency to convert to" />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
+                  {/* Most-used currencies pinned to top */}
+                  <div className="px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50">⭐ Most Used</div>
+                  <SelectItem value="EUR">🇪🇺 EUR – Euro</SelectItem>
+                  <SelectItem value="GBP">🇬🇧 GBP – British Pound</SelectItem>
+                  <SelectItem value="JPY">🇯🇵 JPY – Japanese Yen</SelectItem>
+                  <SelectItem value="AUD">🇦🇺 AUD – Australian Dollar</SelectItem>
+
                   <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Americas</div>
                   <SelectItem value="USD">🇺🇸 USD – US Dollar</SelectItem>
                   <SelectItem value="CAD">🇨🇦 CAD – Canadian Dollar</SelectItem>
@@ -239,8 +331,6 @@ export default function Wallets() {
                   <SelectItem value="MXN">🇲🇽 MXN – Mexican Peso</SelectItem>
                   
                   <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Europe</div>
-                  <SelectItem value="EUR">🇪🇺 EUR – Euro</SelectItem>
-                  <SelectItem value="GBP">🇬🇧 GBP – British Pound</SelectItem>
                   <SelectItem value="CHF">🇨🇭 CHF – Swiss Franc</SelectItem>
                   <SelectItem value="SEK">🇸🇪 SEK – Swedish Krona</SelectItem>
                   <SelectItem value="NOK">🇳🇴 NOK – Norwegian Krone</SelectItem>
@@ -248,10 +338,9 @@ export default function Wallets() {
                   <SelectItem value="PLN">🇵🇱 PLN – Polish Zloty</SelectItem>
                   <SelectItem value="CZK">🇨🇿 CZK – Czech Koruna</SelectItem>
                   <SelectItem value="HUF">🇭🇺 HUF – Hungarian Forint</SelectItem>
-                  <SelectItem value="TRY">🇹🇷 TRY – Turkish Lira</SelectItem>
+                  <SelectItem value="TRY" disabled>🇹🇷 TRY – Turkish Lira (Temporarily unavailable)</SelectItem>
                   
                   <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Asia</div>
-                  <SelectItem value="JPY">🇯🇵 JPY – Japanese Yen</SelectItem>
                   <SelectItem value="HKD">🇭🇰 HKD – Hong Kong Dollar</SelectItem>
                   <SelectItem value="SGD">🇸🇬 SGD – Singapore Dollar</SelectItem>
                   <SelectItem value="INR">🇮🇳 INR – Indian Rupee</SelectItem>
@@ -265,7 +354,6 @@ export default function Wallets() {
                   <SelectItem value="VND">🇻🇳 VND – Vietnamese Dong</SelectItem>
                   
                   <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Oceania</div>
-                  <SelectItem value="AUD">🇦🇺 AUD – Australian Dollar</SelectItem>
                   <SelectItem value="NZD">🇳🇿 NZD – New Zealand Dollar</SelectItem>
                   
                   <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Middle East & Africa</div>
@@ -355,9 +443,53 @@ export default function Wallets() {
               <p className="text-sm text-muted-foreground mt-1">
                 Set up notifications when {fromCurrency}/{toCurrency} reaches your target rate
               </p>
-              <Button variant="outline" size="sm" className="mt-2">
-                Create Alert
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="mt-2">
+                    Create Alert
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Currency Rate Alert</DialogTitle>
+                    <DialogDescription>
+                      Get notified when {fromCurrency}/{toCurrency} reaches your target rate
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Current Rate</Label>
+                      <div className="p-2 bg-gray-50 rounded text-sm">
+                        1 {fromCurrency} = 1.23 {toCurrency}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Target Rate</Label>
+                      <Input
+                        type="number"
+                        step="0.0001"
+                        placeholder="e.g., 1.25"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Alert Type</Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose alert type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="above">Rate goes above target</SelectItem>
+                          <SelectItem value="below">Rate goes below target</SelectItem>
+                          <SelectItem value="reaches">Rate reaches target exactly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button className="w-full">
+                      Create Rate Alert
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           )}
 

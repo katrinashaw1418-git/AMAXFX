@@ -263,3 +263,12 @@ Changelog:
   - **UI/UX Improvements**: Tooltips for exchange rates, processing time indicators, security badges, and gradient styling
   - **Real-time Features**: Live rate updates, instant transfers, bank-level security notifications
   - Fixed transfer functionality to properly create new currency wallets (like DKK) when converting between currencies
+- July 07, 2025. Enhanced all wallet buttons with complete functionality and Wise-inspired features
+  - **Working Action Buttons**: All Send/Convert/Add buttons now functional with tooltips showing processing times and fees
+  - **Manage Currencies Dialog**: Full interface to add new currency wallets with visual currency selection
+  - **Currency Rate Alerts**: Complete watchlist system with target rate notifications and alert type selection
+  - **Pinned Most-Used Currencies**: EUR, GBP, JPY, AUD automatically pinned to top of dropdown for quick access
+  - **Disabled Currency Support**: TRY marked as temporarily unavailable with proper UI indication
+  - **Additional Features Display**: Local account details (IBAN/BSB), push notifications, instant transfers showcase
+  - **Enhanced Tooltips**: Comprehensive information on fees (0.5%-1.2%), processing times (instant-2hrs), and conversion methods
+  - All buttons now provide immediate user feedback and professional banking-level user experience
