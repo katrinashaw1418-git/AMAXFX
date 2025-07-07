@@ -405,7 +405,7 @@ export default function Wallets() {
                   <SelectValue placeholder="Select deposit method" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="payid">💳 PayID</SelectItem>
+                  <SelectItem value="payid">💳 PayID (Australia Only)</SelectItem>
                   <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
                 </SelectContent>
               </Select>
@@ -432,6 +432,7 @@ export default function Wallets() {
                 </h4>
                 {depositMethod === 'payid' ? (
                   <div className="text-sm text-muted-foreground space-y-1">
+                    <p>• Available only for Australian bank accounts</p>
                     <p>• Use your registered PayID: your-email@example.com</p>
                     <p>• Transfer will be processed instantly</p>
                     <p>• No additional fees for PayID transfers</p>
@@ -439,8 +440,9 @@ export default function Wallets() {
                 ) : (
                   <div className="text-sm text-muted-foreground space-y-1">
                     <p>• Account Name: Your Wealth Management Platform</p>
-                    <p>• BSB: 123-456</p>
+                    <p>• BSB: 123-456 (Australia) / Sort Code: 12-34-56 (UK)</p>
                     <p>• Account Number: 987654321</p>
+                    <p>• SWIFT: WPLTAU2S (International transfers)</p>
                     <p>• Reference: {selectedWallet?.currency}-DEPOSIT-{Date.now().toString().slice(-6)}</p>
                     <p>• Processing time: 1-3 business days</p>
                   </div>

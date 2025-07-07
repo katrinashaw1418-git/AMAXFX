@@ -200,3 +200,9 @@ Changelog:
   - Investment modal shows capital invested, available funds, and minimum requirements
   - Portfolio overview shows total invested, current value, returns, and available capital
   - All investment operations update wallet, portfolio, and transaction data in real-time
+- July 07, 2025. Enhanced banking options with geographical restrictions
+  - PayID deposit option now clearly marked as "Australia Only" 
+  - Added comprehensive banking details including BSB, Sort Code, and SWIFT codes
+  - Bank transfer instructions now include international transfer options
+  - Withdrawal functionality fixed with proper balance updates and 5-second refresh intervals
+  - All wallet operations now show immediate balance changes with cache invalidation
