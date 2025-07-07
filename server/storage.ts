@@ -93,6 +93,7 @@ export class MemStorage implements IStorage {
       totalValue: "4164500.00",
       cryptoValue: "1109500.00",
       fiatValue: "3055000.00",
+      investmentValue: "1800000.00",
       monthlyPnl: "47392.00",
       monthlyPnlPercent: "18.50",
       updatedAt: new Date(),
@@ -1240,6 +1241,7 @@ export class MemStorage implements IStorage {
     const portfolio: Portfolio = {
       ...insertPortfolio,
       id,
+      investmentValue: insertPortfolio.investmentValue || "0.00",
       updatedAt: new Date(),
     };
     this.portfolios.set(id, portfolio);
@@ -1250,7 +1252,12 @@ export class MemStorage implements IStorage {
     const portfolio = Array.from(this.portfolios.values()).find(p => p.userId === userId);
     if (!portfolio) return undefined;
     
-    const updatedPortfolio = { ...portfolio, ...updatePortfolio, updatedAt: new Date() };
+    const updatedPortfolio = { 
+      ...portfolio, 
+      ...updatePortfolio, 
+      investmentValue: updatePortfolio.investmentValue || portfolio.investmentValue || "0.00",
+      updatedAt: new Date() 
+    };
     this.portfolios.set(portfolio.id, updatedPortfolio);
     return updatedPortfolio;
   }
