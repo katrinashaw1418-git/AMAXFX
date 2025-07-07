@@ -288,3 +288,10 @@ Changelog:
   - **Transfer/Convert System**: Fully operational with real-time rates, 0.5% fees, and instant processing
   - **Balance Display**: All "Your Balances" dropdown currencies working with accurate conversions
   - **Testing Verified**: All currency pairs tested and confirmed working for both directions
+- July 07, 2025. Reverted to original table layout with three-button functionality
+  - **Table Layout Restored**: Returned to clean table view with Currency, Balance, Approx. Value, and Actions columns
+  - **Three-Button Integration**: Deposit, Withdraw, Transfer buttons properly connected to working modal dialogs
+  - **Functional Consistency**: All button functionality preserved from previous implementations
+  - **Modal Operations**: Deposit mirrors "Add" functionality, Withdraw mirrors "Send" functionality as requested
+  - **Display Currency Selector**: Maintained ability to view balances in different currencies (USD, EUR, etc.)
+  - **Clean Interface**: Professional table layout with hover effects and proper spacing maintained
