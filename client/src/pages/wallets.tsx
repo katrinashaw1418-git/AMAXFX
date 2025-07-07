@@ -39,6 +39,10 @@ export default function Wallets() {
   const [targetCurrency, setTargetCurrency] = useState("");
   const [depositMethod, setDepositMethod] = useState("");
   const [withdrawMethod, setWithdrawMethod] = useState("bank_transfer");
+  const [payerPayId, setPayerPayId] = useState("");
+  const [payerName, setPayerName] = useState("");
+  const [payerAccountNumber, setPayerAccountNumber] = useState("");
+  const [payerBsb, setPayerBsb] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -51,11 +55,17 @@ export default function Wallets() {
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
       queryClient.refetchQueries({ queryKey: ["/api/wallets"] });
       toast({
-        title: "Deposit Instructions Provided",
-        description: "Complete the transfer using the details shown above. Your balance will update once received.",
+        title: "Deposit Request Submitted",
+        description: "Your payer information has been recorded. Complete the transfer using the details shown.",
         duration: 5000,
       });
-      // Don't close modal immediately, let user copy details
+      setDepositModalOpen(false);
+      setAmount("");
+      setDepositMethod("");
+      setPayerPayId("");
+      setPayerName("");
+      setPayerAccountNumber("");
+      setPayerBsb("");
     },
     onError: () => {
       toast({
@@ -107,6 +117,10 @@ export default function Wallets() {
       setTargetCurrency("");
       setDepositMethod("");
       setWithdrawMethod("bank_transfer");
+      setPayerPayId("");
+      setPayerName("");
+      setPayerAccountNumber("");
+      setPayerBsb("");
     },
     onError: () => {
       toast({
@@ -126,6 +140,28 @@ export default function Wallets() {
       });
       return;
     }
+
+    // Validate payer information based on method
+    if (depositMethod === 'payid') {
+      if (!payerPayId || !payerName) {
+        toast({
+          title: "Missing PayID Information",
+          description: "Please enter your PayID and full name.",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else if (depositMethod === 'bank_transfer') {
+      if (!payerName || !payerAccountNumber || !payerBsb) {
+        toast({
+          title: "Missing Bank Information",
+          description: "Please enter your name, BSB, and account number.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     const depositAmount = parseFloat(amount);
     if (depositAmount <= 0) {
       toast({
@@ -135,13 +171,6 @@ export default function Wallets() {
       });
       return;
     }
-    
-    // Show different confirmation messages based on method
-    const method = depositMethod === 'payid' ? 'PayID' : 'Bank Transfer';
-    toast({
-      title: `${method} Instructions Sent`,
-      description: `Follow the ${method} instructions shown above to complete your deposit.`,
-    });
     
     // For demo purposes, we'll process the deposit immediately
     // In production, deposits would be processed when the actual transfer is received
@@ -435,13 +464,86 @@ export default function Wallets() {
               )}
             </div>
             {depositMethod && (
-              <div className="p-4 bg-muted rounded-lg border">
-                <h4 className="font-semibold mb-3 text-foreground">
-                  {depositMethod === 'payid' ? '📱 PayID Transfer Details' : '🏦 Bank Transfer Details'}
-                </h4>
-                {depositMethod === 'payid' ? (
-                  <div className="space-y-3">
-                    <div className="text-sm space-y-2">
+              <div className="space-y-4">
+                <div className="p-4 bg-muted rounded-lg border">
+                  <h4 className="font-semibold mb-3 text-foreground">
+                    {depositMethod === 'payid' ? '📱 Your PayID Information' : '🏦 Your Bank Information'}
+                  </h4>
+                  {depositMethod === 'payid' ? (
+                    <div className="space-y-3">
+                      <div>
+                        <Label htmlFor="payer-payid">Your PayID (Email or Mobile)</Label>
+                        <Input
+                          id="payer-payid"
+                          type="text"
+                          value={payerPayId}
+                          onChange={(e) => setPayerPayId(e.target.value)}
+                          placeholder="your-email@example.com or 0412 345 678"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="payer-name">Your Full Name</Label>
+                        <Input
+                          id="payer-name"
+                          type="text"
+                          value={payerName}
+                          onChange={(e) => setPayerName(e.target.value)}
+                          placeholder="As shown on your bank account"
+                        />
+                      </div>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>• This information helps us match your transfer</p>
+                        <p>• Use the PayID linked to your sending bank account</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div>
+                        <Label htmlFor="payer-name-bank">Your Full Name</Label>
+                        <Input
+                          id="payer-name-bank"
+                          type="text"
+                          value={payerName}
+                          onChange={(e) => setPayerName(e.target.value)}
+                          placeholder="As shown on your bank account"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="payer-bsb">Your BSB</Label>
+                          <Input
+                            id="payer-bsb"
+                            type="text"
+                            value={payerBsb}
+                            onChange={(e) => setPayerBsb(e.target.value)}
+                            placeholder="123-456"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="payer-account">Your Account Number</Label>
+                          <Input
+                            id="payer-account"
+                            type="text"
+                            value={payerAccountNumber}
+                            onChange={(e) => setPayerAccountNumber(e.target.value)}
+                            placeholder="12345678"
+                          />
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>• This information helps us match your transfer</p>
+                        <p>• Use details from your sending bank account</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="p-4 bg-muted rounded-lg border">
+                  <h4 className="font-semibold mb-3 text-foreground">
+                    {depositMethod === 'payid' ? '📱 Send Payment To' : '🏦 Send Payment To'}
+                  </h4>
+                  {depositMethod === 'payid' ? (
+                    <div className="space-y-2">
                       <div className="flex justify-between p-2 bg-background rounded border">
                         <span className="text-muted-foreground">PayID (Email):</span>
                         <span className="font-mono">support@wealthplatform.com.au</span>
@@ -455,30 +557,19 @@ export default function Wallets() {
                         <span className="font-mono">${amount || '0.00'} {selectedWallet?.currency}</span>
                       </div>
                     </div>
-                    <div className="text-xs text-muted-foreground space-y-1">
-                      <p>✓ Available only for Australian NPP-supported banks</p>
-                      <p>✓ Transfers processed instantly 24/7</p>
-                      <p>✓ No additional fees for PayID transfers</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="text-sm space-y-2">
+                  ) : (
+                    <div className="space-y-2">
                       <div className="flex justify-between p-2 bg-background rounded border">
                         <span className="text-muted-foreground">Account Name:</span>
                         <span className="font-mono">Your Wealth Management Platform</span>
                       </div>
                       <div className="flex justify-between p-2 bg-background rounded border">
-                        <span className="text-muted-foreground">BSB (AU):</span>
+                        <span className="text-muted-foreground">BSB:</span>
                         <span className="font-mono">123-456</span>
                       </div>
                       <div className="flex justify-between p-2 bg-background rounded border">
                         <span className="text-muted-foreground">Account Number:</span>
                         <span className="font-mono">987654321</span>
-                      </div>
-                      <div className="flex justify-between p-2 bg-background rounded border">
-                        <span className="text-muted-foreground">SWIFT (Intl):</span>
-                        <span className="font-mono">WPLTAU2S</span>
                       </div>
                       <div className="flex justify-between p-2 bg-background rounded border">
                         <span className="text-muted-foreground">Reference:</span>
@@ -489,29 +580,28 @@ export default function Wallets() {
                         <span className="font-mono">${amount || '0.00'} {selectedWallet?.currency}</span>
                       </div>
                     </div>
-                    <div className="text-xs text-muted-foreground space-y-1">
-                      <p>✓ Processing time: 1-3 business days</p>
-                      <p>✓ Include the reference number for faster processing</p>
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
             <div className="flex space-x-2">
               <Button 
                 onClick={handleDeposit}
-                disabled={depositMutation.isPending || !depositMethod || !amount}
+                disabled={depositMutation.isPending || !depositMethod || !amount || 
+                         (depositMethod === 'payid' && (!payerPayId || !payerName)) ||
+                         (depositMethod === 'bank_transfer' && (!payerName || !payerAccountNumber || !payerBsb))}
                 className="flex-1"
               >
-                {depositMutation.isPending ? "Processing..." : 
-                 depositMethod === 'payid' ? "Get PayID Details" : 
-                 depositMethod === 'bank_transfer' ? "Get Bank Details" : 
-                 "Select Method & Amount"}
+                {depositMutation.isPending ? "Processing..." : "Submit Deposit Request"}
               </Button>
               <Button variant="outline" onClick={() => {
                 setDepositModalOpen(false);
                 setAmount("");
                 setDepositMethod("");
+                setPayerPayId("");
+                setPayerName("");
+                setPayerAccountNumber("");
+                setPayerBsb("");
               }}>
                 Close
               </Button>
