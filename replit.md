@@ -316,4 +316,3 @@ Changelog:
   - **Enhanced Balance Updates**: Immediate wallet balance refresh after successful transfers with proper cache invalidation
   - **Zero-Balance Wallet Hiding**: Wallets with zero balance automatically removed from balance table display
   - **Improved Success Notifications**: Transfer confirmations show exact converted amounts received after fees
-  - **Fixed Currency Alignment**: Resolved text alignment issues for BTC/ETH by standardizing flag/symbol display with consistent width containers
