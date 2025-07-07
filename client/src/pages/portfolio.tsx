@@ -16,39 +16,48 @@ export default function Portfolio() {
 
   const isLoading = portfolioLoading || walletsLoading || investmentsLoading;
 
-  // Calculate wallet values
+  // Use portfolio data for accurate values instead of calculating on frontend
+  const cryptoValue = parseFloat(portfolio?.cryptoValue || '0');
+  const fiatValue = parseFloat(portfolio?.fiatValue || '0');
+  const investmentValue = parseFloat(portfolio?.investmentValue || '0');
+  const totalPortfolioValue = parseFloat(portfolio?.totalValue || '0');
+
+  // Create allocation data from portfolio values
+  const allocationData = [
+    {
+      name: 'Fiat Currencies',
+      value: fiatValue,
+      percentage: totalPortfolioValue > 0 ? (fiatValue / totalPortfolioValue) * 100 : 0,
+      color: COLORS[0],
+      type: 'fiat'
+    },
+    {
+      name: 'Crypto Assets',
+      value: cryptoValue,
+      percentage: totalPortfolioValue > 0 ? (cryptoValue / totalPortfolioValue) * 100 : 0,
+      color: COLORS[1],
+      type: 'crypto'
+    },
+    {
+      name: 'Investment Products',
+      value: investmentValue,
+      percentage: totalPortfolioValue > 0 ? (investmentValue / totalPortfolioValue) * 100 : 0,
+      color: COLORS[2],
+      type: 'investment'
+    }
+  ].filter(item => item.value > 0);
+
+  // Individual wallet breakdown for detailed view
   const walletData = wallets?.map((wallet, index) => {
     const balance = parseFloat(wallet.balance);
-    const value = wallet.walletType === 'crypto' ? balance * 43500 : balance; // Mock BTC price
-    
     return {
       name: wallet.currency,
-      value: value,
-      percentage: 0, // Will be calculated below
+      value: balance,
+      percentage: 0, // Raw balance for detailed view
       color: COLORS[index % COLORS.length],
       type: wallet.walletType
     };
   }).filter(item => item.value > 0) || [];
-
-  // Calculate investment values
-  const totalInvestmentValue = userInvestments?.reduce((sum, inv) => sum + parseFloat(inv.currentValue), 0) || 0;
-  
-  // Add investments as an allocation category
-  const allocationData = [...walletData];
-  if (totalInvestmentValue > 0) {
-    allocationData.push({
-      name: 'Investments',
-      value: totalInvestmentValue,
-      percentage: 0,
-      color: COLORS[walletData.length % COLORS.length],
-      type: 'investment'
-    });
-  }
-
-  const totalValue = allocationData.reduce((sum, item) => sum + item.value, 0);
-  allocationData.forEach(item => {
-    item.percentage = (item.value / totalValue) * 100;
-  });
 
 
 
@@ -74,11 +83,7 @@ export default function Portfolio() {
     );
   }
 
-  // Calculate actual portfolio values from wallets and investments
-  const cryptoValue = allocationData.filter(item => item.type === 'crypto').reduce((sum, item) => sum + item.value, 0);
-  const fiatValue = allocationData.filter(item => item.type === 'fiat').reduce((sum, item) => sum + item.value, 0);
-  const investmentValue = allocationData.filter(item => item.type === 'investment').reduce((sum, item) => sum + item.value, 0);
-  const totalPortfolioValue = cryptoValue + fiatValue + investmentValue;
+  // Portfolio values are already calculated from the portfolio endpoint
   
   // Calculate monthly P&L based on actual investment returns
   const totalInvested = userInvestments?.reduce((sum, inv) => sum + parseFloat(inv.investedAmount), 0) || 0;
