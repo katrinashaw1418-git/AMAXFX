@@ -156,7 +156,7 @@ export default function Investments() {
     currency: wallet.currency,
     balance: parseFloat(wallet.availableBalance || '0'),
     displayName: wallet.displayName || wallet.currency,
-    symbol: wallet.symbol || wallet.currency
+    symbol: wallet.currency === 'USD' ? '$' : (wallet.symbol && wallet.symbol !== wallet.currency ? wallet.symbol : '')
   })) || [];
 
   // Convert to USD for display if not USD
@@ -258,7 +258,7 @@ export default function Investments() {
                             <div className="flex items-center justify-between w-full">
                               <span className="font-medium">{currency.currency}</span>
                               <span className="text-xs text-gray-500 ml-2">
-                                {currency.currency === 'USD' ? '$' : currency.symbol || ''}{currency.balance.toLocaleString()}
+                                {currency.symbol || currency.currency + ' '}{currency.balance.toLocaleString()}
                               </span>
                             </div>
                           </SelectItem>
@@ -271,7 +271,7 @@ export default function Investments() {
               </div>
               <div className="flex flex-col items-start justify-end h-16">
                 <p className="text-lg font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis w-full leading-tight">
-                  {selectedCurrency === 'USD' ? '$' : selectedWallet?.symbol || ''}{availableBalance.toLocaleString()}
+                  {selectedCurrency === 'USD' ? '$' : (selectedWallet?.symbol && selectedWallet.symbol !== selectedCurrency ? selectedWallet.symbol : selectedCurrency + ' ')}{availableBalance.toLocaleString()}
                 </p>
                 {selectedCurrency !== 'USD' && (
                   <span className="text-xs text-gray-600">≈ ${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()} USD</span>
