@@ -50,8 +50,15 @@ function WalletValueDisplay({ wallet, displayCurrency }: { wallet: any, displayC
     const formattedBalance = balance > 1 ? balance.toLocaleString() : balance.toFixed(6);
     
     return (
-      <div className="text-muted-foreground">
-        {config?.symbol}{formattedBalance}
+      <div>
+        <div className="text-muted-foreground">
+          {config?.symbol}{formattedBalance}
+        </div>
+        {wallet.currency !== displayCurrency && (
+          <div className="text-xs text-gray-500 mt-1">
+            1 {wallet.currency} = 1 {displayCurrency}
+          </div>
+        )}
       </div>
     );
   }
@@ -65,19 +72,14 @@ function WalletValueDisplay({ wallet, displayCurrency }: { wallet: any, displayC
   const displayRate = rate > 1 ? rate.toFixed(2) : rate.toFixed(6);
   
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger>
-          <div className="text-muted-foreground">
-            ≈ {config?.symbol}{formattedValue}
-          </div>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Exchange rate: 1 {wallet.currency} = {displayRate} {displayCurrency}</p>
-          <p>Updated in real-time</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <div>
+      <div className="text-muted-foreground">
+        ≈ {config?.symbol}{formattedValue}
+      </div>
+      <div className="text-xs text-gray-500 mt-1">
+        1 {wallet.currency} = {displayRate} {displayCurrency}
+      </div>
+    </div>
   );
 }
 
