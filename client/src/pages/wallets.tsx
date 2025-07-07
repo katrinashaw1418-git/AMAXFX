@@ -428,14 +428,14 @@ export default function Wallets() {
 
       {/* Deposit Modal */}
       <Dialog open={depositModalOpen} onOpenChange={setDepositModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[450px] max-h-[85vh] overflow-y-auto p-4">
           <DialogHeader>
             <DialogTitle>Deposit {selectedWallet?.currency}</DialogTitle>
             <DialogDescription>
               Add funds to your {selectedWallet?.currency} wallet
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div>
               <Label htmlFor="deposit-method">Deposit Method</Label>
               <Select value={depositMethod} onValueChange={setDepositMethod}>
@@ -464,118 +464,115 @@ export default function Wallets() {
               )}
             </div>
             {depositMethod && (
-              <div className="space-y-4">
-                <div className="p-4 bg-muted rounded-lg border">
-                  <h4 className="font-semibold mb-3 text-foreground">
+              <div className="space-y-3">
+                <div className="p-3 bg-muted rounded-lg border">
+                  <h4 className="font-medium mb-2 text-sm">
                     {depositMethod === 'payid' ? '📱 Your PayID Information' : '🏦 Your Bank Information'}
                   </h4>
                   {depositMethod === 'payid' ? (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       <div>
-                        <Label htmlFor="payer-payid">Your PayID (Email or Mobile)</Label>
+                        <Label htmlFor="payer-payid" className="text-xs">Your PayID</Label>
                         <Input
                           id="payer-payid"
                           type="text"
                           value={payerPayId}
                           onChange={(e) => setPayerPayId(e.target.value)}
-                          placeholder="your-email@example.com or 0412 345 678"
+                          placeholder="email@example.com or 0412 345 678"
+                          className="h-8 text-sm"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="payer-name">Your Full Name</Label>
+                        <Label htmlFor="payer-name" className="text-xs">Your Full Name</Label>
                         <Input
                           id="payer-name"
                           type="text"
                           value={payerName}
                           onChange={(e) => setPayerName(e.target.value)}
                           placeholder="As shown on your bank account"
+                          className="h-8 text-sm"
                         />
-                      </div>
-                      <div className="text-xs text-muted-foreground space-y-1">
-                        <p>• This information helps us match your transfer</p>
-                        <p>• Use the PayID linked to your sending bank account</p>
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       <div>
-                        <Label htmlFor="payer-name-bank">Your Full Name</Label>
+                        <Label htmlFor="payer-name-bank" className="text-xs">Your Full Name</Label>
                         <Input
                           id="payer-name-bank"
                           type="text"
                           value={payerName}
                           onChange={(e) => setPayerName(e.target.value)}
                           placeholder="As shown on your bank account"
+                          className="h-8 text-sm"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <Label htmlFor="payer-bsb">Your BSB</Label>
+                          <Label htmlFor="payer-bsb" className="text-xs">Your BSB</Label>
                           <Input
                             id="payer-bsb"
                             type="text"
                             value={payerBsb}
                             onChange={(e) => setPayerBsb(e.target.value)}
                             placeholder="123-456"
+                            className="h-8 text-sm"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="payer-account">Your Account Number</Label>
+                          <Label htmlFor="payer-account" className="text-xs">Your Account Number</Label>
                           <Input
                             id="payer-account"
                             type="text"
                             value={payerAccountNumber}
                             onChange={(e) => setPayerAccountNumber(e.target.value)}
                             placeholder="12345678"
+                            className="h-8 text-sm"
                           />
                         </div>
-                      </div>
-                      <div className="text-xs text-muted-foreground space-y-1">
-                        <p>• This information helps us match your transfer</p>
-                        <p>• Use details from your sending bank account</p>
                       </div>
                     </div>
                   )}
                 </div>
                 
-                <div className="p-4 bg-muted rounded-lg border">
-                  <h4 className="font-semibold mb-3 text-foreground">
+                <div className="p-3 bg-muted rounded-lg border">
+                  <h4 className="font-medium mb-2 text-sm">
                     {depositMethod === 'payid' ? '📱 Send Payment To' : '🏦 Send Payment To'}
                   </h4>
                   {depositMethod === 'payid' ? (
-                    <div className="space-y-2">
-                      <div className="flex justify-between p-2 bg-background rounded border">
+                    <div className="space-y-1">
+                      <div className="flex justify-between p-2 bg-background rounded text-xs">
                         <span className="text-muted-foreground">PayID (Email):</span>
                         <span className="font-mono">support@wealthplatform.com.au</span>
                       </div>
-                      <div className="flex justify-between p-2 bg-background rounded border">
+                      <div className="flex justify-between p-2 bg-background rounded text-xs">
                         <span className="text-muted-foreground">PayID (Mobile):</span>
                         <span className="font-mono">0412 345 678</span>
                       </div>
-                      <div className="flex justify-between p-2 bg-background rounded border">
+                      <div className="flex justify-between p-2 bg-background rounded text-xs">
                         <span className="text-muted-foreground">Amount:</span>
                         <span className="font-mono">${amount || '0.00'} {selectedWallet?.currency}</span>
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      <div className="flex justify-between p-2 bg-background rounded border">
+                    <div className="space-y-1">
+                      <div className="flex justify-between p-2 bg-background rounded text-xs">
                         <span className="text-muted-foreground">Account Name:</span>
                         <span className="font-mono">Your Wealth Management Platform</span>
                       </div>
-                      <div className="flex justify-between p-2 bg-background rounded border">
+                      <div className="flex justify-between p-2 bg-background rounded text-xs">
                         <span className="text-muted-foreground">BSB:</span>
                         <span className="font-mono">123-456</span>
                       </div>
-                      <div className="flex justify-between p-2 bg-background rounded border">
+                      <div className="flex justify-between p-2 bg-background rounded text-xs">
                         <span className="text-muted-foreground">Account Number:</span>
                         <span className="font-mono">987654321</span>
                       </div>
-                      <div className="flex justify-between p-2 bg-background rounded border">
+                      <div className="flex justify-between p-2 bg-background rounded text-xs">
                         <span className="text-muted-foreground">Reference:</span>
-                        <span className="font-mono">{selectedWallet?.currency}-DEPOSIT-{Date.now().toString().slice(-6)}</span>
+                        <span className="font-mono text-xs">{selectedWallet?.currency}-DEPOSIT-{Date.now().toString().slice(-6)}</span>
                       </div>
-                      <div className="flex justify-between p-2 bg-background rounded border">
+                      <div className="flex justify-between p-2 bg-background rounded text-xs">
                         <span className="text-muted-foreground">Amount:</span>
                         <span className="font-mono">${amount || '0.00'} {selectedWallet?.currency}</span>
                       </div>
@@ -584,17 +581,17 @@ export default function Wallets() {
                 </div>
               </div>
             )}
-            <div className="flex space-x-2">
+            <div className="flex space-x-2 pt-2">
               <Button 
                 onClick={handleDeposit}
                 disabled={depositMutation.isPending || !depositMethod || !amount || 
                          (depositMethod === 'payid' && (!payerPayId || !payerName)) ||
                          (depositMethod === 'bank_transfer' && (!payerName || !payerAccountNumber || !payerBsb))}
-                className="flex-1"
+                className="flex-1 h-8 text-sm"
               >
                 {depositMutation.isPending ? "Processing..." : "Submit Deposit Request"}
               </Button>
-              <Button variant="outline" onClick={() => {
+              <Button variant="outline" className="h-8 text-sm" onClick={() => {
                 setDepositModalOpen(false);
                 setAmount("");
                 setDepositMethod("");
@@ -612,14 +609,14 @@ export default function Wallets() {
 
       {/* Withdraw Modal */}
       <Dialog open={withdrawModalOpen} onOpenChange={setWithdrawModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[400px] max-h-[80vh] overflow-y-auto p-4">
           <DialogHeader>
             <DialogTitle>Withdraw {selectedWallet?.currency}</DialogTitle>
             <DialogDescription>
               Withdraw funds from your {selectedWallet?.currency} wallet
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div>
               <Label htmlFor="withdraw-method">Withdrawal Method</Label>
               <Select value={withdrawMethod} onValueChange={setWithdrawMethod}>
@@ -647,23 +644,23 @@ export default function Wallets() {
               )}
             </div>
             <div className="p-3 bg-muted rounded-lg">
-              <h4 className="font-medium mb-2">Bank Transfer Instructions</h4>
-              <div className="text-sm text-muted-foreground space-y-1">
-                <p>• Funds will be transferred to your registered bank account</p>
+              <h4 className="font-medium mb-2 text-sm">🏦 Bank Transfer Instructions</h4>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>• Funds transferred to your registered bank account</p>
                 <p>• Processing time: 1-3 business days</p>
                 <p>• Withdrawal fee: $25.00</p>
                 <p>• Please ensure your bank details are up to date</p>
               </div>
             </div>
-            <div className="flex space-x-2">
+            <div className="flex space-x-2 pt-2">
               <Button 
                 onClick={handleWithdraw}
                 disabled={withdrawMutation.isPending}
-                className="flex-1"
+                className="flex-1 h-8 text-sm"
               >
                 {withdrawMutation.isPending ? "Processing..." : "Confirm Withdrawal"}
               </Button>
-              <Button variant="outline" onClick={() => setWithdrawModalOpen(false)}>
+              <Button variant="outline" className="h-8 text-sm" onClick={() => setWithdrawModalOpen(false)}>
                 Cancel
               </Button>
             </div>
@@ -673,14 +670,14 @@ export default function Wallets() {
 
       {/* Transfer Modal */}
       <Dialog open={transferModalOpen} onOpenChange={setTransferModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[420px] max-h-[80vh] overflow-y-auto p-4">
           <DialogHeader>
             <DialogTitle>Transfer {selectedWallet?.currency}</DialogTitle>
             <DialogDescription>
               Exchange {selectedWallet?.currency} to another currency
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div>
               <Label htmlFor="transfer-amount">Amount</Label>
               <Input

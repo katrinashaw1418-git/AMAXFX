@@ -207,3 +207,11 @@ Changelog:
   - Bank transfer instructions now include international transfer options
   - Withdrawal functionality fixed with proper balance updates and 5-second refresh intervals
   - All wallet operations now show immediate balance changes with cache invalidation
+- July 07, 2025. Improved deposit/withdrawal modal user experience
+  - Added proper payer information collection forms for both PayID and bank transfers
+  - PayID form collects user's PayID (email/mobile) and full name for transaction matching
+  - Bank transfer form collects user's name, BSB, and account number details
+  - Reduced modal sizes from 600px to 450px (deposit) and 400px (withdraw) for better UX
+  - Implemented compact design with smaller fonts, reduced spacing, and shorter input heights
+  - Fixed accessibility warnings by adding proper DialogDescription components
+  - All forms validate required fields before enabling submission buttons
