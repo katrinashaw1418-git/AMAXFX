@@ -13,7 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { CurrencyConfig, SupportedCurrencies, CurrencyRegions, type WalletBalance } from '@/lib/types';
-import { TrendingUp, TrendingDown, Plus, Minus, ArrowRightLeft, Send, Repeat, Info, DollarSign } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Minus, ArrowRightLeft, Send, Repeat, Info, DollarSign, AlertCircle } from 'lucide-react';
 import { useFxRate } from '@/hooks/use-fx-rates';
 import { useWallets } from '@/hooks/use-portfolio';
 
