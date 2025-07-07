@@ -325,19 +325,19 @@ export default function Investments() {
                 <div className="space-y-3 mb-4">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Target IRR:</span>
-                    <span className="font-semibold text-green-600">{product.targetNetIrr}</span>
+                    <span className="font-semibold text-green-600 text-right">{product.targetNetIrr}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Term:</span>
-                    <span className="font-medium">{product.term}</span>
+                    <span className="font-medium text-right">{product.term}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Min. Investment:</span>
-                    <span className="font-medium">${minimumInvestment.toLocaleString()}</span>
+                    <span className="font-medium text-right">${minimumInvestment.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Capital Invested:</span>
-                    <span className="font-medium text-blue-600">${userInvestments?.filter((inv: any) => inv.productId === product.id).reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0).toLocaleString() || '0'}</span>
+                    <span className="font-medium text-blue-600 text-right">${userInvestments?.filter((inv: any) => inv.productId === product.id).reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0).toLocaleString() || '0'}</span>
                   </div>
                 </div>
 
