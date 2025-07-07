@@ -43,17 +43,31 @@ function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrenc
   const rate = parseFloat(fxRate.rate);
   const displayRate = rate > 1 ? rate.toFixed(2) : rate.toFixed(6);
   
-  console.log('Exchange Rate Debug:', { amount, rate, fromCurrency, toCurrency });
-  
   let convertedAmount = '0.00';
   let sendingAmount = '0.00';
   
-  if (amount && amount.trim() !== '' && !isNaN(parseFloat(amount))) {
-    const amountNumber = parseFloat(amount);
-    const converted = amountNumber * rate * 0.995; // 0.5% fee
-    convertedAmount = converted > 1 ? converted.toFixed(2) : converted.toFixed(6);
+  // Debug: Log the incoming parameters
+  console.log('ExchangeRateDisplay props:', { amount, fromCurrency, toCurrency, rate });
+  
+  if (amount && amount.toString().trim() !== '' && !isNaN(Number(amount))) {
+    const amountNumber = Number(amount);
+    const rateNumber = Number(rate);
+    const afterFee = amountNumber * 0.995; // Apply 0.5% fee first
+    const converted = afterFee * rateNumber; // Then convert
+    
+    convertedAmount = converted.toFixed(2);
     sendingAmount = amountNumber.toFixed(2);
-    console.log('Calculation:', { amountNumber, rate, converted, convertedAmount });
+    
+    console.log('Calculation successful:', { 
+      input: amount, 
+      amountNumber, 
+      rateNumber, 
+      afterFee, 
+      converted, 
+      convertedAmount 
+    });
+  } else {
+    console.log('Calculation skipped:', { amount, amountValid: !isNaN(Number(amount)) });
   }
 
   return (
@@ -67,14 +81,19 @@ function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrenc
       <div className="bg-white rounded-lg border-2 border-green-200 p-3 space-y-2">
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-600">You're sending:</span>
-          <span className="text-sm font-medium">{sendingAmount} {fromCurrency}</span>
+          <span className="text-sm font-medium">{sendingAmount || '0.00'} {fromCurrency}</span>
         </div>
         
         <div className="border-t border-gray-100 pt-2">
           <div className="flex justify-between items-center">
             <span className="text-base font-semibold text-gray-900">You'll receive:</span>
-            <span className="text-xl font-bold text-green-600">{convertedAmount} {toCurrency}</span>
+            <span className="text-xl font-bold text-green-600">{convertedAmount || '0.00'} {toCurrency}</span>
           </div>
+        </div>
+        
+        {/* Debug Display */}
+        <div className="text-xs text-gray-400 border-t pt-1">
+          Debug: amount={amount}, rate={rate}
         </div>
       </div>
     </div>
