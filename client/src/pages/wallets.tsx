@@ -9,11 +9,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useWallets } from "@/hooks/use-portfolio";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { PlusCircle, MinusCircle, ArrowUpDown, Coins } from "lucide-react";
+import { PlusCircle, MinusCircle, ArrowUpDown, Coins, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import StablecoinCard from "@/components/wallets/stablecoin-card";
+import { useFxRate } from "@/hooks/use-fx-rates";
 
 const currencyConfig = {
   USD: { name: "US Dollar", symbol: "$", color: "bg-blue-500", flag: "🇺🇸" },
@@ -28,6 +29,62 @@ const currencyConfig = {
   USDT: { name: "Tether", symbol: "₮", color: "bg-green-500", flag: "💵" },
   USDC: { name: "USD Coin", symbol: "◎", color: "bg-blue-400", flag: "🪙" },
 };
+
+// Exchange Rate Display Component
+function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrency: string; toCurrency: string; amount: number }) {
+  const { data: exchangeRate, isLoading } = useFxRate(fromCurrency, toCurrency);
+  
+  if (isLoading) {
+    return (
+      <div className="p-3 bg-muted rounded-lg">
+        <div className="flex items-center justify-center">
+          <Skeleton className="h-4 w-48" />
+        </div>
+      </div>
+    );
+  }
+  
+  if (!exchangeRate) {
+    return (
+      <div className="p-3 bg-muted rounded-lg">
+        <div className="text-sm text-muted-foreground text-center">
+          Exchange rate not available
+        </div>
+      </div>
+    );
+  }
+  
+  const convertedAmount = amount * exchangeRate.rate;
+  const fromConfig = currencyConfig[fromCurrency as keyof typeof currencyConfig];
+  const toConfig = currencyConfig[toCurrency as keyof typeof currencyConfig];
+  
+  return (
+    <div className="p-3 bg-muted rounded-lg border">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Exchange Rate:</span>
+          <span className="font-mono">
+            1 {fromCurrency} = {exchangeRate.rate.toFixed(6)} {toCurrency}
+          </span>
+        </div>
+        {amount > 0 && (
+          <div className="flex items-center justify-center space-x-2 p-2 bg-background rounded border">
+            <span className="font-mono text-sm">
+              {fromConfig?.flag} {amount.toFixed(2)} {fromCurrency}
+            </span>
+            <ArrowRight className="w-4 h-4 text-muted-foreground" />
+            <span className="font-mono text-sm font-medium">
+              {toConfig?.flag} {convertedAmount.toFixed(6)} {toCurrency}
+            </span>
+          </div>
+        )}
+        <div className="text-xs text-muted-foreground text-center">
+          Rate updated: {new Date(exchangeRate.updatedAt).toLocaleTimeString()}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Wallets() {
   const { data: wallets, isLoading, error } = useWallets();
@@ -679,13 +736,14 @@ export default function Wallets() {
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label htmlFor="transfer-amount">Amount</Label>
+              <Label htmlFor="transfer-amount" className="text-sm">Amount</Label>
               <Input
                 id="transfer-amount"
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Enter amount"
+                className="h-8 text-sm"
               />
               {selectedWallet && (
                 <p className="text-xs text-muted-foreground mt-1">
@@ -694,9 +752,9 @@ export default function Wallets() {
               )}
             </div>
             <div>
-              <Label htmlFor="target-currency">Target Currency</Label>
+              <Label htmlFor="target-currency" className="text-sm">Target Currency</Label>
               <Select value={targetCurrency} onValueChange={setTargetCurrency}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8">
                   <SelectValue placeholder="Select target currency" />
                 </SelectTrigger>
                 <SelectContent>
@@ -710,15 +768,25 @@ export default function Wallets() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex space-x-2">
+            
+            {/* Exchange Rate Display */}
+            {selectedWallet && targetCurrency && selectedWallet.currency !== targetCurrency && (
+              <ExchangeRateDisplay 
+                fromCurrency={selectedWallet.currency} 
+                toCurrency={targetCurrency} 
+                amount={parseFloat(amount) || 0}
+              />
+            )}
+            
+            <div className="flex space-x-2 pt-2">
               <Button 
                 onClick={handleTransfer}
                 disabled={transferMutation.isPending}
-                className="flex-1"
+                className="flex-1 h-8 text-sm"
               >
                 {transferMutation.isPending ? "Processing..." : "Confirm Transfer"}
               </Button>
-              <Button variant="outline" onClick={() => setTransferModalOpen(false)}>
+              <Button variant="outline" className="h-8 text-sm" onClick={() => setTransferModalOpen(false)}>
                 Cancel
               </Button>
             </div>
