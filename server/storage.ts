@@ -1054,6 +1054,26 @@ export class MemStorage implements IStorage {
         isActive: true,
         createdAt: new Date(),
       },
+      {
+        id: 12,
+        name: "Daily Liquid Cash Deposit Product",
+        category: "cash_deposit",
+        subCategory: "liquid_deposit",
+        investmentStrategy: "Low-risk, highly liquid deposit product offering interest-bearing returns for idle funds. Utilized via regulated bank deposit products or institutional-grade sweep mechanisms (e.g., MMFs, T-bills, or repo markets). Suitable for wallet float, corporate treasury, or personal high-interest savings.",
+        targetNetIrr: "2.0–5.5% p.a.",
+        grossIrr: null,
+        moic: null,
+        term: "Open-ended",
+        structure: "Interest-bearing bank account / money market sweep",
+        distributions: "Daily accrual, monthly credit",
+        liquidity: "Daily withdrawals (T+0 or T+1)",
+        minimumInvestment: "0.00",
+        riskProfile: "low",
+        returnType: "yield",
+        lvr: null,
+        isActive: true,
+        createdAt: new Date(),
+      },
     ];
 
     demoInvestmentProducts.forEach(product => {
@@ -1392,7 +1412,7 @@ export class MemStorage implements IStorage {
   }
 
   async updateUserInvestment(id: number, updateInvestment: Partial<InsertUserInvestment>): Promise<UserInvestment | undefined> {
-    for (const [userId, userInvestments] of this.userInvestments.entries()) {
+    for (const [userId, userInvestments] of Array.from(this.userInvestments.entries())) {
       const investmentIndex = userInvestments.findIndex((inv: UserInvestment) => inv.id === id);
       if (investmentIndex !== -1) {
         const updatedInvestment = { ...userInvestments[investmentIndex], ...updateInvestment, updatedAt: new Date() };

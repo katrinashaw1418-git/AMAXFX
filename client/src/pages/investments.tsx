@@ -17,6 +17,7 @@ const categoryIcons = {
   corporate_credit: CreditCard,
   venture_capital: Rocket,
   digital_assets: Bitcoin,
+  cash_deposit: DollarSign,
 };
 
 const categoryLabels = {
@@ -24,9 +25,11 @@ const categoryLabels = {
   corporate_credit: "Corporate Credit",
   venture_capital: "Venture Capital",
   digital_assets: "Digital Assets",
+  cash_deposit: "Cash Deposits",
 };
 
 const riskProfileColors = {
+  low: "bg-green-100 text-green-800",
   conservative: "bg-green-100 text-green-800",
   moderate: "bg-yellow-100 text-yellow-800",
   high: "bg-red-100 text-red-800",
@@ -37,6 +40,7 @@ const returnTypeColors = {
   income: "bg-blue-100 text-blue-800",
   capital_gains: "bg-purple-100 text-purple-800",
   blended: "bg-indigo-100 text-indigo-800",
+  yield: "bg-green-100 text-green-800",
 };
 
 export default function Investments() {
