@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { useWallets } from "@/hooks/use-portfolio";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { PlusCircle, MinusCircle, ArrowUpDown } from "lucide-react";
+import { PlusCircle, MinusCircle, ArrowUpDown, Coins } from "lucide-react";
+import StablecoinCard from "@/components/wallets/stablecoin-card";
 
 const currencyConfig = {
   USD: { name: "US Dollar", symbol: "$", color: "bg-blue-500", flag: "🇺🇸" },
@@ -15,6 +16,8 @@ const currencyConfig = {
   HKD: { name: "Hong Kong Dollar", symbol: "$", color: "bg-pink-500", flag: "🇭🇰" },
   BTC: { name: "Bitcoin", symbol: "₿", color: "bg-yellow-500", flag: "₿" },
   ETH: { name: "Ethereum", symbol: "Ξ", color: "bg-purple-500", flag: "Ξ" },
+  USDT: { name: "Tether", symbol: "₮", color: "bg-green-500", flag: "💵" },
+  USDC: { name: "USD Coin", symbol: "◎", color: "bg-blue-400", flag: "🪙" },
 };
 
 export default function Wallets() {
@@ -111,10 +114,41 @@ export default function Wallets() {
         </CardContent>
       </Card>
 
-      {/* Wallet Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {wallets?.map((wallet) => {
-          const config = currencyConfig[wallet.currency as keyof typeof currencyConfig];
+      {/* Stablecoins Section */}
+      {wallets?.some(w => ["USDT", "USDC"].includes(w.currency)) && (
+        <div>
+          <div className="flex items-center space-x-2 mb-4">
+            <Coins className="w-5 h-5 text-green-600" />
+            <h2 className="text-lg font-semibold">Stablecoins</h2>
+            <Badge variant="secondary" className="bg-green-100 text-green-700">
+              Low Volatility • Cross-Border Ready
+            </Badge>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {wallets
+              ?.filter(w => ["USDT", "USDC"].includes(w.currency))
+              .map((wallet) => {
+                const config = currencyConfig[wallet.currency as keyof typeof currencyConfig];
+                return (
+                  <StablecoinCard
+                    key={wallet.id}
+                    currency={wallet.currency as "USDT" | "USDC"}
+                    balance={wallet.balance}
+                    availableBalance={wallet.availableBalance}
+                    config={config}
+                  />
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      {/* Traditional Wallet Cards */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4">All Wallets</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {wallets?.map((wallet) => {
+            const config = currencyConfig[wallet.currency as keyof typeof currencyConfig];
           const balance = parseFloat(wallet.balance);
           const availableBalance = parseFloat(wallet.availableBalance);
           const utilizationPercent = balance > 0 ? (availableBalance / balance) * 100 : 0;
@@ -178,6 +212,7 @@ export default function Wallets() {
             </Card>
           );
         })}
+        </div>
       </div>
     </div>
   );

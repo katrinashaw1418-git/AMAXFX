@@ -37,10 +37,13 @@ This is a comprehensive cross-border wealth management platform that integrates 
 - Compliance status management
 
 ### 2. Multi-Currency Wallet System
-- Fiat currencies: USD, CAD, EUR, GBP, CNY
-- Cryptocurrencies: BTC, ETH (via VirgoCX integration)
+- Fiat currencies: USD, CAD, EUR, GBP, AUD, HKD
+- Cryptocurrencies: BTC, ETH
+- Stablecoins: USDT, USDC (ERC-20 tokens on Ethereum)
 - Balance tracking with available vs. total balances
 - Real-time wallet updates
+- Dedicated stablecoin deposit/withdrawal interfaces
+- Cross-border remittance capabilities via stablecoins
 
 ### 3. Portfolio Management
 - Unified portfolio view across fiat and crypto assets
@@ -145,3 +148,9 @@ Preferred communication style: Simple, everyday language.
 
 Changelog:
 - July 07, 2025. Initial setup
+- July 07, 2025. Added support for UK Pounds (GBP), Australian Dollars (AUD), and Hong Kong Dollars (HKD)
+- July 07, 2025. Integrated USDT and USDC stablecoins with dedicated deposit/withdrawal interfaces
+  - Added ERC-20 wallet address generation and QR codes for deposits
+  - Implemented KYC-gated withdrawal functionality with gas fee estimation
+  - Created specialized stablecoin trading pairs and cross-border remittance features
+  - Enhanced portfolio tracking to include stablecoin holdings (~$214k in demo data)

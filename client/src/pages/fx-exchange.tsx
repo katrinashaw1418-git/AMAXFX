@@ -18,6 +18,10 @@ const currencies = [
   { code: "GBP", name: "British Pound", flag: "🇬🇧" },
   { code: "AUD", name: "Australian Dollar", flag: "🇦🇺" },
   { code: "HKD", name: "Hong Kong Dollar", flag: "🇭🇰" },
+  { code: "BTC", name: "Bitcoin", flag: "₿" },
+  { code: "ETH", name: "Ethereum", flag: "Ξ" },
+  { code: "USDT", name: "Tether", flag: "💵" },
+  { code: "USDC", name: "USD Coin", flag: "🪙" },
 ];
 
 export default function FxExchange() {

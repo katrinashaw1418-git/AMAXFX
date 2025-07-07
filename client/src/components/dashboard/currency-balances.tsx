@@ -11,6 +11,8 @@ const currencyConfig = {
   HKD: { name: "Hong Kong Dollar", symbol: "$", color: "bg-pink-500" },
   BTC: { name: "Bitcoin", symbol: "₿", color: "bg-yellow-500" },
   ETH: { name: "Ethereum", symbol: "Ξ", color: "bg-purple-500" },
+  USDT: { name: "Tether", symbol: "₮", color: "bg-green-500" },
+  USDC: { name: "USD Coin", symbol: "◎", color: "bg-blue-400" },
 };
 
 export default function CurrencyBalances() {

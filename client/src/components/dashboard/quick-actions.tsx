@@ -20,6 +20,8 @@ const currencies = [
   { code: "HKD", name: "Hong Kong Dollar" },
   { code: "BTC", name: "Bitcoin" },
   { code: "ETH", name: "Ethereum" },
+  { code: "USDT", name: "Tether" },
+  { code: "USDC", name: "USD Coin" },
 ];
 
 export default function QuickActions() {

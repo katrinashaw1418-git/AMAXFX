@@ -1,0 +1,159 @@
+ Updated Currency Support on the Platform
+🏦 Fiat Currencies (6):
+🇺🇸 USD – US Dollar
+
+🇨🇦 CAD – Canadian Dollar
+
+🇪🇺 EUR – Euro
+
+🇬🇧 GBP – British Pound
+
+🇦🇺 AUD – Australian Dollar
+
+🇭🇰 HKD – Hong Kong Dollar
+
+💰 Cryptocurrencies (4):
+₿ BTC – Bitcoin
+
+Ξ ETH – Ethereum
+
+💵 USDT – Tether (ERC-20)
+
+🪙 USDC – USD Coin (ERC-20)
+
+🔁 Functional Changes After Stablecoin Integration
+✅ 1. Wallet Dashboard
+Add USDT and USDC balances alongside BTC and ETH
+
+Show fiat-equivalent values for stablecoins
+
+Support Deposit (on-chain ERC-20) and Withdraw for USDT/USDC
+
+✅ 2. FX + Crypto Conversion
+Add trading pairs:
+
+USD ↔ USDT / USDC
+
+USDT ↔ ETH / BTC
+
+Cross-stablecoin swaps (USDT ↔ USDC)
+
+✅ 3. Cross-Border Remittance
+Enable low-cost transfers using USDT/USDC
+
+Shorter settlement times vs. traditional rails
+
+✅ 4. Transaction History
+Include stablecoin transfers (on-chain and internal)
+
+Track gas fees (Ethereum network)
+
+✅ 5. Compliance
+Monitor stablecoin transactions for AML risk (use chain analytics if needed)
+
+Ensure KYC before crypto withdrawal
+
+🧠 Strategic Benefits of Stablecoin Support
+Benefit	Impact
+Instant cross-border settlement	Competitive edge over banks and Swift
+Stable on-chain value	Low volatility alternative to crypto
+Institutional onboarding readiness	Stablecoins preferred by regulated entities
+Crypto-fiat bridging	Easier on/off ramps for users in Asia     TECHNICAL SPEC – STABLECOIN SUPPORT (USDT & USDC)
+✅ Objective:
+Allow users to deposit, hold, transfer, trade, and withdraw USDT and USDC using ERC-20 tokens on Ethereum. These stablecoins will serve as a low-volatility, on-chain alternative to fiat in the dual-rail wealth platform.
+
+🧱 Architecture Additions
+🔐 Wallet Layer
+Each user gets dedicated ERC-20 wallet addresses for:
+
+USDT (Tether)
+
+USDC (USD Coin)
+
+Generated and managed using:
+
+🔗 Custody provider API (e.g., Fireblocks, BitGo)
+
+OR
+
+🔐 In-house HD wallet service (if custodial)
+
+⚙️ Features by Module
+🔸 1. User Wallet Dashboard
+Display balances for USDT and USDC (in crypto and fiat terms)
+
+“Deposit” button shows wallet address + QR code
+
+“Withdraw” triggers KYC check and on-chain transaction builder
+
+“Exchange” allows conversion between USDT, USDC, BTC, ETH, and fiat
+
+🔸 2. Trading / FX Engine
+New supported trading pairs:
+
+USDT/USDC ↔ BTC/ETH
+
+USDT/USDC ↔ USD/CAD/EUR/GBP
+
+USDT ↔ USDC
+
+Stablecoin quotes via liquidity aggregator or exchange integration
+
+Internal order matching or routed through a partner (VirgoCX)
+
+🔸 3. Deposit Flow
+Detect ERC-20 transaction to assigned USDT/USDC address
+
+Confirm on-chain (≥ 1 block)
+
+Credit user's internal stablecoin balance
+
+Log tx hash and value in DB
+
+🔸 4. Withdraw Flow
+User inputs destination wallet and amount
+
+KYC status checked
+
+Backend signs ERC-20 transaction and submits it on-chain
+
+Deduct from internal balance, return tx hash
+
+🔸 5. Transaction History
+Store metadata:
+
+Token type (USDT/USDC)
+
+Direction (inbound/outbound)
+
+Blockchain tx hash
+
+Fiat equivalent at time of tx
+
+Gas fees (shown in ETH)
+
+🔒 Compliance Considerations
+Require full KYC before enabling crypto withdrawals
+
+Monitor stablecoin flows using chain analytics (e.g., TRM Labs or Chainalysis)
+
+Cap transaction size per regulatory jurisdiction
+
+Geo-fence if needed (e.g., USDT restriction in certain countries)
+
+🔧 APIs Required
+Service	Purpose
+Ethereum Node	On-chain balance / tx monitoring
+Custody API	Secure wallet + transaction signing
+FX Oracle	USDT/USDC to fiat rate tracking
+KYC Provider	Pre-check before withdrawal
+
+📱 Frontend Updates
+Add stablecoin cards to Wallet screen
+
+New deposit/withdraw modals for USDT & USDC
+
+Optional: Chain confirmation timer ("Confirming on Ethereum…")
+
+Tooltip/explainer for new users: “Stablecoins are crypto tokens pegged to USD for low volatility transfers”
+

@@ -50,8 +50,8 @@ export class MemStorage implements IStorage {
   private aiRecommendations: Map<number, AiRecommendation[]> = new Map();
   private currentUserId = 1;
   private currentPortfolioId = 1;
-  private currentWalletId = 9;
-  private currentTransactionId = 9;
+  private currentWalletId = 11;
+  private currentTransactionId = 13;
   private currentFxRateId = 11;
   private currentAiRecommendationId = 1;
 
@@ -78,8 +78,8 @@ export class MemStorage implements IStorage {
     const demoPortfolio: Portfolio = {
       id: 1,
       userId: 1,
-      totalValue: "3950000.00",
-      cryptoValue: "895000.00",
+      totalValue: "4164500.00",
+      cryptoValue: "1109500.00",
       fiatValue: "3055000.00",
       monthlyPnl: "47392.00",
       monthlyPnlPercent: "18.50",
@@ -158,6 +158,24 @@ export class MemStorage implements IStorage {
         currency: "ETH",
         balance: "85.2341",
         availableBalance: "85.2341",
+        walletType: "crypto",
+        updatedAt: new Date(),
+      },
+      {
+        id: 9,
+        userId: 1,
+        currency: "USDT",
+        balance: "125000.00",
+        availableBalance: "125000.00",
+        walletType: "crypto",
+        updatedAt: new Date(),
+      },
+      {
+        id: 10,
+        userId: 1,
+        currency: "USDC",
+        balance: "89500.00",
+        availableBalance: "89500.00",
         walletType: "crypto",
         updatedAt: new Date(),
       },
@@ -269,6 +287,58 @@ export class MemStorage implements IStorage {
         status: "pending",
         description: "Cross-border transfer to UK",
         createdAt: new Date(Date.now() - 86400000), // 1 day ago
+      },
+      {
+        id: 9,
+        userId: 1,
+        type: "crypto_buy",
+        fromCurrency: "USD",
+        toCurrency: "USDT",
+        amount: "25000.00",
+        fee: "12.50",
+        exchangeRate: "1.0000",
+        status: "completed",
+        description: "USD to USDT conversion",
+        createdAt: new Date(Date.now() - 172800000), // 2 days ago
+      },
+      {
+        id: 10,
+        userId: 1,
+        type: "crypto_buy",
+        fromCurrency: "USD",
+        toCurrency: "USDC",
+        amount: "15000.00",
+        fee: "7.50",
+        exchangeRate: "1.0000",
+        status: "completed",
+        description: "USD to USDC conversion",
+        createdAt: new Date(Date.now() - 259200000), // 3 days ago
+      },
+      {
+        id: 11,
+        userId: 1,
+        type: "crypto_deposit",
+        fromCurrency: null,
+        toCurrency: "USDT",
+        amount: "50000.00",
+        fee: "15.00",
+        exchangeRate: null,
+        status: "completed",
+        description: "USDT deposit from external wallet",
+        createdAt: new Date(Date.now() - 345600000), // 4 days ago
+      },
+      {
+        id: 12,
+        userId: 1,
+        type: "stablecoin_swap",
+        fromCurrency: "USDT",
+        toCurrency: "USDC",
+        amount: "10000.00",
+        fee: "5.00",
+        exchangeRate: "0.9998",
+        status: "completed",
+        description: "USDT to USDC swap",
+        createdAt: new Date(Date.now() - 432000000), // 5 days ago
       },
     ];
     this.transactions.set(1, demoTransactions);
