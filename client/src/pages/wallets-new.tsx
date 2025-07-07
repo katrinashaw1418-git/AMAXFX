@@ -112,9 +112,9 @@ export default function Wallets() {
       console.log("Transfer API response status:", response.status);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Transfer API error:", errorText);
-        throw new Error(`Transfer failed: ${response.status}`);
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        console.error("Transfer API error:", errorData);
+        throw new Error(errorData.error || `Transfer failed: ${response.status}`);
       }
       
       const result = await response.json();
@@ -136,9 +136,17 @@ export default function Wallets() {
     },
     onError: (error: any) => {
       console.error("Transfer mutation onError called with error:", error);
+      
+      let errorMessage = "Please try again later.";
+      if (error.message && error.message.includes("400")) {
+        errorMessage = "Insufficient balance. Please check your available funds.";
+      } else if (error.message) {
+        errorMessage = error.message.replace("Transfer failed: 400", "Insufficient balance");
+      }
+      
       toast({
         title: "Transfer Failed",
-        description: error.message || "Please try again later.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -745,7 +753,7 @@ export default function Wallets() {
           <DialogHeader>
             <DialogTitle>Deposit {selectedWallet?.currency}</DialogTitle>
             <DialogDescription>
-              Add funds to your {selectedWallet?.currency} wallet
+              Add funds to your {selectedWallet?.currency} wallet using multiple payment methods
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -1137,6 +1145,22 @@ export default function Wallets() {
           </DialogHeader>
           <div className="space-y-3">
             <div>
+              <Label htmlFor="transfer-from-currency" className="text-sm">Convert From</Label>
+              <Select value={fromCurrency} onValueChange={setFromCurrency}>
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="Select currency to convert from" />
+                </SelectTrigger>
+                <SelectContent>
+                  {wallets.map(wallet => (
+                    <SelectItem key={wallet.id} value={wallet.currency}>
+                      {CurrencyConfig[wallet.currency as keyof typeof CurrencyConfig]?.flag || ''} {wallet.currency} – Balance: {wallet.availableBalance}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
               <Label htmlFor="transfer-amount" className="text-sm">Amount</Label>
               <Input
                 id="transfer-amount"
@@ -1146,9 +1170,9 @@ export default function Wallets() {
                 placeholder="Enter amount"
                 className="h-8"
               />
-              {selectedWallet && (
+              {fromCurrency && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Available: {selectedWallet.availableBalance} {selectedWallet.currency}
+                  Available: {walletsWithRegions.find(w => w.currency === fromCurrency)?.availableBalance || '0'} {fromCurrency}
                 </p>
               )}
             </div>
@@ -1175,15 +1199,11 @@ export default function Wallets() {
             </div>
             <div className="flex space-x-2 pt-2">
               <Button 
-                onClick={() => {
-                  setFromCurrency(selectedWallet?.currency || '');
-                  handleTransfer();
-                  setTransferModalOpen(false);
-                }}
-                disabled={transferMutation.isPending || !amount || !toCurrency}
+                onClick={handleTransfer}
+                disabled={transferMutation.isPending || !fromCurrency || !toCurrency || !amount}
                 className="flex-1 h-8 text-sm"
               >
-                {transferMutation.isPending ? "Processing..." : "Convert"}
+                {transferMutation.isPending ? "Converting..." : "Convert Now"}
               </Button>
               <Button variant="outline" className="h-8 text-sm" onClick={() => setTransferModalOpen(false)}>
                 Cancel

@@ -295,3 +295,11 @@ Changelog:
   - **Modal Operations**: Deposit mirrors "Add" functionality, Withdraw mirrors "Send" functionality as requested
   - **Display Currency Selector**: Maintained ability to view balances in different currencies (USD, EUR, etc.)
   - **Clean Interface**: Professional table layout with hover effects and proper spacing maintained
+- July 07, 2025. Completed full wallet functionality with working transfer/conversion system
+  - **Fixed Transfer Functionality**: Corrected API endpoint from `/api/wallets/transfer` to `/api/fx-exchange`
+  - **Enhanced Error Handling**: Better error messages for insufficient balance and API failures
+  - **Real-time Exchange Rates**: Live rate display with conversion previews (e.g., 1 SGD = 1.0968 AUD)
+  - **Comprehensive Logging**: Added detailed console logging for all API calls and responses
+  - **Success Validation**: Confirmed transfers work with real balance updates (SGD 333 → AUD 365.23)
+  - **All Three Buttons Working**: Deposit ✅, Withdraw ✅, Transfer/Convert ✅
+  - **Professional UX**: Success notifications, automatic modal closure, immediate balance updates
