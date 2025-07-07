@@ -1,0 +1,66 @@
+4. Digital Assets & Blockchain Investments
+🔷 Bitcoin Tracker Fund
+Investment Strategy:
+Passive exposure to the price performance of Bitcoin through a regulated, institutionally structured fund. Designed for investors seeking pure Bitcoin price exposure without the operational complexities of direct crypto custody.
+
+Target Return: Variable – tracks Bitcoin price (historical annualized returns have exceeded 100%, but with high volatility)
+
+Structure: Passive tracker fund
+
+Liquidity: Monthly redemptions
+
+Term: Open-ended
+
+Distributions: None (capital appreciation only)
+
+Minimum Investment: $50,000
+
+Risk Profile: High
+
+Return Type: Capital gains
+
+🔷 Early-Stage Token Fund
+Investment Strategy:
+Participates in pre-launch token investments of blockchain and Web3 projects. Combines venture-style diligence with liquid token opportunities, targeting asymmetric returns from early access and strategic unlocks.
+
+Target Net IRR: 25–40%+
+
+Structure: Hybrid (venture equity + early token allocations)
+
+Liquidity: Illiquid (vesting and lock-up periods)
+
+Term: 4–6 years
+
+Distributions: Event-based (token unlocks/sales)
+
+Minimum Investment: Typically $100,000
+
+Risk Profile: Very High
+
+Return Type: Capital gains + liquidity event-based income
+
+🔷 Pantera Blockchain Fund
+Investment Strategy:
+Broad-based blockchain exposure via a diversified portfolio including early-stage equity, liquid tokens, and select yield-generating DeFi strategies. Focuses on transformative blockchain infrastructure and financial applications.
+
+Target Net IRR: 20–30%
+
+Structure: Diversified fund (VC + tokens + DeFi)
+
+Liquidity: Long-term lock-in (5–7 years)
+
+Distributions: Periodic based on liquidity events
+
+Minimum Investment: $100,000
+
+Risk Profile: High
+
+Return Type: Blended (capital appreciation, token yield, equity exits)
+
+🧭 Investor Filtering Options (Updated)
+Filter	Options (Updated)
+Risk Appetite	Conservative / Balanced / Growth-Oriented / Speculative
+Target Return	5–8% / 8–12% / 12%+ / Market-Based (Crypto)
+Liquidity	Quarterly / Fixed-Term / Long-Term Lock-In / Monthly
+Structure	Credit / Equity / Hybrid / Token / Tracker
+Sector Focus	Real Estate / Private Credit / Growth Equity / Digital Assets

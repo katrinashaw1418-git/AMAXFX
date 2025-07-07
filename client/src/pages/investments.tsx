@@ -9,25 +9,28 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { TrendingUp, Building, CreditCard, Rocket, DollarSign, Clock, Shield, Filter, X } from "lucide-react";
+import { TrendingUp, Building, CreditCard, Rocket, Bitcoin, DollarSign, Clock, Shield, Filter, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const categoryIcons = {
   real_estate: Building,
   corporate_credit: CreditCard,
   venture_capital: Rocket,
+  digital_assets: Bitcoin,
 };
 
 const categoryLabels = {
   real_estate: "Real Estate",
   corporate_credit: "Corporate Credit",
   venture_capital: "Venture Capital",
+  digital_assets: "Digital Assets",
 };
 
 const riskProfileColors = {
   conservative: "bg-green-100 text-green-800",
   moderate: "bg-yellow-100 text-yellow-800",
   high: "bg-red-100 text-red-800",
+  very_high: "bg-red-200 text-red-900",
 };
 
 const returnTypeColors = {
@@ -224,6 +227,7 @@ export default function Investments() {
                   <SelectItem value="real_estate">Real Estate</SelectItem>
                   <SelectItem value="corporate_credit">Corporate Credit</SelectItem>
                   <SelectItem value="venture_capital">Venture Capital</SelectItem>
+                  <SelectItem value="digital_assets">Digital Assets</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -240,6 +244,7 @@ export default function Investments() {
                   <SelectItem value="conservative">Conservative</SelectItem>
                   <SelectItem value="moderate">Moderate</SelectItem>
                   <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="very_high">Very High</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -254,6 +259,7 @@ export default function Investments() {
                 <SelectContent>
                   <SelectItem value="">All Types</SelectItem>
                   <SelectItem value="quarterly">Quarterly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
                   <SelectItem value="locked">Locked Term</SelectItem>
                   <SelectItem value="illiquid">Long-term Lock-in</SelectItem>
                 </SelectContent>

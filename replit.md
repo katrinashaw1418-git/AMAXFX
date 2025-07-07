@@ -162,11 +162,13 @@ Changelog:
   - Resolved dialog accessibility warnings with proper descriptions
   - All buttons and interactive elements now fully functional
 - July 07, 2025. Added comprehensive investment products module
-  - Implemented 7 structured investment products across 3 categories
+  - Implemented 10 structured investment products across 4 categories
   - Real Estate: Equity Fund, Credit Fund, First Mortgage Fund
   - Corporate Credit: Cash Flow-Based and Security-Backed funds
   - Venture Capital: Growth Equity and Hybrid Capital funds
+  - Digital Assets: Bitcoin Tracker, Early-Stage Token, Pantera Blockchain funds
   - Advanced filtering by category, risk profile, and liquidity
   - Portfolio tracking with $1.55M active investments and 9.3% returns
   - Investment creation with minimum investment validation
   - Complete investment product details and documentation
+  - Added cryptocurrency and blockchain investment opportunities with IRRs up to 40%+
