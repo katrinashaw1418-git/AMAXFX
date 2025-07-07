@@ -127,7 +127,6 @@ export default function Wallets() {
   
   // Exchange rate display helpers
   const exchangeRateText = useExchangeRateDisplay(fromCurrency, toCurrency);
-  const conversionAmountText = useConversionAmount(fromCurrency, toCurrency, amount);
 
   const transferMutation = useMutation({
     mutationFn: async (data: { fromCurrency: string; toCurrency: string; amount: number }) => {
@@ -690,7 +689,7 @@ export default function Wallets() {
               <div className="flex justify-between items-center bg-white rounded p-2">
                 <span className="font-medium text-gray-800">You'll receive:</span>
                 <span className="font-bold text-lg text-green-600">
-                  {conversionAmountText}
+                  Loading...
                 </span>
               </div>
               <div className="text-xs text-muted-foreground text-center">
@@ -1229,8 +1228,15 @@ export default function Wallets() {
             <div className="flex space-x-2 pt-2">
               <Button 
                 onClick={() => {
-                  setFromCurrency(selectedWallet?.currency || '');
-                  handleTransfer();
+                  if (selectedWallet?.currency && toCurrency && amount) {
+                    console.log("handleTransfer called with:", {
+                      fromCurrency: selectedWallet.currency,
+                      toCurrency: toCurrency,
+                      amount: amount
+                    });
+                    setFromCurrency(selectedWallet.currency);
+                    handleTransfer();
+                  }
                 }}
                 disabled={transferMutation.isPending || !selectedWallet || !toCurrency || !amount || toCurrency === selectedWallet?.currency}
                 className="flex-1 h-8 text-sm"
