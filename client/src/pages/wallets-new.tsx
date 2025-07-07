@@ -17,12 +17,38 @@ import { TrendingUp, TrendingDown, Plus, Minus, ArrowRightLeft, Send, Repeat, In
 import { useFxRate } from '@/hooks/use-fx-rates';
 import { useWallets } from '@/hooks/use-portfolio';
 
+// Helper functions for exchange rate display
+const useExchangeRateDisplay = (fromCurrency: string, toCurrency: string) => {
+  const { data: fxRate } = useFxRate(fromCurrency, toCurrency);
+  if (!fxRate) return "Loading...";
+  
+  const rate = parseFloat(fxRate.rate);
+  const displayRate = rate > 1 ? rate.toFixed(2) : rate.toFixed(6);
+  
+  return `1 ${fromCurrency} = ${displayRate} ${toCurrency}`;
+};
+
+const useConversionAmount = (fromCurrency: string, toCurrency: string, amount: string) => {
+  const { data: fxRate } = useFxRate(fromCurrency, toCurrency);
+  if (!fxRate || !amount) return `0.00 ${toCurrency}`;
+  
+  const rate = parseFloat(fxRate.rate);
+  const convertedAmount = parseFloat(amount) * rate * 0.995; // 0.5% fee
+  const displayAmount = convertedAmount > 1 ? convertedAmount.toFixed(2) : convertedAmount.toFixed(6);
+  
+  return `${displayAmount} ${toCurrency}`;
+};
+
 export default function Wallets() {
   const { data: wallets = [], isLoading } = useWallets();
   const [fromCurrency, setFromCurrency] = useState('');
   const [toCurrency, setToCurrency] = useState('');
   const [amount, setAmount] = useState('');
   const { toast } = useToast();
+  
+  // Exchange rate display helpers
+  const exchangeRateText = useExchangeRateDisplay(fromCurrency, toCurrency);
+  const conversionAmountText = useConversionAmount(fromCurrency, toCurrency, amount);
 
   const transferMutation = useMutation({
     mutationFn: async (data: { fromCurrency: string; toCurrency: string; amount: number }) => {
@@ -398,7 +424,7 @@ export default function Wallets() {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-700">Mid-market Rate:</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono">1 {fromCurrency} = 1.23 {toCurrency}</span>
+                  <span className="text-sm font-mono">{exchangeRateText}</span>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger>
@@ -424,7 +450,7 @@ export default function Wallets() {
               <div className="flex justify-between items-center bg-white rounded p-2">
                 <span className="font-medium text-gray-800">You'll receive:</span>
                 <span className="font-bold text-lg text-green-600">
-                  {(parseFloat(amount) * 1.23 * 0.995).toFixed(2)} {toCurrency}
+                  {conversionAmountText}
                 </span>
               </div>
               <div className="text-xs text-muted-foreground text-center">
