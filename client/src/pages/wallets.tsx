@@ -43,11 +43,14 @@ export default function Wallets() {
   const depositMutation = useMutation({
     mutationFn: (data: { currency: string; amount: number }) => api.createDeposit(data),
     onSuccess: () => {
+      // Force refetch all related data
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.refetchQueries({ queryKey: ["/api/wallets"] });
       toast({
         title: "Deposit Successful",
-        description: "Your deposit has been processed.",
+        description: "Your deposit has been processed and balance updated.",
       });
       setDepositModalOpen(false);
       setAmount("");
@@ -64,11 +67,14 @@ export default function Wallets() {
   const withdrawMutation = useMutation({
     mutationFn: (data: { currency: string; amount: number }) => api.createWithdrawal(data),
     onSuccess: () => {
+      // Force refetch all related data
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.refetchQueries({ queryKey: ["/api/wallets"] });
       toast({
-        title: "Withdrawal Initiated",
-        description: "Your withdrawal is being processed.",
+        title: "Withdrawal Successful",
+        description: "Your withdrawal has been processed and balance updated.",
       });
       setWithdrawModalOpen(false);
       setAmount("");
@@ -85,11 +91,14 @@ export default function Wallets() {
   const transferMutation = useMutation({
     mutationFn: (data: { fromCurrency: string; toCurrency: string; amount: number }) => api.createFxExchange(data),
     onSuccess: () => {
+      // Force refetch all related data
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.refetchQueries({ queryKey: ["/api/wallets"] });
       toast({
         title: "Transfer Successful",
-        description: "Your currency exchange has been completed.",
+        description: "Your currency exchange has been completed and balances updated.",
       });
       setTransferModalOpen(false);
       setAmount("");

@@ -13,7 +13,7 @@ export function useWallets() {
   return useQuery({
     queryKey: ["/api/wallets"],
     queryFn: api.getWallets,
-    refetchInterval: 30000,
+    refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
   });
 }
 
