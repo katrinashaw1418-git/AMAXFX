@@ -555,6 +555,167 @@ export default function Wallets() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Transfer or Convert Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Transfer or Convert</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Conversion Interface */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="from-currency">From</Label>
+                  <Select value={selectedWallet?.currency || ''} onValueChange={(value) => {
+                    const wallet = wallets.find(w => w.currency === value);
+                    setSelectedWallet(wallet);
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {walletsWithRegions.map((wallet) => (
+                        <SelectItem key={wallet.currency} value={wallet.currency}>
+                          <div className="flex items-center gap-2">
+                            <span>{wallet.config?.flag}</span>
+                            <span>{wallet.currency}</span>
+                            <span className="text-muted-foreground">
+                              ({wallet.config?.symbol}{wallet.balance})
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="convert-amount">Amount</Label>
+                  <Input
+                    id="convert-amount"
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="Enter amount"
+                  />
+                  {selectedWallet && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Available: {selectedWallet.config?.symbol}{selectedWallet.balance} {selectedWallet.currency}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="to-currency-convert">To</Label>
+                  <Select value={toCurrency} onValueChange={setToCurrency}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select target currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.keys(CurrencyConfig).map((currency) => {
+                        const config = CurrencyConfig[currency as keyof typeof CurrencyConfig];
+                        return (
+                          <SelectItem key={currency} value={currency}>
+                            <div className="flex items-center gap-2">
+                              <span>{config?.flag}</span>
+                              <span>{currency}</span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>You'll receive</Label>
+                  <div className="p-3 bg-gray-50 rounded-md">
+                    <ConversionResult 
+                      fromCurrency={selectedWallet?.currency || ''}
+                      toCurrency={toCurrency}
+                      amount={amount}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Exchange Rate Display */}
+            {selectedWallet && toCurrency && (
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <ExchangeRateInfo 
+                  fromCurrency={selectedWallet.currency}
+                  toCurrency={toCurrency}
+                />
+              </div>
+            )}
+
+            {/* Convert Button */}
+            <Button 
+              onClick={handleTransfer}
+              disabled={!selectedWallet || !amount || !toCurrency || transferMutation.isPending}
+              className="w-full"
+              size="lg"
+            >
+              {transferMutation.isPending ? "Converting..." : "Convert Now"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Component to show conversion result
+function ConversionResult({ fromCurrency, toCurrency, amount }: { fromCurrency: string; toCurrency: string; amount: string }) {
+  const { data: fxRate } = useFxRate(fromCurrency, toCurrency);
+  
+  if (!fxRate || !amount || !fromCurrency || !toCurrency) {
+    return <span className="text-muted-foreground">--</span>;
+  }
+
+  const rate = parseFloat(fxRate.rate);
+  const inputAmount = parseFloat(amount);
+  const fee = inputAmount * 0.005; // 0.5% fee
+  const convertedAmount = (inputAmount - fee) * rate;
+  const config = CurrencyConfig[toCurrency as keyof typeof CurrencyConfig];
+
+  return (
+    <div className="space-y-1">
+      <div className="text-lg font-semibold text-green-600">
+        {config?.symbol}{convertedAmount.toFixed(2)} {toCurrency}
+      </div>
+      <div className="text-xs text-muted-foreground">
+        Fee: {CurrencyConfig[fromCurrency as keyof typeof CurrencyConfig]?.symbol}{fee.toFixed(2)} (0.5%)
+      </div>
+    </div>
+  );
+}
+
+// Component to show exchange rate info
+function ExchangeRateInfo({ fromCurrency, toCurrency }: { fromCurrency: string; toCurrency: string }) {
+  const { data: fxRate } = useFxRate(fromCurrency, toCurrency);
+  
+  if (!fxRate) {
+    return <span className="text-muted-foreground">Loading rate...</span>;
+  }
+
+  const rate = parseFloat(fxRate.rate);
+  const displayRate = rate > 1 ? rate.toFixed(2) : rate.toFixed(6);
+
+  return (
+    <div className="flex items-center justify-between">
+      <div className="text-sm">
+        <span className="font-medium">Exchange Rate:</span>
+        <span className="ml-2">1 {fromCurrency} = {displayRate} {toCurrency}</span>
+      </div>
+      <div className="text-xs text-muted-foreground">
+        Mid-market rate • Updates every 60 seconds
+      </div>
     </div>
   );
 }
