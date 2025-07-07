@@ -265,11 +265,19 @@ export default function Investments() {
                 <DollarSign className="w-3 h-3 text-green-600" />
               </div>
               <div className="flex flex-col items-start justify-end h-16">
-                <p className="text-lg font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis w-full leading-tight">
-                  {selectedCurrency === 'USD' ? '$' : (selectedWallet?.symbol && selectedWallet.symbol !== selectedCurrency ? selectedWallet.symbol : '')}{availableBalance.toLocaleString()}
-                </p>
-                {selectedCurrency !== 'USD' && (
-                  <span className="text-xs text-gray-600">≈ ${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()} USD</span>
+                {selectedCurrency === 'USD' ? (
+                  <p className="text-lg font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis w-full leading-tight">
+                    ${availableBalance.toLocaleString()}
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-lg font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis w-full leading-tight">
+                      ${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()} USD
+                    </p>
+                    <span className="text-xs text-gray-600">
+                      ({selectedWallet?.symbol && selectedWallet.symbol !== selectedCurrency ? selectedWallet.symbol : ''}{availableBalance.toLocaleString()} {selectedCurrency})
+                    </span>
+                  </>
                 )}
               </div>
             </CardContent>
