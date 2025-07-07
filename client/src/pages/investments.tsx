@@ -164,39 +164,39 @@ export default function Investments() {
       {/* Portfolio Overview */}
       {userInvestments && userInvestments.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="flex flex-col h-full">
-            <CardContent className="p-6 flex flex-col flex-grow">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-gray-500">Total Invested</h3>
-                <DollarSign className="w-4 h-4 text-primary" />
+          <Card className="flex flex-col h-32">
+            <CardContent className="p-4 flex flex-col flex-grow">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-medium text-gray-500">Total Invested</h3>
+                <DollarSign className="w-3 h-3 text-primary" />
               </div>
-              <div className="mt-auto">
-                <p className="text-xl font-bold whitespace-nowrap">${totalInvested.toLocaleString()}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="flex flex-col h-full">
-            <CardContent className="p-6 flex flex-col flex-grow">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-gray-500">Current Value</h3>
-                <TrendingUp className="w-4 h-4 text-green-600" />
-              </div>
-              <div className="mt-auto">
-                <p className="text-xl font-bold whitespace-nowrap">${totalCurrentValue.toLocaleString()}</p>
+              <div className="mt-auto flex items-end h-12">
+                <p className="text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis w-full">${totalInvested.toLocaleString()}</p>
               </div>
             </CardContent>
           </Card>
-          <Card className="flex flex-col h-full">
-            <CardContent className="p-6 flex flex-col flex-grow">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-gray-500">Total Return</h3>
-                <TrendingUp className="w-4 h-4 text-secondary" />
+          <Card className="flex flex-col h-32">
+            <CardContent className="p-4 flex flex-col flex-grow">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-medium text-gray-500">Current Value</h3>
+                <TrendingUp className="w-3 h-3 text-green-600" />
+              </div>
+              <div className="mt-auto flex items-end h-12">
+                <p className="text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis w-full">${totalCurrentValue.toLocaleString()}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="flex flex-col h-32">
+            <CardContent className="p-4 flex flex-col flex-grow">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-medium text-gray-500">Total Return</h3>
+                <TrendingUp className="w-3 h-3 text-secondary" />
               </div>
               <div className="mt-auto">
-                <p className={`text-xl font-bold whitespace-nowrap ${totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  ${totalReturn.toLocaleString()}
-                </p>
-                <div className="flex items-center space-x-1 mt-1">
+                <div className="flex items-end h-12 flex-col justify-end">
+                  <p className={`text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis w-full ${totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    ${totalReturn.toLocaleString()}
+                  </p>
                   <span className={`text-xs ${totalReturnPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {totalReturnPercent >= 0 ? '+' : ''}{totalReturnPercent.toFixed(2)}%
                   </span>
@@ -204,17 +204,17 @@ export default function Investments() {
               </div>
             </CardContent>
           </Card>
-          <Card className="flex flex-col h-full">
-            <CardContent className="p-6 flex flex-col flex-grow">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-gray-500">Available Capital</h3>
-                <DollarSign className="w-4 h-4 text-green-600" />
+          <Card className="flex flex-col h-32">
+            <CardContent className="p-4 flex flex-col flex-grow">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-medium text-gray-500">Available Capital</h3>
+                <DollarSign className="w-3 h-3 text-green-600" />
               </div>
               <div className="mt-auto">
-                <p className="text-xl font-bold text-green-600 whitespace-nowrap">
-                  ${wallets?.find(w => w.currency === 'USD')?.availableBalance ? parseFloat(wallets.find(w => w.currency === 'USD')!.availableBalance).toLocaleString() : '0'}
-                </p>
-                <div className="flex items-center mt-1">
+                <div className="flex items-end h-12 flex-col justify-end">
+                  <p className="text-lg font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis w-full">
+                    ${wallets?.find(w => w.currency === 'USD')?.availableBalance ? parseFloat(wallets.find(w => w.currency === 'USD')!.availableBalance).toLocaleString() : '0'}
+                  </p>
                   <span className="text-xs text-gray-600">USD balance</span>
                 </div>
               </div>
