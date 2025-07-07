@@ -128,74 +128,74 @@ export default function Portfolio() {
       </div>
 
       {/* Portfolio Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Total Value</h3>
-              <DollarSign className="w-4 h-4 text-primary" />
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-xs font-medium text-gray-500">Total Value</h3>
+              <DollarSign className="w-3 h-3 text-primary" />
             </div>
-            <p className="text-2xl font-bold">${totalPortfolioValue.toLocaleString()}</p>
-            <div className="flex items-center space-x-2 mt-2">
-              <TrendingUp className="w-3 h-3 text-secondary" />
-              <span className="text-sm text-secondary">+12.5%</span>
+            <p className="text-lg font-bold leading-tight">${totalPortfolioValue.toLocaleString()}</p>
+            <div className="flex items-center space-x-1 mt-1">
+              <TrendingUp className="w-2 h-2 text-secondary" />
+              <span className="text-xs text-secondary">+{monthlyReturn.toFixed(1)}%</span>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Crypto Assets</h3>
-              <Bitcoin className="w-4 h-4 text-yellow-500" />
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-xs font-medium text-gray-500">Crypto Assets</h3>
+              <Bitcoin className="w-3 h-3 text-yellow-500" />
             </div>
-            <p className="text-2xl font-bold">${cryptoValue.toLocaleString()}</p>
-            <p className="text-sm text-gray-600 mt-2">
+            <p className="text-lg font-bold leading-tight">${cryptoValue.toLocaleString()}</p>
+            <p className="text-xs text-gray-600 mt-1">
               {((cryptoValue / totalPortfolioValue) * 100).toFixed(1)}% of portfolio
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Fiat Assets</h3>
-              <DollarSign className="w-4 h-4 text-primary" />
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-xs font-medium text-gray-500">Fiat Assets</h3>
+              <DollarSign className="w-3 h-3 text-primary" />
             </div>
-            <p className="text-2xl font-bold">${fiatValue.toLocaleString()}</p>
-            <p className="text-sm text-gray-600 mt-2">
+            <p className="text-lg font-bold leading-tight">${fiatValue.toLocaleString()}</p>
+            <p className="text-xs text-gray-600 mt-1">
               {((fiatValue / totalPortfolioValue) * 100).toFixed(1)}% of portfolio
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Investment Assets</h3>
-              <Target className="w-4 h-4 text-purple-500" />
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-xs font-medium text-gray-500">Investment Assets</h3>
+              <Target className="w-3 h-3 text-purple-500" />
             </div>
-            <p className="text-2xl font-bold">${investmentValue.toLocaleString()}</p>
-            <p className="text-sm text-gray-600 mt-2">
+            <p className="text-lg font-bold leading-tight">${investmentValue.toLocaleString()}</p>
+            <p className="text-xs text-gray-600 mt-1">
               {((investmentValue / totalPortfolioValue) * 100).toFixed(1)}% of portfolio
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Monthly P&L</h3>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-xs font-medium text-gray-500">Monthly P&L</h3>
               {monthlyPnl >= 0 ? (
-                <TrendingUp className="w-4 h-4 text-secondary" />
+                <TrendingUp className="w-3 h-3 text-secondary" />
               ) : (
-                <TrendingDown className="w-4 h-4 text-destructive" />
+                <TrendingDown className="w-3 h-3 text-destructive" />
               )}
             </div>
-            <p className={`text-2xl font-bold ${monthlyPnl >= 0 ? 'text-secondary' : 'text-destructive'}`}>
+            <p className={`text-lg font-bold leading-tight ${monthlyPnl >= 0 ? 'text-secondary' : 'text-destructive'}`}>
               {monthlyPnl >= 0 ? '+' : ''}${Math.round(monthlyPnl).toLocaleString()}
             </p>
-            <p className="text-sm text-gray-600 mt-2">
+            <p className="text-xs text-gray-600 mt-1">
               {monthlyReturn >= 0 ? '+' : ''}{monthlyReturn.toFixed(1)}% this month
             </p>
           </CardContent>
