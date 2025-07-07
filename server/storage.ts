@@ -2061,6 +2061,56 @@ export class MemStorage implements IStorage {
         spread: "0.010",
         updatedAt: new Date(),
       },
+      // VND to USDC and USDT conversions
+      {
+        id: 208,
+        baseCurrency: "VND",
+        targetCurrency: "USDC",
+        rate: "0.00004023",
+        spread: "0.010",
+        updatedAt: new Date(),
+      },
+      {
+        id: 209,
+        baseCurrency: "USDC",
+        targetCurrency: "VND",
+        rate: "24860.00",
+        spread: "0.010",
+        updatedAt: new Date(),
+      },
+      {
+        id: 210,
+        baseCurrency: "VND",
+        targetCurrency: "USDT",
+        rate: "0.00004024",
+        spread: "0.010",
+        updatedAt: new Date(),
+      },
+      {
+        id: 211,
+        baseCurrency: "USDT",
+        targetCurrency: "VND",
+        rate: "24850.00",
+        spread: "0.010",
+        updatedAt: new Date(),
+      },
+      // CHF to crypto conversions that might be missing
+      {
+        id: 212,
+        baseCurrency: "CHF",
+        targetCurrency: "BTC",
+        rate: "0.00001036",
+        spread: "0.015",
+        updatedAt: new Date(),
+      },
+      {
+        id: 213,
+        baseCurrency: "CHF",
+        targetCurrency: "ETH",
+        rate: "0.0002950",
+        spread: "0.015",
+        updatedAt: new Date(),
+      },
     ];
     
     demoFxRates.forEach(rate => {
