@@ -792,6 +792,15 @@ export class MemStorage implements IStorage {
         spread: "0.005",
         updatedAt: new Date(),
       },
+      // Add missing EUR to USD rate that was causing 404
+      {
+        id: 53,
+        baseCurrency: "EUR",
+        targetCurrency: "USD",
+        rate: "1.1800",
+        spread: "0.004",
+        updatedAt: new Date(),
+      },
     ];
     
     demoFxRates.forEach(rate => {

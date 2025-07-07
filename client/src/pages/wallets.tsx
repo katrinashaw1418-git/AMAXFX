@@ -32,7 +32,7 @@ const currencyConfig = {
 
 // Exchange Rate Display Component
 function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrency: string; toCurrency: string; amount: number }) {
-  const { data: exchangeRate, isLoading } = useFxRate(fromCurrency, toCurrency);
+  const { data: exchangeRate, isLoading, error } = useFxRate(fromCurrency, toCurrency);
   
   if (isLoading) {
     return (
@@ -44,17 +44,18 @@ function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrenc
     );
   }
   
-  if (!exchangeRate) {
+  if (error || !exchangeRate || !exchangeRate.rate) {
     return (
       <div className="p-3 bg-muted rounded-lg">
         <div className="text-sm text-muted-foreground text-center">
-          Exchange rate not available
+          Exchange rate not available for {fromCurrency} → {toCurrency}
         </div>
       </div>
     );
   }
   
-  const convertedAmount = amount * exchangeRate.rate;
+  const rate = Number(exchangeRate.rate) || 0;
+  const convertedAmount = amount * rate;
   const fromConfig = currencyConfig[fromCurrency as keyof typeof currencyConfig];
   const toConfig = currencyConfig[toCurrency as keyof typeof currencyConfig];
   
@@ -64,7 +65,7 @@ function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrenc
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Exchange Rate:</span>
           <span className="font-mono">
-            1 {fromCurrency} = {exchangeRate.rate.toFixed(6)} {toCurrency}
+            1 {fromCurrency} = {rate.toFixed(6)} {toCurrency}
           </span>
         </div>
         {amount > 0 && (
@@ -78,9 +79,11 @@ function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrenc
             </span>
           </div>
         )}
-        <div className="text-xs text-muted-foreground text-center">
-          Rate updated: {new Date(exchangeRate.updatedAt).toLocaleTimeString()}
-        </div>
+        {exchangeRate.updatedAt && (
+          <div className="text-xs text-muted-foreground text-center">
+            Rate updated: {new Date(exchangeRate.updatedAt).toLocaleTimeString()}
+          </div>
+        )}
       </div>
     </div>
   );
