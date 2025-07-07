@@ -232,6 +232,7 @@ export default function Investments() {
                   <SelectItem value="corporate_credit">Corporate Credit</SelectItem>
                   <SelectItem value="venture_capital">Venture Capital</SelectItem>
                   <SelectItem value="digital_assets">Digital Assets</SelectItem>
+                  <SelectItem value="cash_deposit">Cash Deposits</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -245,6 +246,7 @@ export default function Investments() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Risk Levels</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="conservative">Conservative</SelectItem>
                   <SelectItem value="moderate">Moderate</SelectItem>
                   <SelectItem value="high">High</SelectItem>
@@ -281,8 +283,8 @@ export default function Investments() {
           const minimumInvestment = parseFloat(product.minimumInvestment);
           
           return (
-            <Card key={product.id} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
+            <Card key={product.id} className="hover:shadow-lg transition-shadow flex flex-col h-full">
+              <CardContent className="p-6 flex flex-col flex-grow">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-3">
                     <div className="p-2 bg-primary/10 rounded-lg">
@@ -321,16 +323,17 @@ export default function Investments() {
                   </Badge>
                 </div>
 
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
+                <p className="text-sm text-muted-foreground mb-6 line-clamp-3 flex-grow">
                   {product.investmentStrategy}
                 </p>
 
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="w-full mb-2">
-                      View Details
-                    </Button>
-                  </DialogTrigger>
+                <div className="space-y-2 mt-auto">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="w-full">
+                        View Details
+                      </Button>
+                    </DialogTrigger>
                   <DialogContent className="max-w-2xl">
                     <DialogHeader>
                       <DialogTitle>{product.name}</DialogTitle>
@@ -401,17 +404,18 @@ export default function Investments() {
                       </div>
                     </div>
                   </DialogContent>
-                </Dialog>
+                  </Dialog>
 
-                <Button 
-                  className="w-full"
-                  onClick={() => {
-                    setSelectedProduct(product);
-                    setInvestModalOpen(true);
-                  }}
-                >
-                  Invest Now
-                </Button>
+                  <Button 
+                    className="w-full"
+                    onClick={() => {
+                      setSelectedProduct(product);
+                      setInvestModalOpen(true);
+                    }}
+                  >
+                    Invest Now
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           );
