@@ -393,14 +393,32 @@ export default function Wallets() {
     });
   };
 
-  // Filter out zero-balance wallets and group by region
+  // Filter out zero-balance wallets and sort with crypto currencies at bottom
   const walletsWithRegions = wallets
     .filter(wallet => parseFloat(wallet.balance || '0') > 0) // Hide zero-balance wallets
     .map(wallet => ({
       ...wallet,
       config: CurrencyConfig[wallet.currency as keyof typeof CurrencyConfig],
       region: CurrencyConfig[wallet.currency as keyof typeof CurrencyConfig]?.region || 'Other'
-    }));
+    }))
+    .sort((a, b) => {
+      // Define crypto currencies that should always be at bottom
+      const cryptoCurrencies = ['BTC', 'ETH', 'USDT', 'USDC'];
+      const aIsCrypto = cryptoCurrencies.includes(a.currency);
+      const bIsCrypto = cryptoCurrencies.includes(b.currency);
+      
+      // If one is crypto and other isn't, non-crypto comes first
+      if (aIsCrypto && !bIsCrypto) return 1;
+      if (!aIsCrypto && bIsCrypto) return -1;
+      
+      // If both are crypto, maintain the order: BTC, ETH, USDT, USDC
+      if (aIsCrypto && bIsCrypto) {
+        return cryptoCurrencies.indexOf(a.currency) - cryptoCurrencies.indexOf(b.currency);
+      }
+      
+      // For non-crypto currencies, sort alphabetically
+      return a.currency.localeCompare(b.currency);
+    });
 
   const { data: exchangeRate } = useFxRate(fromCurrency, 'USD');
   const estimatedValue = fromCurrency && amount ? (parseFloat(amount) * (exchangeRate?.rate || 1)) : 0;
