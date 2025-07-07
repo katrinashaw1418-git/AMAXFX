@@ -243,8 +243,11 @@ export default function Investments() {
                 <h3 className="text-xs font-medium text-gray-500">Total Invested</h3>
                 <DollarSign className="w-3 h-3 text-primary" />
               </div>
-              <div className="flex flex-col items-start justify-end h-16">
-                <p className="text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis w-full leading-tight">${totalInvested.toLocaleString()}</p>
+              <div className="flex flex-col justify-end h-16">
+                <div className="flex items-end h-6">
+                  <p className="text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis w-full leading-none">${totalInvested.toLocaleString()}</p>
+                </div>
+                <div className="h-4"></div>
               </div>
             </CardContent>
           </Card>
@@ -254,8 +257,11 @@ export default function Investments() {
                 <h3 className="text-xs font-medium text-gray-500">Current Value</h3>
                 <TrendingUp className="w-3 h-3 text-green-600" />
               </div>
-              <div className="flex flex-col items-start justify-end h-16">
-                <p className="text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis w-full leading-tight">${totalCurrentValue.toLocaleString()}</p>
+              <div className="flex flex-col justify-end h-16">
+                <div className="flex items-end h-6">
+                  <p className="text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis w-full leading-none">${totalCurrentValue.toLocaleString()}</p>
+                </div>
+                <div className="h-4"></div>
               </div>
             </CardContent>
           </Card>
@@ -270,10 +276,13 @@ export default function Investments() {
                 </div>
                 <TrendingUp className="w-3 h-3 text-secondary" />
               </div>
-              <div className="flex flex-col items-start justify-end h-16">
-                <p className={`text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis w-full leading-tight ${totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  ${totalReturn.toLocaleString()}
-                </p>
+              <div className="flex flex-col justify-end h-16">
+                <div className="flex items-end h-6">
+                  <p className={`text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis w-full leading-none ${totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    ${totalReturn.toLocaleString()}
+                  </p>
+                </div>
+                <div className="h-4"></div>
               </div>
             </CardContent>
           </Card>
@@ -297,21 +306,25 @@ export default function Investments() {
                 </div>
                 <DollarSign className="w-3 h-3 text-green-600" />
               </div>
-              <div className="flex flex-col items-start justify-end h-16">
-                {selectedCurrency === 'USD' ? (
-                  <p className="text-lg font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis w-full leading-tight">
-                    ${availableBalance.toLocaleString()}
-                  </p>
-                ) : (
-                  <>
-                    <p className="text-lg font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis w-full leading-tight">
-                      ${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()} USD
+              <div className="flex flex-col justify-end h-16">
+                <div className="flex items-end h-6">
+                  {selectedCurrency === 'USD' ? (
+                    <p className="text-lg font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis w-full leading-none">
+                      ${availableBalance.toLocaleString()}
                     </p>
+                  ) : (
+                    <p className="text-lg font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis w-full leading-none">
+                      ${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+                <div className="h-4 flex items-center">
+                  {selectedCurrency !== 'USD' && (
                     <span className="text-xs text-gray-600">
                       ({selectedWallet?.symbol && selectedWallet.symbol !== selectedCurrency ? selectedWallet.symbol : ''}{availableBalance.toLocaleString()} {selectedCurrency})
                     </span>
-                  </>
-                )}
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
