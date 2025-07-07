@@ -154,3 +154,10 @@ Changelog:
   - Implemented KYC-gated withdrawal functionality with gas fee estimation
   - Created specialized stablecoin trading pairs and cross-border remittance features
   - Enhanced portfolio tracking to include stablecoin holdings (~$214k in demo data)
+- July 07, 2025. Fixed all trading functionality and button interactions
+  - Fixed stablecoin trade buttons with working trade dialogs
+  - Added comprehensive cryptocurrency exchange rates (BTC, ETH)
+  - Enabled all crypto-to-fiat, crypto-to-crypto, and stablecoin trading pairs
+  - Fixed deposit/withdrawal buttons with proper API integration
+  - Resolved dialog accessibility warnings with proper descriptions
+  - All buttons and interactive elements now fully functional
