@@ -296,13 +296,16 @@ export default function Wallets() {
   };
 
   const handleTransfer = () => {
+    const sourceWallet = selectedWallet;
+    const sourceCurrency = sourceWallet?.currency || fromCurrency;
+    
     console.log("handleTransfer called with:", {
-      fromCurrency,
+      fromCurrency: sourceCurrency,
       toCurrency,
       amount
     });
 
-    if (!fromCurrency || !toCurrency || !amount) {
+    if (!sourceCurrency || !toCurrency || !amount) {
       console.log("Validation failed - missing fields");
       toast({
         title: "Missing Information",
@@ -312,7 +315,7 @@ export default function Wallets() {
       return;
     }
 
-    if (fromCurrency === toCurrency) {
+    if (sourceCurrency === toCurrency) {
       console.log("Validation failed - same currencies");
       toast({
         title: "Invalid Transfer",
@@ -324,7 +327,7 @@ export default function Wallets() {
 
     console.log("Starting transfer mutation...");
     transferMutation.mutate({
-      fromCurrency: selectedWallet?.currency || fromCurrency,
+      fromCurrency: sourceCurrency,
       toCurrency,
       amount: parseFloat(amount)
     });
