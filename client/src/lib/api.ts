@@ -49,11 +49,13 @@ export const api = {
     return fetch(`/api/investment-products${queryString ? `?${queryString}` : ''}`).then(res => res.json());
   },
 
+  // User Investments
+  getUserInvestments: () => fetch("/api/user-investments").then(res => res.json()),
+
   getInvestmentProduct: (id: number) => 
     fetch(`/api/investment-products/${id}`).then(res => res.json()),
 
-  getUserInvestments: () => 
-    fetch("/api/user-investments").then(res => res.json()),
+
 
   createInvestment: (data: { productId: number; amount: number }) =>
     apiRequest("POST", "/api/investments", data).then(res => res.json()),

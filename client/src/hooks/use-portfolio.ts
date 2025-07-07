@@ -32,3 +32,11 @@ export function useAiRecommendations() {
     refetchInterval: 300000, // Refresh every 5 minutes
   });
 }
+
+export function useUserInvestments() {
+  return useQuery({
+    queryKey: ["/api/user-investments"],
+    queryFn: api.getUserInvestments,
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+}
