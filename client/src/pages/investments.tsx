@@ -320,7 +320,7 @@ export default function Investments() {
                     <span className="font-medium">${minimumInvestment.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Available Balance:</span>
+                    <span className="text-sm text-muted-foreground">Investment Capital:</span>
                     <span className="font-medium text-green-600">${wallets?.find(w => w.currency === 'USD')?.availableBalance ? parseFloat(wallets.find(w => w.currency === 'USD')!.availableBalance).toLocaleString() : '0'}</span>
                   </div>
                 </div>
@@ -458,7 +458,7 @@ export default function Investments() {
                     Minimum: ${parseFloat(selectedProduct.minimumInvestment).toLocaleString()}
                   </p>
                   <p className="text-xs font-medium text-green-600">
-                    Available Balance: ${wallets?.find(w => w.currency === 'USD')?.availableBalance ? parseFloat(wallets.find(w => w.currency === 'USD')!.availableBalance).toLocaleString() : '0'}
+                    Investment Capital: ${wallets?.find(w => w.currency === 'USD')?.availableBalance ? parseFloat(wallets.find(w => w.currency === 'USD')!.availableBalance).toLocaleString() : '0'}
                   </p>
                 </div>
               )}

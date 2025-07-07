@@ -193,3 +193,9 @@ Changelog:
   - Implemented tiered liquidity options: instant access, same-day, and next-day settlement
   - Added proper product categorization and filtering support for cash deposits
   - Fixed investment card button alignment using flexbox layout for consistent positioning
+- July 07, 2025. Completed investment functionality with real-time balance integration
+  - Fixed investment transactions to properly deduct from USD wallet balances
+  - Enhanced portfolio calculations to include investment values dynamically
+  - Added "Investment Capital" display on all product cards showing available USD funds
+  - Investment modal shows both minimum requirements and available capital
+  - All investment operations update wallet, portfolio, and transaction data in real-time
