@@ -464,5 +464,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Wallet transfer endpoint
+  app.post("/api/wallets/transfer", async (req, res) => {
+    try {
+      const { fromCurrency, toCurrency, amount } = req.body;
+      const userId = 1; // Demo user
+      
+      // Get source wallet
+      const sourceWallet = await storage.getWallet(userId, fromCurrency);
+      if (!sourceWallet) {
+        return res.status(404).json({ error: "Source wallet not found" });
+      }
+      
+      if (sourceWallet.availableBalance < amount) {
+        return res.status(400).json({ error: "Insufficient balance" });
+      }
+      
+      // Get or create target wallet
+      let targetWallet = await storage.getWallet(userId, toCurrency);
+      if (!targetWallet) {
+        targetWallet = await storage.createWallet({
+          userId,
+          currency: toCurrency,
+          balance: 0,
+          availableBalance: 0,
+          walletType: ['BTC', 'ETH'].includes(toCurrency) ? 'crypto' : 'fiat'
+        });
+      }
+      
+      // Get exchange rate (use mock rate if not found)
+      let exchangeRate = 1.23; // Default mock rate
+      const rate = await storage.getFxRate(fromCurrency, toCurrency);
+      if (rate) {
+        exchangeRate = rate.rate;
+      }
+      
+      const convertedAmount = amount * exchangeRate;
+      const fee = convertedAmount * 0.005; // 0.5% fee
+      const finalAmount = convertedAmount - fee;
+      
+      // Update balances
+      await storage.updateWallet(sourceWallet.id, {
+        balance: sourceWallet.balance - amount,
+        availableBalance: sourceWallet.availableBalance - amount
+      });
+      
+      await storage.updateWallet(targetWallet.id, {
+        balance: targetWallet.balance + finalAmount,
+        availableBalance: targetWallet.availableBalance + finalAmount
+      });
+      
+      // Create transaction record
+      const transaction = await storage.createTransaction({
+        userId,
+        type: "currency_transfer",
+        amount: amount.toString(),
+        currency: fromCurrency,
+        targetCurrency: toCurrency,
+        status: "completed",
+        description: `Converted ${amount} ${fromCurrency} to ${finalAmount.toFixed(2)} ${toCurrency}`,
+        fee
+      });
+      
+      res.json({
+        transaction,
+        exchangeRate,
+        convertedAmount,
+        fee,
+        finalAmount,
+        sourceWallet: await storage.getWallet(userId, fromCurrency),
+        targetWallet: await storage.getWallet(userId, toCurrency)
+      });
+    } catch (error) {
+      console.error("Wallet transfer error:", error);
+      res.status(500).json({ error: "Failed to process transfer" });
+    }
+  });
+
   return httpServer;
 }

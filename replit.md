@@ -255,3 +255,11 @@ Changelog:
   - Regional grouping: Americas (USD, CAD, BRL, MXN), Europe (EUR, GBP, CHF, SEK, NOK, etc.), Asia (JPY, HKD, SGD, INR, CNY, etc.)
   - Comprehensive crypto and stablecoin support within transfer interface
   - Improved user experience with organized currency dropdown and regional categorization
+- July 07, 2025. Implemented comprehensive Wise-inspired wallet interface with two-section layout
+  - **Section 1: "Your Balances" Table**: Clean table view showing currency, balance, USD equivalent, and action buttons (Send/Convert/Add)
+  - **Section 2: "Transfer or Convert"**: Professional conversion interface with From→To flow, real-time rate display, and instant processing
+  - **Enhanced Features**: Rate alerts, currency watchlist, manage currencies functionality, mid-market rates with transparency
+  - **Transfer API**: Full wallet transfer endpoint supporting automatic wallet creation and balance updates for all supported currencies
+  - **UI/UX Improvements**: Tooltips for exchange rates, processing time indicators, security badges, and gradient styling
+  - **Real-time Features**: Live rate updates, instant transfers, bank-level security notifications
+  - Fixed transfer functionality to properly create new currency wallets (like DKK) when converting between currencies
