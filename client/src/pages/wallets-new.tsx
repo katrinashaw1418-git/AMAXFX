@@ -823,23 +823,145 @@ export default function Wallets() {
                 </Button>
               </div>
             ) : depositMethod && depositMethod !== 'blockchain' && (
-              <div className="flex space-x-2 pt-2">
-                <Button 
-                  onClick={handleDeposit}
-                  disabled={depositMutation.isPending || !depositMethod || !amount}
-                  className="flex-1 h-8 text-sm"
-                >
-                  {depositMutation.isPending ? "Processing..." : 
-                   !['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(selectedWallet?.currency) ? `Purchase ${selectedWallet.currency}` : "Submit Deposit Request"}
-                </Button>
-                <Button variant="outline" className="h-8 text-sm" onClick={() => {
-                  setDepositModalOpen(false);
-                  setAmount("");
-                  setDepositMethod("");
-                }}>
-                  Close
-                </Button>
-              </div>
+              <>
+                {depositMethod === 'card' && (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-muted rounded-lg">
+                      <h4 className="font-medium mb-2 text-sm">💳 Credit/Debit Card</h4>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>• Visa, Mastercard, American Express accepted</p>
+                        <p>• Instant processing</p>
+                        <p>• Fee: 2.9% + $0.30 AUD</p>
+                        <p>• Limits: $50 - $10,000 AUD per transaction</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label htmlFor="card-number" className="text-xs">Card Number</Label>
+                        <Input 
+                          id="card-number"
+                          placeholder="1234 5678 9012 3456"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="card-expiry" className="text-xs">Expiry Date</Label>
+                        <Input 
+                          id="card-expiry"
+                          placeholder="MM/YY"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="card-cvv" className="text-xs">CVV</Label>
+                        <Input 
+                          id="card-cvv"
+                          placeholder="123"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="card-name" className="text-xs">Cardholder Name</Label>
+                        <Input 
+                          id="card-name"
+                          placeholder="John Doe"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {depositMethod === 'payid' && (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-muted rounded-lg">
+                      <h4 className="font-medium mb-2 text-sm">📱 PayID (Australia Only)</h4>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>• Available in Australia only</p>
+                        <p>• Instant transfers via NPP</p>
+                        <p>• Use your email or mobile number</p>
+                        <p>• No fees for transfers</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div>
+                        <Label htmlFor="payid-identifier" className="text-xs">Your PayID</Label>
+                        <Input 
+                          id="payid-identifier"
+                          placeholder="your.email@example.com or +61400000000"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="payid-name" className="text-xs">Full Name</Label>
+                        <Input 
+                          id="payid-name"
+                          placeholder="John Chen"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {depositMethod === 'bank_transfer' && (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-muted rounded-lg">
+                      <h4 className="font-medium mb-2 text-sm">🏦 Bank Transfer</h4>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>• International transfers accepted</p>
+                        <p>• Processing time: 1-3 business days</p>
+                        <p>• Include reference number in transfer</p>
+                        <p>• SWIFT: VIRGOAU33</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div>
+                        <Label htmlFor="bank-name" className="text-xs">Your Name</Label>
+                        <Input 
+                          id="bank-name"
+                          placeholder="John Chen"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="bank-bsb" className="text-xs">BSB (if Australian)</Label>
+                        <Input 
+                          id="bank-bsb"
+                          placeholder="123-456"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="bank-account" className="text-xs">Account Number</Label>
+                        <Input 
+                          id="bank-account"
+                          placeholder="12345678"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex space-x-2 pt-2">
+                  <Button 
+                    onClick={handleDeposit}
+                    disabled={depositMutation.isPending || !depositMethod || !amount}
+                    className="flex-1 h-8 text-sm"
+                  >
+                    {depositMutation.isPending ? "Processing..." : 
+                     !['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(selectedWallet?.currency) ? `Purchase ${selectedWallet.currency}` : "Submit Deposit Request"}
+                  </Button>
+                  <Button variant="outline" className="h-8 text-sm" onClick={() => {
+                    setDepositModalOpen(false);
+                    setAmount("");
+                    setDepositMethod("");
+                  }}>
+                    Close
+                  </Button>
+                </div>
+              </>
             )}
             
             {(!depositMethod || depositMethod === 'blockchain') && (
@@ -891,13 +1013,41 @@ export default function Wallets() {
                 </p>
               )}
             </div>
-            <div className="p-3 bg-muted rounded-lg">
-              <h4 className="font-medium mb-2 text-sm">🏦 Bank Transfer Instructions</h4>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <p>• Funds transferred to your registered bank account</p>
-                <p>• Processing time: 1-3 business days</p>
-                <p>• Withdrawal fee: $25.00</p>
-                <p>• Please ensure your bank details are up to date</p>
+            <div className="space-y-3">
+              <div className="p-3 bg-muted rounded-lg">
+                <h4 className="font-medium mb-2 text-sm">🏦 Bank Transfer Instructions</h4>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>• Funds transferred to your registered bank account</p>
+                  <p>• Processing time: 1-3 business days</p>
+                  <p>• Withdrawal fee: $25.00</p>
+                  <p>• Please ensure your bank details are up to date</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div>
+                  <Label htmlFor="withdraw-bank-name" className="text-xs">Bank Account Holder Name</Label>
+                  <Input 
+                    id="withdraw-bank-name"
+                    placeholder="John Chen"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="withdraw-bsb" className="text-xs">BSB (if Australian)</Label>
+                  <Input 
+                    id="withdraw-bsb"
+                    placeholder="123-456"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="withdraw-account-number" className="text-xs">Account Number</Label>
+                  <Input 
+                    id="withdraw-account-number"
+                    placeholder="12345678"
+                    className="h-8 text-sm"
+                  />
+                </div>
               </div>
             </div>
             <div className="flex space-x-2 pt-2">
