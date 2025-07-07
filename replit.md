@@ -37,7 +37,7 @@ This is a comprehensive cross-border wealth management platform that integrates 
 - Compliance status management
 
 ### 2. Multi-Currency Wallet System
-- Fiat currencies: USD, CAD, EUR, GBP, AUD, HKD
+- Fiat currencies: USD, CAD, EUR, GBP, AUD, HKD, SGD
 - Cryptocurrencies: BTC, ETH
 - Stablecoins: USDT, USDC (ERC-20 tokens on Ethereum)
 - Balance tracking with available vs. total balances
@@ -180,3 +180,10 @@ Changelog:
   - Enhanced user experience with toast notifications and proper state management
   - Fixed accessibility issues with proper dialog titles and descriptions
   - All AI advisory features now fully functional with professional-grade interactions
+- July 07, 2025. Fixed wallet functionality and added Singapore Dollar (SGD) support
+  - Resolved React hooks error by moving all hooks to component top
+  - Fixed all wallet buttons (deposit, withdraw, transfer) with working modal dialogs
+  - Added proper form validation and error handling for wallet operations
+  - Integrated Singapore Dollar (SGD) across all currency configurations
+  - Added SGD wallet with S$28,500 balance and exchange rates to USD/USDT/USDC
+  - Improved button layout to fit properly within wallet cards

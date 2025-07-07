@@ -24,6 +24,7 @@ export const CurrencyConfig = {
   GBP: { name: "British Pound", symbol: "£", color: "bg-green-600", flag: "🇬🇧" },
   AUD: { name: "Australian Dollar", symbol: "$", color: "bg-orange-500", flag: "🇦🇺" },
   HKD: { name: "Hong Kong Dollar", symbol: "$", color: "bg-pink-500", flag: "🇭🇰" },
+  SGD: { name: "Singapore Dollar", symbol: "$", color: "bg-red-600", flag: "🇸🇬" },
   BTC: { name: "Bitcoin", symbol: "₿", color: "bg-yellow-500", flag: "₿" },
   ETH: { name: "Ethereum", symbol: "Ξ", color: "bg-purple-500", flag: "Ξ" },
   USDT: { name: "Tether", symbol: "₮", color: "bg-green-500", flag: "💵" },

@@ -45,6 +45,7 @@ export default function StablecoinCard({ currency, balance, availableBalance, co
     { code: "GBP", name: "British Pound" },
     { code: "AUD", name: "Australian Dollar" },
     { code: "HKD", name: "Hong Kong Dollar" },
+    { code: "SGD", name: "Singapore Dollar" },
     { code: "BTC", name: "Bitcoin" },
     { code: "ETH", name: "Ethereum" },
     { code: "USDT", name: "Tether" },
