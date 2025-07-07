@@ -135,7 +135,7 @@ export default function Portfolio() {
               <h3 className="text-xs font-medium text-gray-500">Total Value</h3>
               <DollarSign className="w-3 h-3 text-primary" />
             </div>
-            <p className="text-base font-bold leading-tight break-all">${totalPortfolioValue.toLocaleString()}</p>
+            <p className="text-base font-bold leading-tight whitespace-nowrap overflow-hidden text-ellipsis">${totalPortfolioValue.toLocaleString()}</p>
             <div className="flex items-center space-x-1 mt-1">
               <TrendingUp className="w-2 h-2 text-secondary" />
               <span className="text-xs text-secondary">+{monthlyReturn.toFixed(1)}%</span>
@@ -149,7 +149,7 @@ export default function Portfolio() {
               <h3 className="text-xs font-medium text-gray-500">Crypto Assets</h3>
               <Bitcoin className="w-3 h-3 text-yellow-500" />
             </div>
-            <p className="text-base font-bold leading-tight break-all">${cryptoValue.toLocaleString()}</p>
+            <p className="text-base font-bold leading-tight whitespace-nowrap overflow-hidden text-ellipsis">${cryptoValue.toLocaleString()}</p>
             <p className="text-xs text-gray-600 mt-1">
               {((cryptoValue / totalPortfolioValue) * 100).toFixed(1)}% of portfolio
             </p>
@@ -162,7 +162,7 @@ export default function Portfolio() {
               <h3 className="text-xs font-medium text-gray-500">Fiat Assets</h3>
               <DollarSign className="w-3 h-3 text-primary" />
             </div>
-            <p className="text-base font-bold leading-tight break-all">${fiatValue.toLocaleString()}</p>
+            <p className="text-base font-bold leading-tight whitespace-nowrap overflow-hidden text-ellipsis">${fiatValue.toLocaleString()}</p>
             <p className="text-xs text-gray-600 mt-1">
               {((fiatValue / totalPortfolioValue) * 100).toFixed(1)}% of portfolio
             </p>
@@ -175,7 +175,7 @@ export default function Portfolio() {
               <h3 className="text-xs font-medium text-gray-500">Investment Assets</h3>
               <Target className="w-3 h-3 text-purple-500" />
             </div>
-            <p className="text-base font-bold leading-tight break-all">${investmentValue.toLocaleString()}</p>
+            <p className="text-base font-bold leading-tight whitespace-nowrap overflow-hidden text-ellipsis">${investmentValue.toLocaleString()}</p>
             <p className="text-xs text-gray-600 mt-1">
               {((investmentValue / totalPortfolioValue) * 100).toFixed(1)}% of portfolio
             </p>
@@ -192,7 +192,7 @@ export default function Portfolio() {
                 <TrendingDown className="w-3 h-3 text-destructive" />
               )}
             </div>
-            <p className={`text-base font-bold leading-tight break-all ${monthlyPnl >= 0 ? 'text-secondary' : 'text-destructive'}`}>
+            <p className={`text-base font-bold leading-tight whitespace-nowrap overflow-hidden text-ellipsis ${monthlyPnl >= 0 ? 'text-secondary' : 'text-destructive'}`}>
               {monthlyPnl >= 0 ? '+' : ''}${Math.round(monthlyPnl).toLocaleString()}
             </p>
             <p className="text-xs text-gray-600 mt-1">
