@@ -1791,6 +1791,47 @@ export class MemStorage implements IStorage {
         spread: "0.008",
         updatedAt: new Date(),
       },
+      // Missing AUD conversion pairs
+      {
+        id: 175,
+        baseCurrency: "CAD",
+        targetCurrency: "AUD",
+        rate: "1.1044",
+        spread: "0.006",
+        updatedAt: new Date(),
+      },
+      {
+        id: 176,
+        baseCurrency: "HKD",
+        targetCurrency: "AUD",
+        rate: "0.1894",
+        spread: "0.006",
+        updatedAt: new Date(),
+      },
+      {
+        id: 177,
+        baseCurrency: "SGD",
+        targetCurrency: "AUD",
+        rate: "1.0968",
+        spread: "0.006",
+        updatedAt: new Date(),
+      },
+      {
+        id: 178,
+        baseCurrency: "CHF",
+        targetCurrency: "AUD",
+        rate: "1.6760",
+        spread: "0.006",
+        updatedAt: new Date(),
+      },
+      {
+        id: 179,
+        baseCurrency: "JPY",
+        targetCurrency: "AUD",
+        rate: "0.009893",
+        spread: "0.008",
+        updatedAt: new Date(),
+      },
     ];
     
     demoFxRates.forEach(rate => {
