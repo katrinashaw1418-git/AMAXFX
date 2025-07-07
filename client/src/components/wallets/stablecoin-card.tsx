@@ -2,12 +2,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { QrCode, Download, Upload, ArrowUpDown, AlertCircle } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface StablecoinCardProps {
   currency: "USDT" | "USDC";
@@ -27,6 +29,7 @@ export default function StablecoinCard({ currency, balance, availableBalance, co
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawAddress, setWithdrawAddress] = useState("");
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Mock wallet addresses for deposits
   const walletAddress = currency === "USDT" 
@@ -41,7 +44,50 @@ export default function StablecoinCard({ currency, balance, availableBalance, co
     });
   };
 
-  const handleWithdraw = () => {
+  const handleSimulateDeposit = async () => {
+    try {
+      // Simulate a deposit transaction
+      await createTransactionMutation.mutateAsync({
+        type: "deposit",
+        toCurrency: currency,
+        amount: "1000.00", // Demo deposit amount
+        description: `${currency} deposit from blockchain`,
+        status: "completed",
+        fee: 0.00,
+      });
+
+      toast({
+        title: "Deposit Detected",
+        description: `Demo deposit of 1000 ${currency} has been processed`,
+      });
+      
+      setDepositModalOpen(false);
+    } catch (error) {
+      toast({
+        title: "Deposit Failed",
+        description: "Unable to process deposit. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Create transaction mutation
+  const createTransactionMutation = useMutation({
+    mutationFn: async (transactionData: any) => {
+      return await apiRequest('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(transactionData),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/portfolio'] });
+    },
+  });
+
+  const handleWithdraw = async () => {
     if (!withdrawAmount || !withdrawAddress) {
       toast({
         title: "Error",
@@ -51,14 +97,41 @@ export default function StablecoinCard({ currency, balance, availableBalance, co
       return;
     }
 
-    // Mock withdrawal process
-    toast({
-      title: "Withdrawal Initiated",
-      description: `${withdrawAmount} ${currency} withdrawal to ${withdrawAddress.slice(0, 10)}... is being processed`,
-    });
-    setWithdrawModalOpen(false);
-    setWithdrawAmount("");
-    setWithdrawAddress("");
+    const amount = parseFloat(withdrawAmount);
+    if (amount <= 0 || amount > parseFloat(availableBalance)) {
+      toast({
+        title: "Invalid Amount",
+        description: "Amount must be greater than 0 and not exceed available balance",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await createTransactionMutation.mutateAsync({
+        type: "withdrawal",
+        fromCurrency: currency,
+        amount: amount.toString(),
+        description: `${currency} withdrawal to ${withdrawAddress.slice(0, 10)}...`,
+        status: "pending",
+        fee: 25.00, // Estimated ETH gas fee
+      });
+
+      toast({
+        title: "Withdrawal Initiated",
+        description: `${withdrawAmount} ${currency} withdrawal is being processed`,
+      });
+      
+      setWithdrawModalOpen(false);
+      setWithdrawAmount("");
+      setWithdrawAddress("");
+    } catch (error) {
+      toast({
+        title: "Withdrawal Failed",
+        description: "Unable to process withdrawal. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -114,6 +187,9 @@ export default function StablecoinCard({ currency, balance, availableBalance, co
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Deposit {currency}</DialogTitle>
+                <DialogDescription>
+                  Send {currency} tokens to your wallet address below
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="text-center">
@@ -144,6 +220,20 @@ export default function StablecoinCard({ currency, balance, availableBalance, co
                     Transactions require 1 block confirmation.
                   </AlertDescription>
                 </Alert>
+
+                <div className="border-t pt-4">
+                  <Button 
+                    onClick={handleSimulateDeposit} 
+                    variant="outline" 
+                    className="w-full"
+                    disabled={createTransactionMutation.isPending}
+                  >
+                    {createTransactionMutation.isPending ? "Processing..." : "Simulate Demo Deposit"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    For testing: adds 1000 {currency} to your balance
+                  </p>
+                </div>
               </div>
             </DialogContent>
           </Dialog>
@@ -158,6 +248,9 @@ export default function StablecoinCard({ currency, balance, availableBalance, co
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Withdraw {currency}</DialogTitle>
+                <DialogDescription>
+                  Send {currency} tokens to an external wallet address
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -196,14 +289,28 @@ export default function StablecoinCard({ currency, balance, availableBalance, co
                   </AlertDescription>
                 </Alert>
 
-                <Button onClick={handleWithdraw} className="w-full">
-                  Initiate Withdrawal
+                <Button 
+                  onClick={handleWithdraw} 
+                  className="w-full"
+                  disabled={createTransactionMutation.isPending}
+                >
+                  {createTransactionMutation.isPending ? "Processing..." : "Initiate Withdrawal"}
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
 
-          <Button variant="outline" size="sm" className="flex items-center gap-1">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1"
+            onClick={() => {
+              toast({
+                title: "Coming Soon",
+                description: `${currency} trading will be available soon`,
+              });
+            }}
+          >
             <ArrowUpDown className="w-3 h-3" />
             Trade
           </Button>
