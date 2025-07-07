@@ -334,7 +334,7 @@ export default function Wallets() {
     );
   }
 
-  // Filter out zero-balance wallets and sort with crypto currencies at bottom
+  // Filter out zero-balance wallets and sort with crypto currencies at bottom, new currencies above BTC
   const walletsWithRegions = wallets
     .filter(wallet => parseFloat(wallet.balance || '0') > 0)
     .map(wallet => ({
@@ -343,17 +343,24 @@ export default function Wallets() {
       region: CurrencyConfig[wallet.currency as keyof typeof CurrencyConfig]?.region || 'Other'
     }))
     .sort((a, b) => {
-      const cryptoCurrencies = ['BTC', 'ETH', 'USDT', 'USDC'];
-      const aIsCrypto = cryptoCurrencies.includes(a.currency);
-      const bIsCrypto = cryptoCurrencies.includes(b.currency);
+      // Define the exact order for crypto currencies
+      const cryptoOrder = ['BTC', 'ETH', 'USDT', 'USDC'];
+      const aIsCrypto = cryptoOrder.includes(a.currency);
+      const bIsCrypto = cryptoOrder.includes(b.currency);
       
+      // If one is crypto and other isn't, non-crypto comes first
       if (aIsCrypto && !bIsCrypto) return 1;
       if (!aIsCrypto && bIsCrypto) return -1;
       
+      // If both are crypto, maintain the order: BTC, ETH, USDT, USDC
       if (aIsCrypto && bIsCrypto) {
-        return cryptoCurrencies.indexOf(a.currency) - cryptoCurrencies.indexOf(b.currency);
+        return cryptoOrder.indexOf(a.currency) - cryptoOrder.indexOf(b.currency);
       }
       
+      // For non-crypto currencies, sort by ID (newer wallets first) then alphabetically
+      if (a.id !== b.id) {
+        return b.id - a.id; // Higher IDs first (newer wallets)
+      }
       return a.currency.localeCompare(b.currency);
     });
 
