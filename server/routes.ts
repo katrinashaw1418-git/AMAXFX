@@ -34,20 +34,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .filter(w => w.walletType === 'fiat')
         .reduce((sum, w) => sum + parseFloat(w.balance), 0);
       
-      // Calculate crypto value (using mock prices)
-      const cryptoValue = wallets
-        .filter(w => w.walletType === 'crypto')
-        .reduce((sum, w) => {
-          const balance = parseFloat(w.balance);
-          // Mock prices: BTC=$43,500, ETH=$2,650, USDT=$1, USDC=$1
-          const prices: { [key: string]: number } = {
-            'BTC': 43500,
-            'ETH': 2650,
-            'USDT': 1,
-            'USDC': 1
-          };
-          return sum + (balance * (prices[w.currency] || 1));
-        }, 0);
+      // Calculate crypto value using actual exchange rates (wallet holdings only)
+      let cryptoValue = 0;
+      for (const wallet of wallets.filter(w => w.walletType === 'crypto')) {
+        const balance = parseFloat(wallet.balance);
+        
+        if (wallet.currency === "USDT" || wallet.currency === "USDC") {
+          // Stablecoins are 1:1 with USD
+          cryptoValue += balance;
+        } else {
+          // Get actual exchange rate for crypto currencies
+          const rate = await storage.getFxRate(wallet.currency, "USD");
+          if (rate) {
+            cryptoValue += (balance * parseFloat(rate.rate));
+          }
+        }
+      }
       
       // Calculate investment value
       const investmentValue = investments

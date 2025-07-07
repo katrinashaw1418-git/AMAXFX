@@ -200,6 +200,12 @@ Changelog:
   - Investment modal shows capital invested, available funds, and minimum requirements
   - Portfolio overview shows total invested, current value, returns, and available capital
   - All investment operations update wallet, portfolio, and transaction data in real-time
+- July 07, 2025. Fixed crypto asset balance consistency across portfolio and investment products
+  - Wallet crypto holdings: BTC 12.58 ($544k), ETH 85.23 ($220k), USDT $125k, USDC $89.5k = $978k total
+  - Investment crypto products: Bitcoin Tracker Fund $187.5k, Ethereum Staking Fund $78.75k = $266k total
+  - Total crypto exposure: $1.24M across direct holdings ($978k) and structured products ($266k)
+  - Portfolio calculations now use real exchange rates instead of hardcoded prices
+  - Clear separation between wallet crypto assets and investment product crypto allocations
 - July 07, 2025. Enhanced banking options with geographical restrictions
   - PayID deposit option now clearly marked as "Australia Only" 
   - Updated PayID instructions with accurate NPP information including email and phone PayIDs
