@@ -469,104 +469,312 @@ export default function Wallets() {
         </CardContent>
       </Card>
 
-      {/* Transfer or Convert Section */}
+      {/* Section 2: Transfer or Convert */}
       <Card>
         <CardHeader>
-          <CardTitle>Transfer or Convert</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ArrowRightLeft className="w-5 h-5" />
+              Transfer or Convert
+            </div>
+            <div className="flex gap-2">
+              <Badge variant="outline" className="text-xs">
+                <Info className="w-3 h-3 mr-1" />
+                Real-time rates
+              </Badge>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Plus className="w-3 h-3 mr-1" />
+                    Rate Alerts
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Currency Rate Alerts</DialogTitle>
+                    <DialogDescription>
+                      Get notified when exchange rates reach your target
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>From Currency</Label>
+                        <Select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.keys(CurrencyConfig).map((currency) => (
+                              <SelectItem key={currency} value={currency}>
+                                {CurrencyConfig[currency as keyof typeof CurrencyConfig]?.flag} {currency}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>To Currency</Label>
+                        <Select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.keys(CurrencyConfig).map((currency) => (
+                              <SelectItem key={currency} value={currency}>
+                                {CurrencyConfig[currency as keyof typeof CurrencyConfig]?.flag} {currency}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Target Rate</Label>
+                      <Input type="number" placeholder="Enter target rate" />
+                    </div>
+                    <div>
+                      <Label>Alert Type</Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select alert type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="above">Above target rate</SelectItem>
+                          <SelectItem value="below">Below target rate</SelectItem>
+                          <SelectItem value="exact">Reaches target rate</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button className="w-full">Set Alert</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {/* Conversion Interface */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <CardContent className="space-y-6">
+          {/* Professional Banking Interface */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border">
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* From Section */}
               <div className="space-y-4">
-                <div>
-                  <Label htmlFor="from-currency">From</Label>
-                  <Select value={fromCurrency} onValueChange={setFromCurrency}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select currency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {walletsWithRegions.map((wallet) => (
-                        <SelectItem key={wallet.currency} value={wallet.currency}>
-                          <div className="flex items-center gap-2">
-                            <span>{wallet.config?.flag}</span>
-                            <span>{wallet.currency}</span>
-                            <span className="text-muted-foreground">
-                              ({wallet.config?.symbol}{wallet.balance})
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Minus className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900">You Send</h3>
                 </div>
                 
-                <div>
-                  <Label htmlFor="convert-amount">Amount</Label>
-                  <Input
-                    id="convert-amount"
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="Enter amount"
-                  />
-                  {fromCurrency && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Available: {CurrencyConfig[fromCurrency as keyof typeof CurrencyConfig]?.symbol}{walletsWithRegions.find(w => w.currency === fromCurrency)?.balance || '0'} {fromCurrency}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="to-currency-convert">To</Label>
-                  <Select value={toCurrency} onValueChange={setToCurrency}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select target currency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.keys(CurrencyConfig).map((currency) => {
-                        const config = CurrencyConfig[currency as keyof typeof CurrencyConfig];
-                        return (
-                          <SelectItem key={currency} value={currency}>
-                            <div className="flex items-center gap-2">
-                              <span>{config?.flag}</span>
-                              <span>{currency}</span>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>You'll receive</Label>
-                  <div className="p-3 bg-gray-50 rounded-md">
-                    {fromCurrency && toCurrency && amount ? (
-                      <ExchangeRateDisplay 
-                        fromCurrency={fromCurrency}
-                        toCurrency={toCurrency}
-                        amount={amount}
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm font-medium">Amount</Label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder="0.00"
+                        className="text-2xl font-bold h-14 pr-20"
                       />
-                    ) : (
-                      <span className="text-muted-foreground">Select currencies and amount</span>
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <Select value={fromCurrency} onValueChange={setFromCurrency}>
+                          <SelectTrigger className="w-16 border-0 bg-transparent p-0 h-auto">
+                            <SelectValue placeholder="USD" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <div className="p-2 text-xs font-medium text-gray-500">My Balances</div>
+                            {walletsWithRegions.map((wallet) => (
+                              <SelectItem key={wallet.currency} value={wallet.currency}>
+                                <div className="flex items-center gap-2">
+                                  <span>{wallet.config?.flag}</span>
+                                  <div>
+                                    <div className="font-medium">{wallet.currency}</div>
+                                    <div className="text-xs text-gray-500">
+                                      {wallet.config?.symbol}{parseFloat(wallet.balance || '0').toLocaleString()}
+                                    </div>
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    {fromCurrency && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Available: {CurrencyConfig[fromCurrency as keyof typeof CurrencyConfig]?.symbol}{walletsWithRegions.find(w => w.currency === fromCurrency)?.balance || '0'}
+                      </p>
                     )}
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Convert Button */}
-            <Button 
-              onClick={handleTransfer}
-              disabled={!fromCurrency || !amount || !toCurrency || transferMutation.isPending}
-              className="w-full"
-              size="lg"
-            >
-              {transferMutation.isPending ? "Converting..." : "Convert Now"}
-            </Button>
+              {/* To Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <Plus className="w-4 h-4 text-green-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900">Recipient Gets</h3>
+                </div>
+                
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm font-medium">Amount</Label>
+                    <div className="relative">
+                      <div className="h-14 bg-gray-50 border rounded-md flex items-center px-4">
+                        <span className="text-2xl font-bold text-gray-900">
+                          {fromCurrency && toCurrency && amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0 ? (
+                            (() => {
+                              const { data: fxRate } = useFxRate(fromCurrency, toCurrency);
+                              if (fxRate) {
+                                const rate = parseFloat(fxRate.rate);
+                                const convertedAmount = parseFloat(amount) * rate * 0.995; // 0.5% fee
+                                return convertedAmount.toFixed(2);
+                              }
+                              return "0.00";
+                            })()
+                          ) : "0.00"}
+                        </span>
+                      </div>
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <Select value={toCurrency} onValueChange={setToCurrency}>
+                          <SelectTrigger className="w-16 border-0 bg-transparent p-0 h-auto">
+                            <SelectValue placeholder="EUR" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <div className="p-2 text-xs font-medium text-gray-500">All Currencies</div>
+                            {Object.entries(CurrencyRegions).map(([region, currencies]) => (
+                              <div key={region}>
+                                <div className="px-2 py-1 text-xs font-medium text-gray-500">{region}</div>
+                                {currencies.map((currency) => {
+                                  const config = CurrencyConfig[currency as keyof typeof CurrencyConfig];
+                                  return (
+                                    <SelectItem key={currency} value={currency}>
+                                      <div className="flex items-center gap-2">
+                                        <span>{config?.flag}</span>
+                                        <span>{currency}</span>
+                                      </div>
+                                    </SelectItem>
+                                  );
+                                })}
+                              </div>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Exchange Rate Info */}
+            {fromCurrency && toCurrency && fromCurrency !== toCurrency && (
+              <div className="mt-6 p-4 bg-white rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <Repeat className="w-4 h-4 text-blue-600" />
+                    <span className="font-medium">Exchange Rate</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium">
+                      1 {fromCurrency} = {(() => {
+                        const { data: fxRate } = useFxRate(fromCurrency, toCurrency);
+                        if (fxRate) {
+                          const rate = parseFloat(fxRate.rate);
+                          return rate > 1 ? rate.toFixed(2) : rate.toFixed(6);
+                        }
+                        return "Loading...";
+                      })()} {toCurrency}
+                    </div>
+                    <div className="text-xs text-gray-500">Mid-market rate • Fee: 0.5%</div>
+                  </div>
+                </div>
+                
+                {amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <div className="text-sm text-gray-600">
+                      <div className="flex justify-between">
+                        <span>You send</span>
+                        <span>{CurrencyConfig[fromCurrency as keyof typeof CurrencyConfig]?.symbol}{parseFloat(amount).toFixed(2)} {fromCurrency}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Transfer fee</span>
+                        <span>0.5%</span>
+                      </div>
+                      <div className="flex justify-between font-medium text-gray-900 pt-1 border-t border-gray-100 mt-1">
+                        <span>Recipient gets</span>
+                        <span>
+                          {(() => {
+                            const { data: fxRate } = useFxRate(fromCurrency, toCurrency);
+                            if (fxRate) {
+                              const rate = parseFloat(fxRate.rate);
+                              const convertedAmount = parseFloat(amount) * rate * 0.995;
+                              return `${CurrencyConfig[toCurrency as keyof typeof CurrencyConfig]?.symbol}${convertedAmount.toFixed(2)} ${toCurrency}`;
+                            }
+                            return "Calculating...";
+                          })()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Transfer Button */}
+            <div className="mt-6 flex gap-3">
+              <Button 
+                onClick={handleTransfer}
+                disabled={!fromCurrency || !amount || !toCurrency || transferMutation.isPending}
+                className="flex-1 h-12 text-base font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              >
+                {transferMutation.isPending ? "Processing Transfer..." : "Continue"}
+              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-12 w-12">
+                      <Info className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-xs space-y-1">
+                      <div>• Instant transfers</div>
+                      <div>• Bank-level security</div>
+                      <div>• 24/7 support</div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
+          
+          {/* Additional Features */}
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-4 h-4 text-green-600" />
+                <span className="font-medium text-sm">Rate Alerts</span>
+              </div>
+              <p className="text-xs text-gray-600">Get notified when rates improve</p>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className="w-4 h-4 text-blue-600" />
+                <span className="font-medium text-sm">Mid-Market Rates</span>
+              </div>
+              <p className="text-xs text-gray-600">Always get the real exchange rate</p>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertCircle className="w-4 h-4 text-orange-600" />
+                <span className="font-medium text-sm">Instant Processing</span>
+              </div>
+              <p className="text-xs text-gray-600">Most transfers complete in seconds</p>
+            </div>
           </div>
         </CardContent>
       </Card>
