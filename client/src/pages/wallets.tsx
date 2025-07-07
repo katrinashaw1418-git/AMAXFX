@@ -692,26 +692,7 @@ export default function Wallets() {
         </div>
       </div>
 
-      {/* Debug Test Button */}
-      <div className="fixed top-4 left-4 z-50">
-        <Button 
-          onClick={() => {
-            console.log('TEST: Opening deposit modal');
-            setDepositModalOpen(true);
-            setSelectedWallet({ currency: 'USD', config: CurrencyConfig.USD });
-          }}
-          className="bg-red-500 hover:bg-red-600"
-        >
-          TEST DEPOSIT
-        </Button>
-      </div>
 
-      {/* Debug Info */}
-      {depositModalOpen && (
-        <div className="fixed top-4 right-4 bg-red-500 text-white p-2 z-50">
-          Modal should be open! State: {depositModalOpen.toString()}
-        </div>
-      )}
 
       {/* Deposit Modal */}
       <Dialog open={depositModalOpen} onOpenChange={setDepositModalOpen}>
