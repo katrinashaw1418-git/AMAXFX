@@ -39,11 +39,54 @@ const useConversionAmount = (fromCurrency: string, toCurrency: string, amount: s
   return `${displayAmount} ${toCurrency}`;
 };
 
+// Component to display wallet balance in selected currency
+function WalletValueDisplay({ wallet, displayCurrency }: { wallet: any, displayCurrency: string }) {
+  const { data: fxRate } = useFxRate(wallet.currency, displayCurrency);
+  
+  if (!fxRate || wallet.currency === displayCurrency) {
+    // Show original balance if same currency or no rate
+    const config = CurrencyConfig[displayCurrency as keyof typeof CurrencyConfig];
+    const balance = wallet.balance ? parseFloat(wallet.balance) : 0;
+    const formattedBalance = balance > 1 ? balance.toLocaleString() : balance.toFixed(6);
+    
+    return (
+      <div className="text-muted-foreground">
+        {config?.symbol}{formattedBalance}
+      </div>
+    );
+  }
+  
+  const rate = parseFloat(fxRate.rate);
+  const convertedValue = parseFloat(wallet.balance || '0') * rate;
+  const config = CurrencyConfig[displayCurrency as keyof typeof CurrencyConfig];
+  
+  // Format based on value size
+  const formattedValue = convertedValue > 1 ? convertedValue.toLocaleString() : convertedValue.toFixed(6);
+  const displayRate = rate > 1 ? rate.toFixed(2) : rate.toFixed(6);
+  
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger>
+          <div className="text-muted-foreground">
+            ≈ {config?.symbol}{formattedValue}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Exchange rate: 1 {wallet.currency} = {displayRate} {displayCurrency}</p>
+          <p>Updated in real-time</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 export default function Wallets() {
   const { data: wallets = [], isLoading } = useWallets();
   const [fromCurrency, setFromCurrency] = useState('');
   const [toCurrency, setToCurrency] = useState('');
   const [amount, setAmount] = useState('');
+  const [displayCurrency, setDisplayCurrency] = useState('USD'); // New state for balance display currency
   const { toast } = useToast();
   
   // Exchange rate display helpers
@@ -124,9 +167,32 @@ export default function Wallets() {
       {/* Section 1: Your Balances */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5" />
-            Your Balances
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5" />
+              Your Balances
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-normal text-muted-foreground">Show values in:</span>
+              <Select value={displayCurrency} onValueChange={setDisplayCurrency}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'HKD', 'SGD', 'BTC', 'ETH', 'USDT', 'USDC'].map(currency => {
+                    const config = CurrencyConfig[currency as keyof typeof CurrencyConfig];
+                    return (
+                      <SelectItem key={currency} value={currency}>
+                        <div className="flex items-center gap-2">
+                          <span>{config?.flag}</span>
+                          <span>{currency}</span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -137,7 +203,7 @@ export default function Wallets() {
                   <tr>
                     <th className="text-left p-4 font-medium">Currency</th>
                     <th className="text-left p-4 font-medium">Balance</th>
-                    <th className="text-left p-4 font-medium">Approx. Value (USD)</th>
+                    <th className="text-left p-4 font-medium">Approx. Value ({displayCurrency})</th>
                     <th className="text-right p-4 font-medium">Actions</th>
                   </tr>
                 </thead>
@@ -164,18 +230,7 @@ export default function Wallets() {
                         </div>
                       </td>
                       <td className="p-4">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <div className="text-muted-foreground">
-                                ≈ ${wallet.balance ? (parseFloat(wallet.balance) * 1.1).toLocaleString() : '0.00'}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Exchange rate: 1 {wallet.currency} = 1.10 USD</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        <WalletValueDisplay wallet={wallet} displayCurrency={displayCurrency} />
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex gap-1 justify-end">
