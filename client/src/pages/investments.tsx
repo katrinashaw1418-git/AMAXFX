@@ -124,15 +124,18 @@ export default function Investments() {
     if (amount > availableBalance) {
       toast({
         title: "Insufficient Funds",
-        description: `You have ${selectedWallet?.symbol || selectedCurrency}${availableBalance.toLocaleString()} available in ${selectedCurrency} wallet.`,
+        description: `You have ${currencySymbols[selectedCurrency] || selectedCurrency}${availableBalance.toLocaleString()} available in ${selectedCurrency} wallet.`,
         variant: "destructive",
       });
       return;
     }
 
+    // Create investment with source currency info for proper wallet deduction
     investMutation.mutate({
       productId: selectedProduct.id,
-      amount: usdAmount, // Always invest in USD equivalent
+      amount: usdAmount, // USD equivalent for investment
+      sourceCurrency: selectedCurrency,
+      sourceAmount: amount, // Original currency amount for wallet deduction
     });
   };
 
@@ -588,12 +591,12 @@ export default function Investments() {
                     Capital Invested: ${userInvestments?.filter((inv: any) => inv.productId === selectedProduct.id).reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0).toLocaleString() || '0'} USD
                   </p>
                   <p className="text-xs font-medium text-green-600">
-                    Available to Invest: {selectedWallet?.symbol || selectedCurrency}{availableBalance.toLocaleString()}
-                    {selectedCurrency !== 'USD' && ` (≈ $${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()} USD)`}
+                    Available to Invest: {currencySymbols[selectedCurrency] || selectedCurrency}{availableBalance.toLocaleString()}
+                    {selectedCurrency !== 'USD' && ` (≈ US$${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()})`}
                   </p>
                   {selectedCurrency !== 'USD' && investmentAmount && (
                     <p className="text-xs text-orange-600">
-                      Will convert {selectedCurrency}{parseFloat(investmentAmount).toLocaleString()} → ${getUsdEquivalent(parseFloat(investmentAmount), selectedCurrency).toLocaleString()} USD at current exchange rate
+                      Will convert {currencySymbols[selectedCurrency] || selectedCurrency}{parseFloat(investmentAmount).toLocaleString()} → US$${getUsdEquivalent(parseFloat(investmentAmount), selectedCurrency).toLocaleString()} at current exchange rate
                     </p>
                   )}
                 </div>

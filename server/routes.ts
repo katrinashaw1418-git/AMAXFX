@@ -381,7 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create investment
   app.post("/api/investments", async (req, res) => {
     try {
-      const { productId, amount } = req.body;
+      const { productId, amount, sourceCurrency = "USD", sourceAmount } = req.body;
       const userId = 1; // Hardcoded user ID for demo
       
       if (!productId || !amount) {
@@ -393,29 +393,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Investment product not found" });
       }
 
-      const investmentAmount = parseFloat(amount);
+      const investmentAmount = parseFloat(amount); // USD equivalent
+      const deductionAmount = sourceAmount ? parseFloat(sourceAmount) : investmentAmount; // Original currency amount
+      const currency = sourceCurrency || "USD";
       const minimumInvestment = parseFloat(product.minimumInvestment);
       
       if (investmentAmount < minimumInvestment) {
         return res.status(400).json({ error: `Minimum investment is $${minimumInvestment.toLocaleString()}` });
       }
 
-      // Check USD wallet balance
-      const usdWallet = await storage.getWallet(userId, "USD");
-      if (!usdWallet) {
-        return res.status(400).json({ error: "USD wallet not found" });
+      // Check source currency wallet balance
+      const sourceWallet = await storage.getWallet(userId, currency);
+      if (!sourceWallet) {
+        return res.status(400).json({ error: `${currency} wallet not found` });
       }
 
-      const currentBalance = parseFloat(usdWallet.availableBalance);
-      if (currentBalance < investmentAmount) {
-        return res.status(400).json({ error: `Insufficient balance. Available: $${currentBalance.toLocaleString()}` });
+      const currentBalance = parseFloat(sourceWallet.availableBalance);
+      if (currentBalance < deductionAmount) {
+        return res.status(400).json({ error: `Insufficient balance. Available: ${deductionAmount.toLocaleString()} ${currency}` });
       }
 
-      // Update wallet balance (deduct investment amount)
-      const newBalance = (parseFloat(usdWallet.balance) - investmentAmount).toFixed(2);
-      const newAvailableBalance = (parseFloat(usdWallet.availableBalance) - investmentAmount).toFixed(2);
+      // Update source wallet balance (deduct investment amount in original currency)
+      const newBalance = (parseFloat(sourceWallet.balance) - deductionAmount).toFixed(2);
+      const newAvailableBalance = (parseFloat(sourceWallet.availableBalance) - deductionAmount).toFixed(2);
       
-      await storage.updateWallet(usdWallet.id, {
+      await storage.updateWallet(sourceWallet.id, {
         balance: newBalance,
         availableBalance: newAvailableBalance,
       });
@@ -424,21 +426,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transaction = await storage.createTransaction({
         userId,
         type: "investment",
-        fromCurrency: "USD",
-        toCurrency: null,
-        amount: amount.toString(),
+        fromCurrency: currency,
+        toCurrency: currency === "USD" ? null : "USD",
+        amount: deductionAmount.toString(),
         fee: "0.00",
-        exchangeRate: null,
+        exchangeRate: currency === "USD" ? null : (investmentAmount / deductionAmount).toString(),
         status: "completed",
-        description: `Investment in ${product.name}`,
+        description: `Investment in ${product.name}${currency !== "USD" ? ` (converted from ${currency})` : ""}`,
       });
 
-      // Create investment record
+      // Create investment record (always in USD equivalent)
       const investment = await storage.createUserInvestment({
         userId,
         productId,
-        investedAmount: amount.toString(),
-        currentValue: amount.toString(), // Initially same as invested amount
+        investedAmount: investmentAmount.toString(), // USD equivalent
+        currentValue: investmentAmount.toString(), // Initially same as invested amount
         totalReturn: "0.00",
         returnPercent: "0.00",
         status: "active",
@@ -448,7 +450,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         investment,
         transaction,
-        newBalance: newBalance,
+        newBalance: newAvailableBalance,
+        sourceCurrency: currency,
         message: "Investment created successfully"
       });
     } catch (error) {
