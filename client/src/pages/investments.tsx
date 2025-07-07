@@ -63,12 +63,16 @@ export default function Investments() {
 
   const investMutation = useMutation({
     mutationFn: (data: { productId: number; amount: number }) => api.createInvestment(data),
-    onSuccess: () => {
+    onSuccess: (response) => {
       toast({
         title: "Investment Created",
-        description: "Your investment has been successfully created.",
+        description: `Successfully invested $${parseFloat(response.investment.investedAmount).toLocaleString()}. New wallet balance: $${parseFloat(response.newBalance).toLocaleString()}`,
       });
+      // Invalidate multiple queries to update UI
       queryClient.invalidateQueries({ queryKey: ["/api/user-investments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       setInvestModalOpen(false);
       setInvestmentAmount("");
       setSelectedProduct(null);

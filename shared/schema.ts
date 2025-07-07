@@ -20,6 +20,7 @@ export const portfolios = pgTable("portfolios", {
   totalValue: decimal("total_value", { precision: 15, scale: 2 }).notNull(),
   cryptoValue: decimal("crypto_value", { precision: 15, scale: 2 }).notNull(),
   fiatValue: decimal("fiat_value", { precision: 15, scale: 2 }).notNull(),
+  investmentValue: decimal("investment_value", { precision: 15, scale: 2 }).default("0.00"),
   monthlyPnl: decimal("monthly_pnl", { precision: 15, scale: 2 }).notNull(),
   monthlyPnlPercent: decimal("monthly_pnl_percent", { precision: 5, scale: 2 }).notNull(),
   updatedAt: timestamp("updated_at").defaultNow(),

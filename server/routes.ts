@@ -21,10 +21,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user portfolio
   app.get("/api/portfolio", async (req, res) => {
     try {
-      const portfolio = await storage.getPortfolio(1);
-      if (!portfolio) {
-        return res.status(404).json({ error: "Portfolio not found" });
-      }
+      const userId = 1;
+      
+      // Get all wallets to calculate total balance
+      const wallets = await storage.getWallets(userId);
+      
+      // Get all investments to calculate investment value
+      const investments = await storage.getUserInvestments(userId);
+      
+      // Calculate fiat value (excluding crypto)
+      const fiatValue = wallets
+        .filter(w => w.walletType === 'fiat')
+        .reduce((sum, w) => sum + parseFloat(w.balance), 0);
+      
+      // Calculate crypto value (using mock prices)
+      const cryptoValue = wallets
+        .filter(w => w.walletType === 'crypto')
+        .reduce((sum, w) => {
+          const balance = parseFloat(w.balance);
+          // Mock prices: BTC=$43,500, ETH=$2,650, USDT=$1, USDC=$1
+          const prices: { [key: string]: number } = {
+            'BTC': 43500,
+            'ETH': 2650,
+            'USDT': 1,
+            'USDC': 1
+          };
+          return sum + (balance * (prices[w.currency] || 1));
+        }, 0);
+      
+      // Calculate investment value
+      const investmentValue = investments
+        .reduce((sum, inv) => sum + parseFloat(inv.currentValue), 0);
+      
+      // Calculate total portfolio value
+      const totalValue = fiatValue + cryptoValue + investmentValue;
+      
+      // Calculate monthly P&L (simplified for demo)
+      const monthlyPnl = totalValue * 0.015; // 1.5% monthly return
+      const monthlyPnlPercent = 1.5;
+      
+      const portfolio = {
+        id: 1,
+        userId,
+        totalValue: totalValue.toFixed(2),
+        cryptoValue: cryptoValue.toFixed(2),
+        fiatValue: fiatValue.toFixed(2),
+        investmentValue: investmentValue.toFixed(2),
+        monthlyPnl: monthlyPnl.toFixed(2),
+        monthlyPnlPercent: monthlyPnlPercent.toFixed(2),
+        updatedAt: new Date(),
+      };
+      
       res.json(portfolio);
     } catch (error) {
       res.status(500).json({ error: "Failed to get portfolio" });
@@ -335,6 +382,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/investments", async (req, res) => {
     try {
       const { productId, amount } = req.body;
+      const userId = 1; // Hardcoded user ID for demo
       
       if (!productId || !amount) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -345,13 +393,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Investment product not found" });
       }
 
+      const investmentAmount = parseFloat(amount);
       const minimumInvestment = parseFloat(product.minimumInvestment);
-      if (parseFloat(amount) < minimumInvestment) {
+      
+      if (investmentAmount < minimumInvestment) {
         return res.status(400).json({ error: `Minimum investment is $${minimumInvestment.toLocaleString()}` });
       }
 
+      // Check USD wallet balance
+      const usdWallet = await storage.getWallet(userId, "USD");
+      if (!usdWallet) {
+        return res.status(400).json({ error: "USD wallet not found" });
+      }
+
+      const currentBalance = parseFloat(usdWallet.availableBalance);
+      if (currentBalance < investmentAmount) {
+        return res.status(400).json({ error: `Insufficient balance. Available: $${currentBalance.toLocaleString()}` });
+      }
+
+      // Update wallet balance (deduct investment amount)
+      const newBalance = (parseFloat(usdWallet.balance) - investmentAmount).toFixed(2);
+      const newAvailableBalance = (parseFloat(usdWallet.availableBalance) - investmentAmount).toFixed(2);
+      
+      await storage.updateWallet(usdWallet.id, {
+        balance: newBalance,
+        availableBalance: newAvailableBalance,
+      });
+
+      // Create transaction record
+      const transaction = await storage.createTransaction({
+        userId,
+        type: "investment",
+        fromCurrency: "USD",
+        toCurrency: null,
+        amount: amount.toString(),
+        fee: "0.00",
+        exchangeRate: null,
+        status: "completed",
+        description: `Investment in ${product.name}`,
+      });
+
+      // Create investment record
       const investment = await storage.createUserInvestment({
-        userId: 1, // Hardcoded user ID for demo
+        userId,
         productId,
         investedAmount: amount.toString(),
         currentValue: amount.toString(), // Initially same as invested amount
@@ -361,7 +445,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         maturityDate: null, // Can be calculated based on product term
       });
 
-      res.json(investment);
+      res.json({
+        investment,
+        transaction,
+        newBalance: newBalance,
+        message: "Investment created successfully"
+      });
     } catch (error) {
       res.status(500).json({ error: "Failed to create investment" });
     }
