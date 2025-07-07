@@ -258,7 +258,7 @@ export default function Investments() {
                           <div className="flex items-center justify-between w-full">
                             <span className="font-medium">{currency.currency}</span>
                             <span className="text-xs text-gray-500 ml-2">
-                              {currency.symbol}{currency.balance.toLocaleString()}
+                              {currency.currency === 'USD' ? '$' : currency.symbol || ''}{currency.balance.toLocaleString()}
                             </span>
                           </div>
                         </SelectItem>
@@ -270,7 +270,7 @@ export default function Investments() {
               </div>
               <div className="flex flex-col items-start justify-end h-16">
                 <p className="text-lg font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis w-full leading-tight">
-                  {selectedWallet?.symbol || selectedCurrency}{availableBalance.toLocaleString()}
+                  {selectedCurrency === 'USD' ? '$' : selectedWallet?.symbol || ''}{availableBalance.toLocaleString()}
                 </p>
                 {selectedCurrency !== 'USD' && (
                   <span className="text-xs text-gray-600">≈ ${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()} USD</span>
