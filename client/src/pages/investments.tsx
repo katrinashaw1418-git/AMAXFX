@@ -300,23 +300,20 @@ export default function Investments() {
           </Card>
           <Card className="flex flex-col h-32">
             <CardContent className="p-4 flex flex-col justify-between h-full">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <h3 className="text-xs font-medium text-gray-500">Available Capital</h3>
-                  <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
-                    <SelectTrigger className="w-auto min-w-12 h-5 text-xs border border-green-200 rounded px-1 py-0 focus:ring-1 focus:ring-green-500 bg-green-50 hover:bg-green-100 transition-colors font-semibold text-green-700">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableCurrencies.map((currency) => (
-                        <SelectItem key={currency.currency} value={currency.currency}>
-                          <span className="font-medium">{currency.currency}</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <DollarSign className="w-3 h-3 text-green-600" />
+              <div className="flex items-center space-x-2">
+                <h3 className="text-xs font-medium text-gray-500">Available Capital</h3>
+                <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+                  <SelectTrigger className="w-auto min-w-12 h-5 text-xs border border-green-200 rounded px-1 py-0 focus:ring-1 focus:ring-green-500 bg-green-50 hover:bg-green-100 transition-colors font-semibold text-green-700">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCurrencies.map((currency) => (
+                      <SelectItem key={currency.currency} value={currency.currency}>
+                        <span className="font-medium">{currency.currency}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex flex-col justify-end h-16">
                 <div className="flex items-end h-6">
