@@ -317,3 +317,12 @@ Changelog:
   - **Zero-Balance Wallet Hiding**: Wallets with zero balance automatically removed from balance table display
   - **Improved Success Notifications**: Transfer confirmations show exact converted amounts received after fees
   - **Fixed Currency Alignment**: Resolved text alignment issues for BTC/ETH by standardizing flag/symbol display with consistent width containers
+- July 07, 2025. Created Wallets Version 2 with fully functional conversion and new currency placement
+  - **Version 2 Features**: Complete table layout with deposit, withdraw, and transfer functionality
+  - **New Currency Ordering**: New currencies created through conversion appear above BTC in balance table
+  - **Fixed Conversion System**: Successfully tested ETH to DKK conversion (10 ETH → 235,140.39 DKK)
+  - **Wallet Sequence Fix**: Resolved duplicate key constraint errors in wallet creation
+  - **Enhanced Error Logging**: Added comprehensive error tracking for debugging conversion issues
+  - **Multiple Exchange Rates**: Added DKK support with proper exchange rates to all major currencies
+  - **Verified Functionality**: All three buttons (Deposit, Withdraw, Transfer) working with proper API integration
+  - **Available Routes**: /wallets-v1 (original), /wallets-v2 (enhanced version with working conversions)
