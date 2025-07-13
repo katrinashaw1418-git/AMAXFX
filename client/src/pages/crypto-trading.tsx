@@ -405,7 +405,7 @@ export default function CryptoTrading() {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <Button 
               variant="outline" 
               onClick={() => handleTradeOnVirgoCX('BTC')}
@@ -429,6 +429,14 @@ export default function CryptoTrading() {
             >
               <ChevronRight className="w-4 h-4" />
               Trade USDT
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => handleTradeOnVirgoCX('USDC')}
+              className="flex items-center gap-2"
+            >
+              <ChevronRight className="w-4 h-4" />
+              Trade USDC
             </Button>
             <Button 
               variant="outline" 
