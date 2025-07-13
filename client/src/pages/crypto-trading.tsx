@@ -201,9 +201,9 @@ export default function CryptoTrading() {
     price: selectedCoin?.price * (0.95 + Math.random() * 0.1),
   }));
 
-  const handleTradeOnVirgoCX = (symbol: string) => {
-    // Open VirgoCX trading page in new tab
-    window.open(`https://virgocx.com/trade/${symbol.toLowerCase()}`, '_blank');
+  const handleTradeOnAMAX = (symbol: string) => {
+    // Open AMAX trading page in new tab
+    window.open(`https://amax.com/trade/${symbol.toLowerCase()}`, '_blank');
   };
 
   return (
@@ -211,11 +211,11 @@ export default function CryptoTrading() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Cryptocurrency Trading</h1>
-          <p className="text-muted-foreground mt-1">Trade cryptocurrencies directly on VirgoCX</p>
+          <p className="text-muted-foreground mt-1">Trade cryptocurrencies directly on AMAX Wealth Platform</p>
         </div>
-        <Button onClick={() => window.open('https://virgocx.com', '_blank')} className="gap-2">
+        <Button onClick={() => window.open('https://amax.com', '_blank')} className="gap-2">
           <ExternalLink className="w-4 h-4" />
-          Open VirgoCX
+          Open AMAX
         </Button>
       </div>
 
@@ -226,7 +226,7 @@ export default function CryptoTrading() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5" />
-                Market Trends on VirgoCX
+                Market Trends on AMAX Wealth Platform
               </CardTitle>
               <CardDescription>
                 Live market data and trending cryptocurrencies
@@ -288,7 +288,7 @@ export default function CryptoTrading() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>VirgoCX Trading Pairs</CardTitle>
+              <CardTitle>AMAX Trading Pairs</CardTitle>
               <div className="text-sm text-muted-foreground">
                 Prices in {BASE_CURRENCIES.find(c => c.code === marketTrendsCurrency)?.symbol || '$'} {marketTrendsCurrency}
               </div>
@@ -348,9 +348,9 @@ export default function CryptoTrading() {
         {/* Trading Panel */}
         <Card>
           <CardHeader>
-            <CardTitle>Trade on VirgoCX</CardTitle>
+            <CardTitle>Trade on AMAX</CardTitle>
             <CardDescription>
-              Execute trades directly on VirgoCX platform
+              Execute trades directly on AMAX Wealth Platform
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -381,7 +381,7 @@ export default function CryptoTrading() {
 
               <Alert>
                 <AlertDescription>
-                  Trades will be executed on VirgoCX.com. You'll be redirected to complete the transaction.
+                  Trades will be executed on AMAX Wealth Platform. You'll be redirected to complete the transaction.
                 </AlertDescription>
               </Alert>
 
@@ -454,10 +454,10 @@ export default function CryptoTrading() {
 
                   <Button 
                     className="w-full bg-green-600 hover:bg-green-700"
-                    onClick={() => handleTradeOnVirgoCX(selectedCoin?.symbol || 'BTC')}
+                    onClick={() => handleTradeOnAMAX(selectedCoin?.symbol || 'BTC')}
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Buy {selectedCoin?.symbol} on VirgoCX
+                    Buy {selectedCoin?.symbol} on AMAX
                   </Button>
                 </TabsContent>
 
@@ -524,10 +524,10 @@ export default function CryptoTrading() {
 
                   <Button 
                     className="w-full bg-red-600 hover:bg-red-700"
-                    onClick={() => handleTradeOnVirgoCX(selectedCoin?.symbol || 'BTC')}
+                    onClick={() => handleTradeOnAMAX(selectedCoin?.symbol || 'BTC')}
                   >
                     <Minus className="w-4 h-4 mr-2" />
-                    Sell {selectedCoin?.symbol} on VirgoCX
+                    Sell {selectedCoin?.symbol} on AMAX
                   </Button>
                 </TabsContent>
               </Tabs>

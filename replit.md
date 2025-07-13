@@ -341,13 +341,20 @@ Changelog:
   - **Version Documentation**: Comprehensive README with feature comparison and usage instructions
   - **Rollback Capability**: Easy restoration of previous functionality when needed
   - **Feature Tracking**: Clear documentation of version differences and capabilities
-- July 13, 2025. Implemented comprehensive VirgoCX crypto trading platform
-  - **Separate Crypto Trading Page**: Created dedicated `/crypto-trading` page with full VirgoCX integration
-  - **100+ Cryptocurrency Support**: Complete VirgoCX trading pairs including BTC, ETH, SOL, ADA, DOT, LINK, DOGE, SHIB, TRUMP, MELANIA, and 90+ others
+- July 13, 2025. Implemented comprehensive AMAX crypto trading platform
+  - **Separate Crypto Trading Page**: Created dedicated `/crypto-trading` page with full AMAX integration
+  - **100+ Cryptocurrency Support**: Complete AMAX trading pairs including BTC, ETH, SOL, ADA, DOT, LINK, DOGE, SHIB, TRUMP, MELANIA, and 90+ others
   - **Market Trends Dashboard**: Real-time market data with trending coins, top gainers, volume leaders, and category-based filtering
-  - **Advanced Trading Interface**: Buy/sell orders with market/limit options, price charts, and direct VirgoCX gateway
+  - **Advanced Trading Interface**: Buy/sell orders with market/limit options, price charts, and direct AMAX gateway
   - **Enhanced Wallet Integration**: Market trends panel in wallet page with direct trading links and price alerts
   - **Navigation Integration**: Added crypto trading to main sidebar navigation with TrendingUp icon
   - **Professional Trading UX**: Comprehensive coin search, category filtering, and trading pair selection
   - **API Endpoints**: Full `/api/virgocx/trading-pairs` endpoint with 100+ cryptocurrencies and market data
   - **Real-time Updates**: Live price data, volume tracking, and market cap information across all supported assets
+- July 13, 2025. Updated platform branding to AMAX Wealth Platform
+  - **Rebranded Trading Interface**: Changed all "VirgoCX" references to "AMAX Wealth Platform" in crypto trading page
+  - **Updated Button Labels**: All trading buttons now show "Buy/Sell on AMAX" instead of VirgoCX
+  - **Modified URL References**: Updated external links to point to amax.com instead of virgocx.com
+  - **Enhanced User Experience**: Consistent AMAX branding throughout the cryptocurrency trading interface
+  - **Market Trends Section**: Updated title to "Market Trends on AMAX Wealth Platform"
+  - **Trading Panel**: Rebranded as "Trade on AMAX" with platform description updates
