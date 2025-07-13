@@ -149,9 +149,9 @@ const MARKET_TRENDS = [
 ];
 
 export default function CryptoTrading() {
-  const [selectedPair, setSelectedPair] = useState('BTC/CAD');
+  const [selectedPair, setSelectedPair] = useState('BTC/USD');
   const [selectedCoin, setSelectedCoin] = useState(VIRGOCX_CRYPTOCURRENCIES[0]); // Default to first coin (BTC)
-  const [baseCurrency, setBaseCurrency] = useState('CAD'); // Default to CAD
+  const [baseCurrency, setBaseCurrency] = useState('USD'); // Default to USD
   const [orderType, setOrderType] = useState('market');
   const [tradeType, setTradeType] = useState('buy');
   const [amount, setAmount] = useState('');
@@ -370,7 +370,7 @@ export default function CryptoTrading() {
                               <span className="font-medium">{coin.symbol}</span>
                               <span className="text-muted-foreground">- {coin.name}</span>
                               <span className="text-xs text-muted-foreground ml-auto">
-                                ${coin.price.toFixed(coin.price < 1 ? 6 : 2)} CAD
+                                {BASE_CURRENCIES.find(c => c.code === baseCurrency)?.symbol || '$'}{coin.price.toFixed(coin.price < 1 ? 6 : 2)} {baseCurrency}
                               </span>
                             </div>
                           </SelectItem>
@@ -404,7 +404,7 @@ export default function CryptoTrading() {
 
                   {orderType === 'limit' && (
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Price (CAD)</label>
+                      <label className="text-sm font-medium">Price ({baseCurrency})</label>
                       <Input
                         type="number"
                         placeholder="0.00"
@@ -440,7 +440,7 @@ export default function CryptoTrading() {
                               <span className="font-medium">{coin.symbol}</span>
                               <span className="text-muted-foreground">- {coin.name}</span>
                               <span className="text-xs text-muted-foreground ml-auto">
-                                ${coin.price.toFixed(coin.price < 1 ? 6 : 2)} CAD
+                                {BASE_CURRENCIES.find(c => c.code === baseCurrency)?.symbol || '$'}{coin.price.toFixed(coin.price < 1 ? 6 : 2)} {baseCurrency}
                               </span>
                             </div>
                           </SelectItem>
@@ -474,7 +474,7 @@ export default function CryptoTrading() {
 
                   {orderType === 'limit' && (
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Price (CAD)</label>
+                      <label className="text-sm font-medium">Price ({baseCurrency})</label>
                       <Input
                         type="number"
                         placeholder="0.00"
@@ -498,7 +498,7 @@ export default function CryptoTrading() {
                 <div className="flex items-center justify-between text-sm">
                   <span>Estimated Total:</span>
                   <span className="font-medium">
-                    ${amount && selectedCoin ? (parseFloat(amount) * selectedCoin.price).toFixed(2) : '0.00'} CAD
+                    {BASE_CURRENCIES.find(c => c.code === baseCurrency)?.symbol || '$'}{amount && selectedCoin ? (parseFloat(amount) * selectedCoin.price).toFixed(2) : '0.00'} {baseCurrency}
                   </span>
                 </div>
               </div>
