@@ -61,7 +61,7 @@ export class MemStorage implements IStorage {
   private currentUserId = 1;
   private currentPortfolioId = 1;
   private currentWalletId = 12;
-  private currentTransactionId = 13;
+  private currentTransactionId = 15;
   private currentFxRateId = 49;
   private currentAiRecommendationId = 1;
   private currentInvestmentProductId = 1;
@@ -362,6 +362,36 @@ export class MemStorage implements IStorage {
         status: "completed",
         description: "USDT to USDC swap",
         createdAt: new Date(Date.now() - 432000000), // 5 days ago
+      },
+      {
+        id: 13,
+        userId: 1,
+        type: "virgocx_deposit",
+        fromCurrency: "BTC",
+        toCurrency: "BTC",
+        amount: "0.15",
+        fee: "0.00",
+        exchangeRate: "1.00000000",
+        status: "completed",
+        description: "Incoming BTC deposit from VirgoCX",
+        sourceExchange: "virgocx",
+        blockchainTxHash: "0x1234567890abcdef1234567890abcdef12345678",
+        createdAt: new Date(Date.now() - 3600000), // 1 hour ago
+      },
+      {
+        id: 14,
+        userId: 1,
+        type: "virgocx_deposit",
+        fromCurrency: "USDT",
+        toCurrency: "USDT",
+        amount: "2500.00",
+        fee: "0.00",
+        exchangeRate: "1.00000000",
+        status: "pending",
+        description: "Incoming USDT deposit from VirgoCX",
+        sourceExchange: "virgocx",
+        blockchainTxHash: "0xabcdef1234567890abcdef1234567890abcdef12",
+        createdAt: new Date(Date.now() - 1800000), // 30 minutes ago
       },
     ];
     this.transactions.set(1, demoTransactions);

@@ -654,5 +654,192 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // VirgoCX Integration Routes
+  
+  // Get VirgoCX market data
+  app.get("/api/virgocx/market-data", async (req, res) => {
+    try {
+      // Mock market data - in production, fetch from VirgoCX API
+      const marketData = {
+        'BTC/CAD': { price: 129850, change: '+2.4%', volume: '1.2M' },
+        'ETH/CAD': { price: 4420, change: '+1.8%', volume: '800K' },
+        'USDT/CAD': { price: 1.37, change: '-0.1%', volume: '2.1M' },
+        'USDC/CAD': { price: 1.37, change: '0.0%', volume: '1.8M' },
+        topGainers: ['BTC', 'ETH', 'LTC'],
+        trending: ['BTC', 'ETH', 'USDT']
+      };
+      res.json(marketData);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get market data" });
+    }
+  });
+
+  // Execute trade on VirgoCX
+  app.post("/api/virgocx/trade", async (req, res) => {
+    try {
+      const { currency, amount, action } = req.body;
+      
+      // Validate inputs
+      if (!currency || !amount || !action) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Create transaction record
+      const transaction = await storage.createTransaction({
+        userId: 1,
+        type: action === 'buy' ? 'crypto_buy' : 'crypto_sell',
+        fromCurrency: action === 'buy' ? 'CAD' : currency,
+        toCurrency: action === 'buy' ? currency : 'CAD',
+        amount: parseFloat(amount),
+        fee: parseFloat(amount) * 0.005, // 0.5% fee
+        status: 'completed',
+        description: `${action.toUpperCase()} ${amount} ${currency} on VirgoCX`,
+        sourceExchange: 'virgocx'
+      });
+
+      // Update wallet balances (simplified)
+      if (action === 'buy') {
+        // Add crypto to wallet
+        const wallet = await storage.getWallet(1, currency);
+        if (wallet) {
+          await storage.updateWallet(wallet.id, {
+            balance: (parseFloat(wallet.balance) + parseFloat(amount)).toString(),
+            availableBalance: (parseFloat(wallet.availableBalance) + parseFloat(amount)).toString()
+          });
+        }
+      } else {
+        // Remove crypto from wallet
+        const wallet = await storage.getWallet(1, currency);
+        if (wallet) {
+          await storage.updateWallet(wallet.id, {
+            balance: (parseFloat(wallet.balance) - parseFloat(amount)).toString(),
+            availableBalance: (parseFloat(wallet.availableBalance) - parseFloat(amount)).toString()
+          });
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        transactionId: transaction.id,
+        message: `${action.toUpperCase()} order executed successfully`
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to execute trade" });
+    }
+  });
+
+  // Send crypto to VirgoCX
+  app.post("/api/virgocx/send", async (req, res) => {
+    try {
+      const { currency, amount, address } = req.body;
+      
+      // Validate inputs
+      if (!currency || !amount || !address) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Check balance
+      const wallet = await storage.getWallet(1, currency);
+      if (!wallet || parseFloat(wallet.availableBalance) < parseFloat(amount)) {
+        return res.status(400).json({ error: "Insufficient balance" });
+      }
+
+      // Create transaction record
+      const transaction = await storage.createTransaction({
+        userId: 1,
+        type: 'virgocx_withdrawal',
+        fromCurrency: currency,
+        amount: parseFloat(amount),
+        fee: parseFloat(amount) * 0.001, // 0.1% network fee
+        status: 'pending',
+        description: `Send ${amount} ${currency} to VirgoCX`,
+        sourceExchange: 'virgocx',
+        blockchainTxHash: `0x${Math.random().toString(16).substr(2, 64)}` // Mock hash
+      });
+
+      // Update wallet balance
+      await storage.updateWallet(wallet.id, {
+        balance: (parseFloat(wallet.balance) - parseFloat(amount)).toString(),
+        availableBalance: (parseFloat(wallet.availableBalance) - parseFloat(amount)).toString()
+      });
+
+      res.json({ 
+        success: true, 
+        transactionId: transaction.id,
+        txHash: transaction.blockchainTxHash,
+        message: "Transfer initiated successfully"
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to send to VirgoCX" });
+    }
+  });
+
+  // Get VirgoCX deposits
+  app.get("/api/virgocx/deposits", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string) || 1;
+      
+      // Get recent VirgoCX deposits
+      const transactions = await storage.getTransactions(userId, 20);
+      const virgocxDeposits = transactions
+        .filter(t => t.type === 'virgocx_deposit' && t.sourceExchange === 'virgocx')
+        .map(t => ({
+          id: t.id,
+          currency: t.toCurrency || t.fromCurrency,
+          amount: t.amount,
+          txHash: t.blockchainTxHash || `0x${Math.random().toString(16).substr(2, 64)}`,
+          status: t.status,
+          confirmations: t.status === 'completed' ? 6 : Math.floor(Math.random() * 5) + 1,
+          requiredConfirmations: 6,
+          detectedAt: t.createdAt,
+          completedAt: t.status === 'completed' ? t.createdAt : undefined
+        }));
+
+      res.json(virgocxDeposits);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get deposits" });
+    }
+  });
+
+  // Handle incoming deposit detection (webhook simulation)
+  app.post("/api/virgocx/webhook", async (req, res) => {
+    try {
+      const { currency, amount, txHash, fromAddress } = req.body;
+      
+      // Detect if this is from VirgoCX (simplified detection)
+      const isVirgoCX = fromAddress && fromAddress.startsWith('virgocx_');
+      
+      if (isVirgoCX) {
+        // Create deposit transaction
+        const transaction = await storage.createTransaction({
+          userId: 1,
+          type: 'virgocx_deposit',
+          toCurrency: currency,
+          amount: parseFloat(amount),
+          fee: 0,
+          status: 'pending',
+          description: `Incoming ${currency} deposit from VirgoCX`,
+          sourceExchange: 'virgocx',
+          blockchainTxHash: txHash
+        });
+
+        // Update wallet balance
+        const wallet = await storage.getWallet(1, currency);
+        if (wallet) {
+          await storage.updateWallet(wallet.id, {
+            balance: (parseFloat(wallet.balance) + parseFloat(amount)).toString(),
+            availableBalance: (parseFloat(wallet.availableBalance) + parseFloat(amount)).toString()
+          });
+        }
+
+        res.json({ success: true, detected: true, transactionId: transaction.id });
+      } else {
+        res.json({ success: true, detected: false });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to process webhook" });
+    }
+  });
+
   return httpServer;
 }

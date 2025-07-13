@@ -18,6 +18,8 @@ import { useFxRate } from '@/hooks/use-fx-rates';
 import { useWallets } from '@/hooks/use-portfolio';
 import { useVoiceNarration } from '@/hooks/use-voice-narration';
 import VoiceSettings from '@/components/voice/voice-settings';
+import VirgoCXIntegration from '@/components/wallet/virgocx-integration';
+import VirgoCXDepositDetector from '@/components/wallet/virgocx-deposit-detector';
 
 // Helper functions for exchange rate display
 const useExchangeRateDisplay = (fromCurrency: string, toCurrency: string) => {
@@ -520,6 +522,9 @@ export default function Wallets() {
         </div>
       </div>
 
+      {/* VirgoCX Deposit Detector */}
+      <VirgoCXDepositDetector userId={1} />
+
       {/* Section 1: Your Balances */}
       <Card>
         <CardHeader>
@@ -633,6 +638,43 @@ export default function Wallets() {
           </div>
         </CardContent>
       </Card>
+
+      {/* VirgoCX Integration for Crypto Wallets */}
+      {walletsWithRegions.some(wallet => ['BTC', 'ETH', 'USDT', 'USDC'].includes(wallet.currency)) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>VirgoCX Integration</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {walletsWithRegions
+                .filter(wallet => ['BTC', 'ETH', 'USDT', 'USDC'].includes(wallet.currency))
+                .map((wallet) => (
+                  <div key={wallet.id} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{wallet.config?.flag}</span>
+                        <span className="font-medium">{wallet.currency}</span>
+                        <Badge variant="outline">VirgoCX Enabled</Badge>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Balance: {wallet.config?.symbol}{wallet.balance ? parseFloat(wallet.balance).toLocaleString() : '0.00'}
+                      </div>
+                    </div>
+                    <VirgoCXIntegration 
+                      currency={wallet.currency} 
+                      balance={wallet.balance || '0.00'} 
+                      onTransactionComplete={() => {
+                        queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
+                        queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+                      }}
+                    />
+                  </div>
+                ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Section 2: Transfer or Convert */}
       <Card>
