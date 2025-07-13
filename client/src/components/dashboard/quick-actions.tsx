@@ -11,7 +11,7 @@ const tradingPairs = [
 
 export default function QuickActions() {
   const handleTrade = (symbol: string) => {
-    window.open(`https://virgocx.com/trade/${symbol.toLowerCase()}`, '_blank');
+    window.open(`https://amax.com/trade/${symbol.toLowerCase()}`, '_blank');
   };
 
   return (
@@ -39,11 +39,11 @@ export default function QuickActions() {
           <Button
             variant="outline"
             className="w-full justify-between p-4 h-auto"
-            onClick={() => window.open('https://virgocx.com/account', '_blank')}
+            onClick={() => window.open('https://amax.com/account', '_blank')}
           >
             <div className="flex items-center space-x-3">
               <PlusCircle className="w-4 h-4 text-secondary" />
-              <span className="font-medium">VirgoCX Account</span>
+              <span className="font-medium">AMAX Account</span>
             </div>
             <ChevronRight className="w-4 h-4" />
           </Button>

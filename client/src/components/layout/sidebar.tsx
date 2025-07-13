@@ -46,7 +46,7 @@ function SidebarContent() {
             <Coins className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">VirgoCX</h1>
+            <h1 className="text-xl font-bold text-gray-900">AMAX</h1>
             <p className="text-xs text-gray-500">Wealth Platform</p>
           </div>
         </div>

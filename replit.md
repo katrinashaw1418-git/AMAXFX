@@ -358,3 +358,5 @@ Changelog:
   - **Enhanced User Experience**: Consistent AMAX branding throughout the cryptocurrency trading interface
   - **Market Trends Section**: Updated title to "Market Trends on AMAX Wealth Platform"
   - **Trading Panel**: Rebranded as "Trade on AMAX" with platform description updates
+  - **Sidebar Logo**: Updated sidebar header from "VirgoCX" to "AMAX" in main navigation
+  - **JavaScript Fixes**: Resolved all constant name conflicts (VIRGOCX_CRYPTOCURRENCIES → AMAX_CRYPTOCURRENCIES)
