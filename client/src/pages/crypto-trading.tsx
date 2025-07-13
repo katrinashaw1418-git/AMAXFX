@@ -399,56 +399,7 @@ export default function CryptoTrading() {
         </Card>
       </div>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <Button 
-              variant="outline" 
-              onClick={() => handleTradeOnVirgoCX('BTC')}
-              className="flex items-center gap-2"
-            >
-              <ChevronRight className="w-4 h-4" />
-              Trade BTC
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => handleTradeOnVirgoCX('ETH')}
-              className="flex items-center gap-2"
-            >
-              <ChevronRight className="w-4 h-4" />
-              Trade ETH
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => handleTradeOnVirgoCX('USDT')}
-              className="flex items-center gap-2"
-            >
-              <ChevronRight className="w-4 h-4" />
-              Trade USDT
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => handleTradeOnVirgoCX('USDC')}
-              className="flex items-center gap-2"
-            >
-              <ChevronRight className="w-4 h-4" />
-              Trade USDC
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => window.open('https://virgocx.com/account', '_blank')}
-              className="flex items-center gap-2"
-            >
-              <ExternalLink className="w-4 h-4" />
-              VirgoCX Account
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+
     </div>
   );
 }
