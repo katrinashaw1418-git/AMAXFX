@@ -13,7 +13,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { CurrencyConfig, SupportedCurrencies, CurrencyRegions, type WalletBalance } from '@/lib/types';
-import { TrendingUp, TrendingDown, Plus, Minus, ArrowRightLeft, ArrowUpDown, Send, Repeat, Info, DollarSign, AlertCircle, Volume2, Settings } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Minus, ArrowRightLeft, ArrowUpDown, Send, Repeat, Info, DollarSign, AlertCircle, Volume2, Settings, ExternalLink } from 'lucide-react';
+import { Link } from 'wouter';
 import { useFxRate } from '@/hooks/use-fx-rates';
 import { useWallets } from '@/hooks/use-portfolio';
 import { useVoiceNarration } from '@/hooks/use-voice-narration';
@@ -639,42 +640,7 @@ export default function Wallets() {
         </CardContent>
       </Card>
 
-      {/* VirgoCX Integration for Crypto Wallets */}
-      {walletsWithRegions.some(wallet => ['BTC', 'ETH', 'USDT', 'USDC'].includes(wallet.currency)) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>VirgoCX Integration</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {walletsWithRegions
-                .filter(wallet => ['BTC', 'ETH', 'USDT', 'USDC'].includes(wallet.currency))
-                .map((wallet) => (
-                  <div key={wallet.id} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{wallet.config?.flag}</span>
-                        <span className="font-medium">{wallet.currency}</span>
-                        <Badge variant="outline">VirgoCX Enabled</Badge>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Balance: {wallet.config?.symbol}{wallet.balance ? parseFloat(wallet.balance).toLocaleString() : '0.00'}
-                      </div>
-                    </div>
-                    <VirgoCXIntegration 
-                      currency={wallet.currency} 
-                      balance={wallet.balance || '0.00'} 
-                      onTransactionComplete={() => {
-                        queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
-                        queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
-                      }}
-                    />
-                  </div>
-                ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
 
       {/* Section 2: Transfer or Convert */}
       <Card>

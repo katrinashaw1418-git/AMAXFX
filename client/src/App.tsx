@@ -12,6 +12,7 @@ import AiAdvisory from "@/pages/ai-advisory";
 import Transactions from "@/pages/transactions";
 import Compliance from "@/pages/compliance";
 import Investments from "@/pages/investments";
+import CryptoTrading from "@/pages/crypto-trading";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -26,6 +27,7 @@ function Router() {
         <Route path="/transactions" component={Transactions} />
         <Route path="/compliance" component={Compliance} />
         <Route path="/investments" component={Investments} />
+        <Route path="/crypto-trading" component={CryptoTrading} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
