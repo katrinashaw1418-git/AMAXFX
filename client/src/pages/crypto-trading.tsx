@@ -11,121 +11,132 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TrendingUp, TrendingDown, ExternalLink, ArrowUpDown, ChevronRight, Minus, Plus } from 'lucide-react';
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 
-// VirgoCX Trading Pairs and Market Data (100+ Cryptocurrencies)
-const VIRGOCX_TRADING_PAIRS = [
+// Available base currencies from wallet system
+const BASE_CURRENCIES = [
+  { code: 'USD', name: 'US Dollar', symbol: '$' },
+  { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
+  { code: 'EUR', name: 'Euro', symbol: '€' },
+  { code: 'GBP', name: 'British Pound', symbol: '£' },
+  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
+  { code: 'HKD', name: 'Hong Kong Dollar', symbol: 'HK$' },
+  { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$' },
+];
+
+// VirgoCX Cryptocurrencies (base prices in USD, will be converted based on selected currency)
+const VIRGOCX_CRYPTOCURRENCIES = [
   // Major Cryptocurrencies
-  { symbol: 'BTC', name: 'Bitcoin', pair: 'BTC/CAD', price: 129750.45, change: 2.34, volume: 45678.12, marketCap: 2.58e12 },
-  { symbol: 'ETH', name: 'Ethereum', pair: 'ETH/CAD', price: 4562.78, change: 1.89, volume: 234567.89, marketCap: 5.48e11 },
-  { symbol: 'BCH', name: 'Bitcoin Cash', pair: 'BCH/CAD', price: 678.90, change: -1.23, volume: 5432.10, marketCap: 1.34e10 },
-  { symbol: 'LTC', name: 'Litecoin', pair: 'LTC/CAD', price: 145.67, change: 0.78, volume: 8765.43, marketCap: 1.08e10 },
-  { symbol: 'XRP', name: 'Ripple', pair: 'XRP/CAD', price: 2.89, change: -0.45, volume: 12345.67, marketCap: 1.65e11 },
+  { symbol: 'BTC', name: 'Bitcoin', usdPrice: 97250.00, change: 2.34, volume: 45678.12, marketCap: 2.58e12 },
+  { symbol: 'ETH', name: 'Ethereum', usdPrice: 3420.00, change: 1.89, volume: 234567.89, marketCap: 5.48e11 },
+  { symbol: 'BCH', name: 'Bitcoin Cash', usdPrice: 508.90, change: -1.23, volume: 5432.10, marketCap: 1.34e10 },
+  { symbol: 'LTC', name: 'Litecoin', usdPrice: 109.12, change: 0.78, volume: 8765.43, marketCap: 1.08e10 },
+  { symbol: 'XRP', name: 'Ripple', usdPrice: 2.17, change: -0.45, volume: 12345.67, marketCap: 1.65e11 },
   
   // Stablecoins
-  { symbol: 'USDC', name: 'USD Coin', pair: 'USDC/CAD', price: 1.33, change: 0.01, volume: 234567.89, marketCap: 5.56e10 },
+  { symbol: 'USDC', name: 'USD Coin', usdPrice: 1.00, change: 0.01, volume: 234567.89, marketCap: 5.56e10 },
   
   // DeFi Ecosystem
-  { symbol: 'UNI', name: 'Uniswap', pair: 'UNI/CAD', price: 19.45, change: 4.23, volume: 8765.43, marketCap: 1.46e10 },
-  { symbol: 'LINK', name: 'Chainlink', pair: 'LINK/CAD', price: 28.90, change: 1.56, volume: 6789.01, marketCap: 1.70e10 },
-  { symbol: 'AAVE', name: 'Aave', pair: 'AAVE/CAD', price: 456.78, change: 2.67, volume: 3456.78, marketCap: 6.85e9 },
-  { symbol: 'COMP', name: 'Compound', pair: 'COMP/CAD', price: 123.45, change: 1.89, volume: 2345.67, marketCap: 1.24e9 },
-  { symbol: 'CRV', name: 'Curve', pair: 'CRV/CAD', price: 0.89, change: 3.12, volume: 5678.90, marketCap: 6.7e8 },
-  { symbol: 'MKR', name: 'Maker', pair: 'MKR/CAD', price: 1890.45, change: 1.23, volume: 1234.56, marketCap: 1.85e9 },
-  { symbol: 'SNX', name: 'Synthetix', pair: 'SNX/CAD', price: 4.56, change: 2.34, volume: 3456.78, marketCap: 1.5e9 },
-  { symbol: 'KNC', name: 'Kyber Network', pair: 'KNC/CAD', price: 0.78, change: 1.45, volume: 2345.67, marketCap: 1.3e8 },
-  { symbol: 'ZRX', name: '0x', pair: 'ZRX/CAD', price: 0.67, change: 2.78, volume: 4567.89, marketCap: 5.6e8 },
-  { symbol: 'DYDX', name: 'dYdX', pair: 'DYDX/CAD', price: 2.34, change: -1.56, volume: 7890.12, marketCap: 1.8e9 },
-  { symbol: 'SUSHI', name: 'SushiSwap', pair: 'SUSHI/CAD', price: 1.23, change: 0.89, volume: 5678.90, marketCap: 1.6e8 },
-  { symbol: 'LRC', name: 'Loopring', pair: 'LRC/CAD', price: 0.45, change: 3.45, volume: 9876.54, marketCap: 5.8e8 },
-  { symbol: 'CVX', name: 'Convex Finance', pair: 'CVX/CAD', price: 3.45, change: 1.78, volume: 2345.67, marketCap: 7.4e8 },
-  { symbol: 'LDO', name: 'Lido', pair: 'LDO/CAD', price: 2.78, change: 2.45, volume: 6789.01, marketCap: 2.5e9 },
-  { symbol: 'BLUR', name: 'Blur', pair: 'BLUR/CAD', price: 0.56, change: 4.56, volume: 12345.67, marketCap: 3.4e8 },
-  { symbol: 'PENDLE', name: 'Pendle', pair: 'PENDLE/CAD', price: 7.89, change: 6.78, volume: 8765.43, marketCap: 1.9e9 },
-  { symbol: 'AERO', name: 'Aerodrome Finance', pair: 'AERO/CAD', price: 2.34, change: 8.90, volume: 5432.10, marketCap: 8.7e8 },
+  { symbol: 'UNI', name: 'Uniswap', usdPrice: 14.58, change: 4.23, volume: 8765.43, marketCap: 1.46e10 },
+  { symbol: 'LINK', name: 'Chainlink', usdPrice: 21.68, change: 1.56, volume: 6789.01, marketCap: 1.70e10 },
+  { symbol: 'AAVE', name: 'Aave', usdPrice: 342.56, change: 2.67, volume: 3456.78, marketCap: 6.85e9 },
+  { symbol: 'COMP', name: 'Compound', usdPrice: 92.56, change: 1.89, volume: 2345.67, marketCap: 1.24e9 },
+  { symbol: 'CRV', name: 'Curve', usdPrice: 0.67, change: 3.12, volume: 5678.90, marketCap: 6.7e8 },
+  { symbol: 'MKR', name: 'Maker', usdPrice: 1418.45, change: 1.23, volume: 1234.56, marketCap: 1.85e9 },
+  { symbol: 'SNX', name: 'Synthetix', usdPrice: 3.42, change: 2.34, volume: 3456.78, marketCap: 1.5e9 },
+  { symbol: 'KNC', name: 'Kyber Network', usdPrice: 0.58, change: 1.45, volume: 2345.67, marketCap: 1.3e8 },
+  { symbol: 'ZRX', name: '0x', usdPrice: 0.50, change: 2.78, volume: 4567.89, marketCap: 5.6e8 },
+  { symbol: 'DYDX', name: 'dYdX', usdPrice: 1.75, change: -1.56, volume: 7890.12, marketCap: 1.8e9 },
+  { symbol: 'SUSHI', name: 'SushiSwap', usdPrice: 0.92, change: 0.89, volume: 5678.90, marketCap: 1.6e8 },
+  { symbol: 'LRC', name: 'Loopring', usdPrice: 0.34, change: 3.45, volume: 9876.54, marketCap: 5.8e8 },
+  { symbol: 'CVX', name: 'Convex Finance', usdPrice: 2.58, change: 1.78, volume: 2345.67, marketCap: 7.4e8 },
+  { symbol: 'LDO', name: 'Lido', usdPrice: 2.08, change: 2.45, volume: 6789.01, marketCap: 2.5e9 },
+  { symbol: 'BLUR', name: 'Blur', usdPrice: 0.42, change: 4.56, volume: 12345.67, marketCap: 3.4e8 },
+  { symbol: 'PENDLE', name: 'Pendle', usdPrice: 5.92, change: 6.78, volume: 8765.43, marketCap: 1.9e9 },
+  { symbol: 'AERO', name: 'Aerodrome Finance', usdPrice: 1.75, change: 8.90, volume: 5432.10, marketCap: 8.7e8 },
   
   // Layer 1 & Layer 2
-  { symbol: 'ADA', name: 'Cardano', pair: 'ADA/CAD', price: 1.23, change: 3.45, volume: 23456.78, marketCap: 4.31e10 },
-  { symbol: 'DOT', name: 'Polkadot', pair: 'DOT/CAD', price: 12.34, change: 2.10, volume: 9876.54, marketCap: 1.75e10 },
-  { symbol: 'SOL', name: 'Solana', pair: 'SOL/CAD', price: 234.56, change: 5.67, volume: 34567.89, marketCap: 1.1e11 },
-  { symbol: 'MATIC', name: 'Polygon', pair: 'MATIC/CAD', price: 1.45, change: 5.67, volume: 34567.89, marketCap: 1.44e10 },
-  { symbol: 'POL', name: 'Polygon Ecosystem Token', pair: 'POL/CAD', price: 0.89, change: 4.32, volume: 23456.78, marketCap: 8.9e9 },
-  { symbol: 'AVAX', name: 'Avalanche', pair: 'AVAX/CAD', price: 67.89, change: 3.21, volume: 12345.67, marketCap: 2.71e10 },
-  { symbol: 'ATOM', name: 'Cosmos', pair: 'ATOM/CAD', price: 9.87, change: 2.45, volume: 7890.12, marketCap: 3.8e9 },
-  { symbol: 'NEAR', name: 'Near Protocol', pair: 'NEAR/CAD', price: 8.90, change: 1.78, volume: 6789.01, marketCap: 9.5e9 },
-  { symbol: 'ICP', name: 'Internet Computer', pair: 'ICP/CAD', price: 15.67, change: 0.89, volume: 4567.89, marketCap: 7.3e9 },
-  { symbol: 'FTM', name: 'Fantom', pair: 'FTM/CAD', price: 1.12, change: 3.56, volume: 8765.43, marketCap: 3.1e9 },
-  { symbol: 'ALGO', name: 'Algorand', pair: 'ALGO/CAD', price: 0.34, change: 2.78, volume: 12345.67, marketCap: 2.7e9 },
-  { symbol: 'XTZ', name: 'Tezos', pair: 'XTZ/CAD', price: 1.78, change: 1.45, volume: 5678.90, marketCap: 1.8e9 },
-  { symbol: 'HBAR', name: 'Hedera', pair: 'HBAR/CAD', price: 0.28, change: 4.56, volume: 23456.78, marketCap: 1.0e10 },
-  { symbol: 'LUNA2', name: 'Terra 2.0', pair: 'LUNA2/CAD', price: 0.89, change: -2.34, volume: 7890.12, marketCap: 5.8e8 },
-  { symbol: 'OP', name: 'Optimism', pair: 'OP/CAD', price: 3.45, change: 3.78, volume: 9876.54, marketCap: 3.6e9 },
-  { symbol: 'ARB', name: 'Arbitrum', pair: 'ARB/CAD', price: 1.23, change: 2.90, volume: 15678.90, marketCap: 4.9e9 },
-  { symbol: 'CELO', name: 'Celo', pair: 'CELO/CAD', price: 1.45, change: 1.67, volume: 4567.89, marketCap: 7.3e8 },
-  { symbol: 'TIA', name: 'Celestia', pair: 'TIA/CAD', price: 8.90, change: 6.78, volume: 6789.01, marketCap: 1.9e9 },
-  { symbol: 'INJ', name: 'Injective', pair: 'INJ/CAD', price: 34.56, change: 4.32, volume: 3456.78, marketCap: 3.3e9 },
-  { symbol: 'OSMO', name: 'Osmosis', pair: 'OSMO/CAD', price: 1.78, change: 2.45, volume: 5678.90, marketCap: 9.4e8 },
-  { symbol: 'APT', name: 'Aptos', pair: 'APT/CAD', price: 15.67, change: 3.21, volume: 7890.12, marketCap: 6.7e9 },
-  { symbol: 'TON', name: 'Toncoin', pair: 'TON/CAD', price: 7.89, change: 2.78, volume: 9876.54, marketCap: 1.9e10 },
-  { symbol: 'BERA', name: 'Berachain', pair: 'BERA/CAD', price: 0.67, change: 12.45, volume: 4567.89, marketCap: 6.7e8 },
+  { symbol: 'ADA', name: 'Cardano', usdPrice: 0.92, change: 3.45, volume: 23456.78, marketCap: 4.31e10 },
+  { symbol: 'DOT', name: 'Polkadot', usdPrice: 9.25, change: 2.10, volume: 9876.54, marketCap: 1.75e10 },
+  { symbol: 'SOL', name: 'Solana', usdPrice: 175.89, change: 5.67, volume: 34567.89, marketCap: 1.1e11 },
+  { symbol: 'MATIC', name: 'Polygon', usdPrice: 1.09, change: 5.67, volume: 34567.89, marketCap: 1.44e10 },
+  { symbol: 'POL', name: 'Polygon Ecosystem Token', usdPrice: 0.67, change: 4.32, volume: 23456.78, marketCap: 8.9e9 },
+  { symbol: 'AVAX', name: 'Avalanche', usdPrice: 50.89, change: 3.21, volume: 12345.67, marketCap: 2.71e10 },
+  { symbol: 'ATOM', name: 'Cosmos', usdPrice: 7.40, change: 2.45, volume: 7890.12, marketCap: 3.8e9 },
+  { symbol: 'NEAR', name: 'Near Protocol', usdPrice: 6.68, change: 1.78, volume: 6789.01, marketCap: 9.5e9 },
+  { symbol: 'ICP', name: 'Internet Computer', usdPrice: 11.75, change: 0.89, volume: 4567.89, marketCap: 7.3e9 },
+  { symbol: 'FTM', name: 'Fantom', usdPrice: 0.84, change: 3.56, volume: 8765.43, marketCap: 3.1e9 },
+  { symbol: 'ALGO', name: 'Algorand', usdPrice: 0.26, change: 2.78, volume: 12345.67, marketCap: 2.7e9 },
+  { symbol: 'XTZ', name: 'Tezos', usdPrice: 1.34, change: 1.45, volume: 5678.90, marketCap: 1.8e9 },
+  { symbol: 'HBAR', name: 'Hedera', usdPrice: 0.21, change: 4.56, volume: 23456.78, marketCap: 1.0e10 },
+  { symbol: 'LUNA2', name: 'Terra 2.0', usdPrice: 0.67, change: -2.34, volume: 7890.12, marketCap: 5.8e8 },
+  { symbol: 'OP', name: 'Optimism', usdPrice: 2.59, change: 3.78, volume: 9876.54, marketCap: 3.6e9 },
+  { symbol: 'ARB', name: 'Arbitrum', usdPrice: 0.92, change: 2.90, volume: 15678.90, marketCap: 4.9e9 },
+  { symbol: 'CELO', name: 'Celo', usdPrice: 1.09, change: 1.67, volume: 4567.89, marketCap: 7.3e8 },
+  { symbol: 'TIA', name: 'Celestia', usdPrice: 6.68, change: 6.78, volume: 6789.01, marketCap: 1.9e9 },
+  { symbol: 'INJ', name: 'Injective', usdPrice: 25.93, change: 4.32, volume: 3456.78, marketCap: 3.3e9 },
+  { symbol: 'OSMO', name: 'Osmosis', usdPrice: 1.34, change: 2.45, volume: 5678.90, marketCap: 9.4e8 },
+  { symbol: 'APT', name: 'Aptos', usdPrice: 11.75, change: 3.21, volume: 7890.12, marketCap: 6.7e9 },
+  { symbol: 'TON', name: 'Toncoin', usdPrice: 5.92, change: 2.78, volume: 9876.54, marketCap: 1.9e10 },
+  { symbol: 'BERA', name: 'Berachain', usdPrice: 0.50, change: 12.45, volume: 4567.89, marketCap: 6.7e8 },
   
   // Gaming & Metaverse
-  { symbol: 'MANA', name: 'Decentraland', pair: 'MANA/CAD', price: 0.78, change: 5.67, volume: 12345.67, marketCap: 1.5e9 },
-  { symbol: 'SAND', name: 'The Sandbox', pair: 'SAND/CAD', price: 0.89, change: 4.32, volume: 8765.43, marketCap: 2.0e9 },
-  { symbol: 'AXS', name: 'Axie Infinity', pair: 'AXS/CAD', price: 8.90, change: 1.78, volume: 6789.01, marketCap: 1.3e9 },
-  { symbol: 'GALA', name: 'Gala', pair: 'GALA/CAD', price: 0.045, change: 6.78, volume: 15678.90, marketCap: 1.5e9 },
-  { symbol: 'CHZ', name: 'Chiliz', pair: 'CHZ/CAD', price: 0.12, change: 3.45, volume: 23456.78, marketCap: 1.0e9 },
-  { symbol: 'IMX', name: 'Immutable X', pair: 'IMX/CAD', price: 2.34, change: 4.56, volume: 7890.12, marketCap: 3.5e9 },
-  { symbol: 'ILV', name: 'Illuvium', pair: 'ILV/CAD', price: 67.89, change: 2.90, volume: 2345.67, marketCap: 6.8e8 },
-  { symbol: 'PRIME', name: 'Echelon Prime', pair: 'PRIME/CAD', price: 12.34, change: 8.90, volume: 4567.89, marketCap: 3.1e8 },
-  { symbol: 'RUNE', name: 'THORChain', pair: 'RUNE/CAD', price: 6.78, change: 1.45, volume: 5678.90, marketCap: 2.3e9 },
+  { symbol: 'MANA', name: 'Decentraland', usdPrice: 0.58, change: 5.67, volume: 12345.67, marketCap: 1.5e9 },
+  { symbol: 'SAND', name: 'The Sandbox', usdPrice: 0.67, change: 4.32, volume: 8765.43, marketCap: 2.0e9 },
+  { symbol: 'AXS', name: 'Axie Infinity', usdPrice: 6.68, change: 1.78, volume: 6789.01, marketCap: 1.3e9 },
+  { symbol: 'GALA', name: 'Gala', usdPrice: 0.034, change: 6.78, volume: 15678.90, marketCap: 1.5e9 },
+  { symbol: 'CHZ', name: 'Chiliz', usdPrice: 0.090, change: 3.45, volume: 23456.78, marketCap: 1.0e9 },
+  { symbol: 'IMX', name: 'Immutable X', usdPrice: 1.75, change: 4.56, volume: 7890.12, marketCap: 3.5e9 },
+  { symbol: 'ILV', name: 'Illuvium', usdPrice: 50.89, change: 2.90, volume: 2345.67, marketCap: 6.8e8 },
+  { symbol: 'PRIME', name: 'Echelon Prime', usdPrice: 9.25, change: 8.90, volume: 4567.89, marketCap: 3.1e8 },
+  { symbol: 'RUNE', name: 'THORChain', usdPrice: 5.09, change: 1.45, volume: 5678.90, marketCap: 2.3e9 },
   
   // Meme Coins
-  { symbol: 'DOGE', name: 'Dogecoin', pair: 'DOGE/CAD', price: 0.45, change: 12.34, volume: 56789.01, marketCap: 6.63e10 },
-  { symbol: 'SHIB', name: 'Shiba Inu', pair: 'SHIB/CAD', price: 0.000034, change: 8.90, volume: 123456.78, marketCap: 2.01e10 },
-  { symbol: 'PEPE', name: 'Pepe', pair: 'PEPE/CAD', price: 0.0000189, change: 15.67, volume: 89012.34, marketCap: 7.9e9 },
-  { symbol: 'BONK', name: 'BONK', pair: 'BONK/CAD', price: 0.0000456, change: 23.45, volume: 67890.12, marketCap: 3.4e9 },
-  { symbol: 'WIF', name: 'Dogwifhat', pair: 'WIF/CAD', price: 3.45, change: 18.90, volume: 34567.89, marketCap: 3.5e9 },
-  { symbol: 'MEW', name: 'Cat in a Dog\'s World', pair: 'MEW/CAD', price: 0.0123, change: 25.67, volume: 23456.78, marketCap: 1.2e9 },
-  { symbol: 'POPCAT', name: 'Popcat', pair: 'POPCAT/CAD', price: 1.89, change: 19.78, volume: 12345.67, marketCap: 1.9e9 },
-  { symbol: 'MOG', name: 'Mog', pair: 'MOG/CAD', price: 0.00000234, change: 34.56, volume: 45678.90, marketCap: 9.3e8 },
-  { symbol: 'FLOKI', name: 'Floki', pair: 'FLOKI/CAD', price: 0.000234, change: 12.78, volume: 56789.01, marketCap: 2.2e9 },
-  { symbol: 'GOAT', name: 'Goat', pair: 'GOAT/CAD', price: 0.789, change: 28.90, volume: 23456.78, marketCap: 7.9e8 },
-  { symbol: 'NEIRO', name: 'First Neiro on Ethereum', pair: 'NEIRO/CAD', price: 0.00156, change: 45.67, volume: 34567.89, marketCap: 1.6e9 },
-  { symbol: 'TRUMP', name: 'Official Trump', pair: 'TRUMP/CAD', price: 67.89, change: 89.12, volume: 123456.78, marketCap: 1.4e10 },
-  { symbol: 'MELANIA', name: 'Melania Meme', pair: 'MELANIA/CAD', price: 4.56, change: 156.78, volume: 89012.34, marketCap: 9.1e8 },
-  { symbol: 'FARTCOIN', name: 'Fartcoin', pair: 'FARTCOIN/CAD', price: 0.89, change: 78.90, volume: 67890.12, marketCap: 8.9e8 },
+  { symbol: 'DOGE', name: 'Dogecoin', usdPrice: 0.34, change: 12.34, volume: 56789.01, marketCap: 6.63e10 },
+  { symbol: 'SHIB', name: 'Shiba Inu', usdPrice: 0.000026, change: 8.90, volume: 123456.78, marketCap: 2.01e10 },
+  { symbol: 'PEPE', name: 'Pepe', usdPrice: 0.000014, change: 15.67, volume: 89012.34, marketCap: 7.9e9 },
+  { symbol: 'BONK', name: 'BONK', usdPrice: 0.000034, change: 23.45, volume: 67890.12, marketCap: 3.4e9 },
+  { symbol: 'WIF', name: 'Dogwifhat', usdPrice: 2.59, change: 18.90, volume: 34567.89, marketCap: 3.5e9 },
+  { symbol: 'MEW', name: 'Cat in a Dog\'s World', usdPrice: 0.0092, change: 25.67, volume: 23456.78, marketCap: 1.2e9 },
+  { symbol: 'POPCAT', name: 'Popcat', usdPrice: 1.42, change: 19.78, volume: 12345.67, marketCap: 1.9e9 },
+  { symbol: 'MOG', name: 'Mog', usdPrice: 0.00000176, change: 34.56, volume: 45678.90, marketCap: 9.3e8 },
+  { symbol: 'FLOKI', name: 'Floki', usdPrice: 0.000176, change: 12.78, volume: 56789.01, marketCap: 2.2e9 },
+  { symbol: 'GOAT', name: 'Goat', usdPrice: 0.593, change: 28.90, volume: 23456.78, marketCap: 7.9e8 },
+  { symbol: 'NEIRO', name: 'First Neiro on Ethereum', usdPrice: 0.00117, change: 45.67, volume: 34567.89, marketCap: 1.6e9 },
+  { symbol: 'TRUMP', name: 'Official Trump', usdPrice: 50.89, change: 89.12, volume: 123456.78, marketCap: 1.4e10 },
+  { symbol: 'MELANIA', name: 'Melania Meme', usdPrice: 3.42, change: 156.78, volume: 89012.34, marketCap: 9.1e8 },
+  { symbol: 'FARTCOIN', name: 'Fartcoin', usdPrice: 0.67, change: 78.90, volume: 67890.12, marketCap: 8.9e8 },
   
   // Storage & Infrastructure
-  { symbol: 'FIL', name: 'Filecoin', pair: 'FIL/CAD', price: 7.89, change: 2.34, volume: 6789.01, marketCap: 3.5e9 },
-  { symbol: 'STORJ', name: 'Storj', pair: 'STORJ/CAD', price: 0.78, change: 1.45, volume: 4567.89, marketCap: 3.1e8 },
-  { symbol: 'GRT', name: 'The Graph', pair: 'GRT/CAD', price: 0.34, change: 3.78, volume: 12345.67, marketCap: 3.2e9 },
-  { symbol: 'ANKR', name: 'Ankr', pair: 'ANKR/CAD', price: 0.067, change: 2.90, volume: 8765.43, marketCap: 6.7e8 },
-  { symbol: 'LPT', name: 'Livepeer', pair: 'LPT/CAD', price: 23.45, change: 4.32, volume: 3456.78, marketCap: 7.8e8 },
-  { symbol: 'RENDER', name: 'Render', pair: 'RENDER/CAD', price: 8.90, change: 6.78, volume: 9876.54, marketCap: 3.6e9 },
-  { symbol: 'HNT', name: 'Helium', pair: 'HNT/CAD', price: 9.87, change: 1.56, volume: 5678.90, marketCap: 1.6e9 },
-  { symbol: 'IOTX', name: 'IoTeX', pair: 'IOTX/CAD', price: 0.089, change: 4.56, volume: 12345.67, marketCap: 8.2e8 },
+  { symbol: 'FIL', name: 'Filecoin', usdPrice: 5.92, change: 2.34, volume: 6789.01, marketCap: 3.5e9 },
+  { symbol: 'STORJ', name: 'Storj', usdPrice: 0.58, change: 1.45, volume: 4567.89, marketCap: 3.1e8 },
+  { symbol: 'GRT', name: 'The Graph', usdPrice: 0.26, change: 3.78, volume: 12345.67, marketCap: 3.2e9 },
+  { symbol: 'ANKR', name: 'Ankr', usdPrice: 0.050, change: 2.90, volume: 8765.43, marketCap: 6.7e8 },
+  { symbol: 'LPT', name: 'Livepeer', usdPrice: 17.59, change: 4.32, volume: 3456.78, marketCap: 7.8e8 },
+  { symbol: 'RENDER', name: 'Render', usdPrice: 6.68, change: 6.78, volume: 9876.54, marketCap: 3.6e9 },
+  { symbol: 'HNT', name: 'Helium', usdPrice: 7.40, change: 1.56, volume: 5678.90, marketCap: 1.6e9 },
+  { symbol: 'IOTX', name: 'IoTeX', usdPrice: 0.067, change: 4.56, volume: 12345.67, marketCap: 8.2e8 },
   
   // AI & Technology
-  { symbol: 'FET', name: 'Fetch', pair: 'FET/CAD', price: 1.89, change: 7.89, volume: 7890.12, marketCap: 2.4e9 },
-  { symbol: 'TAO', name: 'Bittensor', pair: 'TAO/CAD', price: 678.90, change: 5.67, volume: 1234.56, marketCap: 4.9e9 },
-  { symbol: 'VIRTUAL', name: 'Virtuals Protocol', pair: 'VIRTUAL/CAD', price: 3.45, change: 12.34, volume: 5678.90, marketCap: 3.4e9 },
-  { symbol: 'KAITO', name: 'Kaito', pair: 'KAITO/CAD', price: 0.234, change: 8.90, volume: 9876.54, marketCap: 2.3e8 },
-  { symbol: 'WLD', name: 'Worldcoin', pair: 'WLD/CAD', price: 3.78, change: 4.56, volume: 6789.01, marketCap: 1.9e9 },
-  { symbol: 'ONDO', name: 'Ondo Finance', pair: 'ONDO/CAD', price: 1.67, change: 6.78, volume: 8765.43, marketCap: 2.3e9 },
+  { symbol: 'FET', name: 'Fetch', usdPrice: 1.42, change: 7.89, volume: 7890.12, marketCap: 2.4e9 },
+  { symbol: 'TAO', name: 'Bittensor', usdPrice: 509.23, change: 5.67, volume: 1234.56, marketCap: 4.9e9 },
+  { symbol: 'VIRTUAL', name: 'Virtuals Protocol', usdPrice: 2.59, change: 12.34, volume: 5678.90, marketCap: 3.4e9 },
+  { symbol: 'KAITO', name: 'Kaito', usdPrice: 0.176, change: 8.90, volume: 9876.54, marketCap: 2.3e8 },
+  { symbol: 'WLD', name: 'Worldcoin', usdPrice: 2.84, change: 4.56, volume: 6789.01, marketCap: 1.9e9 },
+  { symbol: 'ONDO', name: 'Ondo Finance', usdPrice: 1.25, change: 6.78, volume: 8765.43, marketCap: 2.3e9 },
   
   // Other Notable Tokens
-  { symbol: 'EOS', name: 'EOS', pair: 'EOS/CAD', price: 1.23, change: 0.89, volume: 4567.89, marketCap: 1.2e9 },
-  { symbol: 'XLM', name: 'Stellar', pair: 'XLM/CAD', price: 0.234, change: 2.45, volume: 12345.67, marketCap: 7.2e9 },
-  { symbol: 'BAT', name: 'Basic Attention Token', pair: 'BAT/CAD', price: 0.34, change: 1.78, volume: 6789.01, marketCap: 5.1e8 },
-  { symbol: 'ETC', name: 'Ethereum Classic', pair: 'ETC/CAD', price: 34.56, change: 2.90, volume: 3456.78, marketCap: 5.1e9 },
-  { symbol: 'KSM', name: 'Kusama', pair: 'KSM/CAD', price: 45.67, change: 1.45, volume: 2345.67, marketCap: 4.0e8 },
-  { symbol: 'QNT', name: 'Quant', pair: 'QNT/CAD', price: 123.45, change: 3.78, volume: 1234.56, marketCap: 1.5e9 },
-  { symbol: 'API3', name: 'API3', pair: 'API3/CAD', price: 2.34, change: 4.56, volume: 4567.89, marketCap: 3.5e8 },
-  { symbol: 'ENS', name: 'Ethereum Name Service', pair: 'ENS/CAD', price: 34.56, change: 2.78, volume: 3456.78, marketCap: 1.1e9 },
-  { symbol: 'ACH', name: 'Alchemy Pay', pair: 'ACH/CAD', price: 0.045, change: 6.78, volume: 8765.43, marketCap: 3.0e8 },
-  { symbol: 'APE', name: 'ApeCoin', pair: 'APE/CAD', price: 1.89, change: 3.45, volume: 7890.12, marketCap: 5.7e8 },
-  { symbol: 'ETHW', name: 'EthereumPoW', pair: 'ETHW/CAD', price: 4.56, change: -1.23, volume: 2345.67, marketCap: 3.8e8 },
-  { symbol: 'JUP', name: 'Jupiter', pair: 'JUP/CAD', price: 1.23, change: 8.90, volume: 9876.54, marketCap: 1.8e9 },
-  { symbol: 'TNSR', name: 'Tensor', pair: 'TNSR/CAD', price: 0.89, change: 12.34, volume: 4567.89, marketCap: 8.9e8 },
+  { symbol: 'EOS', name: 'EOS', usdPrice: 0.92, change: 0.89, volume: 4567.89, marketCap: 1.2e9 },
+  { symbol: 'XLM', name: 'Stellar', usdPrice: 0.176, change: 2.45, volume: 12345.67, marketCap: 7.2e9 },
+  { symbol: 'BAT', name: 'Basic Attention Token', usdPrice: 0.26, change: 1.78, volume: 6789.01, marketCap: 5.1e8 },
+  { symbol: 'ETC', name: 'Ethereum Classic', usdPrice: 25.93, change: 2.90, volume: 3456.78, marketCap: 5.1e9 },
+  { symbol: 'KSM', name: 'Kusama', usdPrice: 34.26, change: 1.45, volume: 2345.67, marketCap: 4.0e8 },
+  { symbol: 'QNT', name: 'Quant', usdPrice: 92.56, change: 3.78, volume: 1234.56, marketCap: 1.5e9 },
+  { symbol: 'API3', name: 'API3', usdPrice: 1.75, change: 4.56, volume: 4567.89, marketCap: 3.5e8 },
+  { symbol: 'ENS', name: 'Ethereum Name Service', usdPrice: 25.93, change: 2.78, volume: 3456.78, marketCap: 1.1e9 },
+  { symbol: 'ACH', name: 'Alchemy Pay', usdPrice: 0.034, change: 6.78, volume: 8765.43, marketCap: 3.0e8 },
+  { symbol: 'APE', name: 'ApeCoin', usdPrice: 1.42, change: 3.45, volume: 7890.12, marketCap: 5.7e8 },
+  { symbol: 'ETHW', name: 'EthereumPoW', usdPrice: 3.42, change: -1.23, volume: 2345.67, marketCap: 3.8e8 },
+  { symbol: 'JUP', name: 'Jupiter', usdPrice: 0.92, change: 8.90, volume: 9876.54, marketCap: 1.8e9 },
+  { symbol: 'TNSR', name: 'Tensor', usdPrice: 0.67, change: 12.34, volume: 4567.89, marketCap: 8.9e8 },
 ];
 
 const MARKET_TRENDS = [
@@ -139,12 +150,36 @@ const MARKET_TRENDS = [
 
 export default function CryptoTrading() {
   const [selectedPair, setSelectedPair] = useState('BTC/CAD');
-  const [selectedCoin, setSelectedCoin] = useState(VIRGOCX_TRADING_PAIRS[0]); // Default to first coin (BTC)
+  const [selectedCoin, setSelectedCoin] = useState(VIRGOCX_CRYPTOCURRENCIES[0]); // Default to first coin (BTC)
+  const [baseCurrency, setBaseCurrency] = useState('CAD'); // Default to CAD
   const [orderType, setOrderType] = useState('market');
   const [tradeType, setTradeType] = useState('buy');
   const [amount, setAmount] = useState('');
   const [price, setPrice] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Currency conversion rates (example rates, in real app would come from API)
+  const currencyRates = {
+    USD: 1.00,
+    CAD: 1.33,
+    EUR: 0.85,
+    GBP: 0.75,
+    AUD: 1.42,
+    HKD: 7.80,
+    SGD: 1.35,
+  };
+
+  // Convert USD price to selected currency
+  const convertPrice = (usdPrice) => {
+    return (usdPrice * currencyRates[baseCurrency]).toFixed(usdPrice < 1 ? 6 : 2);
+  };
+
+  // Create trading pairs with converted prices
+  const VIRGOCX_TRADING_PAIRS = VIRGOCX_CRYPTOCURRENCIES.map(crypto => ({
+    ...crypto,
+    pair: `${crypto.symbol}/${baseCurrency}`,
+    price: parseFloat(convertPrice(crypto.usdPrice))
+  }));
 
   // Filter coins based on search
   const filteredCoins = VIRGOCX_TRADING_PAIRS.filter(coin =>
@@ -199,7 +234,7 @@ export default function CryptoTrading() {
                       <div key={symbol} className="flex items-center justify-between text-sm">
                         <span className="font-medium">{coin.symbol}</span>
                         <div className="flex items-center gap-1">
-                          <span>${coin.price.toFixed(2)}</span>
+                          <span>{BASE_CURRENCIES.find(c => c.code === baseCurrency)?.symbol || '$'}{coin.price.toFixed(coin.price < 1 ? 6 : 2)}</span>
                           <span className={`text-xs flex items-center gap-1 ${
                             coin.change >= 0 ? 'text-green-600' : 'text-red-600'
                           }`}>
@@ -255,7 +290,7 @@ export default function CryptoTrading() {
                       <div className="text-sm text-muted-foreground">{coin.name}</div>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium">${coin.price.toFixed(2)}</div>
+                      <div className="font-medium">{BASE_CURRENCIES.find(c => c.code === baseCurrency)?.symbol || '$'}{coin.price.toFixed(coin.price < 1 ? 6 : 2)}</div>
                       <div className={`text-sm flex items-center gap-1 ${
                         coin.change >= 0 ? 'text-green-600' : 'text-red-600'
                       }`}>
@@ -282,6 +317,30 @@ export default function CryptoTrading() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              {/* Base Currency Selector */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Base Currency</label>
+                <Select value={baseCurrency} onValueChange={(value) => {
+                  setBaseCurrency(value);
+                  setSelectedPair(`${selectedCoin?.symbol || 'BTC'}/${value}`);
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select base currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BASE_CURRENCIES.map((currency) => (
+                      <SelectItem key={currency.code} value={currency.code}>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{currency.code}</span>
+                          <span className="text-sm text-muted-foreground">{currency.symbol}</span>
+                          <span className="text-sm text-muted-foreground">{currency.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <Alert>
                 <AlertDescription>
                   Trades will be executed on VirgoCX.com. You'll be redirected to complete the transaction.
