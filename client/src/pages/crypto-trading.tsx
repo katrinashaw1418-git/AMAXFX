@@ -22,8 +22,8 @@ const BASE_CURRENCIES = [
   { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$' },
 ];
 
-// VirgoCX Cryptocurrencies (base prices in USD, will be converted based on selected currency)
-const VIRGOCX_CRYPTOCURRENCIES = [
+// AMAX Cryptocurrencies (base prices in USD, will be converted based on selected currency)
+const AMAX_CRYPTOCURRENCIES = [
   // Major Cryptocurrencies
   { symbol: 'BTC', name: 'Bitcoin', usdPrice: 97250.00, change: 2.34, volume: 45678.12, marketCap: 2.58e12 },
   { symbol: 'ETH', name: 'Ethereum', usdPrice: 3420.00, change: 1.89, volume: 234567.89, marketCap: 5.48e11 },
@@ -150,7 +150,7 @@ const MARKET_TRENDS = [
 
 export default function CryptoTrading() {
   const [selectedPair, setSelectedPair] = useState('BTC/USD');
-  const [selectedCoin, setSelectedCoin] = useState(VIRGOCX_CRYPTOCURRENCIES[0]); // Default to first coin (BTC)
+  const [selectedCoin, setSelectedCoin] = useState(AMAX_CRYPTOCURRENCIES[0]); // Default to first coin (BTC)
   const [baseCurrency, setBaseCurrency] = useState('USD'); // Default to USD
   const [marketTrendsCurrency, setMarketTrendsCurrency] = useState('USD'); // Separate currency for market trends
   const [orderType, setOrderType] = useState('market');
@@ -176,14 +176,14 @@ export default function CryptoTrading() {
   };
 
   // Create trading pairs with converted prices for trading panel
-  const VIRGOCX_TRADING_PAIRS = VIRGOCX_CRYPTOCURRENCIES.map(crypto => ({
+  const AMAX_TRADING_PAIRS = AMAX_CRYPTOCURRENCIES.map(crypto => ({
     ...crypto,
     pair: `${crypto.symbol}/${baseCurrency}`,
     price: parseFloat(convertPrice(crypto.usdPrice, baseCurrency))
   }));
 
   // Create trading pairs with converted prices for market trends
-  const MARKET_TRENDS_TRADING_PAIRS = VIRGOCX_CRYPTOCURRENCIES.map(crypto => ({
+  const MARKET_TRENDS_TRADING_PAIRS = AMAX_CRYPTOCURRENCIES.map(crypto => ({
     ...crypto,
     pair: `${crypto.symbol}/${marketTrendsCurrency}`,
     price: parseFloat(convertPrice(crypto.usdPrice, marketTrendsCurrency))
@@ -395,14 +395,14 @@ export default function CryptoTrading() {
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Select Cryptocurrency</label>
                     <Select value={selectedCoin?.symbol} onValueChange={(value) => {
-                      const coin = VIRGOCX_TRADING_PAIRS.find(c => c.symbol === value);
+                      const coin = AMAX_TRADING_PAIRS.find(c => c.symbol === value);
                       setSelectedCoin(coin || null);
                     }}>
                       <SelectTrigger>
                         <SelectValue placeholder="Choose a cryptocurrency" />
                       </SelectTrigger>
                       <SelectContent className="max-h-80">
-                        {VIRGOCX_TRADING_PAIRS.map((coin) => (
+                        {AMAX_TRADING_PAIRS.map((coin) => (
                           <SelectItem key={coin.symbol} value={coin.symbol}>
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{coin.symbol}</span>
@@ -465,14 +465,14 @@ export default function CryptoTrading() {
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Select Cryptocurrency</label>
                     <Select value={selectedCoin?.symbol} onValueChange={(value) => {
-                      const coin = VIRGOCX_TRADING_PAIRS.find(c => c.symbol === value);
+                      const coin = AMAX_TRADING_PAIRS.find(c => c.symbol === value);
                       setSelectedCoin(coin || null);
                     }}>
                       <SelectTrigger>
                         <SelectValue placeholder="Choose a cryptocurrency" />
                       </SelectTrigger>
                       <SelectContent className="max-h-80">
-                        {VIRGOCX_TRADING_PAIRS.map((coin) => (
+                        {AMAX_TRADING_PAIRS.map((coin) => (
                           <SelectItem key={coin.symbol} value={coin.symbol}>
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{coin.symbol}</span>
