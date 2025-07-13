@@ -152,6 +152,7 @@ export default function CryptoTrading() {
   const [selectedPair, setSelectedPair] = useState('BTC/USD');
   const [selectedCoin, setSelectedCoin] = useState(VIRGOCX_CRYPTOCURRENCIES[0]); // Default to first coin (BTC)
   const [baseCurrency, setBaseCurrency] = useState('USD'); // Default to USD
+  const [marketTrendsCurrency, setMarketTrendsCurrency] = useState('USD'); // Separate currency for market trends
   const [orderType, setOrderType] = useState('market');
   const [tradeType, setTradeType] = useState('buy');
   const [amount, setAmount] = useState('');
@@ -170,19 +171,26 @@ export default function CryptoTrading() {
   };
 
   // Convert USD price to selected currency
-  const convertPrice = (usdPrice) => {
-    return (usdPrice * currencyRates[baseCurrency]).toFixed(usdPrice < 1 ? 6 : 2);
+  const convertPrice = (usdPrice, targetCurrency) => {
+    return (usdPrice * currencyRates[targetCurrency]).toFixed(usdPrice < 1 ? 6 : 2);
   };
 
-  // Create trading pairs with converted prices
+  // Create trading pairs with converted prices for trading panel
   const VIRGOCX_TRADING_PAIRS = VIRGOCX_CRYPTOCURRENCIES.map(crypto => ({
     ...crypto,
     pair: `${crypto.symbol}/${baseCurrency}`,
-    price: parseFloat(convertPrice(crypto.usdPrice))
+    price: parseFloat(convertPrice(crypto.usdPrice, baseCurrency))
   }));
 
-  // Filter coins based on search
-  const filteredCoins = VIRGOCX_TRADING_PAIRS.filter(coin =>
+  // Create trading pairs with converted prices for market trends
+  const MARKET_TRENDS_TRADING_PAIRS = VIRGOCX_CRYPTOCURRENCIES.map(crypto => ({
+    ...crypto,
+    pair: `${crypto.symbol}/${marketTrendsCurrency}`,
+    price: parseFloat(convertPrice(crypto.usdPrice, marketTrendsCurrency))
+  }));
+
+  // Filter coins based on search (for trading pairs list)
+  const filteredCoins = MARKET_TRENDS_TRADING_PAIRS.filter(coin =>
     coin.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
     coin.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -214,13 +222,35 @@ export default function CryptoTrading() {
       {/* Market Trends Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5" />
-            Market Trends on VirgoCX
-          </CardTitle>
-          <CardDescription>
-            Live market data and trending cryptocurrencies
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                Market Trends on VirgoCX
+              </CardTitle>
+              <CardDescription>
+                Live market data and trending cryptocurrencies
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">Display Currency:</label>
+              <Select value={marketTrendsCurrency} onValueChange={setMarketTrendsCurrency}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {BASE_CURRENCIES.map((currency) => (
+                    <SelectItem key={currency.code} value={currency.code}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{currency.code}</span>
+                        <span className="text-xs text-muted-foreground">{currency.symbol}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -229,12 +259,12 @@ export default function CryptoTrading() {
                 <h4 className="font-medium text-sm text-muted-foreground">{trend.category}</h4>
                 <div className="space-y-1">
                   {trend.coins.slice(0, 5).map((symbol) => {
-                    const coin = VIRGOCX_TRADING_PAIRS.find(c => c.symbol === symbol);
+                    const coin = MARKET_TRENDS_TRADING_PAIRS.find(c => c.symbol === symbol);
                     return coin ? (
                       <div key={symbol} className="flex items-center justify-between text-sm">
                         <span className="font-medium">{coin.symbol}</span>
                         <div className="flex items-center gap-1">
-                          <span>{BASE_CURRENCIES.find(c => c.code === baseCurrency)?.symbol || '$'}{coin.price.toFixed(coin.price < 1 ? 6 : 2)}</span>
+                          <span>{BASE_CURRENCIES.find(c => c.code === marketTrendsCurrency)?.symbol || '$'}{coin.price.toFixed(coin.price < 1 ? 6 : 2)}</span>
                           <span className={`text-xs flex items-center gap-1 ${
                             coin.change >= 0 ? 'text-green-600' : 'text-red-600'
                           }`}>
@@ -257,7 +287,12 @@ export default function CryptoTrading() {
         {/* Coin List */}
         <Card>
           <CardHeader>
-            <CardTitle>VirgoCX Trading Pairs</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>VirgoCX Trading Pairs</CardTitle>
+              <div className="text-sm text-muted-foreground">
+                Prices in {BASE_CURRENCIES.find(c => c.code === marketTrendsCurrency)?.symbol || '$'} {marketTrendsCurrency}
+              </div>
+            </div>
             <div className="relative">
               <Input
                 placeholder="Search cryptocurrencies..."
@@ -277,20 +312,23 @@ export default function CryptoTrading() {
                       ? 'bg-blue-50 border-blue-200 border'
                       : 'hover:bg-gray-50 border border-transparent'
                   }`}
-                  onClick={() => setSelectedPair(coin.pair)}
+                  onClick={() => {
+                    setSelectedPair(coin.pair);
+                    setSelectedCoin(coin);
+                  }}
                 >
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{coin.symbol}</span>
                         <Badge variant="outline" className="text-xs">
-                          {coin.pair.split('/')[1]}
+                          {marketTrendsCurrency}
                         </Badge>
                       </div>
                       <div className="text-sm text-muted-foreground">{coin.name}</div>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium">{BASE_CURRENCIES.find(c => c.code === baseCurrency)?.symbol || '$'}{coin.price.toFixed(coin.price < 1 ? 6 : 2)}</div>
+                      <div className="font-medium">{BASE_CURRENCIES.find(c => c.code === marketTrendsCurrency)?.symbol || '$'}{coin.price.toFixed(coin.price < 1 ? 6 : 2)}</div>
                       <div className={`text-sm flex items-center gap-1 ${
                         coin.change >= 0 ? 'text-green-600' : 'text-red-600'
                       }`}>
