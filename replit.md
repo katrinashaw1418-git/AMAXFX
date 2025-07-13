@@ -360,3 +360,5 @@ Changelog:
   - **Trading Panel**: Rebranded as "Trade on AMAX" with platform description updates
   - **Sidebar Logo**: Updated sidebar header from "VirgoCX" to "AMAX" in main navigation
   - **JavaScript Fixes**: Resolved all constant name conflicts (VIRGOCX_CRYPTOCURRENCIES → AMAX_CRYPTOCURRENCIES)
+  - **Crypto Trading Page**: Reverted crypto trading page back to VirgoCX branding as requested
+  - **Selective Branding**: AMAX branding for main platform, VirgoCX branding specifically for crypto trading section
