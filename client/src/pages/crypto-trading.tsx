@@ -139,6 +139,7 @@ const MARKET_TRENDS = [
 
 export default function CryptoTrading() {
   const [selectedPair, setSelectedPair] = useState('BTC/CAD');
+  const [selectedCoin, setSelectedCoin] = useState(VIRGOCX_TRADING_PAIRS[0]); // Default to first coin (BTC)
   const [orderType, setOrderType] = useState('market');
   const [tradeType, setTradeType] = useState('buy');
   const [amount, setAmount] = useState('');
@@ -150,8 +151,6 @@ export default function CryptoTrading() {
     coin.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
     coin.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const selectedCoin = VIRGOCX_TRADING_PAIRS.find(coin => coin.pair === selectedPair);
 
   // Sample price chart data
   const priceData = Array.from({ length: 30 }, (_, i) => ({
