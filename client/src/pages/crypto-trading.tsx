@@ -297,6 +297,31 @@ export default function CryptoTrading() {
 
                 <TabsContent value="buy" className="space-y-4">
                   <div className="space-y-2">
+                    <label className="text-sm font-medium">Select Cryptocurrency</label>
+                    <Select value={selectedCoin?.symbol} onValueChange={(value) => {
+                      const coin = VIRGOCX_TRADING_PAIRS.find(c => c.symbol === value);
+                      setSelectedCoin(coin || null);
+                    }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a cryptocurrency" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-80">
+                        {VIRGOCX_TRADING_PAIRS.map((coin) => (
+                          <SelectItem key={coin.symbol} value={coin.symbol}>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{coin.symbol}</span>
+                              <span className="text-muted-foreground">- {coin.name}</span>
+                              <span className="text-xs text-muted-foreground ml-auto">
+                                ${coin.price.toFixed(coin.price < 1 ? 6 : 2)} CAD
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
                     <label className="text-sm font-medium">Order Type</label>
                     <Select value={orderType} onValueChange={setOrderType}>
                       <SelectTrigger>
@@ -341,6 +366,31 @@ export default function CryptoTrading() {
                 </TabsContent>
 
                 <TabsContent value="sell" className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Select Cryptocurrency</label>
+                    <Select value={selectedCoin?.symbol} onValueChange={(value) => {
+                      const coin = VIRGOCX_TRADING_PAIRS.find(c => c.symbol === value);
+                      setSelectedCoin(coin || null);
+                    }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a cryptocurrency" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-80">
+                        {VIRGOCX_TRADING_PAIRS.map((coin) => (
+                          <SelectItem key={coin.symbol} value={coin.symbol}>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{coin.symbol}</span>
+                              <span className="text-muted-foreground">- {coin.name}</span>
+                              <span className="text-xs text-muted-foreground ml-auto">
+                                ${coin.price.toFixed(coin.price < 1 ? 6 : 2)} CAD
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Order Type</label>
                     <Select value={orderType} onValueChange={setOrderType}>
