@@ -271,43 +271,7 @@ export default function CryptoTrading() {
           </CardContent>
         </Card>
 
-        {/* Price Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{selectedCoin?.symbol || 'BTC'} Price Chart</CardTitle>
-            <CardDescription>
-              {selectedCoin?.name || 'Bitcoin'} • {selectedPair}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={priceData}>
-                  <XAxis dataKey="time" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="price"
-                    stroke="#3b82f6"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <div className="text-muted-foreground">24h Volume</div>
-                <div className="font-medium">${selectedCoin?.volume.toLocaleString()}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Market Cap</div>
-                <div className="font-medium">${(selectedCoin?.marketCap / 1e9).toFixed(2)}B</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+
 
         {/* Trading Panel */}
         <Card>

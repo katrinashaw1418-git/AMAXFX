@@ -677,54 +677,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all VirgoCX trading pairs
   app.get("/api/virgocx/trading-pairs", async (req, res) => {
     try {
+      const baseCurrency = req.query.base || 'AUD'; // Default to AUD, allow USD option
+      const currencySymbol = baseCurrency === 'USD' ? '$' : 'A$';
+      
       // Return comprehensive VirgoCX trading pairs (100+ cryptocurrencies)
       const tradingPairs = [
         // Major Cryptocurrencies
-        { symbol: 'BTC', name: 'Bitcoin', pair: 'BTC/CAD', price: 129750.45, change: 2.34, volume: 45678.12, marketCap: 2.58e12, category: 'major' },
-        { symbol: 'ETH', name: 'Ethereum', pair: 'ETH/CAD', price: 4562.78, change: 1.89, volume: 234567.89, marketCap: 5.48e11, category: 'major' },
-        { symbol: 'SOL', name: 'Solana', pair: 'SOL/CAD', price: 234.56, change: 5.67, volume: 34567.89, marketCap: 1.1e11, category: 'layer1' },
-        { symbol: 'ADA', name: 'Cardano', pair: 'ADA/CAD', price: 1.23, change: 3.45, volume: 23456.78, marketCap: 4.31e10, category: 'layer1' },
-        { symbol: 'DOT', name: 'Polkadot', pair: 'DOT/CAD', price: 12.34, change: 2.10, volume: 9876.54, marketCap: 1.75e10, category: 'layer1' },
-        { symbol: 'LINK', name: 'Chainlink', pair: 'LINK/CAD', price: 28.90, change: 1.56, volume: 6789.01, marketCap: 1.70e10, category: 'defi' },
-        { symbol: 'AVAX', name: 'Avalanche', pair: 'AVAX/CAD', price: 67.89, change: 3.21, volume: 12345.67, marketCap: 2.71e10, category: 'layer1' },
-        { symbol: 'USDC', name: 'USD Coin', pair: 'USDC/CAD', price: 1.33, change: 0.01, volume: 234567.89, marketCap: 5.56e10, category: 'stablecoin' },
+        { symbol: 'BTC', name: 'Bitcoin', pair: `BTC/${baseCurrency}`, price: baseCurrency === 'USD' ? 97250.45 : 129750.45, change: 2.34, volume: 45678.12, marketCap: 2.58e12, category: 'major' },
+        { symbol: 'ETH', name: 'Ethereum', pair: `ETH/${baseCurrency}`, price: baseCurrency === 'USD' ? 3420.78 : 4562.78, change: 1.89, volume: 234567.89, marketCap: 5.48e11, category: 'major' },
+        { symbol: 'SOL', name: 'Solana', pair: `SOL/${baseCurrency}`, price: baseCurrency === 'USD' ? 175.56 : 234.56, change: 5.67, volume: 34567.89, marketCap: 1.1e11, category: 'layer1' },
+        { symbol: 'ADA', name: 'Cardano', pair: `ADA/${baseCurrency}`, price: baseCurrency === 'USD' ? 0.92 : 1.23, change: 3.45, volume: 23456.78, marketCap: 4.31e10, category: 'layer1' },
+        { symbol: 'DOT', name: 'Polkadot', pair: `DOT/${baseCurrency}`, price: baseCurrency === 'USD' ? 9.24 : 12.34, change: 2.10, volume: 9876.54, marketCap: 1.75e10, category: 'layer1' },
+        { symbol: 'LINK', name: 'Chainlink', pair: `LINK/${baseCurrency}`, price: baseCurrency === 'USD' ? 21.65 : 28.90, change: 1.56, volume: 6789.01, marketCap: 1.70e10, category: 'defi' },
+        { symbol: 'AVAX', name: 'Avalanche', pair: `AVAX/${baseCurrency}`, price: baseCurrency === 'USD' ? 50.89 : 67.89, change: 3.21, volume: 12345.67, marketCap: 2.71e10, category: 'layer1' },
+        { symbol: 'USDC', name: 'USD Coin', pair: `USDC/${baseCurrency}`, price: baseCurrency === 'USD' ? 1.00 : 1.33, change: 0.01, volume: 234567.89, marketCap: 5.56e10, category: 'stablecoin' },
         
         // DeFi Tokens
-        { symbol: 'UNI', name: 'Uniswap', pair: 'UNI/CAD', price: 19.45, change: 4.23, volume: 8765.43, marketCap: 1.46e10, category: 'defi' },
-        { symbol: 'AAVE', name: 'Aave', pair: 'AAVE/CAD', price: 456.78, change: 2.67, volume: 3456.78, marketCap: 6.85e9, category: 'defi' },
-        { symbol: 'COMP', name: 'Compound', pair: 'COMP/CAD', price: 123.45, change: 1.89, volume: 2345.67, marketCap: 1.24e9, category: 'defi' },
-        { symbol: 'SUSHI', name: 'SushiSwap', pair: 'SUSHI/CAD', price: 1.23, change: 0.89, volume: 5678.90, marketCap: 1.6e8, category: 'defi' },
-        { symbol: 'CRV', name: 'Curve', pair: 'CRV/CAD', price: 0.89, change: 3.12, volume: 5678.90, marketCap: 6.7e8, category: 'defi' },
-        { symbol: 'MKR', name: 'Maker', pair: 'MKR/CAD', price: 1890.45, change: 1.23, volume: 1234.56, marketCap: 1.85e9, category: 'defi' },
+        { symbol: 'UNI', name: 'Uniswap', pair: `UNI/${baseCurrency}`, price: baseCurrency === 'USD' ? 14.58 : 19.45, change: 4.23, volume: 8765.43, marketCap: 1.46e10, category: 'defi' },
+        { symbol: 'AAVE', name: 'Aave', pair: `AAVE/${baseCurrency}`, price: baseCurrency === 'USD' ? 342.08 : 456.78, change: 2.67, volume: 3456.78, marketCap: 6.85e9, category: 'defi' },
+        { symbol: 'COMP', name: 'Compound', pair: `COMP/${baseCurrency}`, price: baseCurrency === 'USD' ? 92.58 : 123.45, change: 1.89, volume: 2345.67, marketCap: 1.24e9, category: 'defi' },
+        { symbol: 'SUSHI', name: 'SushiSwap', pair: `SUSHI/${baseCurrency}`, price: baseCurrency === 'USD' ? 0.92 : 1.23, change: 0.89, volume: 5678.90, marketCap: 1.6e8, category: 'defi' },
+        { symbol: 'CRV', name: 'Curve', pair: `CRV/${baseCurrency}`, price: baseCurrency === 'USD' ? 0.67 : 0.89, change: 3.12, volume: 5678.90, marketCap: 6.7e8, category: 'defi' },
+        { symbol: 'MKR', name: 'Maker', pair: `MKR/${baseCurrency}`, price: baseCurrency === 'USD' ? 1417.84 : 1890.45, change: 1.23, volume: 1234.56, marketCap: 1.85e9, category: 'defi' },
         
         // Layer 2 & Scaling
-        { symbol: 'MATIC', name: 'Polygon', pair: 'MATIC/CAD', price: 1.45, change: 5.67, volume: 34567.89, marketCap: 1.44e10, category: 'layer2' },
-        { symbol: 'OP', name: 'Optimism', pair: 'OP/CAD', price: 3.45, change: 3.78, volume: 9876.54, marketCap: 3.6e9, category: 'layer2' },
-        { symbol: 'ARB', name: 'Arbitrum', pair: 'ARB/CAD', price: 1.23, change: 2.90, volume: 15678.90, marketCap: 4.9e9, category: 'layer2' },
+        { symbol: 'MATIC', name: 'Polygon', pair: `MATIC/${baseCurrency}`, price: baseCurrency === 'USD' ? 1.09 : 1.45, change: 5.67, volume: 34567.89, marketCap: 1.44e10, category: 'layer2' },
+        { symbol: 'OP', name: 'Optimism', pair: `OP/${baseCurrency}`, price: baseCurrency === 'USD' ? 2.58 : 3.45, change: 3.78, volume: 9876.54, marketCap: 3.6e9, category: 'layer2' },
+        { symbol: 'ARB', name: 'Arbitrum', pair: `ARB/${baseCurrency}`, price: baseCurrency === 'USD' ? 0.92 : 1.23, change: 2.90, volume: 15678.90, marketCap: 4.9e9, category: 'layer2' },
         
         // Meme Coins
-        { symbol: 'DOGE', name: 'Dogecoin', pair: 'DOGE/CAD', price: 0.45, change: 12.34, volume: 56789.01, marketCap: 6.63e10, category: 'meme' },
-        { symbol: 'SHIB', name: 'Shiba Inu', pair: 'SHIB/CAD', price: 0.000034, change: 8.90, volume: 123456.78, marketCap: 2.01e10, category: 'meme' },
-        { symbol: 'PEPE', name: 'Pepe', pair: 'PEPE/CAD', price: 0.0000189, change: 15.67, volume: 89012.34, marketCap: 7.9e9, category: 'meme' },
-        { symbol: 'WIF', name: 'Dogwifhat', pair: 'WIF/CAD', price: 3.45, change: 18.90, volume: 34567.89, marketCap: 3.5e9, category: 'meme' },
-        { symbol: 'BONK', name: 'BONK', pair: 'BONK/CAD', price: 0.0000456, change: 23.45, volume: 67890.12, marketCap: 3.4e9, category: 'meme' },
+        { symbol: 'DOGE', name: 'Dogecoin', pair: `DOGE/${baseCurrency}`, price: baseCurrency === 'USD' ? 0.34 : 0.45, change: 12.34, volume: 56789.01, marketCap: 6.63e10, category: 'meme' },
+        { symbol: 'SHIB', name: 'Shiba Inu', pair: `SHIB/${baseCurrency}`, price: baseCurrency === 'USD' ? 0.0000255 : 0.000034, change: 8.90, volume: 123456.78, marketCap: 2.01e10, category: 'meme' },
+        { symbol: 'PEPE', name: 'Pepe', pair: `PEPE/${baseCurrency}`, price: baseCurrency === 'USD' ? 0.0000142 : 0.0000189, change: 15.67, volume: 89012.34, marketCap: 7.9e9, category: 'meme' },
+        { symbol: 'WIF', name: 'Dogwifhat', pair: `WIF/${baseCurrency}`, price: baseCurrency === 'USD' ? 2.58 : 3.45, change: 18.90, volume: 34567.89, marketCap: 3.5e9, category: 'meme' },
+        { symbol: 'BONK', name: 'BONK', pair: `BONK/${baseCurrency}`, price: baseCurrency === 'USD' ? 0.0000342 : 0.0000456, change: 23.45, volume: 67890.12, marketCap: 3.4e9, category: 'meme' },
         
         // Political Tokens
-        { symbol: 'TRUMP', name: 'Official Trump', pair: 'TRUMP/CAD', price: 67.89, change: 89.12, volume: 123456.78, marketCap: 1.4e10, category: 'political' },
-        { symbol: 'MELANIA', name: 'Melania Meme', pair: 'MELANIA/CAD', price: 4.56, change: 156.78, volume: 89012.34, marketCap: 9.1e8, category: 'political' },
+        { symbol: 'TRUMP', name: 'Official Trump', pair: `TRUMP/${baseCurrency}`, price: baseCurrency === 'USD' ? 50.92 : 67.89, change: 89.12, volume: 123456.78, marketCap: 1.4e10, category: 'political' },
+        { symbol: 'MELANIA', name: 'Melania Meme', pair: `MELANIA/${baseCurrency}`, price: baseCurrency === 'USD' ? 3.42 : 4.56, change: 156.78, volume: 89012.34, marketCap: 9.1e8, category: 'political' },
         
         // Gaming & Metaverse
-        { symbol: 'SAND', name: 'The Sandbox', pair: 'SAND/CAD', price: 0.89, change: 4.32, volume: 8765.43, marketCap: 2.0e9, category: 'gaming' },
-        { symbol: 'MANA', name: 'Decentraland', pair: 'MANA/CAD', price: 0.78, change: 5.67, volume: 12345.67, marketCap: 1.5e9, category: 'gaming' },
-        { symbol: 'AXS', name: 'Axie Infinity', pair: 'AXS/CAD', price: 8.90, change: 1.78, volume: 6789.01, marketCap: 1.3e9, category: 'gaming' },
+        { symbol: 'SAND', name: 'The Sandbox', pair: `SAND/${baseCurrency}`, price: baseCurrency === 'USD' ? 0.67 : 0.89, change: 4.32, volume: 8765.43, marketCap: 2.0e9, category: 'gaming' },
+        { symbol: 'MANA', name: 'Decentraland', pair: `MANA/${baseCurrency}`, price: baseCurrency === 'USD' ? 0.58 : 0.78, change: 5.67, volume: 12345.67, marketCap: 1.5e9, category: 'gaming' },
+        { symbol: 'AXS', name: 'Axie Infinity', pair: `AXS/${baseCurrency}`, price: baseCurrency === 'USD' ? 6.67 : 8.90, change: 1.78, volume: 6789.01, marketCap: 1.3e9, category: 'gaming' },
         
         // AI & Technology
-        { symbol: 'TAO', name: 'Bittensor', pair: 'TAO/CAD', price: 678.90, change: 5.67, volume: 1234.56, marketCap: 4.9e9, category: 'ai' },
-        { symbol: 'FET', name: 'Fetch', pair: 'FET/CAD', price: 1.89, change: 7.89, volume: 7890.12, marketCap: 2.4e9, category: 'ai' },
-        { symbol: 'RENDER', name: 'Render', pair: 'RENDER/CAD', price: 8.90, change: 6.78, volume: 9876.54, marketCap: 3.6e9, category: 'ai' },
+        { symbol: 'TAO', name: 'Bittensor', pair: `TAO/${baseCurrency}`, price: baseCurrency === 'USD' ? 509.18 : 678.90, change: 5.67, volume: 1234.56, marketCap: 4.9e9, category: 'ai' },
+        { symbol: 'FET', name: 'Fetch', pair: `FET/${baseCurrency}`, price: baseCurrency === 'USD' ? 1.42 : 1.89, change: 7.89, volume: 7890.12, marketCap: 2.4e9, category: 'ai' },
+        { symbol: 'RENDER', name: 'Render', pair: `RENDER/${baseCurrency}`, price: baseCurrency === 'USD' ? 6.67 : 8.90, change: 6.78, volume: 9876.54, marketCap: 3.6e9, category: 'ai' },
       ];
       
-      res.json(tradingPairs);
+      res.json({ tradingPairs, baseCurrency, currencySymbol });
     } catch (error) {
       console.error("Error fetching VirgoCX trading pairs:", error);
       res.status(500).json({ error: "Failed to fetch VirgoCX trading pairs" });
