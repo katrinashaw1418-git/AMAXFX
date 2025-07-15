@@ -373,7 +373,11 @@ export default function Portfolio() {
               </div>
               <div className="flex-1 space-y-3">
                 {(investmentBreakdown?.categories || []).map((item, index) => (
-                  <div key={item.name} className="flex items-center justify-between">
+                  <div 
+                    key={item.name} 
+                    className="flex items-center justify-between hover:bg-gray-50 p-2 rounded-lg cursor-pointer transition-colors"
+                    onClick={() => window.location.href = '/investments'}
+                  >
                     <div className="flex items-center space-x-3">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][index % 5] }}></div>
                       <span className="font-medium">{item.name}</span>
@@ -390,13 +394,27 @@ export default function Portfolio() {
             
             {/* Individual Products */}
             <div className="mt-6 space-y-4">
-              <h4 className="font-semibold text-lg mb-3">Individual Investment Products</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-lg mb-3">Individual Investment Products</h4>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.location.href = '/investments'}
+                  className="text-sm"
+                >
+                  View All Investments
+                </Button>
+              </div>
               {(investmentBreakdown?.categories || []).map((category) => (
                 <div key={category.name} className="space-y-2">
                   <h5 className="font-medium text-sm text-gray-700 uppercase tracking-wide">{category.name}</h5>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {category.products.map((product, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div 
+                        key={idx} 
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
+                        onClick={() => window.location.href = '/investments'}
+                      >
                         <div className="flex items-center space-x-3">
                           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][(investmentBreakdown?.categories.findIndex(c => c.name === category.name) || 0) % 5] }}></div>
                           <span className="text-sm font-medium">{product.name}</span>

@@ -383,3 +383,10 @@ Changelog:
   - **Trading Button Fix**: Changed "Buy/Sell on AMAX" back to "Buy/Sell on VirgoCX" in crypto trading interface
   - **Consistent Branding**: Maintained selective branding policy - AMAX for main platform, VirgoCX for crypto trading
   - **User Experience**: Corrected button labels to match intended platform branding for cryptocurrency transactions
+- July 15, 2025. Enhanced Portfolio page with Investment Products breakdown and navigation
+  - **Investment Products Color**: Updated asset allocation to display Investment Products in purple (#8B5CF6)
+  - **Investment Products Section**: Added dedicated breakdown section with pie chart showing Real Estate (33.3%), Corporate Credit (20.0%), Venture Capital (50.4%)
+  - **Investment Breakdown API**: Created `/api/investment-breakdown` endpoint calculating category percentages from actual user investments
+  - **Navigation Links**: Added clickable links from investment products to investments page with "View All Investments" button
+  - **Interactive Elements**: Investment categories and individual products are clickable and navigate to investments page
+  - **Real-time Data**: All investment data reflects actual portfolio composition and updates automatically
