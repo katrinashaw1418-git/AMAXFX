@@ -366,20 +366,57 @@ export default function AiAdvisory() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold">AI Advisory Dashboard</h1>
           <p className="text-gray-600">Personalized investment insights and recommendations</p>
         </div>
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-            <Bot className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <p className="text-sm font-medium">AI Advisory Active</p>
-            <p className="text-xs text-gray-500">Last updated: 2 minutes ago</p>
-          </div>
-        </div>
+        
+        {/* Contact Your Advisor - Top Right */}
+        <Card className="w-80">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Phone className="h-4 w-4" />
+              Contact Your Advisor
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Phone className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-blue-900 text-sm">Sarah Chen</h4>
+                    <p className="text-xs text-blue-700">Senior Wealth Planner</p>
+                    <p className="text-xs text-blue-600 font-medium">+1 (416) 555-0123</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex space-x-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.open('tel:+14165550123')}
+                  className="flex-1 text-xs"
+                >
+                  <Phone className="w-3 h-3 mr-1" />
+                  Call
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={() => setAdvisorModalOpen(true)}
+                  className="flex-1 text-xs"
+                >
+                  <MessageCircle className="w-3 h-3 mr-1" />
+                  Message
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* AI Summary Cards */}
@@ -818,51 +855,7 @@ export default function AiAdvisory() {
         </CardContent>
       </Card>
 
-      {/* Contact Your Advisor */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Phone className="h-5 w-5" />
-            Contact Your Advisor
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Phone className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-blue-900">Sarah Chen</h4>
-                  <p className="text-sm text-blue-700">Senior Wealth Planner</p>
-                  <p className="text-sm text-blue-600 font-medium">+1 (416) 555-0123</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex space-x-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => window.open('tel:+14165550123')}
-                className="flex-1"
-              >
-                <Phone className="w-4 h-4 mr-2" />
-                Call Now
-              </Button>
-              <Button 
-                size="sm"
-                onClick={() => setAdvisorModalOpen(true)}
-                className="flex-1"
-              >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Send Message
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+
 
       {/* Advisor Contact Modal */}
       <Dialog open={advisorModalOpen} onOpenChange={setAdvisorModalOpen}>
