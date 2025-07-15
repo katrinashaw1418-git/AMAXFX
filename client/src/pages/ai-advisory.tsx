@@ -366,57 +366,95 @@ export default function AiAdvisory() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">AI Advisory Dashboard</h1>
-          <p className="text-gray-600">Personalized investment insights and recommendations</p>
-        </div>
+      {/* Enhanced Header Section */}
+      <div className="relative overflow-hidden">
+        {/* Background Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 opacity-10 rounded-2xl"></div>
         
-        {/* Contact Your Advisor - Top Right */}
-        <Card className="w-80">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Phone className="h-4 w-4" />
-              Contact Your Advisor
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Phone className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-blue-900 text-sm">Sarah Chen</h4>
-                    <p className="text-xs text-blue-700">Senior Wealth Planner</p>
-                    <p className="text-xs text-blue-600 font-medium">+1 (416) 555-0123</p>
-                  </div>
+        <div className="relative flex items-start justify-between p-8 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg">
+          <div className="flex items-start space-x-4">
+            {/* AI Icon */}
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <Bot className="w-8 h-8 text-white" />
+            </div>
+            
+            {/* Title and Description */}
+            <div className="space-y-2">
+              <div className="flex items-center space-x-3">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  AI Advisory Dashboard
+                </h1>
+                <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 rounded-full">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs font-medium text-green-700">Active</span>
                 </div>
               </div>
               
-              <div className="flex space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => window.open('tel:+14165550123')}
-                  className="flex-1 text-xs"
-                >
-                  <Phone className="w-3 h-3 mr-1" />
-                  Call
-                </Button>
-                <Button 
-                  size="sm"
-                  onClick={() => setAdvisorModalOpen(true)}
-                  className="flex-1 text-xs"
-                >
-                  <MessageCircle className="w-3 h-3 mr-1" />
-                  Message
-                </Button>
+              <p className="text-gray-600 text-lg max-w-md">
+                Get personalized investment insights and recommendations powered by artificial intelligence
+              </p>
+              
+              <div className="flex items-center space-x-4 pt-2">
+                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                  <Zap className="w-4 h-4" />
+                  <span>Last updated: 2 minutes ago</span>
+                </div>
+                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                  <Shield className="w-4 h-4" />
+                  <span>Secure & Private</span>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          
+          {/* Contact Your Advisor - Top Right */}
+          <Card className="w-80 shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Phone className="h-3 w-3 text-blue-600" />
+                </div>
+                Contact Your Advisor
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-100">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                      <Phone className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-blue-900 text-sm">Sarah Chen</h4>
+                      <p className="text-xs text-blue-700">Senior Wealth Planner</p>
+                      <p className="text-xs text-blue-600 font-medium">+1 (416) 555-0123</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => window.open('tel:+14165550123')}
+                    className="flex-1 text-xs hover:bg-blue-50 border-blue-200"
+                  >
+                    <Phone className="w-3 h-3 mr-1" />
+                    Call
+                  </Button>
+                  <Button 
+                    size="sm"
+                    onClick={() => setAdvisorModalOpen(true)}
+                    className="flex-1 text-xs bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+                  >
+                    <MessageCircle className="w-3 h-3 mr-1" />
+                    Message
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* AI Summary Cards */}
