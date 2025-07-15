@@ -6,16 +6,26 @@ import { usePortfolio, useWallets, useUserInvestments, usePortfolioAllocation } 
 import { Skeleton } from "@/components/ui/skeleton";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line } from 'recharts';
 import { TrendingUp, TrendingDown, DollarSign, Bitcoin, PieChart as PieChartIcon, Target, RefreshCw } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
-const COLORS = ['hsl(207, 90%, 54%)', 'hsl(152, 60%, 39%)', 'hsl(0, 84%, 55%)', '#FBBF24', '#8B5CF6', '#10B981'];
+const COLORS = ['hsl(207, 90%, 54%)', 'hsl(152, 60%, 39%)', 'hsl(0, 84%, 55%)', '#8B5CF6', '#FBBF24', '#10B981'];
 
 export default function Portfolio() {
   const { data: portfolio, isLoading: portfolioLoading } = usePortfolio();
   const { data: wallets, isLoading: walletsLoading } = useWallets();
   const { data: userInvestments, isLoading: investmentsLoading } = useUserInvestments();
   const { data: allocation, isLoading: allocationLoading } = usePortfolioAllocation();
+  
+  const { data: investmentBreakdown, isLoading: breakdownLoading } = useQuery({
+    queryKey: ["/api/investment-breakdown"],
+    queryFn: async () => {
+      const response = await fetch("/api/investment-breakdown");
+      if (!response.ok) throw new Error("Failed to fetch investment breakdown");
+      return response.json();
+    },
+  });
 
-  const isLoading = portfolioLoading || walletsLoading || investmentsLoading || allocationLoading;
+  const isLoading = portfolioLoading || walletsLoading || investmentsLoading || allocationLoading || breakdownLoading;
 
   // Use allocation data for accurate values
   const fiatValue = allocation?.fiat?.value || 0;
@@ -327,6 +337,79 @@ export default function Portfolio() {
                   </div>
                 ))}
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Investment Products Breakdown */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <PieChartIcon className="h-5 w-5" />
+              Investment Products
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-6">
+              <div className="h-64 w-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={investmentBreakdown?.categories || []}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {(investmentBreakdown?.categories || []).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][index % 5]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, 'Value']} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex-1 space-y-3">
+                {(investmentBreakdown?.categories || []).map((item, index) => (
+                  <div key={item.name} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][index % 5] }}></div>
+                      <span className="font-medium">{item.name}</span>
+                      <Badge variant="outline">{item.products.length} products</Badge>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">{item.percentage.toFixed(1)}%</p>
+                      <p className="text-sm text-gray-600">${item.value.toLocaleString()}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Individual Products */}
+            <div className="mt-6 space-y-4">
+              <h4 className="font-semibold text-lg mb-3">Individual Investment Products</h4>
+              {(investmentBreakdown?.categories || []).map((category) => (
+                <div key={category.name} className="space-y-2">
+                  <h5 className="font-medium text-sm text-gray-700 uppercase tracking-wide">{category.name}</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {category.products.map((product, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][(investmentBreakdown?.categories.findIndex(c => c.name === category.name) || 0) % 5] }}></div>
+                          <span className="text-sm font-medium">{product.name}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-semibold">${(product.value / 1000).toFixed(0)}K</div>
+                          <div className="text-xs text-gray-500">{product.percentage.toFixed(1)}%</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
