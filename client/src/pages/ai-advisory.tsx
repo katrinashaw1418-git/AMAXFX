@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAiRecommendations } from "@/hooks/use-portfolio";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -588,35 +589,66 @@ export default function AiAdvisory() {
         {/* Performance by Period */}
         <Card>
           <CardHeader>
-            <CardTitle>Performance by Period</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Performance by Period</CardTitle>
+              <div className="flex items-center space-x-4 text-sm">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span>Your Portfolio</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-6 h-0.5 border-t-2 border-dashed border-blue-500"></div>
+                  <span>Benchmark</span>
+                </div>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {[
-                { period: "1 Month", return: portfolioAllocation ? (portfolioAllocation.totalValue * 0.015 / portfolioAllocation.totalValue * 100) : 1.5, benchmark: 0.8 },
-                { period: "3 Months", return: portfolioAllocation ? (portfolioAllocation.totalValue * 0.045 / portfolioAllocation.totalValue * 100) : 4.2, benchmark: 2.1 },
-                { period: "6 Months", return: portfolioAllocation ? (portfolioAllocation.totalValue * 0.085 / portfolioAllocation.totalValue * 100) : 8.7, benchmark: 5.4 },
-                { period: "1 Year", return: portfolioAllocation ? (portfolioAllocation.totalValue * 0.15 / portfolioAllocation.totalValue * 100) : 15.2, benchmark: 11.3 },
-                { period: "3 Years", return: portfolioAllocation ? (portfolioAllocation.totalValue * 0.42 / portfolioAllocation.totalValue * 100) : 42.8, benchmark: 28.9 },
-              ].map((period) => (
-                <div key={period.period} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="font-medium">{period.period}</span>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <div className={`font-semibold ${period.return >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {period.return >= 0 ? '+' : ''}{period.return.toFixed(1)}%
-                      </div>
-                      <div className="text-xs text-gray-500">Portfolio</div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`font-medium ${period.benchmark >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {period.benchmark >= 0 ? '+' : ''}{period.benchmark.toFixed(1)}%
-                      </div>
-                      <div className="text-xs text-gray-500">Benchmark</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={[
+                  { month: 'Jan', portfolio: 1.2, benchmark: 0.8 },
+                  { month: 'Feb', portfolio: 2.1, benchmark: 1.5 },
+                  { month: 'Mar', portfolio: 0.9, benchmark: 1.8 },
+                  { month: 'Apr', portfolio: 3.2, benchmark: 2.1 },
+                  { month: 'May', portfolio: 2.8, benchmark: 2.0 },
+                  { month: 'Jun', portfolio: 4.1, benchmark: 2.9 },
+                  { month: 'Jul', portfolio: 3.8, benchmark: 3.2 },
+                  { month: 'Aug', portfolio: 2.9, benchmark: 3.4 },
+                  { month: 'Sep', portfolio: 5.2, benchmark: 4.1 },
+                  { month: 'Oct', portfolio: 4.8, benchmark: 4.3 },
+                  { month: 'Nov', portfolio: 6.1, benchmark: 5.2 },
+                  { month: 'Dec', portfolio: 5.8, benchmark: 5.0 },
+                ]}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                  <XAxis dataKey="month" stroke="#6B7280" fontSize={12} />
+                  <YAxis stroke="#6B7280" fontSize={12} tickFormatter={(value) => `${value}%`} />
+                  <Tooltip 
+                    formatter={(value: number, name: string) => [
+                      `${value.toFixed(1)}%`,
+                      name === 'portfolio' ? 'Your Portfolio' : 'Benchmark'
+                    ]}
+                    contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="portfolio" 
+                    stroke="#EF4444" 
+                    strokeWidth={3}
+                    dot={{ fill: '#EF4444', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="benchmark" 
+                    stroke="#3B82F6" 
+                    strokeWidth={3}
+                    strokeDasharray="8 4"
+                    dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>

@@ -1076,6 +1076,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Advisor Contact Route
+  app.post("/api/advisor/contact", async (req, res) => {
+    try {
+      const { message } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      // In a real implementation, this would send an email or create a ticket
+      // For demo, we'll just return success
+      res.json({ 
+        success: true, 
+        message: "Your message has been sent to your wealth planner",
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
   // VirgoCX Integration Routes
   
   // Get VirgoCX market data
