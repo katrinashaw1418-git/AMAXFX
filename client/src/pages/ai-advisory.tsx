@@ -410,10 +410,7 @@ export default function AiAdvisory() {
           {/* Contact Your Advisor - Top Right */}
           <Card className="w-80 shadow-lg border-0 bg-white/90 backdrop-blur-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Phone className="h-3 w-3 text-blue-600" />
-                </div>
+              <CardTitle className="text-lg">
                 Contact Your Advisor
               </CardTitle>
             </CardHeader>
