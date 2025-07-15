@@ -398,8 +398,3 @@ Changelog:
   - **Total Capital Invested**: Now correctly shows $1.77M actual capital invested vs $1.96M current value
   - **Venture Capital Purple**: Updated investment products pie chart to show Venture Capital in purple (#8B5CF6)
   - **Digital Assets Red**: Changed Digital Assets from orange to red (#EF4444), Cash Deposits now orange (#F59E0B)
-- July 15, 2025. Enhanced portfolio layout with performance chart repositioning and individual asset breakdown
-  - **Performance Chart Top**: Moved Performance vs Benchmark chart to top of portfolio page with legend
-  - **Individual Asset Allocation**: Updated Asset Allocation pie chart to show individual assets (USD, BTC, ETH, USDT, USDC, etc.) instead of grouped categories
-  - **Asset Breakdown**: Individual assets displayed under pie chart with percentages and values, sorted by value
-  - **Color Consistency**: Maintained proper color scheme for individual assets based on type (fiat blue, crypto red, stablecoins green, investments purple)

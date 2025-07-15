@@ -81,45 +81,14 @@ export default function Portfolio() {
   // Individual wallet breakdown for detailed view
   const walletData = wallets?.map((wallet, index) => {
     const balance = parseFloat(wallet.balance);
-    const percentage = totalPortfolioValue > 0 ? (balance / totalPortfolioValue) * 100 : 0;
-    
-    // Assign specific colors based on asset type
-    let color = COLORS[index % COLORS.length];
-    if (wallet.walletType === 'crypto') {
-      if (wallet.currency === 'USDT' || wallet.currency === 'USDC') {
-        color = COLORS[2]; // Green for stablecoins
-      } else {
-        color = COLORS[1]; // Red for crypto assets
-      }
-    } else if (wallet.walletType === 'fiat') {
-      color = COLORS[0]; // Blue for fiat
-    }
-    
     return {
       name: wallet.currency,
       value: balance,
-      percentage: percentage,
-      color: color,
+      percentage: 0, // Raw balance for detailed view
+      color: COLORS[index % COLORS.length],
       type: wallet.walletType
     };
   }).filter(item => item.value > 0) || [];
-
-  // Add investment products as individual items
-  const investmentItems = userInvestments?.map((investment, index) => {
-    const currentValue = parseFloat(investment.currentValue);
-    const percentage = totalPortfolioValue > 0 ? (currentValue / totalPortfolioValue) * 100 : 0;
-    
-    return {
-      name: `Investment ${investment.id}`,
-      value: currentValue,
-      percentage: percentage,
-      color: COLORS[3], // Purple for investments
-      type: 'investment'
-    };
-  }).filter(item => item.value > 0) || [];
-
-  // Combine individual wallets and investments
-  const individualAssets = [...walletData, ...investmentItems].sort((a, b) => b.value - a.value);
 
 
 
@@ -282,72 +251,66 @@ export default function Portfolio() {
         </Card>
       </div>
 
-      {/* Performance vs Benchmark Chart */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Performance vs Benchmark
-            </CardTitle>
-            <div className="flex items-center space-x-4 text-sm">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span>Your Portfolio</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-6 h-0.5 border-t-2 border-dashed border-blue-500"></div>
-                <span>Benchmark</span>
+      {/* Performance and Allocation */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Performance Chart */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Performance vs Benchmark</CardTitle>
+              <div className="flex items-center space-x-4 text-sm">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span>Your Portfolio</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-6 h-0.5 border-t-2 border-dashed border-blue-500"></div>
+                  <span>Benchmark</span>
+                </div>
               </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={historicalData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                <XAxis dataKey="month" stroke="#6B7280" fontSize={12} />
-                <YAxis stroke="#6B7280" fontSize={12} tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`} />
-                <Tooltip 
-                  formatter={(value: number, name: string) => [
-                    `$${value.toLocaleString()}`,
-                    name === 'portfolio' ? 'Your Portfolio' : 'Benchmark'
-                  ]}
-                  contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="portfolio" 
-                  stroke="#ef4444" 
-                  strokeWidth={3}
-                  dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, fill: "#ef4444" }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="benchmark" 
-                  stroke="#3b82f6" 
-                  strokeWidth={3} 
-                  strokeDasharray="5 5"
-                  dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, fill: "#3b82f6" }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={historicalData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                  <XAxis dataKey="month" stroke="#6B7280" fontSize={12} />
+                  <YAxis stroke="#6B7280" fontSize={12} tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`} />
+                  <Tooltip 
+                    formatter={(value: number, name: string) => [
+                      `$${value.toLocaleString()}`,
+                      name === 'portfolio' ? 'Your Portfolio' : 'Benchmark'
+                    ]}
+                    contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="portfolio" 
+                    stroke="#ef4444" 
+                    strokeWidth={3}
+                    dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: "#ef4444" }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="benchmark" 
+                    stroke="#3b82f6" 
+                    strokeWidth={3} 
+                    strokeDasharray="5 5"
+                    dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: "#3b82f6" }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Asset Allocation and Investment Products */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Asset Allocation */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieChartIcon className="h-5 w-5" />
-              Asset Allocation
-            </CardTitle>
+            <CardTitle>Asset Allocation</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center space-x-6">
@@ -355,7 +318,7 @@ export default function Portfolio() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={individualAssets}
+                      data={allocationData}
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
@@ -363,7 +326,7 @@ export default function Portfolio() {
                       paddingAngle={5}
                       dataKey="value"
                     >
-                      {individualAssets.map((entry, index) => (
+                      {allocationData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -371,26 +334,21 @@ export default function Portfolio() {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-            </div>
-            
-            {/* Individual Assets List */}
-            <div className="mt-6 space-y-3">
-              {individualAssets.map((item, index) => (
-                <div 
-                  key={item.name} 
-                  className="flex items-center justify-between hover:bg-gray-50 p-2 rounded-lg cursor-pointer transition-colors"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                    <span className="font-medium">{item.name}</span>
-                    <Badge variant="outline">{item.type}</Badge>
+              <div className="flex-1 space-y-3">
+                {allocationData.map((item, index) => (
+                  <div key={item.name} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                      <span className="font-medium">{item.name}</span>
+                      <Badge variant="outline">{item.type}</Badge>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">{item.percentage.toFixed(1)}%</p>
+                      <p className="text-sm text-gray-600">${item.value.toLocaleString()}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold">{item.percentage.toFixed(1)}%</p>
-                    <p className="text-sm text-gray-600">${item.value.toLocaleString()}</p>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>
