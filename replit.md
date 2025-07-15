@@ -390,6 +390,12 @@ Changelog:
   - **Navigation Links**: Added clickable links from investment products to investments page with "View All Investments" button
   - **Interactive Elements**: Investment categories and individual products are clickable and navigate to investments page
   - **Real-time Data**: All investment data reflects actual portfolio composition and updates automatically
+- July 15, 2025. Added floating contact advisor box to Portfolio page
+  - **Consistent Contact Access**: Floating contact box now available on AI Advisory, Investments, and Portfolio pages
+  - **Professional Design**: Fixed top-right positioning (fixed top-4 right-4 z-50) with backdrop blur effects
+  - **Contact Information**: Phone number display (+61 3 9654 1000) and "Call"/"Message" buttons
+  - **Message Functionality**: Working contact modal with message form and advisor communication API integration
+  - **User Experience**: Gradient styling, professional card layout, and immediate user feedback via toast notifications
 - July 15, 2025. Updated asset allocation color scheme for better visual distinction
   - **Crypto Assets Color**: Changed from green to red (#EF4444) for crypto assets (BTC, ETH)
   - **Stablecoins Color**: Changed from red to green (#10B981) for stablecoins (USDT, USDC)
