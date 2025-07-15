@@ -138,6 +138,160 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate personalized AI recommendations based on risk profile
+  app.post("/api/ai-recommendations/generate", async (req, res) => {
+    try {
+      const { riskTolerance, investmentHorizon, investmentGoal } = req.body;
+      const userId = 1;
+      
+      // Get current portfolio data
+      const portfolio = await storage.getPortfolio(userId);
+      const wallets = await storage.getWallets(userId);
+      
+      // Calculate current asset allocation
+      const totalValue = parseFloat(portfolio?.totalValue || "0");
+      const cryptoValue = parseFloat(portfolio?.cryptoValue || "0");
+      const fiatValue = parseFloat(portfolio?.fiatValue || "0");
+      
+      const currentAllocation = {
+        crypto: totalValue > 0 ? (cryptoValue / totalValue) * 100 : 0,
+        fiat: totalValue > 0 ? (fiatValue / totalValue) * 100 : 0,
+      };
+      
+      // Generate recommendations based on risk profile
+      const recommendations = [];
+      let id = Date.now();
+      
+      // Risk-based portfolio recommendations
+      if (riskTolerance <= 2) { // Conservative
+        if (currentAllocation.crypto > 10) {
+          recommendations.push({
+            id: id++,
+            userId,
+            type: "rebalancing",
+            title: "Reduce Crypto Exposure",
+            description: `Your crypto allocation (${currentAllocation.crypto.toFixed(1)}%) is high for a conservative profile. Consider reducing to 5-10% and increasing fixed income investments.`,
+            severity: "warning",
+            isRead: false,
+            createdAt: new Date(),
+          });
+        }
+        
+        recommendations.push({
+          id: id++,
+          userId,
+          type: "opportunity",
+          title: "Increase Bond Allocation",
+          description: "Consider allocating 60-70% to government bonds and high-grade corporate bonds for stable income generation.",
+          severity: "info",
+          isRead: false,
+          createdAt: new Date(),
+        });
+      } else if (riskTolerance <= 4) { // Moderate
+        if (currentAllocation.crypto > 20) {
+          recommendations.push({
+            id: id++,
+            userId,
+            type: "rebalancing",
+            title: "Moderate Crypto Rebalancing",
+            description: `Your crypto allocation (${currentAllocation.crypto.toFixed(1)}%) exceeds moderate risk guidelines. Consider reducing to 15-20% for better risk management.`,
+            severity: "info",
+            isRead: false,
+            createdAt: new Date(),
+          });
+        }
+        
+        recommendations.push({
+          id: id++,
+          userId,
+          type: "opportunity",
+          title: "Diversify with International Equities",
+          description: "Consider adding 20-25% international equity exposure to reduce correlation with domestic markets.",
+          severity: "info",
+          isRead: false,
+          createdAt: new Date(),
+        });
+      } else { // Aggressive
+        if (currentAllocation.crypto < 15) {
+          recommendations.push({
+            id: id++,
+            userId,
+            type: "opportunity",
+            title: "Increase Growth Exposure",
+            description: `Your crypto allocation (${currentAllocation.crypto.toFixed(1)}%) is conservative. Consider increasing to 25-30% for higher growth potential.`,
+            severity: "info",
+            isRead: false,
+            createdAt: new Date(),
+          });
+        }
+        
+        recommendations.push({
+          id: id++,
+          userId,
+          type: "opportunity",
+          title: "Consider Growth Equity Investments",
+          description: "Your aggressive profile allows for higher allocation to growth stocks and venture capital opportunities.",
+          severity: "info",
+          isRead: false,
+          createdAt: new Date(),
+        });
+      }
+      
+      // Investment goal-based recommendations
+      if (investmentGoal === "income") {
+        recommendations.push({
+          id: id++,
+          userId,
+          type: "opportunity",
+          title: "Focus on Income-Generating Assets",
+          description: "Consider dividend-paying stocks, REITs, and high-yield bonds to meet your income generation goals.",
+          severity: "info",
+          isRead: false,
+          createdAt: new Date(),
+        });
+      } else if (investmentGoal === "growth") {
+        recommendations.push({
+          id: id++,
+          userId,
+          type: "opportunity",
+          title: "Growth Investment Opportunities",
+          description: "Technology sector and emerging markets offer strong growth potential aligned with your investment goals.",
+          severity: "info",
+          isRead: false,
+          createdAt: new Date(),
+        });
+      }
+      
+      // Time horizon recommendations
+      if (investmentHorizon === "1-3") {
+        recommendations.push({
+          id: id++,
+          userId,
+          type: "risk_warning",
+          title: "Short-Term Horizon Risk",
+          description: "Your short investment horizon suggests reducing volatility. Consider higher cash and bond allocations.",
+          severity: "warning",
+          isRead: false,
+          createdAt: new Date(),
+        });
+      }
+      
+      // Clear existing recommendations and set new ones
+      await storage.clearAiRecommendations(userId);
+      for (const recommendation of recommendations) {
+        await storage.createAiRecommendation(recommendation);
+      }
+      
+      res.json({ 
+        success: true, 
+        recommendations,
+        message: "AI recommendations generated successfully"
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate AI recommendations" });
+    }
+  });
+
   // Create FX exchange transaction
   app.post("/api/fx-exchange", async (req, res) => {
     try {

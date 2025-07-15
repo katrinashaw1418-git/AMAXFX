@@ -40,6 +40,7 @@ export interface IStorage {
   getAiRecommendations(userId: number): Promise<AiRecommendation[]>;
   createAiRecommendation(recommendation: InsertAiRecommendation): Promise<AiRecommendation>;
   markRecommendationAsRead(id: number): Promise<void>;
+  clearAiRecommendations(userId: number): Promise<void>;
 
   // Investment Products
   getInvestmentProducts(filters?: { category?: string; riskProfile?: string; liquidity?: string }): Promise<InvestmentProduct[]>;
@@ -3139,6 +3140,10 @@ export class MemStorage implements IStorage {
         break;
       }
     }
+  }
+
+  async clearAiRecommendations(userId: number): Promise<void> {
+    this.aiRecommendations.set(userId, []);
   }
 
   // Investment Product methods

@@ -38,6 +38,35 @@ export default function AiAdvisory() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // Generate new recommendations when risk profile changes
+  const generateRecommendationsMutation = useMutation({
+    mutationFn: async (profileData: { riskTolerance: number; investmentHorizon: string; investmentGoal: string }) => {
+      const response = await fetch("/api/ai-recommendations/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileData),
+      });
+      if (!response.ok) throw new Error("Failed to generate recommendations");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/ai-recommendations"] });
+      toast({
+        title: "Recommendations Updated",
+        description: "New AI recommendations generated based on your risk profile.",
+      });
+    },
+  });
+
+  // Update recommendations when risk profile changes
+  const updateRecommendations = () => {
+    generateRecommendationsMutation.mutate({
+      riskTolerance: riskTolerance[0],
+      investmentHorizon,
+      investmentGoal,
+    });
+  };
+
   const markAsReadMutation = useMutation({
     mutationFn: (id: number) => api.markRecommendationAsRead(id),
     onSuccess: () => {
@@ -128,14 +157,38 @@ export default function AiAdvisory() {
     }
   };
 
-  // Mock AI-generated portfolio suggestion
-  const suggestedAllocation = [
-    { asset: "US Equities", current: 35, suggested: 30, change: -5, color: "bg-blue-500" },
-    { asset: "International Equities", current: 20, suggested: 25, change: 5, color: "bg-green-500" },
-    { asset: "Bonds", current: 25, suggested: 30, change: 5, color: "bg-purple-500" },
-    { asset: "Crypto", current: 15, suggested: 10, change: -5, color: "bg-yellow-500" },
-    { asset: "Cash", current: 5, suggested: 5, change: 0, color: "bg-gray-500" },
-  ];
+  // Dynamic portfolio suggestions based on risk profile
+  const getSuggestedAllocation = () => {
+    const risk = riskTolerance[0];
+    
+    if (risk <= 2) { // Conservative
+      return [
+        { asset: "US Equities", current: 35, suggested: 20, change: -15, color: "bg-blue-500" },
+        { asset: "International Equities", current: 20, suggested: 15, change: -5, color: "bg-green-500" },
+        { asset: "Bonds", current: 25, suggested: 50, change: 25, color: "bg-purple-500" },
+        { asset: "Crypto", current: 15, suggested: 5, change: -10, color: "bg-yellow-500" },
+        { asset: "Cash", current: 5, suggested: 10, change: 5, color: "bg-gray-500" },
+      ];
+    } else if (risk <= 4) { // Moderate
+      return [
+        { asset: "US Equities", current: 35, suggested: 30, change: -5, color: "bg-blue-500" },
+        { asset: "International Equities", current: 20, suggested: 25, change: 5, color: "bg-green-500" },
+        { asset: "Bonds", current: 25, suggested: 30, change: 5, color: "bg-purple-500" },
+        { asset: "Crypto", current: 15, suggested: 10, change: -5, color: "bg-yellow-500" },
+        { asset: "Cash", current: 5, suggested: 5, change: 0, color: "bg-gray-500" },
+      ];
+    } else { // Aggressive
+      return [
+        { asset: "US Equities", current: 35, suggested: 40, change: 5, color: "bg-blue-500" },
+        { asset: "International Equities", current: 20, suggested: 25, change: 5, color: "bg-green-500" },
+        { asset: "Bonds", current: 25, suggested: 15, change: -10, color: "bg-purple-500" },
+        { asset: "Crypto", current: 15, suggested: 25, change: 10, color: "bg-yellow-500" },
+        { asset: "Cash", current: 5, suggested: 5, change: 0, color: "bg-gray-500" },
+      ];
+    }
+  };
+
+  const suggestedAllocation = getSuggestedAllocation();
 
   const riskProfile = {
     score: riskTolerance[0] * 20,
@@ -293,6 +346,15 @@ export default function AiAdvisory() {
                 <h4 className="font-medium text-gray-900 mb-2">Your Profile</h4>
                 <p className="text-sm text-gray-600">{riskProfile.description}</p>
               </div>
+
+              <Button 
+                onClick={updateRecommendations}
+                disabled={generateRecommendationsMutation.isPending}
+                className="w-full"
+              >
+                <Bot className="w-4 h-4 mr-2" />
+                {generateRecommendationsMutation.isPending ? "Updating..." : "Update AI Recommendations"}
+              </Button>
             </CardContent>
           </Card>
         </div>
