@@ -8,7 +8,19 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import { TrendingUp, TrendingDown, DollarSign, Bitcoin, PieChart as PieChartIcon, Target, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
-const COLORS = ['hsl(207, 90%, 54%)', 'hsl(152, 60%, 39%)', 'hsl(0, 84%, 55%)', '#8B5CF6', '#FBBF24', '#10B981'];
+const COLORS = ['hsl(207, 90%, 54%)', 'hsl(0, 84%, 55%)', 'hsl(152, 60%, 39%)', '#8B5CF6', '#FBBF24', '#10B981'];
+
+// Category-specific colors
+const getCategoryColor = (categoryName: string) => {
+  const colorMap: { [key: string]: string } = {
+    'Real Estate': '#3B82F6',     // Blue
+    'Corporate Credit': '#10B981',  // Green
+    'Venture Capital': '#8B5CF6',  // Purple
+    'Digital Assets': '#F59E0B',   // Orange
+    'Cash Deposits': '#EF4444'     // Red
+  };
+  return colorMap[categoryName] || '#6B7280'; // Default gray
+};
 
 export default function Portfolio() {
   const { data: portfolio, isLoading: portfolioLoading } = usePortfolio();
@@ -379,7 +391,7 @@ export default function Portfolio() {
                     onClick={() => window.location.href = '/investments'}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][index % 5] }}></div>
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getCategoryColor(item.name) }}></div>
                       <span className="font-medium">{item.name}</span>
                       <Badge variant="outline">{item.products.length} products</Badge>
                     </div>
@@ -416,7 +428,7 @@ export default function Portfolio() {
                         onClick={() => window.location.href = '/investments'}
                       >
                         <div className="flex items-center space-x-3">
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][(investmentBreakdown?.categories.findIndex(c => c.name === category.name) || 0) % 5] }}></div>
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getCategoryColor(category.name) }}></div>
                           <span className="text-sm font-medium">{product.name}</span>
                         </div>
                         <div className="text-right">

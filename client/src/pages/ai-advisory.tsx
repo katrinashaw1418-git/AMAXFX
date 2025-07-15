@@ -258,9 +258,9 @@ export default function AiAdvisory() {
     
     return [
       { asset: "Fiat Assets", current: Math.round(currentPortfolioAllocation.fiat), suggested: Math.round(baseAllocation.usEquities * normalizeFactor), change: Math.round(baseAllocation.usEquities * normalizeFactor) - Math.round(currentPortfolioAllocation.fiat), color: "bg-blue-500" },
+      { asset: "Crypto Assets", current: Math.round(currentPortfolioAllocation.crypto), suggested: Math.round(baseAllocation.crypto * normalizeFactor), change: Math.round(baseAllocation.crypto * normalizeFactor) - Math.round(currentPortfolioAllocation.crypto), color: "bg-red-500" },
       { asset: "Stablecoins", current: Math.round(currentPortfolioAllocation.stablecoin), suggested: Math.round(baseAllocation.intlEquities * normalizeFactor), change: Math.round(baseAllocation.intlEquities * normalizeFactor) - Math.round(currentPortfolioAllocation.stablecoin), color: "bg-green-500" },
       { asset: "Investment Products", current: Math.round(currentPortfolioAllocation.investment), suggested: Math.round(baseAllocation.bonds * normalizeFactor), change: Math.round(baseAllocation.bonds * normalizeFactor) - Math.round(currentPortfolioAllocation.investment), color: "bg-purple-500" },
-      { asset: "Crypto Assets", current: Math.round(currentPortfolioAllocation.crypto), suggested: Math.round(baseAllocation.crypto * normalizeFactor), change: Math.round(baseAllocation.crypto * normalizeFactor) - Math.round(currentPortfolioAllocation.crypto), color: "bg-yellow-500" },
       { asset: "Cash Reserve", current: Math.round(baseAllocation.cash * normalizeFactor), suggested: Math.round(baseAllocation.cash * normalizeFactor), change: 0, color: "bg-gray-500" },
     ];
   };

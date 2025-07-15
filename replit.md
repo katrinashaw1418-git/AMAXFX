@@ -390,3 +390,9 @@ Changelog:
   - **Navigation Links**: Added clickable links from investment products to investments page with "View All Investments" button
   - **Interactive Elements**: Investment categories and individual products are clickable and navigate to investments page
   - **Real-time Data**: All investment data reflects actual portfolio composition and updates automatically
+- July 15, 2025. Updated asset allocation color scheme for better visual distinction
+  - **Crypto Assets Color**: Changed from green to red (#EF4444) for crypto assets (BTC, ETH)
+  - **Stablecoins Color**: Changed from red to green (#10B981) for stablecoins (USDT, USDC)
+  - **Investment Breakdown Fix**: Fixed API to use actual `investedAmount` instead of `currentValue` for accurate capital invested display
+  - **Color Consistency**: Updated both Portfolio and AI Advisory pages to use consistent color scheme
+  - **Total Capital Invested**: Now correctly shows $1.77M actual capital invested vs $1.96M current value

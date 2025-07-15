@@ -866,11 +866,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Calculate category breakdown
       const categoryBreakdown = {
-        "Real Estate": { value: 0, products: [] },
-        "Corporate Credit": { value: 0, products: [] },
-        "Venture Capital": { value: 0, products: [] },
-        "Digital Assets": { value: 0, products: [] },
-        "Cash Deposits": { value: 0, products: [] }
+        "real_estate": { value: 0, products: [], displayName: "Real Estate" },
+        "corporate_credit": { value: 0, products: [], displayName: "Corporate Credit" },
+        "venture_capital": { value: 0, products: [], displayName: "Venture Capital" },
+        "digital_assets": { value: 0, products: [], displayName: "Digital Assets" },
+        "cash_deposit": { value: 0, products: [], displayName: "Cash Deposits" }
       };
       
       let totalInvested = 0;
@@ -878,7 +878,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const investment of investments) {
         const product = products.find(p => p.id === investment.productId);
         if (product) {
-          const value = parseFloat(investment.currentValue);
+          const value = parseFloat(investment.investedAmount); // Use invested amount, not current value
           totalInvested += value;
           
           if (categoryBreakdown[product.category]) {
@@ -893,8 +893,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Calculate percentages
-      const categoryData = Object.entries(categoryBreakdown).map(([name, data]) => ({
-        name,
+      const categoryData = Object.entries(categoryBreakdown).map(([key, data]) => ({
+        name: data.displayName,
         value: data.value,
         percentage: totalInvested > 0 ? (data.value / totalInvested * 100) : 0,
         products: data.products.map(p => ({
