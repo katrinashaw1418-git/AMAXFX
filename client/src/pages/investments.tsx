@@ -82,8 +82,6 @@ export default function Investments() {
       queryClient.invalidateQueries({ queryKey: ["/api/user-investments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/portfolio/allocation"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/investment-breakdown"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       setInvestModalOpen(false);
       setInvestmentAmount("");
@@ -155,8 +153,6 @@ export default function Investments() {
   // Currency selection and conversion logic
   const selectedWallet = wallets?.find(w => w.currency === selectedCurrency);
   const availableBalance = selectedWallet?.availableBalance ? parseFloat(selectedWallet.availableBalance) : 0;
-  
-
 
   // Get available currencies from wallets with proper symbols
   const currencySymbols: Record<string, string> = {
@@ -598,7 +594,6 @@ export default function Investments() {
                     Available to Invest: {currencySymbols[selectedCurrency] || selectedCurrency}{availableBalance.toLocaleString()}
                     {selectedCurrency !== 'USD' && ` (≈ US$${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()})`}
                   </p>
-
                   {selectedCurrency !== 'USD' && investmentAmount && (
                     <p className="text-xs text-orange-600">
                       Will convert {currencySymbols[selectedCurrency] || selectedCurrency}{parseFloat(investmentAmount).toLocaleString()} → US$${getUsdEquivalent(parseFloat(investmentAmount), selectedCurrency).toLocaleString()} at current exchange rate

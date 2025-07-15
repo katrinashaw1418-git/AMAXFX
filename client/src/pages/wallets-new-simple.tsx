@@ -14,7 +14,7 @@ import { useFxRate } from '@/hooks/use-fx-rates';
 import { useWallets } from '@/hooks/use-portfolio';
 
 export default function Wallets() {
-  const { data: wallets = [], isLoading, refetch: refetchWallets } = useWallets();
+  const { data: wallets = [], isLoading } = useWallets();
   const [selectedWallet, setSelectedWallet] = useState<any>(null);
   const [depositModalOpen, setDepositModalOpen] = useState(false);
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
@@ -84,26 +84,18 @@ export default function Wallets() {
   // Transfer mutation
   const transferMutation = useMutation({
     mutationFn: async (data: { fromCurrency: string; toCurrency: string; amount: number }) => {
-      const response = await apiRequest("POST", "/api/fx-exchange", data);
+      const response = await apiRequest("POST", "/api/wallets/transfer", data);
       if (!response.ok) {
         throw new Error('Transfer failed');
       }
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast({
         title: "Transfer Successful",
-        description: `${amount} ${selectedWallet?.currency} converted to ${toCurrency}. Received ${data.convertedAmount?.toLocaleString()} ${toCurrency}`,
+        description: `${amount} ${selectedWallet?.currency} converted to ${toCurrency}`,
       });
-      // Invalidate all relevant caches and force refresh
       queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/portfolio'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/portfolio/allocation'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/investment-breakdown'] });
-      // Force immediate refetch to bypass cache
-      setTimeout(() => {
-        refetchWallets();
-      }, 100);
       setTransferModalOpen(false);
       setAmount('');
       setToCurrency('');
