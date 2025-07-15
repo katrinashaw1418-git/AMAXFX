@@ -253,60 +253,6 @@ export default function Portfolio() {
 
       {/* Performance and Allocation */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Performance Chart */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Performance vs Benchmark</CardTitle>
-              <div className="flex items-center space-x-4 text-sm">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span>Your Portfolio</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-0.5 border-t-2 border-dashed border-blue-500"></div>
-                  <span>Benchmark</span>
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={historicalData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                  <XAxis dataKey="month" stroke="#6B7280" fontSize={12} />
-                  <YAxis stroke="#6B7280" fontSize={12} tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`} />
-                  <Tooltip 
-                    formatter={(value: number, name: string) => [
-                      `$${value.toLocaleString()}`,
-                      name === 'portfolio' ? 'Your Portfolio' : 'Benchmark'
-                    ]}
-                    contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="portfolio" 
-                    stroke="#ef4444" 
-                    strokeWidth={3}
-                    dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, fill: "#ef4444" }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="benchmark" 
-                    stroke="#3b82f6" 
-                    strokeWidth={3} 
-                    strokeDasharray="5 5"
-                    dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, fill: "#3b82f6" }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Asset Allocation */}
         <Card>
           <CardHeader>
@@ -444,6 +390,60 @@ export default function Portfolio() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Performance vs Benchmark */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Performance vs Benchmark</CardTitle>
+            <div className="flex items-center space-x-4 text-sm">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                <span>Your Portfolio</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-0.5 border-t-2 border-dashed border-blue-500"></div>
+                <span>Benchmark</span>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={historicalData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                <XAxis dataKey="month" stroke="#6B7280" fontSize={12} />
+                <YAxis stroke="#6B7280" fontSize={12} tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`} />
+                <Tooltip 
+                  formatter={(value: number, name: string) => [
+                    `$${value.toLocaleString()}`,
+                    name === 'portfolio' ? 'Your Portfolio' : 'Benchmark'
+                  ]}
+                  contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="portfolio" 
+                  stroke="#ef4444" 
+                  strokeWidth={3}
+                  dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, fill: "#ef4444" }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="benchmark" 
+                  stroke="#3b82f6" 
+                  strokeWidth={3} 
+                  strokeDasharray="5 5"
+                  dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, fill: "#3b82f6" }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Performance Metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
