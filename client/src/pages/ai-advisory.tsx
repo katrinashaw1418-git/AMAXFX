@@ -8,11 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { PieChart as PieChartIcon } from "lucide-react";
 import { useAiRecommendations } from "@/hooks/use-portfolio";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { apiRequest } from "@/lib/queryClient";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -27,7 +29,9 @@ import {
   CheckCircle,
   Clock,
   Eye,
-  EyeOff
+  EyeOff,
+  Phone,
+  MessageCircle
 } from "lucide-react";
 
 // Category-specific colors consistent with Portfolio page
@@ -48,6 +52,8 @@ export default function AiAdvisory() {
   const [investmentGoal, setInvestmentGoal] = useState("growth");
   const [selectedRecommendation, setSelectedRecommendation] = useState<any>(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [advisorModalOpen, setAdvisorModalOpen] = useState(false);
+  const [advisorMessage, setAdvisorMessage] = useState('');
   const { data: recommendations, isLoading } = useAiRecommendations();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -83,6 +89,32 @@ export default function AiAdvisory() {
     stablecoin: 0,
     investment: 0,
   };
+
+  // Advisor contact mutation
+  const advisorMutation = useMutation({
+    mutationFn: async (data: { message: string }) => {
+      const response = await apiRequest("POST", "/api/advisor/contact", data);
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Message Sent",
+        description: "Your wealth planner will contact you within 24 hours.",
+      });
+      setAdvisorModalOpen(false);
+      setAdvisorMessage('');
+    },
+    onError: () => {
+      toast({
+        title: "Message Failed",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    }
+  });
 
   // Generate new recommendations when risk profile changes
   const generateRecommendationsMutation = useMutation({
@@ -785,6 +817,102 @@ export default function AiAdvisory() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Contact Your Advisor */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Phone className="h-5 w-5" />
+            Contact Your Advisor
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Phone className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-blue-900">Sarah Chen</h4>
+                  <p className="text-sm text-blue-700">Senior Wealth Planner</p>
+                  <p className="text-sm text-blue-600 font-medium">+1 (416) 555-0123</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => window.open('tel:+14165550123')}
+                className="flex-1"
+              >
+                <Phone className="w-4 h-4 mr-2" />
+                Call Now
+              </Button>
+              <Button 
+                size="sm"
+                onClick={() => setAdvisorModalOpen(true)}
+                className="flex-1"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Send Message
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Advisor Contact Modal */}
+      <Dialog open={advisorModalOpen} onOpenChange={setAdvisorModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Contact Your Wealth Planner</DialogTitle>
+            <DialogDescription>
+              Send a message to Sarah Chen, your dedicated wealth planner
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <Phone className="w-4 h-4 text-gray-600" />
+                <span className="text-sm text-gray-700">Sarah Chen - Senior Wealth Planner</span>
+              </div>
+              <p className="text-sm text-gray-600 mt-1">+1 (416) 555-0123</p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="advisor-message">Your Message</Label>
+              <Textarea
+                id="advisor-message"
+                placeholder="Tell your wealth planner how they can help you..."
+                value={advisorMessage}
+                onChange={(e) => setAdvisorMessage(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+            </div>
+            
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setAdvisorModalOpen(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => advisorMutation.mutate({ message: advisorMessage })}
+                disabled={!advisorMessage.trim() || advisorMutation.isPending}
+                className="flex-1"
+              >
+                {advisorMutation.isPending ? "Sending..." : "Send Message"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Recommendation Details Modal */}
       <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>

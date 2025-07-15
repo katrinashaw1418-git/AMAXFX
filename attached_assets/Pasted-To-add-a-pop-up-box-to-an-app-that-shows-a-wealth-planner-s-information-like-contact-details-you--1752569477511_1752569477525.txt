@@ -1,0 +1,143 @@
+To add a pop-up box to an app that shows a wealth planner's information (like contact details), you can implement this feature using a few basic steps. The exact method will depend on the technology stack you are using, but I’ll give you a general idea that can be adapted for different platforms (like React, Flutter, or native apps).
+
+Here's a simple flow of what you're looking to do:
+
+Step 1: Create a Button to Open the Pop-up
+You’ll need a button (or clickable element) that the user can click to initiate the pop-up.
+
+html
+Copy
+Edit
+<button id="contact-wealth-planner" onClick="openPopup()">Contact Your Wealth Planner</button>
+Step 2: Create the Pop-up Box
+When the button is clicked, you will show the pop-up. The pop-up box will contain the wealth planner's info (such as a name, phone number, and any relevant dialogue).
+
+Here’s an example HTML and JavaScript for that pop-up:
+
+html
+Copy
+Edit
+<!-- The Pop-up Box -->
+<div id="popup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background-color:white; padding:20px; border:1px solid #ccc; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); width:300px; text-align:center;">
+    <h2>Contact Your Wealth Planner</h2>
+    <p>Wealth Planner: John Doe</p>
+    <p>Phone: +1 234 567 890</p>
+    <textarea placeholder="Message to Wealth Planner..." rows="4" style="width:100%;"></textarea><br><br>
+    <button onClick="closePopup()">Close</button>
+</div>
+
+<!-- Trigger Button -->
+<button id="contact-wealth-planner" onClick="openPopup()">Contact Your Wealth Planner</button>
+Step 3: Implement the JavaScript for Pop-up Logic
+You’ll need a JavaScript function to show and hide the pop-up when the button is clicked.
+
+javascript
+Copy
+Edit
+// Function to open the pop-up
+function openPopup() {
+    document.getElementById('popup').style.display = 'block';
+}
+
+// Function to close the pop-up
+function closePopup() {
+    document.getElementById('popup').style.display = 'none';
+}
+Step 4: Optional: Add Styles for a Better UI
+You might want to make the pop-up look more polished with some additional CSS styles.
+
+css
+Copy
+Edit
+/* Pop-up Box Styles */
+#popup {
+    display: none; /* Initially hidden */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border: 1px solid #ccc;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    width: 300px;
+    text-align: center;
+}
+
+#popup textarea {
+    width: 100%;
+    padding: 8px;
+    margin: 10px 0;
+}
+
+#popup button {
+    padding: 8px 15px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+#popup button:hover {
+    background-color: #45a049;
+}
+Step 5: Bonus (Mobile or App-Specific)
+If you're working with a mobile app or more specific frameworks (like React Native, Flutter, etc.), you would follow similar logic but would adapt the UI components according to the framework.
+
+For React Native (example):
+
+javascript
+Copy
+Edit
+import React, { useState } from 'react';
+import { Modal, Text, View, Button, TextInput, StyleSheet } from 'react-native';
+
+const WealthPlannerPopup = () => {
+  const [modalVisible, setModalVisible] = useState(false);
+
+  return (
+    <View style={styles.container}>
+      <Button title="Contact Your Wealth Planner" onPress={() => setModalVisible(true)} />
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalView}>
+          <Text style={styles.title}>Contact Your Wealth Planner</Text>
+          <Text>Wealth Planner: John Doe</Text>
+          <Text>Phone: +1 234 567 890</Text>
+          <TextInput
+            placeholder="Message to Wealth Planner..."
+            style={styles.textInput}
+            multiline
+          />
+          <Button title="Close" onPress={() => setModalVisible(false)} />
+        </View>
+      </Modal>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  modalView: {
+    marginTop: 100,
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  title: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
+  textInput: { width: 250, height: 100, borderColor: '#ccc', borderWidth: 1, marginBottom: 10, padding: 10 },
+});
+
+export default WealthPlannerPopup;
+Step 6: Testing the Pop-up
+Make sure to test the feature, check for responsiveness, and ensure the pop-up works well on both desktop and mobile devices.
+
