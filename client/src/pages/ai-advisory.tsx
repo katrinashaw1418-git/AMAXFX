@@ -157,35 +157,80 @@ export default function AiAdvisory() {
     }
   };
 
-  // Dynamic portfolio suggestions based on risk profile
+  // Dynamic portfolio suggestions based on risk profile, investment horizon, and goals
   const getSuggestedAllocation = () => {
     const risk = riskTolerance[0];
+    let baseAllocation;
     
+    // Base allocation by risk tolerance
     if (risk <= 2) { // Conservative
-      return [
-        { asset: "US Equities", current: 35, suggested: 20, change: -15, color: "bg-blue-500" },
-        { asset: "International Equities", current: 20, suggested: 15, change: -5, color: "bg-green-500" },
-        { asset: "Bonds", current: 25, suggested: 50, change: 25, color: "bg-purple-500" },
-        { asset: "Crypto", current: 15, suggested: 5, change: -10, color: "bg-yellow-500" },
-        { asset: "Cash", current: 5, suggested: 10, change: 5, color: "bg-gray-500" },
-      ];
+      baseAllocation = {
+        usEquities: 20,
+        intlEquities: 15,
+        bonds: 50,
+        crypto: 5,
+        cash: 10,
+      };
     } else if (risk <= 4) { // Moderate
-      return [
-        { asset: "US Equities", current: 35, suggested: 30, change: -5, color: "bg-blue-500" },
-        { asset: "International Equities", current: 20, suggested: 25, change: 5, color: "bg-green-500" },
-        { asset: "Bonds", current: 25, suggested: 30, change: 5, color: "bg-purple-500" },
-        { asset: "Crypto", current: 15, suggested: 10, change: -5, color: "bg-yellow-500" },
-        { asset: "Cash", current: 5, suggested: 5, change: 0, color: "bg-gray-500" },
-      ];
+      baseAllocation = {
+        usEquities: 30,
+        intlEquities: 25,
+        bonds: 30,
+        crypto: 10,
+        cash: 5,
+      };
     } else { // Aggressive
-      return [
-        { asset: "US Equities", current: 35, suggested: 40, change: 5, color: "bg-blue-500" },
-        { asset: "International Equities", current: 20, suggested: 25, change: 5, color: "bg-green-500" },
-        { asset: "Bonds", current: 25, suggested: 15, change: -10, color: "bg-purple-500" },
-        { asset: "Crypto", current: 15, suggested: 25, change: 10, color: "bg-yellow-500" },
-        { asset: "Cash", current: 5, suggested: 5, change: 0, color: "bg-gray-500" },
-      ];
+      baseAllocation = {
+        usEquities: 40,
+        intlEquities: 25,
+        bonds: 15,
+        crypto: 25,
+        cash: 5,
+      };
     }
+    
+    // Adjust based on investment horizon
+    if (investmentHorizon === "1-3") { // Short term - more conservative
+      baseAllocation.bonds += 10;
+      baseAllocation.cash += 5;
+      baseAllocation.crypto = Math.max(0, baseAllocation.crypto - 10);
+      baseAllocation.usEquities = Math.max(0, baseAllocation.usEquities - 5);
+    } else if (investmentHorizon === "10+") { // Long term - more aggressive
+      baseAllocation.usEquities += 10;
+      baseAllocation.crypto += 5;
+      baseAllocation.bonds = Math.max(0, baseAllocation.bonds - 10);
+      baseAllocation.cash = Math.max(0, baseAllocation.cash - 5);
+    }
+    
+    // Adjust based on investment goal
+    if (investmentGoal === "preservation") {
+      baseAllocation.bonds += 15;
+      baseAllocation.cash += 10;
+      baseAllocation.crypto = Math.max(0, baseAllocation.crypto - 15);
+      baseAllocation.usEquities = Math.max(0, baseAllocation.usEquities - 10);
+    } else if (investmentGoal === "income") {
+      baseAllocation.bonds += 10;
+      baseAllocation.usEquities += 5; // Dividend stocks
+      baseAllocation.crypto = Math.max(0, baseAllocation.crypto - 10);
+      baseAllocation.cash = Math.max(0, baseAllocation.cash - 5);
+    } else if (investmentGoal === "aggressive") {
+      baseAllocation.crypto += 10;
+      baseAllocation.usEquities += 10;
+      baseAllocation.bonds = Math.max(0, baseAllocation.bonds - 15);
+      baseAllocation.cash = Math.max(0, baseAllocation.cash - 5);
+    }
+    
+    // Normalize to 100%
+    const total = Object.values(baseAllocation).reduce((sum, val) => sum + val, 0);
+    const normalizeFactor = 100 / total;
+    
+    return [
+      { asset: "US Equities", current: 35, suggested: Math.round(baseAllocation.usEquities * normalizeFactor), change: Math.round(baseAllocation.usEquities * normalizeFactor) - 35, color: "bg-blue-500" },
+      { asset: "International Equities", current: 20, suggested: Math.round(baseAllocation.intlEquities * normalizeFactor), change: Math.round(baseAllocation.intlEquities * normalizeFactor) - 20, color: "bg-green-500" },
+      { asset: "Bonds", current: 25, suggested: Math.round(baseAllocation.bonds * normalizeFactor), change: Math.round(baseAllocation.bonds * normalizeFactor) - 25, color: "bg-purple-500" },
+      { asset: "Crypto", current: 15, suggested: Math.round(baseAllocation.crypto * normalizeFactor), change: Math.round(baseAllocation.crypto * normalizeFactor) - 15, color: "bg-yellow-500" },
+      { asset: "Cash", current: 5, suggested: Math.round(baseAllocation.cash * normalizeFactor), change: Math.round(baseAllocation.cash * normalizeFactor) - 5, color: "bg-gray-500" },
+    ];
   };
 
   const suggestedAllocation = getSuggestedAllocation();
@@ -193,11 +238,31 @@ export default function AiAdvisory() {
   const riskProfile = {
     score: riskTolerance[0] * 20,
     level: riskTolerance[0] <= 2 ? "Conservative" : riskTolerance[0] <= 4 ? "Moderate" : "Aggressive",
-    description: riskTolerance[0] <= 2 
-      ? "You prefer stable returns with minimal risk of loss"
-      : riskTolerance[0] <= 4 
-      ? "You're comfortable with some volatility for potentially higher returns"
-      : "You're willing to accept high volatility for maximum growth potential"
+    description: (() => {
+      const baseRisk = riskTolerance[0] <= 2 
+        ? "You prefer stable returns with minimal risk of loss"
+        : riskTolerance[0] <= 4 
+        ? "You're comfortable with some volatility for potentially higher returns"
+        : "You're willing to accept high volatility for maximum growth potential";
+      
+      const goalText = investmentGoal === "preservation" 
+        ? ", focusing on capital preservation"
+        : investmentGoal === "income" 
+        ? ", prioritizing income generation"
+        : investmentGoal === "growth" 
+        ? ", targeting long-term growth"
+        : ", pursuing aggressive growth";
+      
+      const horizonText = investmentHorizon === "1-3" 
+        ? " over 1-3 years"
+        : investmentHorizon === "3-5" 
+        ? " over 3-5 years"
+        : investmentHorizon === "5-10" 
+        ? " over 5-10 years"
+        : " over 10+ years";
+      
+      return baseRisk + goalText + horizonText + ".";
+    })(),
   };
 
   if (isLoading) {

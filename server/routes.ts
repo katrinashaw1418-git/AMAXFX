@@ -238,13 +238,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Investment goal-based recommendations
-      if (investmentGoal === "income") {
+      if (investmentGoal === "preservation") {
         recommendations.push({
           id: id++,
           userId,
           type: "opportunity",
-          title: "Focus on Income-Generating Assets",
-          description: "Consider dividend-paying stocks, REITs, and high-yield bonds to meet your income generation goals.",
+          title: "Capital Preservation Strategy",
+          description: "Focus on high-grade bonds, treasury securities, and stable value funds to preserve capital while earning modest returns.",
+          severity: "info",
+          isRead: false,
+          createdAt: new Date(),
+        });
+        
+        if (currentAllocation.crypto > 5) {
+          recommendations.push({
+            id: id++,
+            userId,
+            type: "risk_warning",
+            title: "High Crypto Risk for Preservation Goal",
+            description: `Your crypto allocation (${currentAllocation.crypto.toFixed(1)}%) is too high for capital preservation. Consider reducing to under 5%.`,
+            severity: "warning",
+            isRead: false,
+            createdAt: new Date(),
+          });
+        }
+      } else if (investmentGoal === "income") {
+        recommendations.push({
+          id: id++,
+          userId,
+          type: "opportunity",
+          title: "Income Generation Focus",
+          description: "Prioritize dividend-paying stocks, REITs, corporate bonds, and high-yield savings to generate steady income.",
+          severity: "info",
+          isRead: false,
+          createdAt: new Date(),
+        });
+        
+        recommendations.push({
+          id: id++,
+          userId,
+          type: "opportunity",
+          title: "Consider Dividend Aristocrats",
+          description: "S&P 500 Dividend Aristocrats have increased dividends for 25+ consecutive years, providing reliable income.",
           severity: "info",
           isRead: false,
           createdAt: new Date(),
@@ -254,12 +289,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: id++,
           userId,
           type: "opportunity",
-          title: "Growth Investment Opportunities",
-          description: "Technology sector and emerging markets offer strong growth potential aligned with your investment goals.",
+          title: "Growth Investment Strategy",
+          description: "Focus on technology, healthcare, and emerging markets for long-term capital appreciation potential.",
           severity: "info",
           isRead: false,
           createdAt: new Date(),
         });
+      } else if (investmentGoal === "aggressive") {
+        recommendations.push({
+          id: id++,
+          userId,
+          type: "opportunity",
+          title: "Aggressive Growth Opportunities",
+          description: "Consider small-cap growth stocks, venture capital, and higher crypto allocations for maximum growth potential.",
+          severity: "info",
+          isRead: false,
+          createdAt: new Date(),
+        });
+        
+        if (currentAllocation.crypto < 20) {
+          recommendations.push({
+            id: id++,
+            userId,
+            type: "opportunity",
+            title: "Increase Crypto Allocation",
+            description: `Your crypto allocation (${currentAllocation.crypto.toFixed(1)}%) is low for aggressive growth. Consider increasing to 20-30%.`,
+            severity: "info",
+            isRead: false,
+            createdAt: new Date(),
+          });
+        }
       }
       
       // Time horizon recommendations
@@ -268,12 +327,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: id++,
           userId,
           type: "risk_warning",
-          title: "Short-Term Horizon Risk",
-          description: "Your short investment horizon suggests reducing volatility. Consider higher cash and bond allocations.",
+          title: "Short-Term Horizon Adjustment",
+          description: "With a 1-3 year horizon, prioritize liquidity and stability. Increase cash (15-20%) and high-grade bonds (50-60%).",
           severity: "warning",
           isRead: false,
           createdAt: new Date(),
         });
+        
+        if (currentAllocation.crypto > 10) {
+          recommendations.push({
+            id: id++,
+            userId,
+            type: "risk_warning",
+            title: "Crypto Risk for Short Timeline",
+            description: `Your crypto allocation (${currentAllocation.crypto.toFixed(1)}%) is high for short-term goals. Consider reducing to 5-10%.`,
+            severity: "warning",
+            isRead: false,
+            createdAt: new Date(),
+          });
+        }
+      } else if (investmentHorizon === "3-5") {
+        recommendations.push({
+          id: id++,
+          userId,
+          type: "opportunity",
+          title: "Medium-Term Balance",
+          description: "Your 3-5 year horizon allows for moderate growth investments while maintaining some stability through bonds and cash.",
+          severity: "info",
+          isRead: false,
+          createdAt: new Date(),
+        });
+      } else if (investmentHorizon === "5-10") {
+        recommendations.push({
+          id: id++,
+          userId,
+          type: "opportunity",
+          title: "Long-Term Growth Focus",
+          description: "Your 5-10 year horizon supports higher equity allocation and moderate alternative investments for compound growth.",
+          severity: "info",
+          isRead: false,
+          createdAt: new Date(),
+        });
+      } else if (investmentHorizon === "10+") {
+        recommendations.push({
+          id: id++,
+          userId,
+          type: "opportunity",
+          title: "Maximum Growth Potential",
+          description: "Your 10+ year horizon allows for aggressive growth strategies including higher equity and alternative asset allocations.",
+          severity: "info",
+          isRead: false,
+          createdAt: new Date(),
+        });
+        
+        if (currentAllocation.crypto < 15) {
+          recommendations.push({
+            id: id++,
+            userId,
+            type: "opportunity",
+            title: "Long-Term Crypto Opportunity",
+            description: `Your long timeline allows for higher crypto exposure (${currentAllocation.crypto.toFixed(1)}% current). Consider 15-25% for growth.`,
+            severity: "info",
+            isRead: false,
+            createdAt: new Date(),
+          });
+        }
       }
       
       // Clear existing recommendations and set new ones
