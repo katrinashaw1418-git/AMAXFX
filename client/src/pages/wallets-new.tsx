@@ -1429,6 +1429,11 @@ export default function Wallets() {
           <VoiceSettings />
         </DialogContent>
       </Dialog>
+
+      {/* VirgoCX Deposits Detected Section */}
+      <div className="mt-8">
+        <VirgoCXDepositDetector userId={1} />
+      </div>
     </div>
   );
 }

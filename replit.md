@@ -368,3 +368,9 @@ Changelog:
   - **Visual Enhancements**: Increased line thickness to 3px, added 4px radius dots with 6px hover effects
   - **Legend Addition**: Added clear legend showing red dots for "Your Portfolio" and blue dashed line for "Benchmark"
   - **Consistent Styling**: Applied same dot visualization to both dashboard and portfolio page charts
+- July 15, 2025. Added VirgoCX Deposits Detected section to wallets page
+  - **Bottom Section Integration**: Added VirgoCX deposit detector at bottom of wallets page as requested
+  - **Real-time Monitoring**: Shows detected deposits from VirgoCX platform with status updates
+  - **Transaction Tracking**: Displays deposit amounts, transaction hashes, and confirmation status
+  - **Auto-refresh**: Updates every 10 seconds to monitor for new deposits
+  - **Status Indicators**: Visual badges for pending, confirmed, and failed deposits
