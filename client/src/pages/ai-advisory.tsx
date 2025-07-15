@@ -31,7 +31,8 @@ import {
   Eye,
   EyeOff,
   Phone,
-  MessageCircle
+  MessageCircle,
+  X
 } from "lucide-react";
 
 // Category-specific colors consistent with Portfolio page
@@ -54,6 +55,7 @@ export default function AiAdvisory() {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [advisorModalOpen, setAdvisorModalOpen] = useState(false);
   const [advisorMessage, setAdvisorMessage] = useState('');
+  const [showAdvisorBox, setShowAdvisorBox] = useState(true);
   const { data: recommendations, isLoading } = useAiRecommendations();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -412,13 +414,22 @@ export default function AiAdvisory() {
       </div>
 
       {/* Floating Contact Your Advisor Box */}
-      <div className="fixed top-4 right-4 z-50">
-        <Card className="w-72 shadow-2xl border-0 bg-white/95 backdrop-blur-lg">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">
-              Contact Your Advisor
-            </CardTitle>
-          </CardHeader>
+      {showAdvisorBox && (
+        <div className="fixed top-4 right-4 z-50">
+          <Card className="w-72 shadow-2xl border-0 bg-white/95 backdrop-blur-lg">
+            <CardHeader className="pb-3 relative">
+              <CardTitle className="text-lg">
+                Contact Your Advisor
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAdvisorBox(false)}
+                className="absolute top-2 right-2 h-6 w-6 p-0 hover:bg-gray-100"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </CardHeader>
           <CardContent>
             <div className="space-y-3">
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-100">
@@ -454,7 +465,8 @@ export default function AiAdvisory() {
             </div>
           </CardContent>
         </Card>
-      </div>
+        </div>
+      )}
 
       {/* AI Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

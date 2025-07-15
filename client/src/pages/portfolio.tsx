@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { usePortfolio, useWallets, useUserInvestments, usePortfolioAllocation } from "@/hooks/use-portfolio";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line } from 'recharts';
-import { TrendingUp, TrendingDown, DollarSign, Bitcoin, PieChart as PieChartIcon, Target, RefreshCw, Phone, MessageCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Bitcoin, PieChart as PieChartIcon, Target, RefreshCw, Phone, MessageCircle, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -32,6 +32,7 @@ const getCategoryColor = (categoryName: string) => {
 export default function Portfolio() {
   const [advisorModalOpen, setAdvisorModalOpen] = useState(false);
   const [advisorMessage, setAdvisorMessage] = useState('');
+  const [showAdvisorBox, setShowAdvisorBox] = useState(true);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -192,13 +193,22 @@ export default function Portfolio() {
   return (
     <div className="p-6 space-y-6">
       {/* Floating Contact Your Advisor Box */}
-      <div className="fixed top-4 right-4 z-50">
-        <Card className="w-72 shadow-2xl border-0 bg-white/95 backdrop-blur-lg">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">
-              Contact Your Advisor
-            </CardTitle>
-          </CardHeader>
+      {showAdvisorBox && (
+        <div className="fixed top-4 right-4 z-50">
+          <Card className="w-72 shadow-2xl border-0 bg-white/95 backdrop-blur-lg">
+            <CardHeader className="pb-3 relative">
+              <CardTitle className="text-lg">
+                Contact Your Advisor
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAdvisorBox(false)}
+                className="absolute top-2 right-2 h-6 w-6 p-0 hover:bg-gray-100"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </CardHeader>
           <CardContent>
             <div className="space-y-3">
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-100">
@@ -234,7 +244,8 @@ export default function Portfolio() {
             </div>
           </CardContent>
         </Card>
-      </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
         <div>
