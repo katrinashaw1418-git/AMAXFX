@@ -4,13 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useWallets } from "@/hooks/use-portfolio";
-import { TrendingUp, Building, CreditCard, Rocket, Bitcoin, DollarSign, Clock, Shield, Filter, X, ChevronDown } from "lucide-react";
+import { TrendingUp, Building, CreditCard, Rocket, Bitcoin, DollarSign, Clock, Shield, Filter, X, ChevronDown, Phone, MessageCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const categoryIcons = {
@@ -50,6 +52,8 @@ export default function Investments() {
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [selectedCurrency, setSelectedCurrency] = useState("USD");
   const [investModalOpen, setInvestModalOpen] = useState(false);
+  const [advisorModalOpen, setAdvisorModalOpen] = useState(false);
+  const [advisorMessage, setAdvisorMessage] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -96,6 +100,32 @@ export default function Investments() {
         variant: "destructive",
       });
     },
+  });
+
+  // Advisor contact mutation
+  const advisorMutation = useMutation({
+    mutationFn: async (data: { message: string }) => {
+      const response = await apiRequest("POST", "/api/advisor/contact", data);
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Message Sent",
+        description: "Your wealth planner will contact you within 24 hours.",
+      });
+      setAdvisorModalOpen(false);
+      setAdvisorMessage('');
+    },
+    onError: () => {
+      toast({
+        title: "Message Failed",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    }
   });
 
   const handleInvest = () => {
@@ -246,6 +276,51 @@ export default function Investments() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Floating Contact Your Advisor Box */}
+      <div className="fixed top-4 right-4 z-50">
+        <Card className="w-72 shadow-2xl border-0 bg-white/95 backdrop-blur-lg">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">
+              Contact Your Advisor
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-100">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                    <Phone className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-blue-600 font-medium">+61 3 9654 1000</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex space-x-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.open('tel:+61396541000')}
+                  className="flex-1 text-xs hover:bg-blue-50 border-blue-200"
+                >
+                  <Phone className="w-3 h-3 mr-1" />
+                  Call
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={() => setAdvisorModalOpen(true)}
+                  className="flex-1 text-xs bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+                >
+                  <MessageCircle className="w-3 h-3 mr-1" />
+                  Message
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Investment Products</h1>
@@ -637,6 +712,52 @@ export default function Investments() {
             >
               {investMutation.isPending ? "Processing..." : "Confirm Investment"}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Advisor Contact Modal */}
+      <Dialog open={advisorModalOpen} onOpenChange={setAdvisorModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Contact Wealth Advisory Team</DialogTitle>
+            <DialogDescription>
+              Send a message to our wealth advisory team. We'll respond within 24 hours.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-700">
+                <strong>Phone:</strong> +61 3 9654 1000
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="advisor-message">Your Message</Label>
+              <Textarea
+                id="advisor-message"
+                placeholder="How can our wealth advisory team help you?"
+                value={advisorMessage}
+                onChange={(e) => setAdvisorMessage(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+            </div>
+            
+            <div className="flex justify-end space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setAdvisorModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => advisorMutation.mutate({ message: advisorMessage })}
+                disabled={advisorMutation.isPending || !advisorMessage.trim()}
+              >
+                {advisorMutation.isPending ? "Sending..." : "Send Message"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
