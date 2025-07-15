@@ -600,6 +600,9 @@ export default function Investments() {
                     Available to Invest: {currencySymbols[selectedCurrency] || selectedCurrency}{availableBalance.toLocaleString()}
                     {selectedCurrency !== 'USD' && ` (≈ US$${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()})`}
                   </p>
+                  <p className="text-xs text-gray-500">
+                    Debug: Raw balance: {selectedWallet?.availableBalance || 'N/A'}, Parsed: {availableBalance}
+                  </p>
                   {selectedCurrency !== 'USD' && investmentAmount && (
                     <p className="text-xs text-orange-600">
                       Will convert {currencySymbols[selectedCurrency] || selectedCurrency}{parseFloat(investmentAmount).toLocaleString()} → US$${getUsdEquivalent(parseFloat(investmentAmount), selectedCurrency).toLocaleString()} at current exchange rate
