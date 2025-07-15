@@ -14,6 +14,7 @@ export function useWallets() {
     queryKey: ["/api/wallets"],
     queryFn: api.getWallets,
     refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
+    staleTime: 0, // Always consider data stale to force fresh requests
   });
 }
 
