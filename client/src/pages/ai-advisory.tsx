@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useAiRecommendations } from "@/hooks/use-portfolio";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +37,28 @@ export default function AiAdvisory() {
   const { data: recommendations, isLoading } = useAiRecommendations();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  // Fetch current portfolio allocation
+  const { data: portfolioAllocation, isLoading: allocationLoading } = useQuery({
+    queryKey: ["/api/portfolio/allocation"],
+    queryFn: async () => {
+      const response = await fetch("/api/portfolio/allocation");
+      if (!response.ok) throw new Error("Failed to fetch portfolio allocation");
+      return response.json();
+    },
+  });
+
+  const currentPortfolioAllocation = portfolioAllocation ? {
+    fiat: portfolioAllocation.fiat.percentage,
+    crypto: portfolioAllocation.crypto.percentage,
+    stablecoin: portfolioAllocation.stablecoin.percentage,
+    investment: portfolioAllocation.investment.percentage,
+  } : {
+    fiat: 0,
+    crypto: 0,
+    stablecoin: 0,
+    investment: 0,
+  };
 
   // Generate new recommendations when risk profile changes
   const generateRecommendationsMutation = useMutation({
@@ -225,11 +247,11 @@ export default function AiAdvisory() {
     const normalizeFactor = 100 / total;
     
     return [
-      { asset: "US Equities", current: 35, suggested: Math.round(baseAllocation.usEquities * normalizeFactor), change: Math.round(baseAllocation.usEquities * normalizeFactor) - 35, color: "bg-blue-500" },
-      { asset: "International Equities", current: 20, suggested: Math.round(baseAllocation.intlEquities * normalizeFactor), change: Math.round(baseAllocation.intlEquities * normalizeFactor) - 20, color: "bg-green-500" },
-      { asset: "Bonds", current: 25, suggested: Math.round(baseAllocation.bonds * normalizeFactor), change: Math.round(baseAllocation.bonds * normalizeFactor) - 25, color: "bg-purple-500" },
-      { asset: "Crypto", current: 15, suggested: Math.round(baseAllocation.crypto * normalizeFactor), change: Math.round(baseAllocation.crypto * normalizeFactor) - 15, color: "bg-yellow-500" },
-      { asset: "Cash", current: 5, suggested: Math.round(baseAllocation.cash * normalizeFactor), change: Math.round(baseAllocation.cash * normalizeFactor) - 5, color: "bg-gray-500" },
+      { asset: "Fiat Assets", current: Math.round(currentPortfolioAllocation.fiat), suggested: Math.round(baseAllocation.usEquities * normalizeFactor), change: Math.round(baseAllocation.usEquities * normalizeFactor) - Math.round(currentPortfolioAllocation.fiat), color: "bg-blue-500" },
+      { asset: "Stablecoins", current: Math.round(currentPortfolioAllocation.stablecoin), suggested: Math.round(baseAllocation.intlEquities * normalizeFactor), change: Math.round(baseAllocation.intlEquities * normalizeFactor) - Math.round(currentPortfolioAllocation.stablecoin), color: "bg-green-500" },
+      { asset: "Investment Products", current: Math.round(currentPortfolioAllocation.investment), suggested: Math.round(baseAllocation.bonds * normalizeFactor), change: Math.round(baseAllocation.bonds * normalizeFactor) - Math.round(currentPortfolioAllocation.investment), color: "bg-purple-500" },
+      { asset: "Crypto Assets", current: Math.round(currentPortfolioAllocation.crypto), suggested: Math.round(baseAllocation.crypto * normalizeFactor), change: Math.round(baseAllocation.crypto * normalizeFactor) - Math.round(currentPortfolioAllocation.crypto), color: "bg-yellow-500" },
+      { asset: "Cash Reserve", current: Math.round(baseAllocation.cash * normalizeFactor), suggested: Math.round(baseAllocation.cash * normalizeFactor), change: 0, color: "bg-gray-500" },
     ];
   };
 
@@ -265,7 +287,7 @@ export default function AiAdvisory() {
     })(),
   };
 
-  if (isLoading) {
+  if (isLoading || allocationLoading) {
     return (
       <div className="p-6 space-y-6">
         <div>
