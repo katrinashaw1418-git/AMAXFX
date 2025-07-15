@@ -376,7 +376,7 @@ export default function Portfolio() {
                       dataKey="value"
                     >
                       {(investmentBreakdown?.categories || []).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][index % 5]} />
+                        <Cell key={`cell-${index}`} fill={getCategoryColor(entry.name)} />
                       ))}
                     </Pie>
                     <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, 'Value']} />
