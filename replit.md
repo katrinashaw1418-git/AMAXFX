@@ -379,3 +379,7 @@ Changelog:
   - **Dashboard Cleanup**: Removed QuickActions component from wealth dashboard
   - **Simplified Layout**: Right column now contains only AI Advisory and Currency Balances
   - **Improved Focus**: Streamlined dashboard experience with essential components only
+- July 15, 2025. Fixed cryptocurrency trading buttons to show correct VirgoCX branding
+  - **Trading Button Fix**: Changed "Buy/Sell on AMAX" back to "Buy/Sell on VirgoCX" in crypto trading interface
+  - **Consistent Branding**: Maintained selective branding policy - AMAX for main platform, VirgoCX for crypto trading
+  - **User Experience**: Corrected button labels to match intended platform branding for cryptocurrency transactions

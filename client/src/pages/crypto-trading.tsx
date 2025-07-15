@@ -457,7 +457,7 @@ export default function CryptoTrading() {
                     onClick={() => handleTradeOnVirgoCX(selectedCoin?.symbol || 'BTC')}
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Buy {selectedCoin?.symbol} on AMAX
+                    Buy {selectedCoin?.symbol} on VirgoCX
                   </Button>
                 </TabsContent>
 
@@ -527,7 +527,7 @@ export default function CryptoTrading() {
                     onClick={() => handleTradeOnVirgoCX(selectedCoin?.symbol || 'BTC')}
                   >
                     <Minus className="w-4 h-4 mr-2" />
-                    Sell {selectedCoin?.symbol} on AMAX
+                    Sell {selectedCoin?.symbol} on VirgoCX
                   </Button>
                 </TabsContent>
               </Tabs>
