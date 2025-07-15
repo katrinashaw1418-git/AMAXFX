@@ -425,9 +425,7 @@ export default function AiAdvisory() {
                       <Phone className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-blue-900 text-sm">Sarah Chen</h4>
-                      <p className="text-xs text-blue-700">Senior Wealth Planner</p>
-                      <p className="text-xs text-blue-600 font-medium">+1 (416) 555-0123</p>
+                      <p className="text-xs text-blue-600 font-medium">+61 3 9654 1000</p>
                     </div>
                   </div>
                 </div>
@@ -436,7 +434,7 @@ export default function AiAdvisory() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => window.open('tel:+14165550123')}
+                    onClick={() => window.open('tel:+61396541000')}
                     className="flex-1 text-xs hover:bg-blue-50 border-blue-200"
                   >
                     <Phone className="w-3 h-3 mr-1" />
@@ -915,16 +913,16 @@ export default function AiAdvisory() {
           <DialogHeader>
             <DialogTitle>Contact Your Wealth Planner</DialogTitle>
             <DialogDescription>
-              Send a message to Sarah Chen, your dedicated wealth planner
+              Send a message to our wealth advisory team
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="bg-gray-50 p-3 rounded-lg">
               <div className="flex items-center space-x-2">
                 <Phone className="w-4 h-4 text-gray-600" />
-                <span className="text-sm text-gray-700">Sarah Chen - Senior Wealth Planner</span>
+                <span className="text-sm text-gray-700">Wealth Advisory Team</span>
               </div>
-              <p className="text-sm text-gray-600 mt-1">+1 (416) 555-0123</p>
+              <p className="text-sm text-gray-600 mt-1">+61 3 9654 1000</p>
             </div>
             
             <div className="space-y-2">
