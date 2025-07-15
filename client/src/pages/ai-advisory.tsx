@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { PieChart as PieChartIcon } from "lucide-react";
 import { useAiRecommendations } from "@/hooks/use-portfolio";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -28,6 +29,18 @@ import {
   Eye,
   EyeOff
 } from "lucide-react";
+
+// Category-specific colors consistent with Portfolio page
+const getCategoryColor = (categoryName: string) => {
+  const colorMap: { [key: string]: string } = {
+    'Real Estate': '#3B82F6',     // Blue
+    'Corporate Credit': '#6B7280',  // Gray-500
+    'Venture Capital': '#8B5CF6',  // Purple
+    'Digital Assets': '#EF4444',   // Red
+    'Cash Deposits': '#F59E0B'     // Orange
+  };
+  return colorMap[categoryName] || '#6B7280'; // Default gray
+};
 
 export default function AiAdvisory() {
   const [riskTolerance, setRiskTolerance] = useState([3]);
@@ -685,111 +698,90 @@ export default function AiAdvisory() {
       {/* Investment Products Breakdown */}
       <Card>
         <CardHeader>
-          <CardTitle>Investment Products Allocation</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <PieChartIcon className="h-5 w-5" />
+            Investment Products
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Pie Chart */}
-            <div className="flex items-center justify-center">
-              <div className="relative w-64 h-64">
-                {/* SVG Pie Chart */}
-                <svg width="256" height="256" viewBox="0 0 256 256" className="transform -rotate-90">
-                  {(() => {
-                    const investmentCategories = investmentBreakdown?.categories || [
-                      { name: "Real Estate", value: 545000, percentage: 33.3, color: "#3B82F6" },
-                      { name: "Corporate Credit", value: 327000, percentage: 20.0, color: "#10B981" },
-                      { name: "Venture Capital", value: 825000, percentage: 50.4, color: "#F59E0B" },
-                    ];
-                    
-                    const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
-                    const categoriesWithColors = investmentCategories.map((cat, index) => ({
-                      ...cat,
-                      color: colors[index % colors.length]
-                    }));
-                    
-                    const total = categoriesWithColors.reduce((sum, cat) => sum + cat.percentage, 0);
-                    let currentAngle = 0;
-                    const radius = 100;
-                    const centerX = 128;
-                    const centerY = 128;
-                    
-                    return categoriesWithColors.map((category, index) => {
-                      const percentage = (category.percentage / total);
-                      const angleInRadians = percentage * 2 * Math.PI;
-                      const startX = centerX + radius * Math.cos(currentAngle);
-                      const startY = centerY + radius * Math.sin(currentAngle);
-                      const endX = centerX + radius * Math.cos(currentAngle + angleInRadians);
-                      const endY = centerY + radius * Math.sin(currentAngle + angleInRadians);
-                      
-                      const largeArcFlag = angleInRadians > Math.PI ? 1 : 0;
-                      const pathData = [
-                        `M ${centerX} ${centerY}`,
-                        `L ${startX} ${startY}`,
-                        `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`,
-                        'Z'
-                      ].join(' ');
-                      
-                      currentAngle += angleInRadians;
-                      
-                      return (
-                        <path
-                          key={index}
-                          d={pathData}
-                          fill={category.color}
-                          stroke="white"
-                          strokeWidth="2"
-                        />
-                      );
-                    });
-                  })()}
-                </svg>
-                
-                {/* Center label */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">${investmentBreakdown ? (investmentBreakdown.totalInvested / 1000000).toFixed(1) : '1.8'}M</div>
-                    <div className="text-sm text-gray-500">Total Invested</div>
+          <div className="flex items-center space-x-6">
+            <div className="h-64 w-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={investmentBreakdown?.categories || []}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {(investmentBreakdown?.categories || []).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={getCategoryColor(entry.name)} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, 'Value']} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex-1 space-y-3">
+              {(investmentBreakdown?.categories || []).map((item, index) => (
+                <div 
+                  key={item.name} 
+                  className="flex items-center justify-between hover:bg-gray-50 p-2 rounded-lg cursor-pointer transition-colors"
+                  onClick={() => window.location.href = '/investments'}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getCategoryColor(item.name) }}></div>
+                    <span className="font-medium">{item.name}</span>
+                    <Badge variant="outline">{item.products.length} products</Badge>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold">{item.percentage.toFixed(1)}%</p>
+                    <p className="text-sm text-gray-600">${item.value.toLocaleString()}</p>
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
-            
-            {/* Legend and Details */}
-            <div className="space-y-3">
-              {(investmentBreakdown?.categories || [
-                { name: "Real Estate", value: 545000, percentage: 33.3, color: "#3B82F6" },
-                { name: "Corporate Credit", value: 327000, percentage: 20.0, color: "#10B981" },
-                { name: "Venture Capital", value: 825000, percentage: 50.4, color: "#F59E0B" },
-              ]).map((category, index) => {
-                const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
-                const descriptions = {
-                  "Real Estate": "Equity & Credit Funds",
-                  "Corporate Credit": "Cash Flow & Security-Based",
-                  "Venture Capital": "Growth & Hybrid Capital",
-                  "Digital Assets": "Crypto & Web3 Innovation",
-                  "Cash Deposits": "High-Yield & Money Market"
-                };
-                
-                return (
-                  <div key={category.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div 
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: colors[index % colors.length] }}
-                      ></div>
-                      <div>
-                        <div className="font-medium">{category.name}</div>
-                        <div className="text-xs text-gray-500">{descriptions[category.name] || "Investment Fund"}</div>
+          </div>
+          
+          {/* Individual Products */}
+          <div className="mt-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold text-lg mb-3">Individual Investment Products</h4>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => window.location.href = '/investments'}
+                className="text-sm"
+              >
+                View All Investments
+              </Button>
+            </div>
+            {(investmentBreakdown?.categories || []).map((category) => (
+              <div key={category.name} className="space-y-2">
+                <h5 className="font-medium text-sm text-gray-700 uppercase tracking-wide">{category.name}</h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {category.products.map((product, idx) => (
+                    <div 
+                      key={idx} 
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
+                      onClick={() => window.location.href = '/investments'}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getCategoryColor(category.name) }}></div>
+                        <span className="text-sm font-medium">{product.name}</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-semibold">${(product.value / 1000).toFixed(0)}K</div>
+                        <div className="text-xs text-gray-500">{product.percentage.toFixed(1)}%</div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-semibold">${(category.value / 1000).toFixed(0)}K</div>
-                      <div className="text-xs text-gray-500">{category.percentage.toFixed(1)}%</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
