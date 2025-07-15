@@ -362,3 +362,9 @@ Changelog:
   - **JavaScript Fixes**: Resolved all constant name conflicts (VIRGOCX_CRYPTOCURRENCIES → AMAX_CRYPTOCURRENCIES)
   - **Crypto Trading Page**: Reverted crypto trading page back to VirgoCX branding as requested
   - **Selective Branding**: AMAX branding for main platform, VirgoCX branding specifically for crypto trading section
+- July 15, 2025. Enhanced portfolio performance charts with connected dot visualization
+  - **Performance vs Benchmark Chart**: Added visible dots connecting data points on both portfolio and benchmark lines
+  - **Color Coding**: Portfolio performance shown in red, benchmark in blue for clear differentiation
+  - **Visual Enhancements**: Increased line thickness to 3px, added 4px radius dots with 6px hover effects
+  - **Legend Addition**: Added clear legend showing red dots for "Your Portfolio" and blue dashed line for "Benchmark"
+  - **Consistent Styling**: Applied same dot visualization to both dashboard and portfolio page charts

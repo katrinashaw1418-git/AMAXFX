@@ -212,7 +212,19 @@ export default function Portfolio() {
         {/* Performance Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Performance vs Benchmark</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Performance vs Benchmark</CardTitle>
+              <div className="flex items-center space-x-4 text-sm">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span>Your Portfolio</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-6 h-0.5 border-t-2 border-dashed border-blue-500"></div>
+                  <span>Benchmark</span>
+                </div>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-64">
@@ -231,19 +243,19 @@ export default function Portfolio() {
                   <Line 
                     type="monotone" 
                     dataKey="portfolio" 
-                    stroke="hsl(var(--primary))" 
+                    stroke="#ef4444" 
                     strokeWidth={3}
-                    dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, fill: "hsl(var(--primary))" }}
+                    dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: "#ef4444" }}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="benchmark" 
-                    stroke="hsl(var(--muted-foreground))" 
+                    stroke="#3b82f6" 
                     strokeWidth={3} 
                     strokeDasharray="5 5"
-                    dot={{ fill: "hsl(var(--muted-foreground))", strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, fill: "hsl(var(--muted-foreground))" }}
+                    dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: "#3b82f6" }}
                   />
                 </LineChart>
               </ResponsiveContainer>
