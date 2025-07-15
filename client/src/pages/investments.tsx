@@ -153,6 +153,12 @@ export default function Investments() {
   // Currency selection and conversion logic
   const selectedWallet = wallets?.find(w => w.currency === selectedCurrency);
   const availableBalance = selectedWallet?.availableBalance ? parseFloat(selectedWallet.availableBalance) : 0;
+  
+  // Debug logging to track wallet data
+  console.log('Current wallets:', wallets);
+  console.log('Selected currency:', selectedCurrency);
+  console.log('Selected wallet:', selectedWallet);
+  console.log('Available balance:', availableBalance);
 
   // Get available currencies from wallets with proper symbols
   const currencySymbols: Record<string, string> = {
