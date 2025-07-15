@@ -374,3 +374,4 @@ Changelog:
   - **Transaction Tracking**: Displays deposit amounts, transaction hashes, and confirmation status
   - **Auto-refresh**: Updates every 10 seconds to monitor for new deposits
   - **Status Indicators**: Visual badges for pending, confirmed, and failed deposits
+  - **UI Cleanup**: Removed duplicate VirgoCX Deposits section from top, keeping only bottom section

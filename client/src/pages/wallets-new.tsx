@@ -523,9 +523,6 @@ export default function Wallets() {
         </div>
       </div>
 
-      {/* VirgoCX Deposit Detector */}
-      <VirgoCXDepositDetector userId={1} />
-
       {/* Section 1: Your Balances */}
       <Card>
         <CardHeader>
