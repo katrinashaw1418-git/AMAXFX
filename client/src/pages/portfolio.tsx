@@ -228,8 +228,23 @@ export default function Portfolio() {
                     ]}
                     contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
                   />
-                  <Line type="monotone" dataKey="portfolio" stroke="hsl(var(--primary))" strokeWidth={2} />
-                  <Line type="monotone" dataKey="benchmark" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="5 5" />
+                  <Line 
+                    type="monotone" 
+                    dataKey="portfolio" 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={3}
+                    dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: "hsl(var(--primary))" }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="benchmark" 
+                    stroke="hsl(var(--muted-foreground))" 
+                    strokeWidth={3} 
+                    strokeDasharray="5 5"
+                    dot={{ fill: "hsl(var(--muted-foreground))", strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: "hsl(var(--muted-foreground))" }}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
