@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { CurrencyConfig } from '@/lib/types';
-import { Plus, Minus, ArrowRightLeft, Phone, MessageSquare } from 'lucide-react';
+import { Plus, Minus, ArrowRightLeft } from 'lucide-react';
 import { useFxRate } from '@/hooks/use-fx-rates';
 import { useWallets } from '@/hooks/use-portfolio';
 
@@ -23,8 +23,6 @@ export default function Wallets() {
   const [depositMethod, setDepositMethod] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState('');
   const [toCurrency, setToCurrency] = useState('');
-  const [advisorModalOpen, setAdvisorModalOpen] = useState(false);
-  const [advisorMessage, setAdvisorMessage] = useState('');
   const { toast } = useToast();
 
   // Deposit mutation
@@ -119,32 +117,6 @@ export default function Wallets() {
     }
   });
 
-  // Advisor contact mutation
-  const advisorMutation = useMutation({
-    mutationFn: async (data: { message: string }) => {
-      const response = await apiRequest("POST", "/api/advisor/contact", data);
-      if (!response.ok) {
-        throw new Error('Failed to send message');
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Message Sent",
-        description: "Your wealth planner will contact you within 24 hours.",
-      });
-      setAdvisorModalOpen(false);
-      setAdvisorMessage('');
-    },
-    onError: () => {
-      toast({
-        title: "Message Failed",
-        description: "Please try again later.",
-        variant: "destructive",
-      });
-    }
-  });
-
   const handleDeposit = () => {
     if (!selectedWallet || !amount || !depositMethod) {
       toast({
@@ -193,21 +165,6 @@ export default function Wallets() {
       fromCurrency: selectedWallet.currency,
       toCurrency,
       amount: parseFloat(amount)
-    });
-  };
-
-  const handleAdvisorContact = () => {
-    if (!advisorMessage.trim()) {
-      toast({
-        title: "Missing Message",
-        description: "Please enter your message.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    advisorMutation.mutate({
-      message: advisorMessage
     });
   };
 
@@ -483,89 +440,6 @@ export default function Wallets() {
           })}
         </div>
       </div>
-
-      {/* Contact Your Advisor Section */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <span className="text-purple-600">💼</span>
-          Contact Your Advisor
-        </h2>
-        <Card className="p-6 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center text-white">
-                <MessageSquare className="w-8 h-8" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">Wealth Planner Available</h3>
-                <p className="text-sm text-gray-600 mb-2">Get personalized investment advice and portfolio optimization</p>
-                <div className="flex items-center space-x-2 text-purple-600">
-                  <Phone className="w-4 h-4" />
-                  <span className="font-medium">+1 (555) 123-WEALTH</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex space-x-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => window.open('tel:+15551234325', '_self')}
-                className="flex items-center space-x-2"
-              >
-                <Phone className="w-4 h-4" />
-                <span>Call Now</span>
-              </Button>
-              <Button 
-                size="sm"
-                onClick={() => setAdvisorModalOpen(true)}
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Send Message
-              </Button>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Advisor Contact Modal */}
-      <Dialog open={advisorModalOpen} onOpenChange={setAdvisorModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Contact Your Wealth Planner</DialogTitle>
-            <DialogDescription>
-              Send a message to your dedicated wealth planner. They'll respond within 24 hours.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="advisor-message">Your Message</Label>
-              <textarea
-                id="advisor-message"
-                value={advisorMessage}
-                onChange={(e) => setAdvisorMessage(e.target.value)}
-                placeholder="Tell us about your investment goals, questions, or concerns..."
-                className="w-full min-h-[120px] p-3 border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Your wealth planner will review your portfolio and provide personalized recommendations
-              </p>
-            </div>
-            <div className="flex space-x-2">
-              <Button 
-                onClick={handleAdvisorContact}
-                disabled={advisorMutation.isPending || !advisorMessage.trim()}
-                className="flex-1 bg-purple-600 hover:bg-purple-700"
-              >
-                {advisorMutation.isPending ? "Sending..." : "Send Message"}
-              </Button>
-              <Button variant="outline" onClick={() => setAdvisorModalOpen(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Deposit Modal */}
       <Dialog open={depositModalOpen} onOpenChange={setDepositModalOpen}>
