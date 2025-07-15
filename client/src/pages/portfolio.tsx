@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { usePortfolio, useWallets, useUserInvestments } from "@/hooks/use-portfolio";
+import { usePortfolio, useWallets, useUserInvestments, usePortfolioAllocation } from "@/hooks/use-portfolio";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line } from 'recharts';
 import { TrendingUp, TrendingDown, DollarSign, Bitcoin, PieChart as PieChartIcon, Target, RefreshCw } from "lucide-react";
@@ -13,36 +13,45 @@ export default function Portfolio() {
   const { data: portfolio, isLoading: portfolioLoading } = usePortfolio();
   const { data: wallets, isLoading: walletsLoading } = useWallets();
   const { data: userInvestments, isLoading: investmentsLoading } = useUserInvestments();
+  const { data: allocation, isLoading: allocationLoading } = usePortfolioAllocation();
 
-  const isLoading = portfolioLoading || walletsLoading || investmentsLoading;
+  const isLoading = portfolioLoading || walletsLoading || investmentsLoading || allocationLoading;
 
-  // Use portfolio data for accurate values instead of calculating on frontend
-  const cryptoValue = parseFloat(portfolio?.cryptoValue || '0');
-  const fiatValue = parseFloat(portfolio?.fiatValue || '0');
-  const investmentValue = parseFloat(portfolio?.investmentValue || '0');
-  const totalPortfolioValue = parseFloat(portfolio?.totalValue || '0');
+  // Use allocation data for accurate values
+  const fiatValue = allocation?.fiat?.value || 0;
+  const cryptoValue = allocation?.crypto?.value || 0;
+  const stablecoinValue = allocation?.stablecoin?.value || 0;
+  const investmentValue = allocation?.investment?.value || 0;
+  const totalPortfolioValue = allocation?.totalValue || 0;
 
-  // Create allocation data from portfolio values
+  // Create allocation data from allocation API
   const allocationData = [
     {
       name: 'Fiat Currencies',
       value: fiatValue,
-      percentage: totalPortfolioValue > 0 ? (fiatValue / totalPortfolioValue) * 100 : 0,
+      percentage: allocation?.fiat?.percentage || 0,
       color: COLORS[0],
       type: 'fiat'
     },
     {
       name: 'Crypto Assets',
       value: cryptoValue,
-      percentage: totalPortfolioValue > 0 ? (cryptoValue / totalPortfolioValue) * 100 : 0,
+      percentage: allocation?.crypto?.percentage || 0,
       color: COLORS[1],
       type: 'crypto'
     },
     {
+      name: 'Stablecoins',
+      value: stablecoinValue,
+      percentage: allocation?.stablecoin?.percentage || 0,
+      color: COLORS[2],
+      type: 'stablecoin'
+    },
+    {
       name: 'Investment Products',
       value: investmentValue,
-      percentage: totalPortfolioValue > 0 ? (investmentValue / totalPortfolioValue) * 100 : 0,
-      color: COLORS[2],
+      percentage: allocation?.investment?.percentage || 0,
+      color: COLORS[3],
       type: 'investment'
     }
   ].filter(item => item.value > 0);
@@ -156,7 +165,20 @@ export default function Portfolio() {
             </div>
             <p className="text-xs font-bold leading-tight whitespace-nowrap overflow-hidden text-ellipsis">${cryptoValue.toLocaleString()}</p>
             <p className="text-xs text-gray-600 mt-1">
-              {((cryptoValue / totalPortfolioValue) * 100).toFixed(1)}% of portfolio
+              {(allocation?.crypto?.percentage || 0).toFixed(1)}% of portfolio
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-xs font-medium text-gray-500">Stablecoins</h3>
+              <DollarSign className="w-3 h-3 text-green-500" />
+            </div>
+            <p className="text-xs font-bold leading-tight whitespace-nowrap overflow-hidden text-ellipsis">${stablecoinValue.toLocaleString()}</p>
+            <p className="text-xs text-gray-600 mt-1">
+              {(allocation?.stablecoin?.percentage || 0).toFixed(1)}% of portfolio
             </p>
           </CardContent>
         </Card>
@@ -169,7 +191,7 @@ export default function Portfolio() {
             </div>
             <p className="text-xs font-bold leading-tight whitespace-nowrap overflow-hidden text-ellipsis">${fiatValue.toLocaleString()}</p>
             <p className="text-xs text-gray-600 mt-1">
-              {((fiatValue / totalPortfolioValue) * 100).toFixed(1)}% of portfolio
+              {(allocation?.fiat?.percentage || 0).toFixed(1)}% of portfolio
             </p>
           </CardContent>
         </Card>
@@ -182,7 +204,7 @@ export default function Portfolio() {
             </div>
             <p className="text-xs font-bold leading-tight whitespace-nowrap overflow-hidden text-ellipsis">${investmentValue.toLocaleString()}</p>
             <p className="text-xs text-gray-600 mt-1">
-              {((investmentValue / totalPortfolioValue) * 100).toFixed(1)}% of portfolio
+              {(allocation?.investment?.percentage || 0).toFixed(1)}% of portfolio
             </p>
           </CardContent>
         </Card>

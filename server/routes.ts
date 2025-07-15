@@ -857,6 +857,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get investment breakdown by category
+  app.get("/api/investment-breakdown", async (req, res) => {
+    try {
+      const userId = 1;
+      const investments = await storage.getUserInvestments(userId);
+      const products = await storage.getInvestmentProducts();
+      
+      // Calculate category breakdown
+      const categoryBreakdown = {
+        "Real Estate": { value: 0, products: [] },
+        "Corporate Credit": { value: 0, products: [] },
+        "Venture Capital": { value: 0, products: [] },
+        "Digital Assets": { value: 0, products: [] },
+        "Cash Deposits": { value: 0, products: [] }
+      };
+      
+      let totalInvested = 0;
+      
+      for (const investment of investments) {
+        const product = products.find(p => p.id === investment.productId);
+        if (product) {
+          const value = parseFloat(investment.currentValue);
+          totalInvested += value;
+          
+          if (categoryBreakdown[product.category]) {
+            categoryBreakdown[product.category].value += value;
+            categoryBreakdown[product.category].products.push({
+              name: product.name,
+              value: value,
+              percentage: 0 // Will be calculated below
+            });
+          }
+        }
+      }
+      
+      // Calculate percentages
+      const categoryData = Object.entries(categoryBreakdown).map(([name, data]) => ({
+        name,
+        value: data.value,
+        percentage: totalInvested > 0 ? (data.value / totalInvested * 100) : 0,
+        products: data.products.map(p => ({
+          ...p,
+          percentage: totalInvested > 0 ? (p.value / totalInvested * 100) : 0
+        }))
+      })).filter(cat => cat.value > 0);
+      
+      res.json({
+        totalInvested,
+        categories: categoryData
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch investment breakdown" });
+    }
+  });
+
   // Create investment
   app.post("/api/investments", async (req, res) => {
     try {

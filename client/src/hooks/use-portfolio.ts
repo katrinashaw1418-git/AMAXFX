@@ -40,3 +40,11 @@ export function useUserInvestments() {
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 }
+
+export function usePortfolioAllocation() {
+  return useQuery({
+    queryKey: ["/api/portfolio/allocation"],
+    queryFn: () => fetch("/api/portfolio/allocation").then(res => res.json()),
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+}
