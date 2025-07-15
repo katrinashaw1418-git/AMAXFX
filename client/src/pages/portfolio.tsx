@@ -8,7 +8,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import { TrendingUp, TrendingDown, DollarSign, Bitcoin, PieChart as PieChartIcon, Target, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
-const COLORS = ['hsl(207, 90%, 54%)', 'hsl(0, 84%, 55%)', 'hsl(152, 60%, 39%)', '#8B5CF6', '#FBBF24', '#10B981'];
+const COLORS = ['hsl(207, 90%, 54%)', 'hsl(0, 84%, 55%)', '#FBBF24', '#8B5CF6', '#10B981', '#F59E0B'];
 
 // Category-specific colors
 const getCategoryColor = (categoryName: string) => {
