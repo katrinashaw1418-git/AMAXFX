@@ -375,3 +375,7 @@ Changelog:
   - **Auto-refresh**: Updates every 10 seconds to monitor for new deposits
   - **Status Indicators**: Visual badges for pending, confirmed, and failed deposits
   - **UI Cleanup**: Removed duplicate VirgoCX Deposits section from top, keeping only bottom section
+- July 15, 2025. Removed quick actions component from dashboard for cleaner layout
+  - **Dashboard Cleanup**: Removed QuickActions component from wealth dashboard
+  - **Simplified Layout**: Right column now contains only AI Advisory and Currency Balances
+  - **Improved Focus**: Streamlined dashboard experience with essential components only
