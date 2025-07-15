@@ -696,8 +696,22 @@ export default function AiAdvisory() {
                   </div>
                 </div>
               </div>
-              <Button className="w-full mt-4">
-                Implement Rebalancing Strategy
+              <Button 
+                className="w-full mt-4"
+                onClick={() => {
+                  // Create a rebalancing recommendation and apply it
+                  const rebalancingRecommendation = {
+                    id: Date.now(), // temporary ID
+                    type: "rebalancing",
+                    title: "Portfolio Rebalancing Strategy",
+                    description: "Implement the suggested asset allocation to optimize risk-adjusted returns",
+                    severity: "info" as const
+                  };
+                  applyRecommendationMutation.mutate(rebalancingRecommendation.id);
+                }}
+                disabled={applyRecommendationMutation.isPending}
+              >
+                {applyRecommendationMutation.isPending ? "Implementing..." : "Implement Rebalancing Strategy"}
               </Button>
             </CardContent>
           </Card>
