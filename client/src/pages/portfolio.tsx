@@ -16,8 +16,8 @@ const getCategoryColor = (categoryName: string) => {
     'Real Estate': '#3B82F6',     // Blue
     'Corporate Credit': '#10B981',  // Green
     'Venture Capital': '#8B5CF6',  // Purple
-    'Digital Assets': '#F59E0B',   // Orange
-    'Cash Deposits': '#EF4444'     // Red
+    'Digital Assets': '#EF4444',   // Red
+    'Cash Deposits': '#F59E0B'     // Orange
   };
   return colorMap[categoryName] || '#6B7280'; // Default gray
 };

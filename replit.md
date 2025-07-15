@@ -397,3 +397,4 @@ Changelog:
   - **Color Consistency**: Updated both Portfolio and AI Advisory pages to use consistent color scheme
   - **Total Capital Invested**: Now correctly shows $1.77M actual capital invested vs $1.96M current value
   - **Venture Capital Purple**: Updated investment products pie chart to show Venture Capital in purple (#8B5CF6)
+  - **Digital Assets Red**: Changed Digital Assets from orange to red (#EF4444), Cash Deposits now orange (#F59E0B)
