@@ -400,3 +400,4 @@ Changelog:
   - **Digital Assets Red**: Changed Digital Assets from orange to red (#EF4444), Cash Deposits now orange (#F59E0B)
   - **Performance Chart Layout**: Moved Performance vs Benchmark chart to appear above Performance by Period section as standalone full-width chart
   - **Stablecoins Yellow**: Changed stablecoins color from green to yellow (#FBBF24) across portfolio and AI advisory pages
+  - **Corporate Credit Pink**: Updated Corporate Credit category to pink (#EC4899) for better visual distinction in investment products
