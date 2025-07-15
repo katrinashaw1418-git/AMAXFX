@@ -407,49 +407,53 @@ export default function AiAdvisory() {
             </div>
           </div>
           
-          {/* Contact Your Advisor - Top Right */}
-          <Card className="w-80 shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">
-                Contact Your Advisor
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-100">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-                      <Phone className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-blue-600 font-medium">+61 3 9654 1000</p>
-                    </div>
+
+        </div>
+      </div>
+
+      {/* Floating Contact Your Advisor Box */}
+      <div className="fixed top-4 right-4 z-50">
+        <Card className="w-72 shadow-2xl border-0 bg-white/95 backdrop-blur-lg">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">
+              Contact Your Advisor
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-100">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                    <Phone className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-blue-600 font-medium">+61 3 9654 1000</p>
                   </div>
                 </div>
-                
-                <div className="flex space-x-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => window.open('tel:+61396541000')}
-                    className="flex-1 text-xs hover:bg-blue-50 border-blue-200"
-                  >
-                    <Phone className="w-3 h-3 mr-1" />
-                    Call
-                  </Button>
-                  <Button 
-                    size="sm"
-                    onClick={() => setAdvisorModalOpen(true)}
-                    className="flex-1 text-xs bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
-                  >
-                    <MessageCircle className="w-3 h-3 mr-1" />
-                    Message
-                  </Button>
-                </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              
+              <div className="flex space-x-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.open('tel:+61396541000')}
+                  className="flex-1 text-xs hover:bg-blue-50 border-blue-200"
+                >
+                  <Phone className="w-3 h-3 mr-1" />
+                  Call
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={() => setAdvisorModalOpen(true)}
+                  className="flex-1 text-xs bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+                >
+                  <MessageCircle className="w-3 h-3 mr-1" />
+                  Message
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* AI Summary Cards */}
