@@ -39,7 +39,7 @@ import {
 const getCategoryColor = (categoryName: string) => {
   const colorMap: { [key: string]: string } = {
     'Real Estate': '#3B82F6',     // Blue
-    'Corporate Credit': '#6B7280',  // Gray-500
+    'Corporate Credit': '#D1D5DB',  // Gray-300
     'Venture Capital': '#8B5CF6',  // Purple
     'Digital Assets': '#EF4444',   // Red
     'Cash Deposits': '#F59E0B'     // Orange
@@ -307,7 +307,7 @@ export default function AiAdvisory() {
     return [
       { asset: "Fiat Assets", current: Math.round(currentPortfolioAllocation.fiat), suggested: Math.round(baseAllocation.usEquities * normalizeFactor), change: Math.round(baseAllocation.usEquities * normalizeFactor) - Math.round(currentPortfolioAllocation.fiat), color: "bg-blue-500" },
       { asset: "Crypto Assets", current: Math.round(currentPortfolioAllocation.crypto), suggested: Math.round(baseAllocation.crypto * normalizeFactor), change: Math.round(baseAllocation.crypto * normalizeFactor) - Math.round(currentPortfolioAllocation.crypto), color: "bg-red-500" },
-      { asset: "Stablecoins", current: Math.round(currentPortfolioAllocation.stablecoin), suggested: Math.round(baseAllocation.intlEquities * normalizeFactor), change: Math.round(baseAllocation.intlEquities * normalizeFactor) - Math.round(currentPortfolioAllocation.stablecoin), color: "bg-yellow-500" },
+      { asset: "Stablecoins", current: Math.round(currentPortfolioAllocation.stablecoin), suggested: Math.round(baseAllocation.intlEquities * normalizeFactor), change: Math.round(baseAllocation.intlEquities * normalizeFactor) - Math.round(currentPortfolioAllocation.stablecoin), color: "bg-gray-300" },
       { asset: "Investment Products", current: Math.round(currentPortfolioAllocation.investment), suggested: Math.round(baseAllocation.bonds * normalizeFactor), change: Math.round(baseAllocation.bonds * normalizeFactor) - Math.round(currentPortfolioAllocation.investment), color: "bg-purple-500" },
       { asset: "Cash Reserve", current: Math.round(baseAllocation.cash * normalizeFactor), suggested: Math.round(baseAllocation.cash * normalizeFactor), change: 0, color: "bg-gray-500" },
     ];

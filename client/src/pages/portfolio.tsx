@@ -15,13 +15,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
-const COLORS = ['hsl(207, 90%, 54%)', 'hsl(0, 84%, 55%)', '#FBBF24', '#8B5CF6', '#10B981', '#F59E0B'];
+const COLORS = ['hsl(207, 90%, 54%)', 'hsl(0, 84%, 55%)', '#D1D5DB', '#8B5CF6', '#10B981', '#F59E0B'];
 
 // Category-specific colors
 const getCategoryColor = (categoryName: string) => {
   const colorMap: { [key: string]: string } = {
     'Real Estate': '#3B82F6',     // Blue
-    'Corporate Credit': '#6B7280',  // Gray-500
+    'Corporate Credit': '#D1D5DB',  // Gray-300
     'Venture Capital': '#8B5CF6',  // Purple
     'Digital Assets': '#EF4444',   // Red
     'Cash Deposits': '#F59E0B'     // Orange
@@ -291,7 +291,7 @@ export default function Portfolio() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-xs font-medium text-gray-500">Stablecoins</h3>
-              <DollarSign className="w-3 h-3 text-green-500" />
+              <DollarSign className="w-3 h-3 text-gray-400" />
             </div>
             <p className="text-xs font-bold leading-tight whitespace-nowrap overflow-hidden text-ellipsis">${stablecoinValue.toLocaleString()}</p>
             <p className="text-xs text-gray-600 mt-1">

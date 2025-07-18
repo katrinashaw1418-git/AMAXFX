@@ -405,5 +405,5 @@ Changelog:
   - **Venture Capital Purple**: Updated investment products pie chart to show Venture Capital in purple (#8B5CF6)
   - **Digital Assets Red**: Changed Digital Assets from orange to red (#EF4444), Cash Deposits now orange (#F59E0B)
   - **Performance Chart Layout**: Moved Performance vs Benchmark chart to appear above Performance by Period section as standalone full-width chart
-  - **Stablecoins Yellow**: Changed stablecoins color from green to yellow (#FBBF24) across portfolio and AI advisory pages
-  - **Corporate Credit Gray**: Updated Corporate Credit category to gray (#6B7280) for neutral, professional appearance
+  - **Stablecoins Light Gray**: Changed stablecoins color to light gray (#D1D5DB) across portfolio and AI advisory pages for softer neutral appearance
+  - **Corporate Credit Light Gray**: Updated Corporate Credit category to light gray (#D1D5DB) for softer, professional appearance
