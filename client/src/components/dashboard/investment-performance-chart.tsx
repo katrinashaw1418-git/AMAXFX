@@ -75,20 +75,23 @@ export function InvestmentPerformanceChart() {
   // Combine historical data with predictions for chart display
   const combinedData = [...performanceData.data, ...performanceData.predictions];
 
-  // Format data for chart display
-  const chartData = combinedData.map((point) => ({
-    ...point,
-    formattedDate: new Date(point.date).toLocaleDateString('en-US', { 
-      month: 'short', 
-      year: selectedTimeframe === '1Y' ? '2-digit' : undefined,
-      day: selectedTimeframe === '1M' ? 'numeric' : undefined
-    }),
-    valueFormatted: `$${point.value.toLocaleString()}`,
-    returnFormatted: `${point.weightedReturn >= 0 ? '+' : ''}${point.weightedReturn.toFixed(2)}%`,
-    // For predictions, use the new format with currentInvestment and totalReturn
-    currentInvestment: point.isPrediction ? (point.currentInvestment || 0) : (point.investedAmount || 0),
-    totalReturn: point.isPrediction ? (point.totalReturn || 0) : Math.max(0, point.value - (point.investedAmount || 0))
-  }));
+  // Format data for chart display with consistent quarterly formatting
+  const chartData = combinedData.map((point, index) => {
+    const date = new Date(point.date);
+    const formattedDate = `${date.toLocaleDateString('en-US', { month: 'short' })} ${date.getFullYear().toString().slice(-2)}`;
+    
+    return {
+      ...point,
+      formattedDate,
+      quarter: `Q${Math.floor(date.getMonth() / 3) + 1} ${date.getFullYear().toString().slice(-2)}`,
+      valueFormatted: `$${point.value.toLocaleString()}`,
+      returnFormatted: `${point.weightedReturn >= 0 ? '+' : ''}${point.weightedReturn.toFixed(2)}%`,
+      // For predictions, use the new format with currentInvestment and totalReturn
+      currentInvestment: point.isPrediction ? (point.currentInvestment || 0) : (point.investedAmount || 0),
+      totalReturn: point.isPrediction ? (point.totalReturn || 0) : Math.max(0, point.value - (point.investedAmount || 0)),
+      sortIndex: index // Add sort index for proper ordering
+    };
+  });
 
   const totalReturnValue = parseFloat(performanceData.totalReturn);
   const totalReturnPercent = parseFloat(performanceData.totalReturnPercent);
@@ -168,12 +171,15 @@ export function InvestmentPerformanceChart() {
       <CardContent>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <ComposedChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
               <XAxis 
                 dataKey="formattedDate" 
-                tick={{ fontSize: 12 }}
-                interval="preserveStartEnd"
+                tick={{ fontSize: 11 }}
+                interval={2}
+                angle={-45}
+                textAnchor="end"
+                height={80}
               />
               <YAxis 
                 tick={{ fontSize: 12 }}
