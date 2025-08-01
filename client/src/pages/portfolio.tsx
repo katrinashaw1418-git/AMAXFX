@@ -582,7 +582,7 @@ export default function Portfolio() {
       {/* Performance Metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Performance by Period */}
-        <Card>
+        <Card data-testid="performance-by-period">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Performance by Period</CardTitle>
