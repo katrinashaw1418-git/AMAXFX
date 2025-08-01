@@ -14,7 +14,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useWallets } from "@/hooks/use-portfolio";
 import { TrendingUp, Building, CreditCard, Rocket, Bitcoin, DollarSign, Clock, Shield, Filter, X, ChevronDown, Phone, MessageCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { InvestmentPerformanceChart } from "@/components/dashboard/investment-performance-chart";
 
 const categoryIcons = {
   real_estate: Building,
@@ -426,11 +425,6 @@ export default function Investments() {
             </CardContent>
           </Card>
         </div>
-      )}
-
-      {/* Performance by Period Chart */}
-      {userInvestments && userInvestments.length > 0 && (
-        <InvestmentPerformanceChart />
       )}
 
       {/* Filters */}
