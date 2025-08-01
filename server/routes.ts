@@ -450,9 +450,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Calculate investment value
-      investmentValue = investments
-        .reduce((sum, inv) => sum + parseFloat(inv.currentValue), 0);
+      // Calculate investment value using unified calculation function
+      const evaluationDate = new Date();
+      for (const investment of investments) {
+        const product = await storage.getInvestmentProduct(investment.productId);
+        if (product) {
+          const performance = calculateInvestmentPerformance(investment, product, evaluationDate);
+          investmentValue += performance.currentValue;
+        }
+      }
       
       const totalValue = fiatValue + cryptoValue + stablecoinValue + investmentValue;
       
@@ -573,9 +579,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Calculate investment value
-      investmentValue = investments
-        .reduce((sum, inv) => sum + parseFloat(inv.currentValue), 0);
+      // Calculate investment value using unified calculation function
+      const evaluationDate = new Date();
+      for (const investment of investments) {
+        const product = await storage.getInvestmentProduct(investment.productId);
+        if (product) {
+          const performance = calculateInvestmentPerformance(investment, product, evaluationDate);
+          investmentValue += performance.currentValue;
+        }
+      }
       
       const totalValue = fiatValue + cryptoValue + stablecoinValue + investmentValue;
       
