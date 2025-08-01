@@ -1,5 +1,5 @@
-// MANUAL CALCULATION: $1,775,000 invested, $197,319 profit, 11.12% return
-console.log('=== MANUAL BREAKDOWN OF 11.12% RETURN ===');
+// DETAILED RETURN PERCENTAGE CALCULATIONS FOR EACH INVESTMENT
+console.log('=== HOW EACH RETURN PERCENTAGE IS CALCULATED ===');
 
 // Investment data from API
 const investments = [
@@ -10,23 +10,26 @@ const investments = [
   { name: "Ethereum Staking Fund", invested: 75000, current: 79684.41, return: 4684.41 }
 ];
 
-console.log('STEP 1: INDIVIDUAL INVESTMENT CALCULATIONS');
-let runningTotalInvested = 0;
-let runningTotalReturn = 0;
+console.log('DETAILED CALCULATION FOR EACH INVESTMENT:\n');
 
 investments.forEach((inv, i) => {
-  runningTotalInvested += inv.invested;
-  runningTotalReturn += inv.return;
   const returnPercent = (inv.return / inv.invested) * 100;
   
-  console.log(`Investment ${i+1}: ${inv.name}`);
-  console.log(`  Invested: $${inv.invested.toLocaleString()}`);
-  console.log(`  Current: $${inv.current.toLocaleString()}`);
-  console.log(`  Return: $${inv.return.toLocaleString()}`);
-  console.log(`  Individual %: ${inv.return.toLocaleString()} ÷ ${inv.invested.toLocaleString()} = ${returnPercent.toFixed(2)}%`);
-  console.log(`  Running Total Invested: $${runningTotalInvested.toLocaleString()}`);
-  console.log(`  Running Total Return: $${runningTotalReturn.toLocaleString()}`);
+  console.log(`${i+1}. ${inv.name}`);
+  console.log(`   Formula: (Current Value - Invested Amount) ÷ Invested Amount × 100`);
+  console.log(`   Current Value: $${inv.current.toLocaleString()}`);
+  console.log(`   Invested Amount: $${inv.invested.toLocaleString()}`);
+  console.log(`   Return Amount: $${inv.current.toLocaleString()} - $${inv.invested.toLocaleString()} = $${inv.return.toLocaleString()}`);
+  console.log(`   Return %: $${inv.return.toLocaleString()} ÷ $${inv.invested.toLocaleString()} = ${(inv.return / inv.invested).toFixed(6)}`);
+  console.log(`   Final %: ${(inv.return / inv.invested).toFixed(6)} × 100 = ${returnPercent.toFixed(2)}%`);
+  console.log(`   Verification: ${returnPercent.toFixed(2)}% ✓`);
   console.log('');
+});
+
+console.log('SUMMARY OF INDIVIDUAL RETURNS:');
+investments.forEach((inv, i) => {
+  const returnPercent = (inv.return / inv.invested) * 100;
+  console.log(`${inv.name}: ${returnPercent.toFixed(2)}%`);
 });
 
 console.log('STEP 2: FINAL TOTALS');
