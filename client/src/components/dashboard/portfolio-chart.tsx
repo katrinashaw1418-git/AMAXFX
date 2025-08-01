@@ -115,20 +115,32 @@ export default function PortfolioChart() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="h-64">
+        <div className={selectedTimeframe === '1Y' ? "h-80" : "h-64"}>
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-sm text-muted-foreground">Loading portfolio data...</div>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
+              <LineChart 
+                data={chartData}
+                margin={{
+                  top: 5,
+                  right: 30,
+                  left: 20,
+                  bottom: selectedTimeframe === '1Y' ? 50 : 5,
+                }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
                 <XAxis 
                   dataKey="date" 
                   stroke="#6B7280"
                   fontSize={12}
-                  interval="preserveStartEnd"
+                  interval={selectedTimeframe === '1Y' ? 0 : 'preserveStartEnd'}
+                  tick={{ fontSize: selectedTimeframe === '1Y' ? 10 : 12 }}
+                  angle={selectedTimeframe === '1Y' ? -45 : 0}
+                  textAnchor={selectedTimeframe === '1Y' ? 'end' : 'middle'}
+                  height={selectedTimeframe === '1Y' ? 60 : 40}
                 />
                 <YAxis 
                   stroke="#6B7280"
