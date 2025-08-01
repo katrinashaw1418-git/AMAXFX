@@ -89,9 +89,9 @@ export function InvestmentPerformanceChart() {
   const totalReturnPercent = parseFloat(performanceData.totalReturnPercent);
   const isPositiveReturn = totalReturnPercent >= 0;
 
-  // Calculate predicted 7-year return (final prediction in array)
-  const predicted7YearReturn = performanceData.predictions[performanceData.predictions.length - 1]?.weightedReturn || 0;
-  const isPredictionPositive = predicted7YearReturn >= 0;
+  // Calculate predicted 12-month return
+  const predicted12MonthReturn = performanceData.predictions[11]?.weightedReturn || 0;
+  const isPredictionPositive = predicted12MonthReturn >= 0;
 
   // Get timeframe colors
   const getTimeframeColor = (timeframe: string) => {
@@ -148,12 +148,12 @@ export function InvestmentPerformanceChart() {
           </div>
           
           <div className="space-y-1">
-            <p className="text-sm text-gray-600">7-Year Projection</p>
+            <p className="text-sm text-gray-600">12-Month Prediction</p>
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-blue-500" />
               <Badge variant={isPredictionPositive ? "default" : "destructive"} className="flex items-center gap-1">
                 {isPredictionPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                {predicted7YearReturn >= 0 ? '+' : ''}{predicted7YearReturn.toFixed(2)}%
+                {predicted12MonthReturn >= 0 ? '+' : ''}{predicted12MonthReturn.toFixed(2)}%
               </Badge>
             </div>
           </div>
