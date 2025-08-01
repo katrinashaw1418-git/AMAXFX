@@ -54,7 +54,7 @@ export function InvestmentPerformanceChart() {
     );
   }
 
-  if (!performanceData) {
+  if (!performanceData || !performanceData.data || !performanceData.predictions) {
     return (
       <Card>
         <CardHeader>
@@ -71,7 +71,7 @@ export function InvestmentPerformanceChart() {
   }
 
   // Combine historical data with predictions for chart display
-  const combinedData = [...performanceData.data, ...performanceData.predictions];
+  const combinedData = [...(performanceData.data || []), ...(performanceData.predictions || [])];
 
   // Format data for chart display with compact quarterly formatting
   const chartData = combinedData.map((point, index) => {
@@ -85,7 +85,7 @@ export function InvestmentPerformanceChart() {
       formattedDate,
       quarter: `Q${Math.floor(date.getMonth() / 3) + 1} ${year}`,
       valueFormatted: `$${point.value.toLocaleString()}`,
-      returnFormatted: `${point.weightedReturn >= 0 ? '+' : ''}${point.weightedReturn.toFixed(2)}%`,
+      returnFormatted: `${(point.weightedReturn || 0) >= 0 ? '+' : ''}${(point.weightedReturn || 0).toFixed(2)}%`,
       // For predictions, use the new format with currentInvestment and totalReturn
       currentInvestment: point.isPrediction ? (point.currentInvestment || 0) : (point.investedAmount || 0),
       totalReturn: point.isPrediction ? (point.totalReturn || 0) : Math.max(0, point.value - (point.investedAmount || 0)),

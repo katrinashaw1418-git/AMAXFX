@@ -9,18 +9,27 @@ function calculateInvestmentPerformance(
   investmentDate: Date,
   currentDate: Date = new Date()
 ): { currentValue: number; returnAmount: number; returnPercentage: number } {
+  // Safety check for product data
+  if (!product) {
+    console.error('Product is null/undefined in calculateInvestmentPerformance');
+    return { currentValue: investedAmount, returnAmount: 0, returnPercentage: 0 };
+  }
+  
   const daysSinceInvestment = Math.floor((currentDate.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24));
   
   // Midpoint IRR mapping based on target ranges
-  const midpointIrrMap = {
-    'real_estate': 0.11,      // 11% midpoint
-    'corporate_credit': 0.11, // 11% midpoint (10-12% range)
-    'venture_capital': 0.18,  // 18% midpoint (16-20% range)
-    'digital_assets': product.name.includes('Bitcoin') ? 0.15 : 0.0575, // Bitcoin 15%, Ethereum 5.75%
-    'default': 0.11
+  const getMidpointIrr = (category, productName) => {
+    const rates = {
+      'real_estate': 0.11,      // 11% midpoint
+      'corporate_credit': 0.11, // 11% midpoint (10-12% range)
+      'venture_capital': 0.18,  // 18% midpoint (16-20% range)
+      'digital_assets': (productName && typeof productName === 'string' && productName.includes('Bitcoin')) ? 0.15 : 0.0575, // Bitcoin 15%, Ethereum 5.75%
+      'default': 0.11
+    };
+    return rates[category] || rates.default;
   };
   
-  const midpointIrr = midpointIrrMap[product.category as keyof typeof midpointIrrMap] || midpointIrrMap.default;
+  const midpointIrr = getMidpointIrr(product.category, product.name);
   let performanceFactor = 1;
   
   if (daysSinceInvestment > 0) {
@@ -28,7 +37,7 @@ function calculateInvestmentPerformance(
     performanceFactor = 1 + (midpointIrr * timeProgress);
     
     // Add controlled volatility for specific fund types
-    if (product.category === 'digital_assets' && product.name.includes('Bitcoin')) {
+    if (product.category === 'digital_assets' && product.name && typeof product.name === 'string' && product.name.includes('Bitcoin')) {
       const volatilityAdjustment = Math.sin(daysSinceInvestment * 0.1) * 0.4 * 0.1;
       performanceFactor += volatilityAdjustment;
     } else if (product.category === 'venture_capital') {
@@ -1275,8 +1284,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (product) {
             const investmentDate = new Date(investment.investmentDate);
             if (investmentDate <= currentDate) {
-              const performance = calculateInvestmentPerformance(investment, product, currentDate);
               const investedAmount = parseFloat(investment.investedAmount);
+              const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, currentDate);
               
               totalInvestmentValue += performance.currentValue;
               totalInvestedAmount += investedAmount;
@@ -1309,7 +1318,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const investment of investments) {
         const product = allProducts.find(p => p.id === investment.productId);
         if (product) {
-          const performance = calculateInvestmentPerformance(investment, product, endDate);
+          const investedAmount = parseFloat(investment.investedAmount);
+          const investmentDate = new Date(investment.investmentDate);
+          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, endDate);
           const currentValue = performance.currentValue;
           totalCurrentInvestment += currentValue;
           
@@ -1379,8 +1390,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const investment of investments) {
         const product = allProducts.find(p => p.id === investment.productId);
         if (product) {
-          const performance = calculateInvestmentPerformance(investment, product, endDate);
           const investedAmount = parseFloat(investment.investedAmount);
+          const investmentDate = new Date(investment.investmentDate);
+          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, endDate);
           
           totalInvestedNow += investedAmount;
           totalCurrentValueNow += performance.currentValue;
