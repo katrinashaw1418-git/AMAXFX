@@ -1425,28 +1425,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate 7-year prediction (21 data points at 4-month intervals)
       const predictions = [];
       const predictionStartDate = new Date(endDate);
+      
+      // Calculate weighted annual return for the portfolio
+      let portfolioWeightedReturn = 0;
+      for (const [category, allocation] of Object.entries(currentPortfolioAllocation)) {
+        const { value, annualReturn } = allocation as { value: number; annualReturn: number };
+        const weight = value / totalCurrentInvestment;
+        portfolioWeightedReturn += (annualReturn * weight);
+      }
+      
       for (let i = 1; i <= 21; i++) {
         predictionStartDate.setMonth(predictionStartDate.getMonth() + 4);
         
-        let predictedValue = 0;
-        let predictedWeightedReturn = 0;
+        // Calculate time in years (4-month intervals)
+        const timeInYears = (i * 4) / 12;
         
-        for (const [category, allocation] of Object.entries(currentPortfolioAllocation)) {
-          const { value, annualReturn } = allocation as { value: number; annualReturn: number };
-          const periodReturn = annualReturn / 3; // 4-month period return (1/3 of annual)
-          const futureValue = value * Math.pow(1 + periodReturn, i);
-          predictedValue += futureValue;
-          
-          const categoryReturn = ((futureValue - value) / value) * 100;
-          predictedWeightedReturn += (categoryReturn * value);
-        }
-        
-        const avgPredictedReturn = totalCurrentInvestment > 0 ? predictedWeightedReturn / totalCurrentInvestment : 0;
+        // Apply compound growth with portfolio weighted return
+        const futureValue = totalCurrentInvestment * Math.pow(1 + portfolioWeightedReturn, timeInYears);
+        const totalReturn = futureValue - totalCurrentInvestment;
+        const totalReturnPercent = (totalReturn / totalCurrentInvestment) * 100;
         
         predictions.push({
           date: predictionStartDate.toISOString().split('T')[0],
-          value: Math.round(predictedValue),
-          weightedReturn: Number(avgPredictedReturn.toFixed(2)),
+          value: Math.round(futureValue),
+          totalReturn: Math.round(totalReturn),
+          weightedReturn: Number(totalReturnPercent.toFixed(2)),
+          currentInvestment: Math.round(totalCurrentInvestment),
           isPrediction: true,
           timestamp: predictionStartDate.getTime()
         });

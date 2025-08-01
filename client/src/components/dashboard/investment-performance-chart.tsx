@@ -4,14 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { TrendingUp, TrendingDown, DollarSign, Target } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface PerformanceData {
   date: string;
   value: number;
-  investedAmount: number;
+  investedAmount?: number;
+  totalReturn?: number;
+  currentInvestment?: number;
   weightedReturn: number;
   isPrediction?: boolean;
   timestamp: number;
@@ -82,7 +84,10 @@ export function InvestmentPerformanceChart() {
       day: selectedTimeframe === '1M' ? 'numeric' : undefined
     }),
     valueFormatted: `$${point.value.toLocaleString()}`,
-    returnFormatted: `${point.weightedReturn >= 0 ? '+' : ''}${point.weightedReturn.toFixed(2)}%`
+    returnFormatted: `${point.weightedReturn >= 0 ? '+' : ''}${point.weightedReturn.toFixed(2)}%`,
+    // For predictions, use the new format with currentInvestment and totalReturn
+    currentInvestment: point.isPrediction ? (point.currentInvestment || 0) : (point.investedAmount || 0),
+    totalReturn: point.isPrediction ? (point.totalReturn || 0) : Math.max(0, point.value - (point.investedAmount || 0))
   }));
 
   const totalReturnValue = parseFloat(performanceData.totalReturn);
@@ -163,7 +168,7 @@ export function InvestmentPerformanceChart() {
       <CardContent>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <ComposedChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
               <XAxis 
                 dataKey="formattedDate" 
@@ -176,7 +181,7 @@ export function InvestmentPerformanceChart() {
               />
               <Tooltip 
                 formatter={(value: any, name: string) => {
-                  if (name === "Investment Value") {
+                  if (name === "Current Investment" || name === "Total Return") {
                     return [`$${Number(value).toLocaleString()}`, name];
                   }
                   if (name === "Weighted Return") {
@@ -193,31 +198,22 @@ export function InvestmentPerformanceChart() {
               />
               <Legend />
               
-              {/* Historical Performance Line */}
-              <Line
-                type="monotone"
-                dataKey="value"
-                stroke={chartColor}
-                strokeWidth={3}
-                dot={{ fill: chartColor, strokeWidth: 2, r: 4 }}
-                connectNulls={false}
-                name="Investment Value"
-                data={chartData.filter(d => !d.isPrediction)}
+              {/* Current Investment Value (Blue) */}
+              <Bar
+                dataKey="currentInvestment"
+                stackId="investment"
+                fill="#3b82f6"
+                name="Current Investment"
               />
               
-              {/* Prediction Line */}
-              <Line
-                type="monotone"
-                dataKey="value"
-                stroke={chartColor}
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                dot={{ fill: chartColor, strokeWidth: 1, r: 3 }}
-                connectNulls={false}
-                name="Predicted Value"
-                data={chartData.filter(d => d.isPrediction)}
+              {/* Total Return (Purple) */}
+              <Bar
+                dataKey="totalReturn"
+                stackId="investment"
+                fill="#8b5cf6"
+                name="Total Return"
               />
-            </LineChart>
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
         
