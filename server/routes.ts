@@ -1456,11 +1456,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Calculate overall performance metrics
-      const startValue = dataPoints[0]?.value || 0;
-      const endValue = dataPoints[dataPoints.length - 1]?.value || 0;
-      const totalReturn = endValue - startValue;
-      const totalReturnPercent = startValue > 0 ? (totalReturn / startValue) * 100 : 0;
+      // Calculate overall performance metrics - use total invested vs current value
+      const lastDataPoint = dataPoints[dataPoints.length - 1];
+      const currentValue = lastDataPoint?.value || 0;
+      const totalInvested = lastDataPoint?.investedAmount || 0;
+      const totalReturn = currentValue - totalInvested;
+      const totalReturnPercent = totalInvested > 0 ? (totalReturn / totalInvested) * 100 : 0;
       
       res.json({
         timeframe,
