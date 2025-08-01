@@ -1266,7 +1266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           startDate.setFullYear(startDate.getFullYear() - 1);
       }
       
-      // Generate monthly data points for the timeframe
+      // Generate data points at 4-month intervals for the timeframe
       const dataPoints = [];
       const currentDate = new Date(startDate);
       
@@ -1343,8 +1343,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timestamp: currentDate.getTime()
         });
         
-        // Move to next month
-        currentDate.setMonth(currentDate.getMonth() + 1);
+        // Move to next 4-month interval
+        currentDate.setMonth(currentDate.getMonth() + 4);
       }
       
       // Calculate 12-month prediction based on current allocation
@@ -1422,19 +1422,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Generate 7-year prediction (84 months)
+      // Generate 7-year prediction (21 data points at 4-month intervals)
       const predictions = [];
       const predictionStartDate = new Date(endDate);
-      for (let i = 1; i <= 84; i++) {
-        predictionStartDate.setMonth(predictionStartDate.getMonth() + 1);
+      for (let i = 1; i <= 21; i++) {
+        predictionStartDate.setMonth(predictionStartDate.getMonth() + 4);
         
         let predictedValue = 0;
         let predictedWeightedReturn = 0;
         
         for (const [category, allocation] of Object.entries(currentPortfolioAllocation)) {
           const { value, annualReturn } = allocation as { value: number; annualReturn: number };
-          const monthlyReturn = annualReturn / 12;
-          const futureValue = value * Math.pow(1 + monthlyReturn, i);
+          const periodReturn = annualReturn / 3; // 4-month period return (1/3 of annual)
+          const futureValue = value * Math.pow(1 + periodReturn, i);
           predictedValue += futureValue;
           
           const categoryReturn = ((futureValue - value) / value) * 100;
