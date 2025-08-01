@@ -8,7 +8,7 @@ const investments = [
     invested: 500000, 
     currentReturn: 2.63,
     targetIrrRange: "~11%",
-    targetIrrMid: 11.0,
+    targetIrrMid: 11.0, // Single target value
     term: "~10.2 months (rolling)"
   },
   { 
@@ -16,7 +16,7 @@ const investments = [
     invested: 300000, 
     currentReturn: 1.23,
     targetIrrRange: "10–12%",
-    targetIrrMid: 11.0,
+    targetIrrMid: 11.0, // Medium of 10-12% range
     term: "2–3 years"
   },
   { 
@@ -24,7 +24,7 @@ const investments = [
     invested: 750000, 
     currentReturn: 22.75,
     targetIrrRange: "16–20%",
-    targetIrrMid: 18.0,
+    targetIrrMid: 18.0, // Medium of 16-20% range
     term: "5–7+ years"
   },
   { 
@@ -32,7 +32,7 @@ const investments = [
     invested: 150000, 
     currentReturn: 3.42,
     targetIrrRange: "Market-based (historical 60%+ annualized)",
-    targetIrrMid: 15.0, // Conservative estimate for current market
+    targetIrrMid: 15.0, // Conservative medium estimate for annualized return
     term: "Open-ended"
   },
   { 
@@ -40,7 +40,7 @@ const investments = [
     invested: 75000, 
     currentReturn: 6.25,
     targetIrrRange: "4.5–7% APY",
-    targetIrrMid: 5.75,
+    targetIrrMid: 5.75, // Medium of 4.5-7% range
     term: "Open-ended"
   }
 ];
