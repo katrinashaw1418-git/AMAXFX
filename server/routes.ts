@@ -84,131 +84,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get portfolio historical performance
+  // Get portfolio historical performance based on actual transactions
   app.get("/api/portfolio/history", async (req, res) => {
     try {
       const { timeframe = "1M" } = req.query;
       const userId = 1;
       
-      // Get current portfolio value for base calculation
+      // Calculate date range based on timeframe
+      const endDate = new Date();
+      const startDate = new Date();
+      
+      switch (timeframe) {
+        case "1M":
+          startDate.setMonth(startDate.getMonth() - 1);
+          break;
+        case "3M":
+          startDate.setMonth(startDate.getMonth() - 3);
+          break;
+        case "1Y":
+          startDate.setFullYear(startDate.getFullYear() - 1);
+          break;
+        default:
+          startDate.setMonth(startDate.getMonth() - 1);
+      }
+      
+      // Get transactions in the date range to build historical data
+      const allTransactions = await storage.getTransactions(userId);
+      const transactionsInRange = allTransactions.filter(t => {
+        const transactionDate = new Date(t.createdAt!);
+        return transactionDate >= startDate && transactionDate <= endDate;
+      });
+      
+      // Get current portfolio value
       const wallets = await storage.getWallets(userId);
       const investments = await storage.getUserInvestments(userId);
       
-      let currentTotalValue = 0;
+      // Calculate current total value
+      let currentFiatValue = 0;
+      let currentCryptoValue = 0;
+      let currentStablecoinValue = 0;
       
-      // Calculate current fiat value
-      const fiatValue = wallets
-        .filter(w => w.walletType === 'fiat')
-        .reduce((sum, w) => sum + parseFloat(w.balance), 0);
-      
-      // Calculate crypto and stablecoin values
-      let cryptoValue = 0;
-      let stablecoinValue = 0;
-      
-      for (const wallet of wallets.filter(w => w.walletType === 'crypto')) {
+      for (const wallet of wallets) {
         const balance = parseFloat(wallet.balance);
-        
-        if (wallet.currency === "USDT" || wallet.currency === "USDC") {
-          stablecoinValue += balance;
+        if (wallet.walletType === 'fiat') {
+          currentFiatValue += balance;
+        } else if (wallet.currency === "USDT" || wallet.currency === "USDC") {
+          currentStablecoinValue += balance;
         } else {
           const rate = await storage.getFxRate(wallet.currency, "USD");
           if (rate) {
-            cryptoValue += (balance * parseFloat(rate.rate));
+            currentCryptoValue += (balance * parseFloat(rate.rate));
           }
         }
       }
       
-      // Calculate investment value
-      const investmentValue = investments
-        .reduce((sum, inv) => sum + parseFloat(inv.currentValue), 0);
+      const currentInvestmentValue = investments.reduce((sum, inv) => sum + parseFloat(inv.currentValue), 0);
+      const currentTotalValue = currentFiatValue + currentCryptoValue + currentStablecoinValue + currentInvestmentValue;
       
-      currentTotalValue = fiatValue + cryptoValue + stablecoinValue + investmentValue;
+      // Build historical data points from transactions
+      const dataPoints: Array<{ date: string; value: number; timestamp: number }> = [];
       
-      // Generate historical data based on timeframe
-      let data = [];
-      let dataPoints = 0;
-      let startDate = new Date();
-      
-      switch (timeframe) {
-        case "1M":
-          dataPoints = 30;
-          startDate.setMonth(startDate.getMonth() - 1);
-          break;
-        case "3M":
-          dataPoints = 90;
-          startDate.setMonth(startDate.getMonth() - 3);
-          break;
-        case "1Y":
-          dataPoints = 365;
-          startDate.setFullYear(startDate.getFullYear() - 1);
-          break;
-        default:
-          dataPoints = 30;
-          startDate.setMonth(startDate.getMonth() - 1);
-      }
-      
-      // Create realistic performance data with market volatility
-      for (let i = 0; i < dataPoints; i++) {
-        const date = new Date(startDate);
-        date.setDate(startDate.getDate() + i);
-        
-        // Calculate progress through the timeframe (0 to 1)
-        const progress = i / (dataPoints - 1);
-        
-        // Base growth trends for different timeframes
-        let baseGrowthFactor = 1;
-        let volatilityFactor = 0.02; // 2% daily volatility
-        
-        switch (timeframe) {
-          case "1M":
-            // Recent 1-month performance: +1.5% growth
-            baseGrowthFactor = 1 + (0.015 * progress);
-            volatilityFactor = 0.015;
-            break;
-          case "3M":
-            // 3-month performance: +8.2% growth with more volatility
-            baseGrowthFactor = 1 + (0.082 * progress);
-            volatilityFactor = 0.025;
-            break;
-          case "1Y":
-            // 1-year performance: +18.5% growth with market cycles
-            baseGrowthFactor = 1 + (0.185 * progress);
-            volatilityFactor = 0.03;
-            
-            // Add market cycle effects for yearly view
-            const cycleEffect = Math.sin(progress * Math.PI * 2) * 0.05;
-            baseGrowthFactor += cycleEffect;
-            break;
+      if (transactionsInRange.length === 0) {
+        // If no transactions in range, create flat line at current value
+        const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+        for (let i = 0; i <= daysDiff; i += Math.ceil(daysDiff / 20)) {
+          const date = new Date(startDate);
+          date.setDate(date.getDate() + i);
+          dataPoints.push({
+            date: date.toISOString().split('T')[0],
+            value: currentTotalValue,
+            timestamp: date.getTime()
+          });
         }
+      } else {
+        // Calculate portfolio value at key transaction points
+        const keyDates = [startDate];
         
-        // Add realistic market volatility
-        const randomVolatility = (Math.random() - 0.5) * volatilityFactor;
-        const marketFactor = baseGrowthFactor + randomVolatility;
-        
-        // Ensure we end close to current value for recent timeframes
-        let adjustedFactor = marketFactor;
-        if (i === dataPoints - 1) {
-          adjustedFactor = 1; // Last point should be current value
-        }
-        
-        const historicalValue = Math.round(currentTotalValue * adjustedFactor);
-        
-        data.push({
-          date: date.toISOString().split('T')[0],
-          value: historicalValue,
-          timestamp: date.getTime()
+        // Add transaction dates
+        transactionsInRange.forEach(t => {
+          const transactionDate = new Date(t.createdAt!);
+          if (!keyDates.some(d => d.toDateString() === transactionDate.toDateString())) {
+            keyDates.push(transactionDate);
+          }
         });
+        
+        // Add end date
+        keyDates.push(endDate);
+        keyDates.sort((a, b) => a.getTime() - b.getTime());
+        
+        // Calculate portfolio value at each key date
+        for (const date of keyDates) {
+          const transactionsUpToDate = allTransactions.filter(t => 
+            new Date(t.createdAt!) <= date && t.status === 'completed'
+          );
+          
+          // Calculate portfolio value based on transaction history
+          let portfolioValue = 0;
+          const balancesByWallet = new Map<string, number>();
+          
+          // Build wallet balances from transaction history
+          for (const transaction of transactionsUpToDate) {
+            const amount = parseFloat(transaction.amount);
+            
+            if (transaction.type === 'deposit') {
+              const currency = transaction.toCurrency!;
+              const currentBalance = balancesByWallet.get(currency) || 0;
+              balancesByWallet.set(currency, currentBalance + amount);
+            } else if (transaction.type === 'exchange') {
+              const fromCurrency = transaction.fromCurrency!;
+              const toCurrency = transaction.toCurrency!;
+              const fromAmount = parseFloat(transaction.amount);
+              const exchangeRate = parseFloat(transaction.exchangeRate || "1");
+              const toAmount = fromAmount * exchangeRate;
+              
+              // Subtract from source currency
+              const fromBalance = balancesByWallet.get(fromCurrency) || 0;
+              balancesByWallet.set(fromCurrency, fromBalance - fromAmount);
+              
+              // Add to target currency
+              const toBalance = balancesByWallet.get(toCurrency) || 0;
+              balancesByWallet.set(toCurrency, toBalance + toAmount);
+            }
+          }
+          
+          // Convert all balances to USD for total value
+          for (const [currency, balance] of balancesByWallet) {
+            if (balance <= 0) continue;
+            
+            if (currency === 'USD') {
+              portfolioValue += balance;
+            } else if (currency === 'USDT' || currency === 'USDC') {
+              portfolioValue += balance; // 1:1 with USD
+            } else {
+              const rate = await storage.getFxRate(currency, 'USD');
+              if (rate) {
+                portfolioValue += balance * parseFloat(rate.rate);
+              }
+            }
+          }
+          
+          // Add investment value (assume constant for historical calculation)
+          portfolioValue += currentInvestmentValue;
+          
+          dataPoints.push({
+            date: date.toISOString().split('T')[0],
+            value: Math.round(portfolioValue),
+            timestamp: date.getTime()
+          });
+        }
       }
       
       // Calculate performance metrics
-      const startValue = data[0]?.value || currentTotalValue;
-      const endValue = data[data.length - 1]?.value || currentTotalValue;
+      const startValue = dataPoints[0]?.value || currentTotalValue;
+      const endValue = dataPoints[dataPoints.length - 1]?.value || currentTotalValue;
       const totalReturn = endValue - startValue;
       const totalReturnPercent = startValue > 0 ? (totalReturn / startValue) * 100 : 0;
       
       res.json({
         timeframe,
-        data,
+        data: dataPoints,
         currentValue: currentTotalValue,
         totalReturn: totalReturn.toFixed(2),
         totalReturnPercent: totalReturnPercent.toFixed(2),
@@ -216,6 +250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endValue: endValue.toFixed(2)
       });
     } catch (error) {
+      console.error("Portfolio history error:", error);
       res.status(500).json({ error: "Failed to get portfolio history" });
     }
   });
