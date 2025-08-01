@@ -53,62 +53,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Calculate investment value with real-time performance
+      // Calculate investment value using unified calculation function
       let investmentValue = 0;
+      const evaluationDate = new Date();
+      
       for (const investment of investments) {
         const product = await storage.getInvestmentProduct(investment.productId);
         if (product) {
-          const investmentDate = new Date(investment.investmentDate);
-          const daysSinceInvestment = Math.floor((new Date().getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24));
-          const investedAmount = parseFloat(investment.investedAmount);
-          let performanceFactor = 1;
-          
-          // Apply performance calculation based on fund category
-          switch (product.category) {
-            case 'digital_assets':
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.15;
-                const volatility = 0.4;
-                const timeProgress = daysSinceInvestment / 365;
-                const baseReturn = annualReturn * timeProgress;
-                const volatilityAdjustment = (Math.sin(daysSinceInvestment * 0.1) * volatility * 0.1);
-                performanceFactor = 1 + baseReturn + volatilityAdjustment;
-              }
-              break;
-            case 'real_estate':
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.08;
-                const timeProgress = daysSinceInvestment / 365;
-                performanceFactor = 1 + (annualReturn * timeProgress);
-              }
-              break;
-            case 'corporate_credit':
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.05;
-                const timeProgress = daysSinceInvestment / 365;
-                performanceFactor = 1 + (annualReturn * timeProgress);
-              }
-              break;
-            case 'venture_capital':
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.20;
-                const volatility = 0.3;
-                const timeProgress = daysSinceInvestment / 365;
-                const baseReturn = annualReturn * timeProgress;
-                const volatilityAdjustment = (Math.random() - 0.5) * volatility * 0.1;
-                performanceFactor = 1 + baseReturn + volatilityAdjustment;
-              }
-              break;
-            default:
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.03;
-                const timeProgress = daysSinceInvestment / 365;
-                performanceFactor = 1 + (annualReturn * timeProgress);
-              }
-          }
-          
-          performanceFactor = Math.max(0.5, performanceFactor);
-          investmentValue += investedAmount * performanceFactor;
+          const performance = calculateInvestmentPerformance(investment, product, evaluationDate);
+          investmentValue += performance.currentValue;
         }
       }
       
