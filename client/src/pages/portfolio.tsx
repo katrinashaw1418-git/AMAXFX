@@ -20,7 +20,7 @@ const COLORS = ['hsl(207, 90%, 54%)', 'hsl(0, 84%, 55%)', '#D1D5DB', '#8B5CF6', 
 // Category-specific colors
 const getCategoryColor = (categoryName: string) => {
   const colorMap: { [key: string]: string } = {
-    'Real Estate': '#FBBF24',     // Yellow
+    'Real Estate': '#8B4513',     // Brown
     'Corporate Credit': '#D1D5DB',  // Gray-300
     'Venture Capital': '#8B5CF6',  // Purple
     'Digital Assets': '#EF4444',   // Red
