@@ -221,13 +221,6 @@ export default function Portfolio() {
       benchmarkReturn: ((totalPortfolioValue * 0.918 - totalPortfolioValue * 0.885) / (totalPortfolioValue * 0.885)) * 100
     },
     { 
-      period: '1Y', 
-      portfolio: totalPortfolioValue, 
-      benchmark: totalPortfolioValue * 0.844,
-      portfolioReturn: ((totalPortfolioValue - totalPortfolioValue * 0.792) / (totalPortfolioValue * 0.792)) * 100,
-      benchmarkReturn: ((totalPortfolioValue * 0.844 - totalPortfolioValue * 0.810) / (totalPortfolioValue * 0.810)) * 100
-    },
-    { 
       period: 'YTD', 
       portfolio: totalPortfolioValue, 
       benchmark: totalPortfolioValue * 0.887,
