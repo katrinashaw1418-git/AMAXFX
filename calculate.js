@@ -91,7 +91,24 @@ Object.entries(portfolioAllocation).forEach(([category, data]) => {
   console.log(`  Growth: $${growth.toLocaleString()}`);
 });
 
-console.log('\nVERIFICATION:');
+console.log('\n=== DISCREPANCY ANALYSIS ===');
 console.log(`API Prediction: ${prediction2032.returnPercent}%`);
 console.log(`Manual Calculation: ${((prediction2032.portfolioValue - currentPortfolio.totalInvested) / currentPortfolio.totalInvested * 100).toFixed(2)}%`);
-console.log('✅ CALCULATION CONFIRMED: Portfolio reaches 130% returns by 2032');
+console.log(`Difference: ${(148.47 - 130.39).toFixed(2)} percentage points`);
+
+console.log('\n=== CHECKING API CALCULATION ===');
+const apiReturnPercent = (prediction2032.totalReturn / currentPortfolio.totalInvested) * 100;
+console.log(`API Total Return: $${prediction2032.totalReturn.toLocaleString()}`);
+console.log(`API Calculation: $${prediction2032.totalReturn.toLocaleString()} ÷ $${currentPortfolio.totalInvested.toLocaleString()} = ${apiReturnPercent.toFixed(2)}%`);
+
+console.log('\n=== CORRECT CALCULATION ===');
+const actualReturn = prediction2032.portfolioValue - currentPortfolio.totalInvested;
+const correctPercent = (actualReturn / currentPortfolio.totalInvested) * 100;
+console.log(`Portfolio Value 2032: $${prediction2032.portfolioValue.toLocaleString()}`);
+console.log(`Less Initial Investment: $${currentPortfolio.totalInvested.toLocaleString()}`);
+console.log(`Actual Total Return: $${actualReturn.toLocaleString()}`);
+console.log(`Correct Return %: ${correctPercent.toFixed(2)}%`);
+
+console.log('\n🔍 CONCLUSION:');
+console.log(`The API shows different return amounts but the portfolio value calculation is correct.`);
+console.log(`Correct answer: Portfolio reaches ${correctPercent.toFixed(1)}% returns by 2032`);
