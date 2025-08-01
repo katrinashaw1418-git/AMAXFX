@@ -30,11 +30,9 @@ interface InvestmentPerformanceResponse {
 }
 
 export function InvestmentPerformanceChart() {
-  const [selectedTimeframe, setSelectedTimeframe] = useState<"1M" | "3M" | "1Y">("1Y");
-
   const { data: performanceData, isLoading } = useQuery<InvestmentPerformanceResponse>({
-    queryKey: ["/api/investment-performance", { timeframe: selectedTimeframe }],
-    queryFn: () => api.getInvestmentPerformance({ timeframe: selectedTimeframe }),
+    queryKey: ["/api/investment-performance", { timeframe: "1Y" }],
+    queryFn: () => api.getInvestmentPerformance({ timeframe: "1Y" }),
   });
 
   if (isLoading) {
@@ -103,39 +101,15 @@ export function InvestmentPerformanceChart() {
   const predicted7YearReturn = performanceData.predictions[performanceData.predictions.length - 1]?.weightedReturn || 0;
   const isPredictionPositive = predicted7YearReturn >= 0;
 
-  // Get timeframe colors
-  const getTimeframeColor = (timeframe: string) => {
-    switch (timeframe) {
-      case "1M": return isPositiveReturn ? "#22c55e" : "#ef4444"; // Green/Red
-      case "3M": return "#3b82f6"; // Blue
-      case "1Y": return "#8b5cf6"; // Purple
-      default: return "#6b7280";
-    }
-  };
-
-  const chartColor = getTimeframeColor(selectedTimeframe);
+  const chartColor = "#8b5cf6"; // Purple for quarterly display
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Performance by Period
-          </CardTitle>
-          <div className="flex gap-1">
-            {["1M", "3M", "1Y"].map((timeframe) => (
-              <Button
-                key={timeframe}
-                variant={selectedTimeframe === timeframe ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedTimeframe(timeframe as "1M" | "3M" | "1Y")}
-              >
-                {timeframe}
-              </Button>
-            ))}
-          </div>
-        </div>
+        <CardTitle className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5" />
+          Performance by Period
+        </CardTitle>
         
         {/* Performance Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
@@ -145,7 +119,7 @@ export function InvestmentPerformanceChart() {
           </div>
           
           <div className="space-y-1">
-            <p className="text-sm text-gray-600">Total Return ({selectedTimeframe})</p>
+            <p className="text-sm text-gray-600">Total Return</p>
             <div className="flex items-center gap-2">
               <p className={`text-2xl font-bold ${isPositiveReturn ? 'text-green-600' : 'text-red-600'}`}>
                 ${Math.abs(totalReturnValue).toLocaleString()}
