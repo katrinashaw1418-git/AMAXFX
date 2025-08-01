@@ -1,51 +1,44 @@
-// Quick calculation to verify current consistency across all endpoints
-console.log('=== CURRENT API RESPONSES ===');
+// Calculation check after new Bitcoin fund investment
+console.log('=== AFTER NEW BITCOIN INVESTMENT ===');
 
-// Portfolio allocation endpoint
-const portfolioAllocation = {
-  fiat: 627517,
-  crypto: 1515362.697,
-  stablecoin: 214500,
-  investment: 1949158.918913328,
-  totalValue: 4306538.615913328
-};
+// Current individual investments (6 total now)
+const investments = [
+  { name: "Real Estate Credit Fund", invested: 500000, current: 513150.68, return: 13150.68 },
+  { name: "Corporate Credit Fund", invested: 300000, current: 303698.63, return: 3698.63 },
+  { name: "VC / Growth Equity Fund", invested: 750000, current: 901250.22, return: 151250.22 },
+  { name: "Bitcoin Tracker Fund (Old)", invested: 150000, current: 163721.61, return: 13721.61 },
+  { name: "Ethereum Staking Fund", invested: 75000, current: 76793.39, return: 1793.39 },
+  { name: "Bitcoin Tracker Fund (New)", invested: 25000, current: 24752.82, return: -247.18 }
+];
 
-// Portfolio endpoint 
-const portfolio = {
-  totalValue: 4306538.62,
-  cryptoValue: 1515362.70,
-  stablecoinValue: 214500.00,
-  fiatValue: 627517.00,
-  investmentValue: 1949158.92
-};
+const totalInvested = investments.reduce((sum, inv) => sum + inv.invested, 0);
+const totalCurrent = investments.reduce((sum, inv) => sum + inv.current, 0);
+const totalReturn = investments.reduce((sum, inv) => sum + inv.return, 0);
+const totalReturnPercent = (totalReturn / totalInvested) * 100;
 
-// Individual investments from user-investments endpoint
-const individualInvestments = [513150.68, 303698.63, 890990.76, 165871.35, 75447.50];
-const sumIndividual = individualInvestments.reduce((a, b) => a + b, 0);
+console.log('INDIVIDUAL INVESTMENTS:');
+investments.forEach((inv, i) => {
+  const returnPercent = (inv.return / inv.invested) * 100;
+  console.log(`  ${i+1}. ${inv.name}`);
+  console.log(`     Invested: $${inv.invested.toLocaleString()}`);
+  console.log(`     Current: $${inv.current.toLocaleString()}`);
+  console.log(`     Return: $${inv.return.toLocaleString()} (${returnPercent.toFixed(2)}%)`);
+});
 
-console.log('1. PORTFOLIO ALLOCATION ENDPOINT:');
-console.log(`   Investment Value: $${portfolioAllocation.investment.toLocaleString()}`);
-console.log(`   Total Value: $${portfolioAllocation.totalValue.toLocaleString()}`);
+console.log('\n=== TOTALS ===');
+console.log(`Total Invested: $${totalInvested.toLocaleString()}`);
+console.log(`Total Current Value: $${totalCurrent.toLocaleString()}`);
+console.log(`Total Return: $${totalReturn.toLocaleString()}`);
+console.log(`Total Return %: ${totalReturnPercent.toFixed(2)}%`);
 
-console.log('\n2. PORTFOLIO ENDPOINT:');
-console.log(`   Investment Value: $${portfolio.investmentValue.toLocaleString()}`);
-console.log(`   Total Value: $${portfolio.totalValue.toLocaleString()}`);
+console.log('\n=== API COMPARISON ===');
+console.log(`API says total return: $183,367.35 (10.19%)`);
+console.log(`Manual calculation: $${totalReturn.toLocaleString()} (${totalReturnPercent.toFixed(2)}%)`);
+console.log(`Difference: $${Math.abs(183367.35 - totalReturn).toFixed(2)} ${Math.abs(183367.35 - totalReturn) < 1 ? '✅' : '❌'}`);
 
-console.log('\n3. INDIVIDUAL INVESTMENTS:');
-individualInvestments.forEach((val, i) => console.log(`   Investment ${i+1}: $${val.toLocaleString()}`));
-console.log(`   Manual Sum: $${sumIndividual.toLocaleString()}`);
-
-console.log('\n=== CONSISTENCY CHECK ===');
-const diff1 = Math.abs(portfolioAllocation.investment - portfolio.investmentValue);
-const diff2 = Math.abs(sumIndividual - portfolio.investmentValue);
-const diff3 = Math.abs(portfolioAllocation.totalValue - portfolio.totalValue);
-
-console.log(`Portfolio Allocation vs Portfolio Investment: $${diff1.toFixed(2)} ${diff1 < 1 ? '✅' : '❌'}`);
-console.log(`Individual Sum vs Portfolio Investment: $${diff2.toFixed(2)} ${diff2 < 1 ? '✅' : '❌'}`);
-console.log(`Portfolio Allocation vs Portfolio Total: $${diff3.toFixed(2)} ${diff3 < 1 ? '✅' : '❌'}`);
-
-if (diff1 < 1 && diff2 < 1 && diff3 < 1) {
-  console.log('\n🎉 ALL CALCULATIONS ARE CONSISTENT! 🎉');
-} else {
-  console.log('\n⚠️  INCONSISTENCIES FOUND - NEED TO FIX');
-}
+// Check if Bitcoin investments show correctly
+const bitcoinInvestments = investments.filter(inv => inv.name.includes("Bitcoin"));
+const bitcoinTotal = bitcoinInvestments.reduce((sum, inv) => sum + inv.current, 0);
+console.log(`\nBitcoin Fund Total: $${bitcoinTotal.toLocaleString()}`);
+console.log(`API Digital Assets: $265,267.82`);
+console.log(`Bitcoin vs API: $${Math.abs(265267.82 - bitcoinTotal).toFixed(2)} ${Math.abs(265267.82 - bitcoinTotal) < 1 ? '✅' : '❌'}`);

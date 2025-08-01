@@ -8,6 +8,9 @@ This platform is a comprehensive cross-border wealth management solution designe
 - **Performance by Period Chart**: Fixed calculation discrepancies, now shows quarterly intervals only with accurate total returns matching individual investment totals  
 - **Bitcoin Tracker Fund Verification**: Confirmed accurate 15% annual return calculations with 40% volatility adjustments using deterministic Math.sin() function
 - **Data Consistency**: Achieved perfect alignment between individual investment displays and Performance by Period chart (discrepancy < $0.01)
+- **Portfolio Allocation Endpoint Fix**: Updated portfolio allocation and AI recommendations endpoints to use unified calculation function, eliminating $11,328 discrepancy
+- **Multi-Investment Support**: Verified system correctly handles multiple investments in same fund (e.g., two Bitcoin tracker investments) with accurate individual and combined calculations
+- **Return Percentage Accuracy**: Confirmed total return percentage correctly decreases when new investments are added without initial gains (mathematical dilution effect)
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
