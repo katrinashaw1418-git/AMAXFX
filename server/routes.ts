@@ -1422,10 +1422,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Generate 12-month prediction
+      // Generate 7-year prediction (84 months)
       const predictions = [];
       const predictionStartDate = new Date(endDate);
-      for (let i = 1; i <= 12; i++) {
+      for (let i = 1; i <= 84; i++) {
         predictionStartDate.setMonth(predictionStartDate.getMonth() + 1);
         
         let predictedValue = 0;
