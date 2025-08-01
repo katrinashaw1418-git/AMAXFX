@@ -1,118 +1,121 @@
-// INVESTMENT RETURN CALCULATION USING TARGET IRR RANGES
-console.log('=== TARGET IRR JUSTIFIED RETURNS CALCULATION ===\n');
+// INVESTMENT RETURN CALCULATION USING MIDPOINT IRR 
+console.log('=== MEDIUM IRR PORTFOLIO RETURN CALCULATION ===\n');
 
-// Current investments with target IRR ranges
+// Investment returns calculated using midpoint IRR values instead of current performance
 const investments = [
   { 
     name: "Real Estate Credit Fund", 
     invested: 500000, 
-    currentReturn: 2.63,
+    currentReturn: 2.63, // Actual current
     targetIrrRange: "~11%",
-    targetIrrMid: 11.0, // Single target value
+    midpointIrr: 11.0, // Use this for calculation
     term: "~10.2 months (rolling)"
   },
   { 
     name: "Corporate Credit Fund", 
     invested: 300000, 
-    currentReturn: 1.23,
+    currentReturn: 1.23, // Actual current
     targetIrrRange: "10–12%",
-    targetIrrMid: 11.0, // Medium of 10-12% range
+    midpointIrr: 11.0, // Midpoint of 10-12%
     term: "2–3 years"
   },
   { 
     name: "VC / Growth Equity Fund", 
     invested: 750000, 
-    currentReturn: 22.75,
+    currentReturn: 22.75, // Actual current
     targetIrrRange: "16–20%",
-    targetIrrMid: 18.0, // Medium of 16-20% range
+    midpointIrr: 18.0, // Midpoint of 16-20%
     term: "5–7+ years"
   },
   { 
     name: "Bitcoin Tracker Fund", 
     invested: 150000, 
-    currentReturn: 3.42,
+    currentReturn: 3.42, // Actual current
     targetIrrRange: "Market-based (historical 60%+ annualized)",
-    targetIrrMid: 15.0, // Conservative medium estimate for annualized return
+    midpointIrr: 15.0, // Conservative midpoint estimate
     term: "Open-ended"
   },
   { 
     name: "Ethereum Staking Fund", 
     invested: 75000, 
-    currentReturn: 6.25,
+    currentReturn: 6.25, // Actual current
     targetIrrRange: "4.5–7% APY",
-    targetIrrMid: 5.75, // Medium of 4.5-7% range
+    midpointIrr: 5.75, // Midpoint of 4.5-7%
     term: "Open-ended"
   }
 ];
 
-console.log('JUSTIFIED RETURNS USING TARGET IRR:\n');
+console.log('PORTFOLIO USING MIDPOINT IRR CALCULATION:\n');
 
 let totalInvested = 0;
 let totalCurrentReturn = 0;
-let totalTargetReturn = 0;
-let totalTargetValue = 0;
+let totalMidpointReturn = 0;
+let totalMidpointValue = 0;
 let totalCurrentValue = 0;
 
 investments.forEach((inv, i) => {
   totalInvested += inv.invested;
   
-  // Current values
+  // Current actual values
   const currentReturnAmount = inv.invested * (inv.currentReturn / 100);
   const currentValue = inv.invested + currentReturnAmount;
   totalCurrentReturn += currentReturnAmount;
   totalCurrentValue += currentValue;
   
-  // Target values based on target IRR
-  const targetReturnAmount = inv.invested * (inv.targetIrrMid / 100);
-  const targetValue = inv.invested + targetReturnAmount;
-  totalTargetReturn += targetReturnAmount;
-  totalTargetValue += targetValue;
+  // Midpoint IRR calculated values - THIS IS THE KEY CALCULATION
+  const midpointReturnAmount = inv.invested * (inv.midpointIrr / 100);
+  const midpointValue = inv.invested + midpointReturnAmount;
+  totalMidpointReturn += midpointReturnAmount;
+  totalMidpointValue += midpointValue;
   
   console.log(`${i+1}. ${inv.name}`);
   console.log(`   Invested: $${inv.invested.toLocaleString()}`);
-  console.log(`   Target IRR: ${inv.targetIrrRange}`);
-  console.log(`   Using Target IRR: ${inv.targetIrrMid}%`);
-  console.log(`   Current Return: ${inv.currentReturn}% ($${currentReturnAmount.toLocaleString()})`);
-  console.log(`   Target Return: ${inv.targetIrrMid}% ($${targetReturnAmount.toLocaleString()})`);
-  console.log(`   Current Value: $${currentValue.toLocaleString()}`);
-  console.log(`   Target Value: $${targetValue.toLocaleString()}`);
-  console.log(`   Gap: $${(targetReturnAmount - currentReturnAmount).toLocaleString()}`);
+  console.log(`   Target IRR Range: ${inv.targetIrrRange}`);
+  console.log(`   Midpoint IRR Used: ${inv.midpointIrr}%`);
+  console.log(`   Actual Current Return: ${inv.currentReturn}% ($${currentReturnAmount.toLocaleString()})`);
+  console.log(`   MIDPOINT IRR RETURN: ${inv.midpointIrr}% ($${midpointReturnAmount.toLocaleString()})`);
+  console.log(`   Midpoint IRR Value: $${midpointValue.toLocaleString()}`);
   console.log('');
 });
 
-console.log('PORTFOLIO COMPARISON:\n');
+console.log('=== MIDPOINT IRR PORTFOLIO SUMMARY ===\n');
 
 const currentPortfolioReturn = (totalCurrentReturn / totalInvested) * 100;
-const targetPortfolioReturn = (totalTargetReturn / totalInvested) * 100;
+const midpointPortfolioReturn = (totalMidpointReturn / totalInvested) * 100;
 
-console.log('CURRENT PORTFOLIO:');
+console.log('COMPARISON:');
 console.log(`Total Invested: $${totalInvested.toLocaleString()}`);
-console.log(`Total Current Return: $${totalCurrentReturn.toLocaleString()}`);
-console.log(`Total Current Value: $${totalCurrentValue.toLocaleString()}`);
-console.log(`Current Portfolio Return: ${currentPortfolioReturn.toFixed(2)}%`);
+console.log(`\nActual Current Portfolio:`);
+console.log(`  Return: $${totalCurrentReturn.toLocaleString()} (${currentPortfolioReturn.toFixed(2)}%)`);
+console.log(`  Total Value: $${totalCurrentValue.toLocaleString()}`);
 
-console.log('\nTARGET IRR PORTFOLIO:');
-console.log(`Total Invested: $${totalInvested.toLocaleString()}`);
-console.log(`Total Target Return: $${totalTargetReturn.toLocaleString()}`);
-console.log(`Total Target Value: $${totalTargetValue.toLocaleString()}`);
-console.log(`Target Portfolio Return: ${targetPortfolioReturn.toFixed(2)}%`);
+console.log(`\nMIDPOINT IRR PORTFOLIO:`);
+console.log(`  Return: $${totalMidpointReturn.toLocaleString()} (${midpointPortfolioReturn.toFixed(2)}%)`);
+console.log(`  Total Value: $${totalMidpointValue.toLocaleString()}`);
 
-console.log('\nGAP ANALYSIS:');
-const returnGap = totalTargetReturn - totalCurrentReturn;
-const percentageGap = targetPortfolioReturn - currentPortfolioReturn;
+console.log('\nMIDPOINT IRR CALCULATION BREAKDOWN:');
+console.log(`Real Estate: $500,000 × 11% = $${(500000 * 0.11).toLocaleString()}`);
+console.log(`Corporate Credit: $300,000 × 11% = $${(300000 * 0.11).toLocaleString()}`);
+console.log(`VC Fund: $750,000 × 18% = $${(750000 * 0.18).toLocaleString()}`);
+console.log(`Bitcoin: $150,000 × 15% = $${(150000 * 0.15).toLocaleString()}`);
+console.log(`Ethereum: $75,000 × 5.75% = $${(75000 * 0.0575).toLocaleString()}`);
+console.log(`TOTAL MIDPOINT RETURN: $${totalMidpointReturn.toLocaleString()}`);
 
-console.log(`Return Gap: $${returnGap.toLocaleString()}`);
-console.log(`Percentage Gap: ${percentageGap.toFixed(2)} percentage points`);
+const weightedAvgMidpointIrr = ((500000 * 11 + 300000 * 11 + 750000 * 18 + 150000 * 15 + 75000 * 5.75) / totalInvested);
+console.log(`\nWeighted Average Midpoint IRR: ${weightedAvgMidpointIrr.toFixed(2)}%`);
+console.log(`This equals: $${totalInvested.toLocaleString()} × ${weightedAvgMidpointIrr.toFixed(2)}% = $${totalMidpointReturn.toLocaleString()}`);
 
-console.log('\nJUSTIFICATION USING TARGET IRR:');
-console.log(`• If all investments met their target IRR, portfolio return would be ${targetPortfolioReturn.toFixed(2)}%`);
-console.log(`• Current return of ${currentPortfolioReturn.toFixed(2)}% represents ${((currentPortfolioReturn/targetPortfolioReturn)*100).toFixed(1)}% of target performance`);
-console.log(`• VC Fund exceeds target (22.75% vs 18% target), offsetting underperforming funds`);
-console.log(`• Real Estate and Corporate Credit are likely in ramp-up phase toward target returns`);
-console.log(`• Ethereum Staking is performing above target (6.25% vs 5.75% target)`);
+console.log('\n=== MIDPOINT IRR JUSTIFICATION ===');
+console.log(`Using midpoint IRR values, the portfolio should generate:`);
+console.log(`• Portfolio Return: ${midpointPortfolioReturn.toFixed(2)}% ($${totalMidpointReturn.toLocaleString()})`);
+console.log(`• This represents the expected return if all funds hit their midpoint targets`);
+console.log(`• Actual current return: ${currentPortfolioReturn.toFixed(2)}% ($${totalCurrentReturn.toLocaleString()})`);
+console.log(`• Performance ratio: ${((currentPortfolioReturn/midpointPortfolioReturn)*100).toFixed(1)}% of midpoint potential`);
 
-console.log('\nTIME FACTOR CONSIDERATIONS:');
-console.log(`• Real Estate Credit: Target ~11% over ~10.2 months (currently early stage)`);
-console.log(`• Corporate Credit: Target 11% over 2-3 years (currently early stage)`);
-console.log(`• VC Fund: Target 18% over 5-7+ years (performing ahead of schedule)`);
-console.log(`• Bitcoin/Ethereum: Open-ended, market dependent`);
+console.log('\nMIDPOINT IRR PORTFOLIO COMPOSITION:');
+console.log(`• Real Estate (28.2%): 11% IRR on $500K = $55K`);
+console.log(`• Corporate Credit (16.9%): 11% IRR on $300K = $33K`);
+console.log(`• VC Fund (42.3%): 18% IRR on $750K = $135K`);
+console.log(`• Bitcoin (8.5%): 15% IRR on $150K = $22.5K`);
+console.log(`• Ethereum (4.2%): 5.75% IRR on $75K = $4.3K`);
+console.log(`• TOTAL: ${midpointPortfolioReturn.toFixed(2)}% return = $${totalMidpointReturn.toLocaleString()}`);
