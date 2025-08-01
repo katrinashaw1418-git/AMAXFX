@@ -17,19 +17,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { InvestmentPerformanceChart } from "@/components/dashboard/investment-performance-chart";
 
 const categoryIcons = {
-  "Real Estate": Building,
-  "Corporate Credit": CreditCard,
-  "Venture Capital": Rocket,
-  "Digital Assets": Bitcoin,
-  "Cash Deposits": DollarSign,
+  real_estate: Building,
+  corporate_credit: CreditCard,
+  venture_capital: Rocket,
+  digital_assets: Bitcoin,
+  cash_deposit: DollarSign,
 };
 
 const categoryLabels = {
-  "Real Estate": "Real Estate",
-  "Corporate Credit": "Corporate Credit", 
-  "Venture Capital": "Venture Capital",
-  "Digital Assets": "Digital Assets",
-  "Cash Deposits": "Cash Deposits",
+  real_estate: "Real Estate",
+  corporate_credit: "Corporate Credit",
+  venture_capital: "Venture Capital",
+  digital_assets: "Digital Assets",
+  cash_deposit: "Cash Deposits",
 };
 
 const riskProfileColors = {
@@ -78,7 +78,7 @@ export default function Investments() {
   });
 
   const investMutation = useMutation({
-    mutationFn: (data: { productId: number; amount: number; sourceCurrency?: string; sourceAmount?: number }) => api.createInvestment(data),
+    mutationFn: (data: { productId: number; amount: number }) => api.createInvestment(data),
     onSuccess: (response) => {
       toast({
         title: "Investment Created",
@@ -186,7 +186,7 @@ export default function Investments() {
   const totalReturnPercent = totalInvested > 0 ? (totalReturn / totalInvested) * 100 : 0;
 
   // Currency selection and conversion logic
-  const selectedWallet = wallets?.find((w: any) => w.currency === selectedCurrency);
+  const selectedWallet = wallets?.find(w => w.currency === selectedCurrency);
   const availableBalance = selectedWallet?.availableBalance ? parseFloat(selectedWallet.availableBalance) : 0;
   
 
@@ -206,7 +206,7 @@ export default function Investments() {
     'USDC': '◎'
   };
 
-  const availableCurrencies = wallets?.map((wallet: any) => ({
+  const availableCurrencies = wallets?.map(wallet => ({
     currency: wallet.currency,
     balance: parseFloat(wallet.availableBalance || '0'),
     displayName: wallet.displayName || wallet.currency,
@@ -218,11 +218,11 @@ export default function Investments() {
     if (currency === 'USD') return amount;
     
     // Look for direct rate from currency to USD
-    let rate = fxRates?.find((r: any) => r.baseCurrency === currency && r.targetCurrency === 'USD')?.rate;
+    let rate = fxRates?.find(r => r.baseCurrency === currency && r.targetCurrency === 'USD')?.rate;
     
     // If not found, look for USD to currency rate and invert it
     if (!rate) {
-      const inverseRate = fxRates?.find((r: any) => r.baseCurrency === 'USD' && r.targetCurrency === currency)?.rate;
+      const inverseRate = fxRates?.find(r => r.baseCurrency === 'USD' && r.targetCurrency === currency)?.rate;
       if (inverseRate) {
         rate = 1 / parseFloat(inverseRate);
       }
@@ -402,7 +402,7 @@ export default function Investments() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableCurrencies.map((currency: any) => (
+                    {availableCurrencies.map((currency) => (
                       <SelectItem key={currency.currency} value={currency.currency}>
                         <span className="font-medium">{currency.currency}</span>
                       </SelectItem>
@@ -715,7 +715,7 @@ export default function Investments() {
                   </div>
                   <div className="flex justify-between">
                     <span>Risk Profile:</span>
-                    <Badge className={riskProfileColors[selectedProduct.riskProfile as keyof typeof riskProfileColors]}>
+                    <Badge className={riskProfileColors[selectedProduct.riskProfile as keyof typeof riskProfileColors]} size="sm">
                       {selectedProduct.riskProfile}
                     </Badge>
                   </div>
