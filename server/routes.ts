@@ -1238,6 +1238,241 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get investment performance by period with predictions
+  app.get("/api/investment-performance", async (req, res) => {
+    try {
+      const { timeframe = "1Y" } = req.query;
+      const userId = 1;
+      
+      // Get all user investments
+      const investments = await storage.getUserInvestments(userId);
+      const allProducts = await storage.getInvestmentProducts();
+      
+      // Calculate date range
+      const endDate = new Date();
+      const startDate = new Date();
+      
+      switch (timeframe) {
+        case "1M":
+          startDate.setMonth(startDate.getMonth() - 1);
+          break;
+        case "3M":
+          startDate.setMonth(startDate.getMonth() - 3);
+          break;
+        case "1Y":
+          startDate.setFullYear(startDate.getFullYear() - 1);
+          break;
+        default:
+          startDate.setFullYear(startDate.getFullYear() - 1);
+      }
+      
+      // Generate monthly data points for the timeframe
+      const dataPoints = [];
+      const currentDate = new Date(startDate);
+      
+      while (currentDate <= endDate) {
+        let totalInvestmentValue = 0;
+        let weightedReturn = 0;
+        let totalInvestedAmount = 0;
+        
+        // Calculate investment values and returns for this date
+        for (const investment of investments) {
+          const product = allProducts.find(p => p.id === investment.productId);
+          if (product) {
+            const investmentDate = new Date(investment.investmentDate);
+            if (investmentDate <= currentDate) {
+              const daysSinceInvestment = Math.floor((currentDate.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24));
+              const investedAmount = parseFloat(investment.investedAmount);
+              let performanceFactor = 1;
+              
+              // Apply performance calculation
+              if (daysSinceInvestment > 0) {
+                const timeProgress = daysSinceInvestment / 365;
+                let annualReturn = 0;
+                
+                switch (product.category) {
+                  case 'digital_assets':
+                    annualReturn = 0.15;
+                    const volatility = 0.4;
+                    const baseReturn = annualReturn * timeProgress;
+                    const volatilityAdjustment = (Math.sin(daysSinceInvestment * 0.1) * volatility * 0.1);
+                    performanceFactor = 1 + baseReturn + volatilityAdjustment;
+                    break;
+                  case 'real_estate':
+                    annualReturn = 0.08;
+                    performanceFactor = 1 + (annualReturn * timeProgress);
+                    break;
+                  case 'corporate_credit':
+                    annualReturn = 0.05;
+                    performanceFactor = 1 + (annualReturn * timeProgress);
+                    break;
+                  case 'venture_capital':
+                    annualReturn = 0.20;
+                    const vcVolatility = 0.3;
+                    const vcBaseReturn = annualReturn * timeProgress;
+                    const vcVolatilityAdjustment = (Math.random() - 0.5) * vcVolatility * 0.1;
+                    performanceFactor = 1 + vcBaseReturn + vcVolatilityAdjustment;
+                    break;
+                  default:
+                    annualReturn = 0.03;
+                    performanceFactor = 1 + (annualReturn * timeProgress);
+                }
+                
+                performanceFactor = Math.max(0.5, performanceFactor);
+              }
+              
+              const currentValue = investedAmount * performanceFactor;
+              totalInvestmentValue += currentValue;
+              totalInvestedAmount += investedAmount;
+              
+              // Weight the return by the investment amount
+              const returnPercent = ((performanceFactor - 1) * 100);
+              weightedReturn += (returnPercent * investedAmount);
+            }
+          }
+        }
+        
+        // Calculate weighted average return
+        const avgReturn = totalInvestedAmount > 0 ? weightedReturn / totalInvestedAmount : 0;
+        
+        dataPoints.push({
+          date: currentDate.toISOString().split('T')[0],
+          value: Math.round(totalInvestmentValue),
+          investedAmount: Math.round(totalInvestedAmount),
+          weightedReturn: Number(avgReturn.toFixed(2)),
+          timestamp: currentDate.getTime()
+        });
+        
+        // Move to next month
+        currentDate.setMonth(currentDate.getMonth() + 1);
+      }
+      
+      // Calculate 12-month prediction based on current allocation
+      const currentPortfolioAllocation: Record<string, { value: number; annualReturn: number }> = {};
+      let totalCurrentInvestment = 0;
+      
+      for (const investment of investments) {
+        const product = allProducts.find(p => p.id === investment.productId);
+        if (product) {
+          const investmentDate = new Date(investment.investmentDate);
+          const daysSinceInvestment = Math.floor((endDate.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24));
+          const investedAmount = parseFloat(investment.investedAmount);
+          let performanceFactor = 1;
+          
+          if (daysSinceInvestment > 0) {
+            const timeProgress = daysSinceInvestment / 365;
+            let annualReturn = 0;
+            
+            switch (product.category) {
+              case 'digital_assets':
+                annualReturn = 0.15;
+                const volatility = 0.4;
+                const baseReturn = annualReturn * timeProgress;
+                const volatilityAdjustment = (Math.sin(daysSinceInvestment * 0.1) * volatility * 0.1);
+                performanceFactor = 1 + baseReturn + volatilityAdjustment;
+                break;
+              case 'real_estate':
+                annualReturn = 0.08;
+                performanceFactor = 1 + (annualReturn * timeProgress);
+                break;
+              case 'corporate_credit':
+                annualReturn = 0.05;
+                performanceFactor = 1 + (annualReturn * timeProgress);
+                break;
+              case 'venture_capital':
+                annualReturn = 0.20;
+                const vcVolatility = 0.3;
+                const vcBaseReturn = annualReturn * timeProgress;
+                const vcVolatilityAdjustment = (Math.random() - 0.5) * vcVolatility * 0.1;
+                performanceFactor = 1 + vcBaseReturn + vcVolatilityAdjustment;
+                break;
+              default:
+                annualReturn = 0.03;
+                performanceFactor = 1 + (annualReturn * timeProgress);
+            }
+            
+            performanceFactor = Math.max(0.5, performanceFactor);
+          }
+          
+          const currentValue = investedAmount * performanceFactor;
+          totalCurrentInvestment += currentValue;
+          
+          if (!currentPortfolioAllocation[product.category]) {
+            currentPortfolioAllocation[product.category] = { value: 0, annualReturn: 0 };
+          }
+          currentPortfolioAllocation[product.category].value += currentValue;
+          
+          // Set expected annual returns for predictions
+          switch (product.category) {
+            case 'digital_assets':
+              currentPortfolioAllocation[product.category].annualReturn = 0.15;
+              break;
+            case 'real_estate':
+              currentPortfolioAllocation[product.category].annualReturn = 0.08;
+              break;
+            case 'corporate_credit':
+              currentPortfolioAllocation[product.category].annualReturn = 0.05;
+              break;
+            case 'venture_capital':
+              currentPortfolioAllocation[product.category].annualReturn = 0.20;
+              break;
+            default:
+              currentPortfolioAllocation[product.category].annualReturn = 0.03;
+          }
+        }
+      }
+      
+      // Generate 12-month prediction
+      const predictions = [];
+      const predictionStartDate = new Date(endDate);
+      for (let i = 1; i <= 12; i++) {
+        predictionStartDate.setMonth(predictionStartDate.getMonth() + 1);
+        
+        let predictedValue = 0;
+        let predictedWeightedReturn = 0;
+        
+        for (const [category, allocation] of Object.entries(currentPortfolioAllocation)) {
+          const { value, annualReturn } = allocation as { value: number; annualReturn: number };
+          const monthlyReturn = annualReturn / 12;
+          const futureValue = value * Math.pow(1 + monthlyReturn, i);
+          predictedValue += futureValue;
+          
+          const categoryReturn = ((futureValue - value) / value) * 100;
+          predictedWeightedReturn += (categoryReturn * value);
+        }
+        
+        const avgPredictedReturn = totalCurrentInvestment > 0 ? predictedWeightedReturn / totalCurrentInvestment : 0;
+        
+        predictions.push({
+          date: predictionStartDate.toISOString().split('T')[0],
+          value: Math.round(predictedValue),
+          weightedReturn: Number(avgPredictedReturn.toFixed(2)),
+          isPrediction: true,
+          timestamp: predictionStartDate.getTime()
+        });
+      }
+      
+      // Calculate overall performance metrics
+      const startValue = dataPoints[0]?.value || 0;
+      const endValue = dataPoints[dataPoints.length - 1]?.value || 0;
+      const totalReturn = endValue - startValue;
+      const totalReturnPercent = startValue > 0 ? (totalReturn / startValue) * 100 : 0;
+      
+      res.json({
+        timeframe,
+        data: dataPoints,
+        predictions,
+        currentValue: totalCurrentInvestment,
+        totalReturn: totalReturn.toFixed(2),
+        totalReturnPercent: totalReturnPercent.toFixed(2),
+        portfolioAllocation: currentPortfolioAllocation
+      });
+    } catch (error) {
+      console.error("Investment performance error:", error);
+      res.status(500).json({ error: "Failed to get investment performance" });
+    }
+  });
+
   // Get investment breakdown by category
   app.get("/api/investment-breakdown", async (req, res) => {
     try {
