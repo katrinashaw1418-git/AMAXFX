@@ -2,7 +2,19 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 
-// Unified investment performance calculation using midpoint IRR
+// IRR mapping - Market-based for Bitcoin, midpoint for others
+function getAnnualReturn(category: string, productName?: string): number {
+  const rates = {
+    'real_estate': 0.11,      // 11% midpoint
+    'corporate_credit': 0.11, // 11% midpoint (10-12% range)
+    'venture_capital': 0.18,  // 18% midpoint (16-20% range)
+    'digital_assets': (productName && typeof productName === 'string' && productName.includes('Bitcoin')) ? 0.60 : 0.0575, // Bitcoin 60% market-based, Ethereum 5.75%
+    'default': 0.11
+  };
+  return rates[category as keyof typeof rates] || rates.default;
+}
+
+// Unified investment performance calculation using market-based returns
 function calculateInvestmentPerformance(
   product: any,
   investedAmount: number,
@@ -17,24 +29,14 @@ function calculateInvestmentPerformance(
   
   const daysSinceInvestment = Math.floor((currentDate.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24));
   
-  // Midpoint IRR mapping based on target ranges
-  const getMidpointIrr = (category, productName) => {
-    const rates = {
-      'real_estate': 0.11,      // 11% midpoint
-      'corporate_credit': 0.11, // 11% midpoint (10-12% range)
-      'venture_capital': 0.18,  // 18% midpoint (16-20% range)
-      'digital_assets': (productName && typeof productName === 'string' && productName.includes('Bitcoin')) ? 0.15 : 0.0575, // Bitcoin 15%, Ethereum 5.75%
-      'default': 0.11
-    };
-    return rates[category] || rates.default;
-  };
+  // Use the global getAnnualReturn function
   
-  const midpointIrr = getMidpointIrr(product.category, product.name);
+  const annualReturn = getAnnualReturn(product.category, product.name);
   let performanceFactor = 1;
   
   if (daysSinceInvestment > 0) {
     const timeProgress = daysSinceInvestment / 365;
-    performanceFactor = 1 + (midpointIrr * timeProgress);
+    performanceFactor = 1 + (annualReturn * timeProgress);
     
     // Add controlled volatility for specific fund types
     if (product.category === 'digital_assets' && product.name && typeof product.name === 'string' && product.name.includes('Bitcoin')) {
@@ -1329,23 +1331,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           currentPortfolioAllocation[product.category].value += currentValue;
           
-          // Set expected annual returns for predictions
-          switch (product.category) {
-            case 'digital_assets':
-              currentPortfolioAllocation[product.category].annualReturn = 0.15;
-              break;
-            case 'real_estate':
-              currentPortfolioAllocation[product.category].annualReturn = 0.08;
-              break;
-            case 'corporate_credit':
-              currentPortfolioAllocation[product.category].annualReturn = 0.05;
-              break;
-            case 'venture_capital':
-              currentPortfolioAllocation[product.category].annualReturn = 0.20;
-              break;
-            default:
-              currentPortfolioAllocation[product.category].annualReturn = 0.03;
-          }
+          // Set expected annual returns for predictions based on actual calculation methodology
+          const predictedReturn = getAnnualReturn(product.category, product.name);
+          currentPortfolioAllocation[product.category].annualReturn = predictedReturn;
         }
       }
       
