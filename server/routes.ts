@@ -2,6 +2,53 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 
+// Unified investment performance calculation using midpoint IRR
+function calculateInvestmentPerformance(
+  product: any,
+  investedAmount: number,
+  investmentDate: Date,
+  currentDate: Date = new Date()
+): { currentValue: number; returnAmount: number; returnPercentage: number } {
+  const daysSinceInvestment = Math.floor((currentDate.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // Midpoint IRR mapping based on target ranges
+  const midpointIrrMap = {
+    'real_estate': 0.11,      // 11% midpoint
+    'corporate_credit': 0.11, // 11% midpoint (10-12% range)
+    'venture_capital': 0.18,  // 18% midpoint (16-20% range)
+    'digital_assets': product.name.includes('Bitcoin') ? 0.15 : 0.0575, // Bitcoin 15%, Ethereum 5.75%
+    'default': 0.11
+  };
+  
+  const midpointIrr = midpointIrrMap[product.category as keyof typeof midpointIrrMap] || midpointIrrMap.default;
+  let performanceFactor = 1;
+  
+  if (daysSinceInvestment > 0) {
+    const timeProgress = daysSinceInvestment / 365;
+    performanceFactor = 1 + (midpointIrr * timeProgress);
+    
+    // Add controlled volatility for specific fund types
+    if (product.category === 'digital_assets' && product.name.includes('Bitcoin')) {
+      const volatilityAdjustment = Math.sin(daysSinceInvestment * 0.1) * 0.4 * 0.1;
+      performanceFactor += volatilityAdjustment;
+    } else if (product.category === 'venture_capital') {
+      const volatilityAdjustment = (Math.sin(daysSinceInvestment * 0.05) * 0.3 * 0.1);
+      performanceFactor += volatilityAdjustment;
+    }
+  }
+  
+  performanceFactor = Math.max(0.5, performanceFactor);
+  const currentValue = investedAmount * performanceFactor;
+  const returnAmount = currentValue - investedAmount;
+  const returnPercentage = (returnAmount / investedAmount) * 100;
+  
+  return {
+    currentValue,
+    returnAmount,
+    returnPercentage
+  };
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
@@ -53,14 +100,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Calculate investment value using unified calculation function
+      // Calculate investment value using unified midpoint IRR calculation function
       let investmentValue = 0;
       const evaluationDate = new Date();
       
       for (const investment of investments) {
         const product = await storage.getInvestmentProduct(investment.productId);
         if (product) {
-          const performance = calculateInvestmentPerformance(investment, product, evaluationDate);
+          const investmentDate = new Date(investment.investmentDate);
+          const investedAmount = parseFloat(investment.investedAmount);
+          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, evaluationDate);
           investmentValue += performance.currentValue;
         }
       }
@@ -156,52 +205,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const investedAmount = parseFloat(investment.investedAmount);
           let performanceFactor = 1;
           
-          // Apply same performance calculation as historical data
-          switch (product.category) {
-            case 'digital_assets':
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.15;
-                const volatility = 0.4;
-                const timeProgress = daysSinceInvestment / 365;
-                const baseReturn = annualReturn * timeProgress;
-                const volatilityAdjustment = (Math.sin(daysSinceInvestment * 0.1) * volatility * 0.1);
-                performanceFactor = 1 + baseReturn + volatilityAdjustment;
-              }
-              break;
-            case 'real_estate':
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.08;
-                const timeProgress = daysSinceInvestment / 365;
-                performanceFactor = 1 + (annualReturn * timeProgress);
-              }
-              break;
-            case 'corporate_credit':
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.05;
-                const timeProgress = daysSinceInvestment / 365;
-                performanceFactor = 1 + (annualReturn * timeProgress);
-              }
-              break;
-            case 'venture_capital':
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.20;
-                const volatility = 0.3;
-                const timeProgress = daysSinceInvestment / 365;
-                const baseReturn = annualReturn * timeProgress;
-                const volatilityAdjustment = (Math.random() - 0.5) * volatility * 0.1;
-                performanceFactor = 1 + baseReturn + volatilityAdjustment;
-              }
-              break;
-            default:
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.03;
-                const timeProgress = daysSinceInvestment / 365;
-                performanceFactor = 1 + (annualReturn * timeProgress);
-              }
-          }
-          
-          performanceFactor = Math.max(0.5, performanceFactor);
-          currentInvestmentValue += investedAmount * performanceFactor;
+          // Use unified midpoint IRR calculation function
+          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, endDate);
+          currentInvestmentValue += performance.currentValue;
         }
       }
       const currentTotalValue = currentFiatValue + currentCryptoValue + currentStablecoinValue + currentInvestmentValue;
@@ -1193,63 +1199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Unified performance calculation function
-  const calculateInvestmentPerformance = (investment, product, evaluationDate) => {
-    const investmentDate = new Date(investment.investmentDate);
-    const daysSinceInvestment = Math.floor((evaluationDate.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24));
-    const investedAmount = parseFloat(investment.investedAmount);
-    let performanceFactor = 1;
-    
-    if (daysSinceInvestment >= 0) {
-      const timeProgress = Math.max(daysSinceInvestment / 365, 1/365); // Minimum 1 day for immediate returns
-      let annualReturn = 0;
-      
-      switch (product.category) {
-        case 'digital_assets':
-          annualReturn = 0.15;
-          const volatility = 0.4;
-          const baseReturn = annualReturn * timeProgress;
-          // Use deterministic volatility based on investment date for consistency
-          const seed = investmentDate.getTime() + daysSinceInvestment;
-          const volatilityAdjustment = (Math.sin(seed * 0.001) * volatility * 0.1);
-          performanceFactor = 1 + baseReturn + volatilityAdjustment;
-          break;
-        case 'real_estate':
-          annualReturn = 0.08;
-          performanceFactor = 1 + (annualReturn * timeProgress);
-          break;
-        case 'corporate_credit':
-          annualReturn = 0.05;
-          performanceFactor = 1 + (annualReturn * timeProgress);
-          break;
-        case 'venture_capital':
-          annualReturn = 0.20;
-          const vcVolatility = 0.3;
-          const vcBaseReturn = annualReturn * timeProgress;
-          // Use deterministic volatility for consistency
-          const vcSeed = investmentDate.getTime() + daysSinceInvestment;
-          const vcVolatilityAdjustment = (Math.sin(vcSeed * 0.001) * vcVolatility * 0.1);
-          performanceFactor = 1 + vcBaseReturn + vcVolatilityAdjustment;
-          break;
-        default:
-          annualReturn = 0.03;
-          performanceFactor = 1 + (annualReturn * timeProgress);
-      }
-      
-      performanceFactor = Math.max(0.5, performanceFactor);
-    }
-    
-    const currentValue = investedAmount * performanceFactor;
-    const totalReturn = currentValue - investedAmount;
-    const returnPercent = investedAmount > 0 ? (totalReturn / investedAmount) * 100 : 0;
-    
-    return {
-      currentValue,
-      totalReturn,
-      returnPercent,
-      performanceFactor
-    };
-  };
+
 
   // Get user investments with real-time performance calculation
   app.get("/api/user-investments", async (req, res) => {
@@ -1259,18 +1209,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allProducts = await storage.getInvestmentProducts();
       const currentDate = new Date();
       
-      // Calculate current values with performance using unified function
+      // Calculate current values with performance using unified midpoint IRR function
       const investmentsWithPerformance = investments.map(investment => {
         const product = allProducts.find(p => p.id === investment.productId);
         if (!product) return investment;
         
-        const performance = calculateInvestmentPerformance(investment, product, currentDate);
+        const investmentDate = new Date(investment.investmentDate);
+        const investedAmount = parseFloat(investment.investedAmount);
+        const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, currentDate);
         
         return {
           ...investment,
           currentValue: performance.currentValue.toFixed(2),
-          totalReturn: performance.totalReturn.toFixed(2),
-          returnPercent: performance.returnPercent.toFixed(2)
+          totalReturn: performance.returnAmount.toFixed(2),
+          returnPercent: performance.returnPercentage.toFixed(2)
         };
       });
       
