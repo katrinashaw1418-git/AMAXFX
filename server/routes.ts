@@ -1228,11 +1228,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user investments
+  // Get user investments with real-time performance calculation
   app.get("/api/user-investments", async (req, res) => {
     try {
-      const investments = await storage.getUserInvestments(1); // Hardcoded user ID for demo
-      res.json(investments);
+      const userId = 1; // Hardcoded user ID for demo
+      const investments = await storage.getUserInvestments(userId);
+      const allProducts = await storage.getInvestmentProducts();
+      const currentDate = new Date();
+      
+      // Calculate current values with performance
+      const investmentsWithPerformance = investments.map(investment => {
+        const product = allProducts.find(p => p.id === investment.productId);
+        if (!product) return investment;
+        
+        const investmentDate = new Date(investment.investmentDate);
+        const daysSinceInvestment = Math.floor((currentDate.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24));
+        const investedAmount = parseFloat(investment.investedAmount);
+        let performanceFactor = 1;
+        
+        if (daysSinceInvestment >= 0) {
+          const timeProgress = Math.max(daysSinceInvestment / 365, 1/365); // Minimum 1 day for immediate returns
+          let annualReturn = 0;
+          
+          switch (product.category) {
+            case 'digital_assets':
+              annualReturn = 0.15;
+              const volatility = 0.4;
+              const baseReturn = annualReturn * timeProgress;
+              const volatilityAdjustment = (Math.sin(daysSinceInvestment * 0.1) * volatility * 0.1);
+              performanceFactor = 1 + baseReturn + volatilityAdjustment;
+              break;
+            case 'real_estate':
+              annualReturn = 0.08;
+              performanceFactor = 1 + (annualReturn * timeProgress);
+              break;
+            case 'corporate_credit':
+              annualReturn = 0.05;
+              performanceFactor = 1 + (annualReturn * timeProgress);
+              break;
+            case 'venture_capital':
+              annualReturn = 0.20;
+              const vcVolatility = 0.3;
+              const vcBaseReturn = annualReturn * timeProgress;
+              const vcVolatilityAdjustment = (Math.random() - 0.5) * vcVolatility * 0.1;
+              performanceFactor = 1 + vcBaseReturn + vcVolatilityAdjustment;
+              break;
+            default:
+              annualReturn = 0.03;
+              performanceFactor = 1 + (annualReturn * timeProgress);
+          }
+          
+          performanceFactor = Math.max(0.5, performanceFactor);
+        }
+        
+        const currentValue = investedAmount * performanceFactor;
+        const totalReturn = currentValue - investedAmount;
+        const returnPercent = investedAmount > 0 ? (totalReturn / investedAmount) * 100 : 0;
+        
+        return {
+          ...investment,
+          currentValue: currentValue.toFixed(2),
+          totalReturn: totalReturn.toFixed(2),
+          returnPercent: returnPercent.toFixed(2)
+        };
+      });
+      
+      res.json(investmentsWithPerformance);
     } catch (error) {
       res.status(500).json({ error: "Failed to get user investments" });
     }
@@ -1286,8 +1347,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               let performanceFactor = 1;
               
               // Apply performance calculation
-              if (daysSinceInvestment > 0) {
-                const timeProgress = daysSinceInvestment / 365;
+              if (daysSinceInvestment >= 0) {
+                const timeProgress = Math.max(daysSinceInvestment / 365, 1/365); // Minimum 1 day for immediate returns
                 let annualReturn = 0;
                 
                 switch (product.category) {
@@ -1359,8 +1420,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const investedAmount = parseFloat(investment.investedAmount);
           let performanceFactor = 1;
           
-          if (daysSinceInvestment > 0) {
-            const timeProgress = daysSinceInvestment / 365;
+          if (daysSinceInvestment >= 0) {
+            const timeProgress = Math.max(daysSinceInvestment / 365, 1/365); // Minimum 1 day for immediate returns
             let annualReturn = 0;
             
             switch (product.category) {
