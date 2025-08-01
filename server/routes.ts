@@ -170,11 +170,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
         } else {
-          // For 1M and 3M, add transaction dates
+          // For 1M and 3M, add transaction dates and investment dates
           transactionsInRange.forEach(t => {
             const transactionDate = new Date(t.createdAt!);
             if (!keyDates.some(d => d.toDateString() === transactionDate.toDateString())) {
               keyDates.push(transactionDate);
+            }
+          });
+          
+          // Also add investment dates that fall within the range
+          investments.forEach(inv => {
+            const investmentDate = new Date(inv.investmentDate);
+            if (investmentDate >= startDate && investmentDate <= endDate) {
+              if (!keyDates.some(d => d.toDateString() === investmentDate.toDateString())) {
+                keyDates.push(investmentDate);
+              }
             }
           });
         }
@@ -187,6 +197,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         for (const date of keyDates) {
           const transactionsUpToDate = allTransactions.filter(t => 
             new Date(t.createdAt!) <= date && t.status === 'completed'
+          );
+          
+          // Get investments made up to this date
+          const investmentsUpToDate = investments.filter(inv => 
+            new Date(inv.investmentDate) <= date
           );
           
           // Calculate portfolio value based on transaction history
@@ -215,6 +230,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Add to target currency
               const toBalance = balancesByWallet.get(toCurrency) || 0;
               balancesByWallet.set(toCurrency, toBalance + toAmount);
+            } else if (transaction.type === 'investment') {
+              // Investment transactions reduce wallet balance and add to investment value
+              const currency = transaction.fromCurrency || 'USD';
+              const currentBalance = balancesByWallet.get(currency) || 0;
+              balancesByWallet.set(currency, currentBalance - amount);
             }
           }
           
@@ -234,8 +254,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
           
-          // Add investment value (assume constant for historical calculation)
-          portfolioValue += currentInvestmentValue;
+          // Add investment value based on investments made up to this date
+          const historicalInvestmentValue = investmentsUpToDate.reduce((sum, inv) => 
+            sum + parseFloat(inv.currentValue), 0
+          );
+          portfolioValue += historicalInvestmentValue;
           
           dataPoints.push({
             date: date.toISOString().split('T')[0],
