@@ -1266,7 +1266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           startDate.setFullYear(startDate.getFullYear() - 1);
       }
       
-      // Generate data points at 4-month intervals for the timeframe
+      // Generate data points at 3-month intervals for the timeframe
       const dataPoints = [];
       const currentDate = new Date(startDate);
       
@@ -1343,8 +1343,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timestamp: currentDate.getTime()
         });
         
-        // Move to next 4-month interval
-        currentDate.setMonth(currentDate.getMonth() + 4);
+        // Move to next 3-month interval
+        currentDate.setMonth(currentDate.getMonth() + 3);
       }
       
       // Calculate 12-month prediction based on current allocation
@@ -1422,7 +1422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Generate 7-year prediction (21 data points at 4-month intervals)
+      // Generate 7-year prediction (28 data points at 3-month intervals)
       const predictions = [];
       const predictionStartDate = new Date(endDate);
       
@@ -1434,11 +1434,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         portfolioWeightedReturn += (annualReturn * weight);
       }
       
-      for (let i = 1; i <= 21; i++) {
-        predictionStartDate.setMonth(predictionStartDate.getMonth() + 4);
+      for (let i = 1; i <= 28; i++) {
+        predictionStartDate.setMonth(predictionStartDate.getMonth() + 3);
         
-        // Calculate time in years (4-month intervals)
-        const timeInYears = (i * 4) / 12;
+        // Calculate time in years (3-month intervals)
+        const timeInYears = (i * 3) / 12;
         
         // Apply compound growth with portfolio weighted return
         const futureValue = totalCurrentInvestment * Math.pow(1 + portfolioWeightedReturn, timeInYears);
