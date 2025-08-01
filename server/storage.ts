@@ -3491,4 +3491,4 @@ export class DatabaseStorage implements IStorage {
 }
 
 // Switch back to in-memory storage until database is properly seeded
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
