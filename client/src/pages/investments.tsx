@@ -67,6 +67,7 @@ export default function Investments() {
   const { data: userInvestments, isLoading: investmentsLoading } = useQuery({
     queryKey: ["/api/user-investments"],
     queryFn: () => api.getUserInvestments(),
+    refetchInterval: 5000, // Refresh every 5 seconds to track investment changes
   });
 
   const { data: wallets } = useWallets();

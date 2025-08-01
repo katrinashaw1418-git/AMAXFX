@@ -33,6 +33,7 @@ export function InvestmentPerformanceChart() {
   const { data: performanceData, isLoading } = useQuery<InvestmentPerformanceResponse>({
     queryKey: ["/api/investment-performance", { timeframe: "1Y" }],
     queryFn: () => api.getInvestmentPerformance({ timeframe: "1Y" }),
+    refetchInterval: 5000, // Refresh every 5 seconds to track investment changes
   });
 
   if (isLoading) {
