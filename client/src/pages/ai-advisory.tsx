@@ -38,11 +38,11 @@ import {
 // Category-specific colors consistent with Portfolio page
 const getCategoryColor = (categoryName: string) => {
   const colorMap: { [key: string]: string } = {
-    'Real Estate': '#3B82F6',     // Blue
+    'Real Estate': '#FBBF24',     // Yellow
     'Corporate Credit': '#D1D5DB',  // Gray-300
     'Venture Capital': '#8B5CF6',  // Purple
     'Digital Assets': '#EF4444',   // Red
-    'Cash Deposits': '#F59E0B'     // Orange
+    'Cash Deposits': '#3B82F6'     // Blue
   };
   return colorMap[categoryName] || '#6B7280'; // Default gray
 };
