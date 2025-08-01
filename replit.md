@@ -1,409 +1,54 @@
 # Wealth Management Platform
 
 ## Overview
+This platform is a comprehensive cross-border wealth management solution designed for high-net-worth individuals, the global Chinese diaspora, and SMEs with international financial needs. It integrates traditional finance and cryptocurrency services, offering dual-channel support for FX and crypto trading, multi-currency wallets, AI-powered wealth advisory, and robust compliance features. The vision is to provide a unified, intelligent, and secure platform for managing diverse global assets.
 
-This is a comprehensive cross-border wealth management platform that integrates traditional finance and cryptocurrency services. The platform targets high-net-worth individuals (HNWIs), the global Chinese diaspora, and SMEs with cross-border needs. It provides dual-channel services for both traditional FX and crypto trading, multi-currency wallets, AI-powered wealth advisory, and compliance features.
+## User Preferences
+Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Frontend Architecture
+### Frontend
 - **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite for fast development and optimized builds
+- **Build Tool**: Vite
 - **UI Framework**: Shadcn/ui components with Radix UI primitives
 - **Styling**: Tailwind CSS with custom design system
-- **State Management**: TanStack Query for server state management
-- **Routing**: Wouter for lightweight client-side routing
-- **Charts**: Recharts for data visualization
+- **State Management**: TanStack Query (server state), React hooks (local state)
+- **Routing**: Wouter
+- **Charts**: Recharts
+- **Form Management**: React Hook Form
+- **Accessibility**: Comprehensive voice narration system
 
-### Backend Architecture
+### Backend
 - **Runtime**: Node.js with Express.js
 - **Language**: TypeScript with ES modules
-- **Database**: PostgreSQL with Drizzle ORM
-- **Database Provider**: Neon Database (@neondatabase/serverless)
+- **Database**: PostgreSQL with Drizzle ORM (using Neon Database serverless)
 - **API Design**: RESTful endpoints with typed responses
-- **Session Management**: PostgreSQL-based sessions (connect-pg-simple)
+- **Session Management**: PostgreSQL-based sessions
 
-### Development Setup
-- **Monorepo Structure**: Client, server, and shared code in single repository
-- **Development Mode**: Vite dev server with HMR and Express API proxy
-- **Production Build**: Static client build with bundled server
+### Core Features
+- **User Management**: KYC tracking, multi-tier user system, role-based access control.
+- **Multi-Currency Wallet**: Supports fiat (USD, CAD, EUR, GBP, AUD, HKD, SGD, VND and 50+ other global currencies), BTC, ETH, USDT, USDC. Features balance tracking, real-time updates, and cross-border remittance.
+- **Portfolio Management**: Unified view across fiat and crypto, performance tracking, asset allocation visualization, historical charts. Performance charts include connected dot visualization, color coding (red for portfolio, blue for benchmark), and clear legends. Asset allocation colors for Investment Products (purple), Crypto Assets (red), Stablecoins (light gray), Corporate Credit (light gray), Cash Deposits (orange).
+- **FX & Crypto Trading**: Real-time exchange rates, FX trading, integrated crypto trading (via VirgoCX), order execution tracking. Crypto trading includes 100+ cryptocurrencies, market trends dashboard, and advanced trading interface.
+- **AI Advisory System**: Risk profiling, portfolio rebalancing, investment opportunity alerts, personalized insights.
+- **Compliance & KYC**: Multi-step KYC, document verification, risk assessment, jurisdiction-specific flows.
+- **Transaction Management**: Comprehensive history for deposits, withdrawals, exchanges, transfers; real-time status tracking.
+- **Investment Products**: Structured investment products across Real Estate, Corporate Credit, Venture Capital, and Digital Assets (Bitcoin Tracker, Web3 Innovation, Ethereum Staking). Includes filtering, detailed product info, and capital invested tracking.
+- **Banking Integration**: Supports various deposit options including Credit/Debit Card, PayID (Australia Only), Bank Transfer, and Blockchain Transfer for crypto/stablecoins.
+- **Transfer/Conversion System**: Wise-inspired interface with two-section layout ("Your Balances" table, "Transfer or Convert" interface). Supports 50+ exchange rate pairs, real-time rates, 0.5% transaction fees, automatic wallet creation for new currencies, and zero-balance wallet hiding. Crypto currencies always appear at bottom of the table.
+- **Contact Advisor**: Floating contact box with phone number and message functionality on key pages.
 
-## Key Components
-
-### 1. User Management & Authentication
-- User profiles with KYC status tracking
-- Multi-tier user system (standard, premium, HNWI)
-- Role-based access control
-- Compliance status management
-
-### 2. Multi-Currency Wallet System
-- Fiat currencies: USD, CAD, EUR, GBP, AUD, HKD, SGD
-- Cryptocurrencies: BTC, ETH
-- Stablecoins: USDT, USDC (ERC-20 tokens on Ethereum)
-- Balance tracking with available vs. total balances
-- Real-time wallet updates
-- Dedicated stablecoin deposit/withdrawal interfaces
-- Cross-border remittance capabilities via stablecoins
-
-### 3. Portfolio Management
-- Unified portfolio view across fiat and crypto assets
-- Performance tracking with P&L calculations
-- Asset allocation visualization
-- Historical performance charts
-
-### 4. FX & Crypto Trading
-- Real-time exchange rates
-- FX trading between supported currencies
-- Crypto trading integration
-- Transaction fee calculation
-- Order execution tracking
-
-### 5. AI Advisory System
-- Risk profiling and assessment
-- Portfolio rebalancing recommendations
-- Investment opportunity alerts
-- Personalized wealth insights
-
-### 6. Compliance & KYC
-- Multi-step KYC process
-- Document upload and verification
-- Risk assessment questionnaires
-- Jurisdiction-specific compliance flows
-
-### 7. Transaction Management
-- Comprehensive transaction history
-- Multiple transaction types (deposits, withdrawals, exchanges, transfers)
-- Real-time status tracking
-- Fee transparency
-
-## Data Flow
-
-### Client-Server Communication
-1. **API Requests**: Client makes HTTP requests to Express server
-2. **Data Fetching**: TanStack Query manages caching and synchronization
-3. **Real-time Updates**: Polling-based updates for live data (FX rates, portfolio values)
-4. **Error Handling**: Centralized error handling with user-friendly messages
-
-### Database Operations
-1. **Schema Management**: Drizzle ORM with TypeScript-first approach
-2. **Migrations**: Database schema versioning through Drizzle Kit
-3. **Data Storage**: PostgreSQL for transactional data
-4. **Connection Pooling**: Neon serverless database for scalability
-
-### State Management
-1. **Server State**: TanStack Query for API data caching
-2. **Client State**: React hooks for local component state
-3. **Form State**: React Hook Form for form validation and submission
-4. **UI State**: Local state for modals, drawers, and interactive elements
+### System Design Choices
+- **Monorepo Structure**: Client, server, and shared code within a single repository.
+- **Scalability**: Serverless PostgreSQL, stateless Express server, CDN-ready static assets, TanStack Query caching.
+- **Branding**: AMAX Wealth Platform for the main platform, VirgoCX specifically for the crypto trading section.
 
 ## External Dependencies
-
-### Core Dependencies
-- **Database**: Neon PostgreSQL (@neondatabase/serverless)
-- **ORM**: Drizzle ORM with Zod integration
-- **UI Components**: Radix UI primitives
-- **Charts**: Recharts for data visualization
-- **Date Handling**: date-fns for date utilities
-
-### Development Dependencies
-- **Build Tools**: Vite, esbuild, TypeScript
-- **Code Quality**: ESLint, Prettier (implied)
-- **Styling**: Tailwind CSS, PostCSS, Autoprefixer
-
-### Planned Integrations
-- **Crypto Exchange**: VirgoCX API integration
-- **Payment Processing**: Traditional banking rails
-- **KYC/AML**: Third-party compliance services
-- **Custody Services**: Fireblocks, BitGo, or similar
-
-## Deployment Strategy
-
-### Development Environment
-- **Local Development**: Vite dev server with Express API
-- **Hot Reload**: Full-stack development with live updates
-- **Database**: Development database connection via environment variables
-
-### Production Build
-- **Client Build**: Static assets generated by Vite
-- **Server Build**: Bundled Express server with esbuild
-- **Asset Serving**: Express serves static files in production
-- **Database**: Production PostgreSQL instance
-
-### Environment Configuration
-- **Environment Variables**: DATABASE_URL for database connection
-- **Build Scripts**: Separate dev, build, and production scripts
-- **Process Management**: Node.js with PM2 or similar for production
-
-### Scalability Considerations
-- **Database**: Serverless PostgreSQL for automatic scaling
-- **API**: Stateless Express server for horizontal scaling
-- **Assets**: CDN-ready static asset structure
-- **Caching**: Query-level caching with TanStack Query
-
-## User Preferences
-
-Preferred communication style: Simple, everyday language.
-
-## Changelog
-
-Changelog:
-- July 07, 2025. Initial setup
-- July 07, 2025. Added support for UK Pounds (GBP), Australian Dollars (AUD), and Hong Kong Dollars (HKD)
-- July 07, 2025. Integrated USDT and USDC stablecoins with dedicated deposit/withdrawal interfaces
-  - Added ERC-20 wallet address generation and QR codes for deposits
-  - Implemented KYC-gated withdrawal functionality with gas fee estimation
-  - Created specialized stablecoin trading pairs and cross-border remittance features
-  - Enhanced portfolio tracking to include stablecoin holdings (~$214k in demo data)
-- July 07, 2025. Fixed all trading functionality and button interactions
-  - Fixed stablecoin trade buttons with working trade dialogs
-  - Added comprehensive cryptocurrency exchange rates (BTC, ETH)
-  - Enabled all crypto-to-fiat, crypto-to-crypto, and stablecoin trading pairs
-  - Fixed deposit/withdrawal buttons with proper API integration
-  - Resolved dialog accessibility warnings with proper descriptions
-  - All buttons and interactive elements now fully functional
-- July 07, 2025. Enhanced investment products module with crypto investments
-  - Expanded to 11 structured investment products across 4 categories
-  - Real Estate: Equity Fund, Credit Fund, First Mortgage Fund  
-  - Corporate Credit: Cash Flow-Based and Security-Backed funds
-  - Venture Capital: Growth Equity and Hybrid Capital funds
-  - Digital Assets: Bitcoin Tracker, Web3 Innovation, Diversified Crypto, Ethereum Staking funds
-  - Enhanced crypto products with institutional-grade features and professional custody
-  - Advanced filtering by category, risk profile, and liquidity (including daily liquidity)
-  - Portfolio tracking with $1.8M+ active investments including $225k in crypto assets
-  - Investment creation with minimum investment validation from $10k to $500k
-  - Complete investment product details and comprehensive documentation
-  - Target returns from 4.5% APY (Ethereum staking) to 50%+ IRR (Web3 innovation)
-- July 07, 2025. Fixed AI recommendations functionality with full button integration
-  - Implemented working "View Details" and "Apply Suggestions" buttons
-  - Added detailed recommendation analysis modal with impact metrics
-  - Created backend API endpoints for applying recommendations
-  - Enhanced user experience with toast notifications and proper state management
-  - Fixed accessibility issues with proper dialog titles and descriptions
-  - All AI advisory features now fully functional with professional-grade interactions
-- July 07, 2025. Fixed wallet functionality and added Singapore Dollar (SGD) support
-  - Resolved React hooks error by moving all hooks to component top
-  - Fixed all wallet buttons (deposit, withdraw, transfer) with working modal dialogs
-  - Added proper form validation and error handling for wallet operations
-  - Integrated Singapore Dollar (SGD) across all currency configurations
-  - Added SGD wallet with S$28,500 balance and exchange rates to USD/USDT/USDC
-  - Improved button layout to fit properly within wallet cards
-- July 07, 2025. Enhanced Daily Liquid Cash Deposit offerings with multiple product tiers
-  - Created 3 separate cash deposit products: High-Yield Savings (4.5-5.5% APY), Money Market Sweep (3.8-4.8% APY), Premium Treasury (2.5-3.5% APY)
-  - Structured products with varying minimum investments: $0, $1,000, and $10,000 respectively
-  - Implemented tiered liquidity options: instant access, same-day, and next-day settlement
-  - Added proper product categorization and filtering support for cash deposits
-  - Fixed investment card button alignment using flexbox layout for consistent positioning
-- July 07, 2025. Completed investment functionality with real-time balance integration
-  - Fixed investment transactions to properly deduct from USD wallet balances
-  - Enhanced portfolio calculations to include investment values dynamically
-  - Added "Capital Invested" display showing actual invested amounts per product (starts at $0)
-  - Investment modal shows capital invested, available funds, and minimum requirements
-  - Portfolio overview shows total invested, current value, returns, and available capital
-  - All investment operations update wallet, portfolio, and transaction data in real-time
-- July 07, 2025. Fixed crypto asset balance consistency across portfolio and investment products
-  - Wallet crypto holdings: BTC 12.58 ($544k), ETH 85.23 ($220k), USDT $125k, USDC $89.5k = $978k total
-  - Investment crypto products: Bitcoin Tracker Fund $187.5k, Ethereum Staking Fund $78.75k = $266k total
-  - Total crypto exposure: $1.24M across direct holdings ($978k) and structured products ($266k)
-  - Portfolio calculations now use real exchange rates instead of hardcoded prices
-  - Clear separation between wallet crypto assets and investment product crypto allocations
-- July 07, 2025. Enhanced banking options with geographical restrictions
-  - PayID deposit option now clearly marked as "Australia Only" 
-  - Updated PayID instructions with accurate NPP information including email and phone PayIDs
-  - Added comprehensive banking details including BSB, Sort Code, and SWIFT codes
-  - Bank transfer instructions now include international transfer options
-  - Withdrawal functionality fixed with proper balance updates and 5-second refresh intervals
-  - All wallet operations now show immediate balance changes with cache invalidation
-- July 07, 2025. Improved deposit/withdrawal modal user experience
-  - Added proper payer information collection forms for both PayID and bank transfers
-  - PayID form collects user's PayID (email/mobile) and full name for transaction matching
-  - Bank transfer form collects user's name, BSB, and account number details
-  - Reduced modal sizes from 600px to 450px (deposit) and 400px (withdraw) for better UX
-  - Implemented compact design with smaller fonts, reduced spacing, and shorter input heights
-  - Fixed accessibility warnings by adding proper DialogDescription components
-  - All forms validate required fields before enabling submission buttons
-- July 07, 2025. Enhanced deposit interface with comprehensive QR code support
-  - Unified all crypto deposits (BTC, ETH, USDT, USDC) to use blockchain addresses
-  - Added visual QR code representations for mobile wallet scanning
-  - Implemented network-specific wallet addresses (Bitcoin SegWit, Ethereum ERC-20)
-  - Enhanced UX with multiple deposit method options (QR scan, address copy, mobile/desktop)
-  - Separated crypto deposits (blockchain) from fiat deposits (traditional banking)
-  - Added proper network warnings and minimum deposit requirements per currency
-- July 07, 2025. Unified wallet layout with consistent three-category organization
-  - **Fiat Assets**: USD, CAD, EUR, GBP, AUD, HKD, SGD with PayID/Bank Transfer deposits
-  - **Stablecoins**: USDT, USDC with blockchain, PayID, and bank transfer deposit options
-  - **Crypto Assets**: BTC, ETH with blockchain, PayID, and bank transfer deposit options
-  - All wallets now use consistent big box layout with three buttons (Deposit, Withdraw, Transfer)
-  - Stablecoins and crypto assets support all three deposit channels: QR Code, PayID (Australia), Bank Transfer
-  - Smart currency conversion: AUD to BTC (0.000023), ETH (0.00031), stablecoins (0.98) for fiat purchases
-- July 07, 2025. Improved deposit logic and removed exchange rate clutter
-  - Removed exchange rate information displays from all wallet categories (fiat, stablecoins, crypto)
-  - QR Code deposits now show only blockchain information (no banking details)
-  - PayID clearly marked as "Australia Only" across all deposit interfaces
-  - Bank Transfer deposits available globally without geographic restrictions
-  - Cleaner wallet interface focusing on essential information: balances, availability, and action buttons
-- July 07, 2025. Added credit/debit card payment option for deposits
-  - Added card payment as separate option from bank transfers across all wallet types
-  - Fiat wallets: Credit/Debit Card, PayID (Australia Only), Bank Transfer
-  - Crypto/Stablecoins: Blockchain Transfer, Credit/Debit Card, PayID (Buy with AUD), Bank Transfer
-  - Card payments support Visa, Mastercard, American Express with instant processing
-  - Card fees: 2.9% + $0.30 AUD per transaction, limits: $50-$10,000 AUD
-  - Comprehensive card input fields: card number, expiry date, CVV, cardholder name
-- July 07, 2025. Enhanced wallet page with Wise-like multi-currency capabilities
-  - Added support for 30+ global currencies organized by geographic regions
-  - Transfer interface now includes Americas, Europe, Asia, Oceania, Middle East & Africa regions
-  - Enhanced currency selection with flag icons and full currency names
-  - Regional grouping: Americas (USD, CAD, BRL, MXN), Europe (EUR, GBP, CHF, SEK, NOK, etc.), Asia (JPY, HKD, SGD, INR, CNY, etc.)
-  - Comprehensive crypto and stablecoin support within transfer interface
-  - Improved user experience with organized currency dropdown and regional categorization
-- July 07, 2025. Implemented comprehensive Wise-inspired wallet interface with two-section layout
-  - **Section 1: "Your Balances" Table**: Clean table view showing currency, balance, USD equivalent, and action buttons (Send/Convert/Add)
-  - **Section 2: "Transfer or Convert"**: Professional conversion interface with From→To flow, real-time rate display, and instant processing
-  - **Enhanced Features**: Rate alerts, currency watchlist, manage currencies functionality, mid-market rates with transparency
-  - **Transfer API**: Full wallet transfer endpoint supporting automatic wallet creation and balance updates for all supported currencies
-  - **UI/UX Improvements**: Tooltips for exchange rates, processing time indicators, security badges, and gradient styling
-  - **Real-time Features**: Live rate updates, instant transfers, bank-level security notifications
-  - Fixed transfer functionality to properly create new currency wallets (like DKK) when converting between currencies
-- July 07, 2025. Enhanced all wallet buttons with complete functionality and Wise-inspired features
-  - **Working Action Buttons**: All Send/Convert/Add buttons now functional with tooltips showing processing times and fees
-  - **Manage Currencies Dialog**: Full interface to add new currency wallets with visual currency selection
-  - **Currency Rate Alerts**: Complete watchlist system with target rate notifications and alert type selection
-  - **Pinned Most-Used Currencies**: EUR, GBP, JPY, AUD automatically pinned to top of dropdown for quick access
-  - **Disabled Currency Support**: TRY marked as temporarily unavailable with proper UI indication
-  - **Additional Features Display**: Local account details (IBAN/BSB), push notifications, instant transfers showcase
-  - **Enhanced Tooltips**: Comprehensive information on fees (0.5%-1.2%), processing times (instant-2hrs), and conversion methods
-  - All buttons now provide immediate user feedback and professional banking-level user experience
-- July 07, 2025. Updated crypto currency exchange rates to current market values
-  - **BTC Exchange Rate**: Updated from $43,250 to $97,250 USD (125% increase)
-  - **ETH Exchange Rate**: Updated from $2,580 to $3,420 USD (32.5% increase)
-  - **Cross-Currency Rates**: Updated all BTC/ETH pairs to CAD, EUR, GBP, AUD, HKD, SGD
-  - **Stablecoin Rates**: USDT and USDC maintain near-parity with USD (0.9998-1.0001)
-  - **Crypto-to-Crypto**: Updated BTC/ETH ratio from 16.76 to 28.43 ETH per BTC
-  - **Transfer Testing**: Verified accurate conversions with new rates across all currency pairs
-  - All conversion calculations now reflect current market pricing for accurate portfolio valuations
-- July 07, 2025. Completed comprehensive exchange rate database for full transfer/convert functionality
-  - **Fixed All Missing Exchange Rate Pairs**: Added 15+ cross-currency conversion rates for SGD, HKD, CHF combinations
-  - **Added Vietnamese Dong (VND) Support**: Full bidirectional exchange rates for VND with USD, EUR, SGD, HKD
-  - **Complete Currency Coverage**: All 13 primary currencies plus VND now fully supported in transfer/convert interface
-  - **Total Exchange Rate Database**: 207+ pairs covering all possible conversion combinations
-  - **Transfer/Convert System**: Fully operational with real-time rates, 0.5% fees, and instant processing
-  - **Balance Display**: All "Your Balances" dropdown currencies working with accurate conversions
-  - **Testing Verified**: All currency pairs tested and confirmed working for both directions
-- July 07, 2025. Reverted to original table layout with three-button functionality
-  - **Table Layout Restored**: Returned to clean table view with Currency, Balance, Approx. Value, and Actions columns
-  - **Three-Button Integration**: Deposit, Withdraw, Transfer buttons properly connected to working modal dialogs
-  - **Functional Consistency**: All button functionality preserved from previous implementations
-  - **Modal Operations**: Deposit mirrors "Add" functionality, Withdraw mirrors "Send" functionality as requested
-  - **Display Currency Selector**: Maintained ability to view balances in different currencies (USD, EUR, etc.)
-  - **Clean Interface**: Professional table layout with hover effects and proper spacing maintained
-- July 07, 2025. Completed full wallet functionality with working transfer/conversion system
-  - **Fixed Transfer Functionality**: Corrected API endpoint from `/api/wallets/transfer` to `/api/fx-exchange`
-  - **Enhanced Error Handling**: Better error messages for insufficient balance and API failures
-  - **Real-time Exchange Rates**: Live rate display with conversion previews (e.g., 1 SGD = 1.0968 AUD)
-  - **Comprehensive Logging**: Added detailed console logging for all API calls and responses
-  - **Success Validation**: Confirmed transfers work with real balance updates (SGD 333 → AUD 365.23)
-  - **All Three Buttons Working**: Deposit ✅, Withdraw ✅, Transfer/Convert ✅
-  - **Professional UX**: Success notifications, automatic modal closure, immediate balance updates
-- July 07, 2025. Enhanced transfer interface with comprehensive global currency support
-  - **Added 50+ Exchange Rate Pairs**: Complete support for European (SEK, NOK, DKK, PLN, CZK, HUF), Asian (KRW, TWD, THB, MYR, IDR, PHP, INR, CNY), Americas (BRL, MXN), Oceania (NZD), and Middle East/African currencies (AED, SAR, ILS, EGP, NGN, ZAR)
-  - **Enhanced "What You'll Receive" Display**: Prominent conversion summary box showing sending amount and receiving amount with large, bold green text
-  - **Improved Visual Design**: Gradient background, better spacing, and conversion summary with clear before/after amounts
-  - **Real-time Calculation Debug**: Added comprehensive logging for amount parsing and conversion calculations
-  - **Bank-like Interface**: Professional conversion display similar to major financial institutions
-- July 07, 2025. Fixed complete transfer transaction system with automatic wallet management
-  - **Fixed Transfer Calculation**: Replaced hardcoded "Loading..." with real-time calculation using amount × exchange rate - 0.5% fee
-  - **Automatic Wallet Creation**: System now creates new currency wallets automatically when converting to previously unused currencies
-  - **Corrected Fee Structure**: 0.5% transaction fee properly deducted from converted amount, not source amount
-  - **Enhanced Balance Updates**: Immediate wallet balance refresh after successful transfers with proper cache invalidation
-  - **Zero-Balance Wallet Hiding**: Wallets with zero balance automatically removed from balance table display
-  - **Improved Success Notifications**: Transfer confirmations show exact converted amounts received after fees
-  - **Wallet Sorting**: Crypto currencies (BTC, ETH, USDT, USDC) always appear at bottom of table in fixed order, newly added currencies appear before crypto section
-  - **Version 4 Saved**: Complete transfer system with wallet management, automatic sorting, and zero-balance filtering
-- July 08, 2025. Version 5 - Complete transfer system with wallet management (Copy of Version 4)
-  - **Fixed Transfer Calculation**: Replaced hardcoded "Loading..." with real-time calculation using amount × exchange rate - 0.5% fee
-  - **Automatic Wallet Creation**: System now creates new currency wallets automatically when converting to previously unused currencies
-  - **Corrected Fee Structure**: 0.5% transaction fee properly deducted from converted amount, not source amount
-  - **Enhanced Balance Updates**: Immediate wallet balance refresh after successful transfers with proper cache invalidation
-  - **Zero-Balance Wallet Hiding**: Wallets with zero balance automatically removed from balance table display
-  - **Improved Success Notifications**: Transfer confirmations show exact converted amounts received after fees
-  - **Wallet Sorting**: Crypto currencies (BTC, ETH, USDT, USDC) always appear at bottom of table in fixed order, newly added currencies appear before crypto section
-  - **Version 5 Saved**: Identical functionality to Version 4 - complete transfer system with wallet management, automatic sorting, and zero-balance filtering
-- July 11, 2025. Implemented comprehensive voice narration system for accessibility
-  - **Voice Settings Interface**: Professional voice configuration panel with rate, pitch, volume, and auto-narration controls
-  - **Transaction Narration**: Voice announcements for deposits, withdrawals, and transfers with transaction details
-  - **Success/Error Feedback**: Spoken confirmation and error messages for all wallet operations
-  - **Page Navigation**: Auto-narration of page load with wallet count and total portfolio value
-  - **Voice Controls**: Speech synthesis support detection and settings button in header
-  - **Accessibility Compliance**: Full voice feedback system for users with visual impairments
-  - **Settings Persistence**: Voice preferences saved and restored across browser sessions
-- July 11, 2025. Created version management system with backup files
-  - **Version 4 Backup**: Complete transfer system saved to `client/src/pages/versions/wallets-v4.tsx`
-  - **Version 5 Backup**: Voice narration version saved to `client/src/pages/versions/wallets-v5.tsx`
-  - **Version Documentation**: Comprehensive README with feature comparison and usage instructions
-  - **Rollback Capability**: Easy restoration of previous functionality when needed
-  - **Feature Tracking**: Clear documentation of version differences and capabilities
-- July 13, 2025. Implemented comprehensive AMAX crypto trading platform
-  - **Separate Crypto Trading Page**: Created dedicated `/crypto-trading` page with full AMAX integration
-  - **100+ Cryptocurrency Support**: Complete AMAX trading pairs including BTC, ETH, SOL, ADA, DOT, LINK, DOGE, SHIB, TRUMP, MELANIA, and 90+ others
-  - **Market Trends Dashboard**: Real-time market data with trending coins, top gainers, volume leaders, and category-based filtering
-  - **Advanced Trading Interface**: Buy/sell orders with market/limit options, price charts, and direct AMAX gateway
-  - **Enhanced Wallet Integration**: Market trends panel in wallet page with direct trading links and price alerts
-  - **Navigation Integration**: Added crypto trading to main sidebar navigation with TrendingUp icon
-  - **Professional Trading UX**: Comprehensive coin search, category filtering, and trading pair selection
-  - **API Endpoints**: Full `/api/virgocx/trading-pairs` endpoint with 100+ cryptocurrencies and market data
-  - **Real-time Updates**: Live price data, volume tracking, and market cap information across all supported assets
-- July 13, 2025. Updated platform branding to AMAX Wealth Platform
-  - **Rebranded Trading Interface**: Changed all "VirgoCX" references to "AMAX Wealth Platform" in crypto trading page
-  - **Updated Button Labels**: All trading buttons now show "Buy/Sell on AMAX" instead of VirgoCX
-  - **Modified URL References**: Updated external links to point to amax.com instead of virgocx.com
-  - **Enhanced User Experience**: Consistent AMAX branding throughout the cryptocurrency trading interface
-  - **Market Trends Section**: Updated title to "Market Trends on AMAX Wealth Platform"
-  - **Trading Panel**: Rebranded as "Trade on AMAX" with platform description updates
-  - **Sidebar Logo**: Updated sidebar header from "VirgoCX" to "AMAX" in main navigation
-  - **JavaScript Fixes**: Resolved all constant name conflicts (VIRGOCX_CRYPTOCURRENCIES → AMAX_CRYPTOCURRENCIES)
-  - **Crypto Trading Page**: Reverted crypto trading page back to VirgoCX branding as requested
-  - **Selective Branding**: AMAX branding for main platform, VirgoCX branding specifically for crypto trading section
-- July 15, 2025. Enhanced portfolio performance charts with connected dot visualization
-  - **Performance vs Benchmark Chart**: Added visible dots connecting data points on both portfolio and benchmark lines
-  - **Color Coding**: Portfolio performance shown in red, benchmark in blue for clear differentiation
-  - **Visual Enhancements**: Increased line thickness to 3px, added 4px radius dots with 6px hover effects
-  - **Legend Addition**: Added clear legend showing red dots for "Your Portfolio" and blue dashed line for "Benchmark"
-  - **Consistent Styling**: Applied same dot visualization to both dashboard and portfolio page charts
-- July 15, 2025. Added VirgoCX Deposits Detected section to wallets page
-  - **Bottom Section Integration**: Added VirgoCX deposit detector at bottom of wallets page as requested
-  - **Real-time Monitoring**: Shows detected deposits from VirgoCX platform with status updates
-  - **Transaction Tracking**: Displays deposit amounts, transaction hashes, and confirmation status
-  - **Auto-refresh**: Updates every 10 seconds to monitor for new deposits
-  - **Status Indicators**: Visual badges for pending, confirmed, and failed deposits
-  - **UI Cleanup**: Removed duplicate VirgoCX Deposits section from top, keeping only bottom section
-- July 15, 2025. Removed quick actions component from dashboard for cleaner layout
-  - **Dashboard Cleanup**: Removed QuickActions component from wealth dashboard
-  - **Simplified Layout**: Right column now contains only AI Advisory and Currency Balances
-  - **Improved Focus**: Streamlined dashboard experience with essential components only
-- July 15, 2025. Fixed cryptocurrency trading buttons to show correct VirgoCX branding
-  - **Trading Button Fix**: Changed "Buy/Sell on AMAX" back to "Buy/Sell on VirgoCX" in crypto trading interface
-  - **Consistent Branding**: Maintained selective branding policy - AMAX for main platform, VirgoCX for crypto trading
-  - **User Experience**: Corrected button labels to match intended platform branding for cryptocurrency transactions
-- July 15, 2025. Enhanced Portfolio page with Investment Products breakdown and navigation
-  - **Investment Products Color**: Updated asset allocation to display Investment Products in purple (#8B5CF6)
-  - **Investment Products Section**: Added dedicated breakdown section with pie chart showing Real Estate (33.3%), Corporate Credit (20.0%), Venture Capital (50.4%)
-  - **Investment Breakdown API**: Created `/api/investment-breakdown` endpoint calculating category percentages from actual user investments
-  - **Navigation Links**: Added clickable links from investment products to investments page with "View All Investments" button
-  - **Interactive Elements**: Investment categories and individual products are clickable and navigate to investments page
-  - **Real-time Data**: All investment data reflects actual portfolio composition and updates automatically
-- July 15, 2025. Added floating contact advisor box to Portfolio page
-  - **Consistent Contact Access**: Floating contact box now available on AI Advisory, Investments, and Portfolio pages
-  - **Professional Design**: Fixed top-right positioning (fixed top-4 right-4 z-50) with backdrop blur effects
-  - **Contact Information**: Phone number display (+61 3 9654 1000) and "Call"/"Message" buttons
-  - **Message Functionality**: Working contact modal with message form and advisor communication API integration
-  - **User Experience**: Gradient styling, professional card layout, and immediate user feedback via toast notifications
-- July 15, 2025. Updated asset allocation color scheme for better visual distinction
-  - **Crypto Assets Color**: Changed from green to red (#EF4444) for crypto assets (BTC, ETH)
-  - **Stablecoins Color**: Changed from red to green (#10B981) for stablecoins (USDT, USDC)
-  - **Investment Breakdown Fix**: Fixed API to use actual `investedAmount` instead of `currentValue` for accurate capital invested display
-  - **Color Consistency**: Updated both Portfolio and AI Advisory pages to use consistent color scheme
-  - **Total Capital Invested**: Now correctly shows $1.77M actual capital invested vs $1.96M current value
-  - **Venture Capital Purple**: Updated investment products pie chart to show Venture Capital in purple (#8B5CF6)
-  - **Digital Assets Red**: Changed Digital Assets from orange to red (#EF4444), Cash Deposits now orange (#F59E0B)
-  - **Performance Chart Layout**: Moved Performance vs Benchmark chart to appear above Performance by Period section as standalone full-width chart
-  - **Stablecoins Light Gray**: Changed stablecoins color to light gray (#D1D5DB) across portfolio and AI advisory pages for softer neutral appearance
-  - **Corporate Credit Light Gray**: Updated Corporate Credit category to light gray (#D1D5DB) for softer, professional appearance
+- **Database**: Neon PostgreSQL
+- **ORM**: Drizzle ORM
+- **UI Components**: Radix UI
+- **Charts**: Recharts
+- **Date Utilities**: date-fns
+- **Crypto Exchange Integration**: VirgoCX API
+- **Planned Integrations**: Third-party KYC/AML services, institutional custody services (Fireblocks, BitGo), traditional banking rails.
