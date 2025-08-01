@@ -41,23 +41,17 @@ export default function PortfolioChart() {
     if (!data || data.length === 0) return [];
     
     return data.map((point, index) => {
-      // Sample data points for better chart readability
-      const shouldInclude = selectedTimeframe === '1Y' 
-        ? index % 7 === 0 // Weekly for 1Y
-        : selectedTimeframe === '3M'
-        ? index % 3 === 0 // Every 3rd day for 3M  
-        : index % 1 === 0; // Daily for 1M
-        
-      if (!shouldInclude && index !== data.length - 1) return null;
-      
       const date = new Date(point.date);
       let label = '';
       
       if (selectedTimeframe === '1Y') {
-        label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        // For 1Y, show month and year (monthly intervals)
+        label = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
       } else if (selectedTimeframe === '3M') {
+        // For 3M, show month and day
         label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       } else {
+        // For 1M, show month and day
         label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       }
       
@@ -66,7 +60,7 @@ export default function PortfolioChart() {
         value: point.value,
         fullDate: point.date
       };
-    }).filter(Boolean);
+    });
   };
 
   const chartData = historyData ? formatChartData(historyData.data) : [];

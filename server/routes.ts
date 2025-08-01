@@ -157,16 +157,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       } else {
-        // Calculate portfolio value at key transaction points
+        // Calculate portfolio value at key points based on timeframe
         const keyDates = [startDate];
         
-        // Add transaction dates
-        transactionsInRange.forEach(t => {
-          const transactionDate = new Date(t.createdAt!);
-          if (!keyDates.some(d => d.toDateString() === transactionDate.toDateString())) {
-            keyDates.push(transactionDate);
+        if (timeframe === "1Y") {
+          // For 1Y, use monthly data points
+          const currentDate = new Date(startDate);
+          while (currentDate < endDate) {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            if (currentDate <= endDate) {
+              keyDates.push(new Date(currentDate));
+            }
           }
-        });
+        } else {
+          // For 1M and 3M, add transaction dates
+          transactionsInRange.forEach(t => {
+            const transactionDate = new Date(t.createdAt!);
+            if (!keyDates.some(d => d.toDateString() === transactionDate.toDateString())) {
+              keyDates.push(transactionDate);
+            }
+          });
+        }
         
         // Add end date
         keyDates.push(endDate);
