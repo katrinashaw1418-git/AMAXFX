@@ -75,15 +75,17 @@ export function InvestmentPerformanceChart() {
   // Combine historical data with predictions for chart display
   const combinedData = [...performanceData.data, ...performanceData.predictions];
 
-  // Format data for chart display with consistent quarterly formatting
+  // Format data for chart display with compact quarterly formatting
   const chartData = combinedData.map((point, index) => {
     const date = new Date(point.date);
-    const formattedDate = `${date.toLocaleDateString('en-US', { month: 'short' })} ${date.getFullYear().toString().slice(-2)}`;
+    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const year = date.getFullYear().toString().slice(-2);
+    const formattedDate = `Q${Math.floor(date.getMonth() / 3) + 1}'${year}`;
     
     return {
       ...point,
       formattedDate,
-      quarter: `Q${Math.floor(date.getMonth() / 3) + 1} ${date.getFullYear().toString().slice(-2)}`,
+      quarter: `Q${Math.floor(date.getMonth() / 3) + 1} ${year}`,
       valueFormatted: `$${point.value.toLocaleString()}`,
       returnFormatted: `${point.weightedReturn >= 0 ? '+' : ''}${point.weightedReturn.toFixed(2)}%`,
       // For predictions, use the new format with currentInvestment and totalReturn
@@ -175,8 +177,8 @@ export function InvestmentPerformanceChart() {
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
               <XAxis 
                 dataKey="formattedDate" 
-                tick={{ fontSize: 11 }}
-                interval={2}
+                tick={{ fontSize: 10 }}
+                interval={0}
                 angle={-45}
                 textAnchor="end"
                 height={80}
