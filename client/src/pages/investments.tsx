@@ -90,6 +90,7 @@ export default function Investments() {
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio/allocation"] });
       queryClient.invalidateQueries({ queryKey: ["/api/investment-breakdown"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/investment-performance"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       setInvestModalOpen(false);
       setInvestmentAmount("");
