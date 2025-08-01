@@ -1,7 +1,7 @@
-// 11.12% RETURN CALCULATION BREAKDOWN
-console.log('=== HOW THE 11.12% RETURN IS CALCULATED ===');
+// MANUAL CALCULATION: $1,775,000 invested, $197,319 profit, 11.12% return
+console.log('=== MANUAL BREAKDOWN OF 11.12% RETURN ===');
 
-// Current individual investments (5 total now - the Corporate Credit funds were removed)
+// Investment data from API
 const investments = [
   { name: "Real Estate Credit Fund", invested: 500000, current: 513150.68, return: 13150.68 },
   { name: "Corporate Credit Fund", invested: 300000, current: 303698.63, return: 3698.63 },
@@ -10,39 +10,40 @@ const investments = [
   { name: "Ethereum Staking Fund", invested: 75000, current: 79684.41, return: 4684.41 }
 ];
 
-const totalInvested = investments.reduce((sum, inv) => sum + inv.invested, 0);
-const totalCurrent = investments.reduce((sum, inv) => sum + inv.current, 0);
-const totalReturn = investments.reduce((sum, inv) => sum + inv.return, 0);
-const manualReturnPercent = (totalReturn / totalInvested) * 100;
+console.log('STEP 1: INDIVIDUAL INVESTMENT CALCULATIONS');
+let runningTotalInvested = 0;
+let runningTotalReturn = 0;
 
-console.log('INDIVIDUAL INVESTMENT BREAKDOWN:');
 investments.forEach((inv, i) => {
+  runningTotalInvested += inv.invested;
+  runningTotalReturn += inv.return;
   const returnPercent = (inv.return / inv.invested) * 100;
-  console.log(`  ${i+1}. ${inv.name}: ${returnPercent.toFixed(2)}%`);
-  console.log(`     $${inv.invested.toLocaleString()} → $${inv.current.toLocaleString()} (+$${inv.return.toLocaleString()})`);
+  
+  console.log(`Investment ${i+1}: ${inv.name}`);
+  console.log(`  Invested: $${inv.invested.toLocaleString()}`);
+  console.log(`  Current: $${inv.current.toLocaleString()}`);
+  console.log(`  Return: $${inv.return.toLocaleString()}`);
+  console.log(`  Individual %: ${inv.return.toLocaleString()} ÷ ${inv.invested.toLocaleString()} = ${returnPercent.toFixed(2)}%`);
+  console.log(`  Running Total Invested: $${runningTotalInvested.toLocaleString()}`);
+  console.log(`  Running Total Return: $${runningTotalReturn.toLocaleString()}`);
+  console.log('');
 });
 
-console.log('\n=== TOTAL CALCULATION ===');
-console.log(`Total Invested: $${totalInvested.toLocaleString()}`);
-console.log(`Total Current Value: $${totalCurrent.toLocaleString()}`);
-console.log(`Total Return: $${totalReturn.toLocaleString()}`);
-console.log(`Manual Return %: ${manualReturnPercent.toFixed(2)}%`);
+console.log('STEP 2: FINAL TOTALS');
+console.log(`Total Invested: $${runningTotalInvested.toLocaleString()}`);
+console.log(`Total Return: $${runningTotalReturn.toLocaleString()}`);
 
-console.log('\n=== API COMPARISON ===');
-console.log(`API says: $197,319.27 return (11.12%)`);
-console.log(`API calculation: $197,319.27 ÷ $1,775,000 = 11.12%`);
-console.log(`Manual calculation: $${totalReturn.toLocaleString()} ÷ $${totalInvested.toLocaleString()} = ${manualReturnPercent.toFixed(2)}%`);
+console.log('\nSTEP 3: PERCENTAGE CALCULATION');
+console.log(`${runningTotalReturn.toLocaleString()} ÷ ${runningTotalInvested.toLocaleString()} = ${(runningTotalReturn / runningTotalInvested).toFixed(6)}`);
+console.log(`${(runningTotalReturn / runningTotalInvested).toFixed(6)} × 100 = ${((runningTotalReturn / runningTotalInvested) * 100).toFixed(2)}%`);
 
-const apiTotalInvested = 1775000;
-const apiTotalReturn = 197319.27;
-const apiCurrentValue = 1972319.27;
+console.log('\nSTEP 4: VERIFICATION WITH API DATA');
+console.log(`API Total Invested: $1,775,000`);
+console.log(`API Total Return: $197,319.27`);
+console.log(`API Calculation: 197,319.27 ÷ 1,775,000 = ${(197319.27 / 1775000).toFixed(6)}`);
+console.log(`API Percentage: ${(197319.27 / 1775000).toFixed(6)} × 100 = ${((197319.27 / 1775000) * 100).toFixed(2)}%`);
 
-console.log('\n=== HOW 11.12% IS CALCULATED ===');
-console.log(`Step 1: API Total Invested = $${apiTotalInvested.toLocaleString()}`);
-console.log(`Step 2: API Current Value = $${apiCurrentValue.toLocaleString()}`);
-console.log(`Step 3: API Total Return = $${apiCurrentValue.toLocaleString()} - $${apiTotalInvested.toLocaleString()} = $${apiTotalReturn.toLocaleString()}`);
-console.log(`Step 4: Return % = $${apiTotalReturn.toLocaleString()} ÷ $${apiTotalInvested.toLocaleString()} × 100 = 11.12%`);
-
-console.log('\n=== VERIFICATION ===');
-console.log(`✅ The 11.12% is correct based on API's investment total of $1,775,000`);
-console.log(`✅ Manual calculation matches: ${((apiTotalReturn / apiTotalInvested) * 100).toFixed(2)}%`);
+console.log('\nFINAL RESULT:');
+console.log(`Manual: ${((runningTotalReturn / runningTotalInvested) * 100).toFixed(2)}%`);
+console.log(`API: 11.12%`);
+console.log(`Match: ${Math.abs(((runningTotalReturn / runningTotalInvested) * 100) - 11.12) < 0.01 ? 'YES' : 'NO'}`);
