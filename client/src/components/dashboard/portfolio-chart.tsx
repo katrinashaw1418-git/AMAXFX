@@ -72,6 +72,21 @@ export default function PortfolioChart() {
   const chartData = historyData ? formatChartData(historyData.data) : [];
   const totalReturnPercent = historyData ? parseFloat(historyData.totalReturnPercent) : 0;
   const isPositive = totalReturnPercent >= 0;
+  
+  // Get color based on timeframe
+  const getChartColor = () => {
+    switch (selectedTimeframe) {
+      case '3M':
+        return '#3b82f6'; // Blue
+      case '1Y':
+        return '#8b5cf6'; // Purple
+      case '1M':
+      default:
+        return isPositive ? "#22c55e" : "#ef4444"; // Green/Red for 1M
+    }
+  };
+  
+  const chartColor = getChartColor();
 
   return (
     <Card>
@@ -139,10 +154,10 @@ export default function PortfolioChart() {
                 <Line 
                   type="monotone" 
                   dataKey="value" 
-                  stroke={isPositive ? "#22c55e" : "#ef4444"}
+                  stroke={chartColor}
                   strokeWidth={3}
-                  dot={{ fill: isPositive ? "#22c55e" : "#ef4444", strokeWidth: 2, r: 3 }}
-                  activeDot={{ r: 5, fill: isPositive ? "#22c55e" : "#ef4444" }}
+                  dot={{ fill: chartColor, strokeWidth: 2, r: 3 }}
+                  activeDot={{ r: 5, fill: chartColor }}
                 />
               </LineChart>
             </ResponsiveContainer>
