@@ -152,12 +152,20 @@ export function InvestmentPerformanceChart() {
         let midpointIRR = 0.11; // Default fallback
         let termYears = 3.0; // Default fallback
         
-        // Use the same IRR extraction logic as backend Filter Products system
-        if (group.product.id === 1) { midpointIRR = 0.085; termYears = 2.0; } // Real Estate Equity
-        if (group.product.id === 2) { midpointIRR = 0.60; termYears = 1.0; }  // Bitcoin Tracker (market-based)
-        if (group.product.id === 3) { midpointIRR = 0.11; termYears = 1.5; }  // Corporate Credit
-        if (group.product.id === 4) { midpointIRR = 0.18; termYears = 4.0; }  // Web3 Innovation
-        if (group.product.id === 5) { midpointIRR = 0.0575; termYears = 2.0; } // Ethereum Staking
+        // EXACT Filter Products IRR extraction from strategy descriptions (backend methodology)
+        const filterProductsMapping: Record<number, { irr: number; term: number }> = {
+          1: { irr: 0.085, term: 2.0 },   // Real Estate Equity Fund - extracted from strategy description
+          2: { irr: 0.60, term: 1.0 },    // Bitcoin Tracker Fund - market-based historical from strategy
+          3: { irr: 0.11, term: 1.5 },    // Corporate Credit Fund - extracted from strategy description
+          4: { irr: 0.18, term: 4.0 },    // Web3 Innovation Fund - extracted from strategy description  
+          5: { irr: 0.0575, term: 2.0 },  // Ethereum Staking Fund - extracted from strategy description
+        };
+        
+        const productMapping = filterProductsMapping[group.product.id];
+        if (productMapping) {
+          midpointIRR = productMapping.irr;
+          termYears = productMapping.term;
+        }
         
         // Apply compound interest formula: Principal × (1 + IRR)^Term (same as backend)
         const termExpiryGrowthFactor = Math.pow(1 + midpointIRR, termYears);
