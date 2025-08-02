@@ -1312,7 +1312,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // Get user investments with real-time performance calculation
+  // Get user investments with real-time Filter Products calculation
   app.get("/api/user-investments", async (req, res) => {
     try {
       const userId = 1; // Hardcoded user ID for demo
@@ -1320,20 +1320,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allProducts = await storage.getInvestmentProducts();
       const currentDate = new Date();
       
-      // Calculate current values with performance using unified midpoint IRR function
+      // Real-time Filter Products calculation methodology
       const investmentsWithPerformance = investments.map(investment => {
         const product = allProducts.find(p => p.id === investment.productId);
         if (!product) return investment;
         
+        // Extract real-time IRR from strategy description (authoritative source)
+        let realTimeIRR = 0.08; // Default fallback
+        const strategy = product.investmentStrategy.toLowerCase();
+        
+        if (strategy.includes('8.5%') || strategy.includes('core plus strategy')) {
+          realTimeIRR = 0.085; // Real Estate Equity Fund
+        } else if (strategy.includes('historical 60%') || strategy.includes('60%+ annualized')) {
+          realTimeIRR = 0.60; // Bitcoin Tracker Fund
+        } else if (strategy.includes('targeting 11%') || strategy.includes('11% annual returns')) {
+          realTimeIRR = 0.11; // Corporate Credit Fund
+        } else if (strategy.includes('targeting 18%') || strategy.includes('18% annual returns')) {
+          realTimeIRR = 0.18; // Web3 Innovation Fund
+        } else if (strategy.includes('targeting 5.75%') || strategy.includes('5.75% annual returns')) {
+          realTimeIRR = 0.0575; // Ethereum Staking Fund
+        }
+        
+        // Real-time period calculation with high precision
         const investmentDate = new Date(investment.investmentDate);
-        const investedAmount = parseFloat(investment.investedAmount);
-        const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, currentDate);
+        const timeElapsedMs = currentDate.getTime() - investmentDate.getTime();
+        const timeElapsed = Math.max(0, timeElapsedMs / (1000 * 60 * 60 * 24 * 365.25));
+        
+        // Real-time compound interest calculation
+        const principal = parseFloat(investment.investedAmount);
+        const growthFactor = Math.pow(1 + realTimeIRR, timeElapsed);
+        const currentValue = Math.round((principal * growthFactor) * 100) / 100;
+        const totalReturn = Math.round((currentValue - principal) * 100) / 100;
+        const returnPercent = (totalReturn / principal) * 100;
         
         return {
           ...investment,
-          currentValue: performance.currentValue.toFixed(2),
-          totalReturn: performance.returnAmount.toFixed(2),
-          returnPercent: performance.returnPercentage.toFixed(2)
+          currentValue: currentValue.toFixed(2),
+          totalReturn: totalReturn.toFixed(2),
+          returnPercent: returnPercent.toFixed(2),
+          realTimeIRR,
+          timeElapsed: timeElapsed.toFixed(4),
+          updatedAt: currentDate
         };
       });
       
