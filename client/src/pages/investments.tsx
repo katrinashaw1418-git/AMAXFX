@@ -15,6 +15,7 @@ import { useWallets } from "@/hooks/use-portfolio";
 import { TrendingUp, Building, CreditCard, Rocket, Bitcoin, DollarSign, Clock, Shield, Filter, X, ChevronDown, Phone, MessageCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InvestmentPerformanceChart } from "@/components/dashboard/investment-performance-chart";
+import { InvestmentBreakdownDetail } from "@/components/dashboard/investment-breakdown-detail";
 
 const categoryIcons = {
   real_estate: Building,
@@ -181,10 +182,18 @@ export default function Investments() {
 
   const hasActiveFilters = Object.values(filters).some(Boolean);
 
+  // Use investment performance API for accurate calculations instead of user-investments currentValue
+  const { data: investmentPerformance } = useQuery({
+    queryKey: ["/api/investment-performance", { timeframe: "1Y" }],
+    queryFn: () => api.getInvestmentPerformance({ timeframe: "1Y" }),
+    refetchInterval: 5000, // Refresh every 5 seconds
+  });
+
+  // Calculate totals using consistent midpoint IRR methodology
   const totalInvested = userInvestments?.reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0) || 0;
-  const totalCurrentValue = userInvestments?.reduce((sum: number, inv: any) => sum + parseFloat(inv.currentValue), 0) || 0;
-  const totalReturn = totalCurrentValue - totalInvested;
-  const totalReturnPercent = totalInvested > 0 ? (totalReturn / totalInvested) * 100 : 0;
+  const totalCurrentValue = investmentPerformance ? parseFloat(investmentPerformance.currentValue) : 0;
+  const totalReturn = investmentPerformance ? parseFloat(investmentPerformance.totalReturn) : 0;
+  const totalReturnPercent = investmentPerformance ? parseFloat(investmentPerformance.totalReturnPercent) : 0;
 
   // Currency selection and conversion logic
   const selectedWallet = wallets?.find(w => w.currency === selectedCurrency);
@@ -433,6 +442,13 @@ export default function Investments() {
       {/* Performance by Period Chart */}
       {userInvestments && userInvestments.length > 0 && (
         <InvestmentPerformanceChart />
+      )}
+
+      {/* Detailed Product Breakdown */}
+      {userInvestments && userInvestments.length > 0 && (
+        <div className="mt-6">
+          <InvestmentBreakdownDetail />
+        </div>
       )}
 
       {/* Filters */}

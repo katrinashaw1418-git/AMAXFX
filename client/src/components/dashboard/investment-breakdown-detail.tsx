@@ -1,0 +1,239 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { Building, CreditCard, Rocket, Bitcoin, DollarSign, TrendingUp, TrendingDown, Target } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const categoryIcons = {
+  real_estate: Building,
+  corporate_credit: CreditCard, 
+  venture_capital: Rocket,
+  digital_assets: Bitcoin,
+  cash_deposit: DollarSign,
+};
+
+const categoryLabels = {
+  real_estate: "Real Estate",
+  corporate_credit: "Corporate Credit", 
+  venture_capital: "Venture Capital",
+  digital_assets: "Digital Assets",
+  cash_deposit: "Cash Deposits",
+};
+
+interface ProductBreakdownProps {
+  showTitle?: boolean;
+  compact?: boolean;
+}
+
+export function InvestmentBreakdownDetail({ showTitle = true, compact = false }: ProductBreakdownProps) {
+  const { data: investmentPerformance, isLoading } = useQuery({
+    queryKey: ["/api/investment-performance", { timeframe: "1Y" }],
+    queryFn: () => api.getInvestmentPerformance({ timeframe: "1Y" }),
+    refetchInterval: 5000, // Refresh every 5 seconds
+  });
+
+  const { data: userInvestments } = useQuery({
+    queryKey: ["/api/user-investments"],
+    queryFn: () => api.getUserInvestments(),
+    refetchInterval: 5000,
+  });
+
+  const { data: products } = useQuery({
+    queryKey: ["/api/investment-products"],
+    queryFn: () => api.getInvestmentProducts(),
+  });
+
+  if (isLoading) {
+    return (
+      <Card>
+        {showTitle && (
+          <CardHeader>
+            <CardTitle>Investment Breakdown by Product</CardTitle>
+          </CardHeader>
+        )}
+        <CardContent>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-16 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!investmentPerformance || !userInvestments || !products) {
+    return (
+      <Card>
+        {showTitle && (
+          <CardHeader>
+            <CardTitle>Investment Breakdown by Product</CardTitle>
+          </CardHeader>
+        )}
+        <CardContent>
+          <p className="text-gray-500">No investment data available</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Group investments by product
+  const productGroups: Record<string, any> = {};
+  userInvestments.forEach((investment: any) => {
+    const product = products.find((p: any) => p.id === investment.productId);
+    if (product) {
+      if (!productGroups[product.id]) {
+        productGroups[product.id] = {
+          product,
+          investments: [],
+          totalInvested: 0,
+          totalCurrentValue: 0,
+          totalReturn: 0,
+        };
+      }
+      productGroups[product.id].investments.push(investment);
+      productGroups[product.id].totalInvested += parseFloat(investment.investedAmount);
+    }
+  });
+
+  // Calculate current values using midpoint IRR from portfolio allocation
+  Object.values(productGroups).forEach((group: any) => {
+    const categoryAllocation = investmentPerformance.portfolioAllocation[group.product.category];
+    if (categoryAllocation) {
+      group.totalCurrentValue = categoryAllocation.value;
+      group.totalReturn = group.totalCurrentValue - group.totalInvested;
+      group.returnPercent = group.totalInvested > 0 ? (group.totalReturn / group.totalInvested) * 100 : 0;
+      group.targetIRR = categoryAllocation.annualReturn * 100;
+      
+      // Calculate 7-year projection
+      const growthFactor = Math.pow(1 + categoryAllocation.annualReturn, 7);
+      group.sevenYearValue = group.totalInvested * growthFactor;
+      group.sevenYearReturn = group.sevenYearValue - group.totalInvested;
+      group.sevenYearPercent = ((group.sevenYearReturn / group.totalInvested) * 100);
+    }
+  });
+
+  const sortedGroups = Object.values(productGroups).sort((a: any, b: any) => b.returnPercent - a.returnPercent);
+
+  const totalInvested = parseFloat(investmentPerformance.currentValue) - parseFloat(investmentPerformance.totalReturn);
+  const totalReturn = parseFloat(investmentPerformance.totalReturn);
+  const totalReturnPercent = parseFloat(investmentPerformance.totalReturnPercent);
+
+  return (
+    <Card>
+      {showTitle && (
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Investment Breakdown by Product
+          </CardTitle>
+          <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
+            <div>
+              <p className="text-gray-600">Total Invested</p>
+              <p className="text-xl font-bold">${totalInvested.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-gray-600">Total Return</p>
+              <p className={`text-xl font-bold ${totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                ${Math.abs(totalReturn).toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-600">Overall Return</p>
+              <Badge variant={totalReturnPercent >= 0 ? "default" : "destructive"}>
+                {totalReturnPercent >= 0 ? '+' : ''}{totalReturnPercent.toFixed(2)}%
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
+      )}
+      
+      <CardContent>
+        <div className="space-y-4">
+          {sortedGroups.map((group: any, index: number) => {
+            const IconComponent = categoryIcons[group.product.category as keyof typeof categoryIcons] || Building;
+            const categoryLabel = categoryLabels[group.product.category as keyof typeof categoryLabels] || group.product.category;
+            
+            return (
+              <div key={group.product.id} className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-gray-100">
+                      <IconComponent className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium">{group.product.name}</h4>
+                      <p className="text-sm text-gray-600">{categoryLabel}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Badge variant={group.returnPercent >= 0 ? "default" : "destructive"}>
+                      #{index + 1} • {group.returnPercent >= 0 ? '+' : ''}{group.returnPercent.toFixed(2)}%
+                    </Badge>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-600">Invested</p>
+                    <p className="font-medium">${group.totalInvested.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Current Value</p>
+                    <p className="font-medium">${group.totalCurrentValue.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Return</p>
+                    <p className={`font-medium ${group.totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {group.totalReturn >= 0 ? '+' : ''}${Math.abs(group.totalReturn).toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Target IRR</p>
+                    <p className="font-medium">{group.targetIRR.toFixed(1)}%</p>
+                  </div>
+                </div>
+                
+                {!compact && (
+                  <div className="pt-2 border-t">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Target className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm font-medium">7-Year Projection</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-600">
+                          ${group.sevenYearValue.toLocaleString()} 
+                          <span className="ml-2 text-green-600">
+                            (+${group.sevenYearReturn.toLocaleString()})
+                          </span>
+                        </p>
+                        <Badge variant="outline" className="text-xs">
+                          {group.sevenYearPercent.toFixed(0)}% total return
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="text-xs text-gray-500">
+                  {group.investments.length} investment{group.investments.length !== 1 ? 's' : ''} • 
+                  Using {group.targetIRR.toFixed(1)}% midpoint IRR calculation
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        <div className="mt-6 pt-4 border-t">
+          <div className="text-sm text-gray-600 space-y-1">
+            <p>• All calculations use consistent midpoint IRR methodology</p>
+            <p>• Current values update automatically when new investments are added</p>
+            <p>• 7-year projections based on compound growth at target IRR rates</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
