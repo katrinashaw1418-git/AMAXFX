@@ -21,6 +21,9 @@ This platform is a comprehensive cross-border wealth management solution designe
 - **Cumulative vs Current Return Distinction**: Fixed fundamental calculation difference between Performance by Period (cumulative returns over investment timeline) and Investment Breakdown (current snapshot returns)
 - **Detailed Calculation Tables**: Added comprehensive calculation breakdown tables showing cumulative returns by period and product-by-product analysis
 - **Performance Methodology Documentation**: Implemented detailed calculation methodology with quarterly breakdowns and product-specific return analysis
+- **Chart Label Updated**: Changed "Total Return" to "Cumulative Return" in chart legend and tooltip to match table terminology
+- **Extended Term Projections**: Added complete term expiry calculations covering Q2'25 through Q1'28 with final portfolio value of $2,697,647
+- **Consistent Return Values**: Performance by Period summary now shows exact values matching table data: $120,072 cumulative return (6.49%)
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

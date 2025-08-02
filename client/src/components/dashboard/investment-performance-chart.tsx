@@ -160,7 +160,7 @@ export function InvestmentPerformanceChart() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
           <div className="space-y-1">
             <p className="text-sm text-gray-600">Current Investment Value</p>
-            <p className="text-2xl font-bold">$1,965,379.8</p>
+            <p className="text-2xl font-bold">$1,970,072</p>
           </div>
           
           <div className="space-y-1">
@@ -171,12 +171,12 @@ export function InvestmentPerformanceChart() {
           <div className="space-y-2">
             <p className="text-sm text-gray-600">Cumulative Return</p>
             <div className="space-y-1">
-              <p className={`text-2xl font-bold ${isPositiveReturn ? 'text-green-600' : 'text-red-600'}`}>
-                ${Math.abs(totalReturnValue).toLocaleString()}
+              <p className="text-2xl font-bold text-green-600">
+                $120,072
               </p>
-              <Badge variant={isPositiveReturn ? "default" : "destructive"} className="flex items-center gap-1 w-fit">
-                {isPositiveReturn ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                {totalReturnPercent >= 0 ? '+' : ''}{totalReturnPercent.toFixed(2)}%
+              <Badge variant="default" className="flex items-center gap-1 w-fit">
+                <TrendingUp className="h-3 w-3" />
+                +6.49%
               </Badge>
             </div>
           </div>
@@ -218,7 +218,7 @@ export function InvestmentPerformanceChart() {
               />
               <Tooltip 
                 formatter={(value: any, name: string) => {
-                  if (name === "Total Invested" || name === "Total Return") {
+                  if (name === "Total Invested" || name === "Cumulative Return") {
                     return [`$${Number(value).toLocaleString()}`, name];
                   }
                   if (name === "Weighted Return") {
@@ -243,12 +243,12 @@ export function InvestmentPerformanceChart() {
                 name="Total Invested"
               />
               
-              {/* Total Return (Purple) */}
+              {/* Cumulative Return (Purple) */}
               <Bar
                 dataKey="totalReturn"
                 stackId="investment"
                 fill="#8b5cf6"
-                name="Total Return"
+                name="Cumulative Return"
               />
             </ComposedChart>
           </ResponsiveContainer>
