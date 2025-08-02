@@ -1,96 +1,121 @@
-// TARGET IRR JUSTIFIED RETURNS - COMPARISON WITH ACTUAL API
-console.log('=== TARGET IRR vs ACTUAL API COMPARISON ===\n');
+// INVESTMENT RETURN CALCULATION USING MIDPOINT IRR 
+console.log('=== MEDIUM IRR PORTFOLIO RETURN CALCULATION ===\n');
 
-// Expected calculations based on target IRR methodology
-const expectedResults = {
-  totalInvested: 1850000,
-  totalReturn: 173044.52,
-  returnPercent: 9.35,
-  investments: [
-    { name: "Real Estate", invested: 500000, current: 518082.19, return: 18082.19 },
-    { name: "Corporate Credit", invested: 300000, current: 308136.99, return: 8136.99 },
-    { name: "VC/Growth", invested: 750000, current: 885000.00, return: 135000.00 },
-    { name: "Bitcoin Original", invested: 150000, current: 161095.89, return: 11095.89 },
-    { name: "Ethereum", invested: 75000, current: 75708.90, return: 708.90 },
-    { name: "Bitcoin $50k", invested: 50000, current: 50020.55, return: 20.55 },
-    { name: "Bitcoin $25k", invested: 25000, current: 25000.00, return: 0.00 }
-  ]
-};
-
-console.log('EXPECTED PORTFOLIO PERFORMANCE (Target IRR):');
-console.log(`Total Invested: $${expectedResults.totalInvested.toLocaleString()}`);
-console.log(`Total Return: $${expectedResults.totalReturn.toLocaleString()}`);
-console.log(`Return Percentage: ${expectedResults.returnPercent}%`);
-console.log(`Number of Investments: ${expectedResults.investments.length}\n`);
-
-console.log('INVESTMENT BREAKDOWN:');
-expectedResults.investments.forEach((inv, i) => {
-  const returnPercent = (inv.return / inv.invested) * 100;
-  console.log(`${i+1}. ${inv.name}: $${inv.invested.toLocaleString()} → $${inv.current.toLocaleString()} (+$${inv.return.toLocaleString()}, ${returnPercent.toFixed(2)}%)`);
-});
-
-console.log('\n=== API RESPONSE VERIFICATION ===\n');
-
-// Manual calculation to verify API correctness
-function verifyAPICalculations(apiResponse) {
-  console.log('API VALIDATION CHECKS:');
-  
-  // Parse API response
-  const apiData = JSON.parse(apiResponse);
-  const apiCurrentValue = parseFloat(apiData.currentValue);
-  const apiTotalReturn = parseFloat(apiData.totalReturn);
-  const apiReturnPercent = parseFloat(apiData.totalReturnPercent);
-  
-  console.log(`API Current Value: $${apiCurrentValue.toLocaleString()}`);
-  console.log(`API Total Return: $${apiTotalReturn.toLocaleString()}`);
-  console.log(`API Return %: ${apiReturnPercent}%`);
-  
-  // Calculate expected current value
-  const expectedCurrentValue = expectedResults.totalInvested + expectedResults.totalReturn;
-  
-  console.log('\nVALIDATION RESULTS:');
-  console.log(`Expected Current Value: $${expectedCurrentValue.toLocaleString()}`);
-  console.log(`API Current Value: $${apiCurrentValue.toLocaleString()}`);
-  console.log(`Difference: $${(apiCurrentValue - expectedCurrentValue).toLocaleString()}`);
-  
-  console.log(`Expected Return: $${expectedResults.totalReturn.toLocaleString()}`);
-  console.log(`API Return: $${apiTotalReturn.toLocaleString()}`);
-  console.log(`Difference: $${(apiTotalReturn - expectedResults.totalReturn).toLocaleString()}`);
-  
-  const accuracy = Math.abs(apiTotalReturn - expectedResults.totalReturn) < 1000 ? 'ACCURATE' : 'NEEDS_ADJUSTMENT';
-  console.log(`Calculation Accuracy: ${accuracy}`);
-  
-  return {
-    apiMatches: accuracy === 'ACCURATE',
-    apiCurrentValue,
-    apiTotalReturn,
-    expectedReturn: expectedResults.totalReturn
-  };
-}
-
-console.log('METHODOLOGY VERIFICATION:');
-console.log('✓ All investments use consistent target IRR rates');
-console.log('✓ Time-based calculations account for actual holding periods');
-console.log('✓ Bitcoin switched from 60% market rate to 15% target IRR');
-console.log('✓ New investments automatically included in calculations');
-console.log('✓ Real-time database tracking ensures data accuracy');
-
-console.log('\n7-YEAR COMPOUNDING EXAMPLE:');
-console.log('Formula: FV = PV × (1 + r)^n');
-console.log('Where: FV = Future Value, PV = Present Value, r = annual rate, n = years');
-
-const sevenYearExamples = [
-  { name: 'Real Estate (11%)', rate: 0.11, factor: Math.pow(1.11, 7) },
-  { name: 'Corporate Credit (11%)', rate: 0.11, factor: Math.pow(1.11, 7) },
-  { name: 'VC/Growth (18%)', rate: 0.18, factor: Math.pow(1.18, 7) },
-  { name: 'Bitcoin (15%)', rate: 0.15, factor: Math.pow(1.15, 7) },
-  { name: 'Ethereum (5.75%)', rate: 0.0575, factor: Math.pow(1.0575, 7) }
+// Investment returns calculated using midpoint IRR values instead of current performance
+const investments = [
+  { 
+    name: "Real Estate Credit Fund", 
+    invested: 500000, 
+    currentReturn: 2.63, // Actual current
+    targetIrrRange: "~11%",
+    midpointIrr: 11.0, // Use this for calculation
+    term: "~10.2 months (rolling)"
+  },
+  { 
+    name: "Corporate Credit Fund", 
+    invested: 300000, 
+    currentReturn: 1.23, // Actual current
+    targetIrrRange: "10–12%",
+    midpointIrr: 11.0, // Midpoint of 10-12%
+    term: "2–3 years"
+  },
+  { 
+    name: "VC / Growth Equity Fund", 
+    invested: 750000, 
+    currentReturn: 22.75, // Actual current
+    targetIrrRange: "16–20%",
+    midpointIrr: 18.0, // Midpoint of 16-20%
+    term: "5–7+ years"
+  },
+  { 
+    name: "Bitcoin Tracker Fund", 
+    invested: 150000, 
+    currentReturn: 3.42, // Actual current
+    targetIrrRange: "Market-based (historical 60%+ annualized)",
+    midpointIrr: 15.0, // Conservative midpoint estimate
+    term: "Open-ended"
+  },
+  { 
+    name: "Ethereum Staking Fund", 
+    invested: 75000, 
+    currentReturn: 6.25, // Actual current
+    targetIrrRange: "4.5–7% APY",
+    midpointIrr: 5.75, // Midpoint of 4.5-7%
+    term: "Open-ended"
+  }
 ];
 
-sevenYearExamples.forEach(example => {
-  const returnPercent = (example.factor - 1) * 100;
-  console.log(`${example.name}: $100,000 → $${(100000 * example.factor).toFixed(0)} (${returnPercent.toFixed(1)}% total return)`);
+console.log('PORTFOLIO USING MIDPOINT IRR CALCULATION:\n');
+
+let totalInvested = 0;
+let totalCurrentReturn = 0;
+let totalMidpointReturn = 0;
+let totalMidpointValue = 0;
+let totalCurrentValue = 0;
+
+investments.forEach((inv, i) => {
+  totalInvested += inv.invested;
+  
+  // Current actual values
+  const currentReturnAmount = inv.invested * (inv.currentReturn / 100);
+  const currentValue = inv.invested + currentReturnAmount;
+  totalCurrentReturn += currentReturnAmount;
+  totalCurrentValue += currentValue;
+  
+  // Midpoint IRR calculated values - THIS IS THE KEY CALCULATION
+  const midpointReturnAmount = inv.invested * (inv.midpointIrr / 100);
+  const midpointValue = inv.invested + midpointReturnAmount;
+  totalMidpointReturn += midpointReturnAmount;
+  totalMidpointValue += midpointValue;
+  
+  console.log(`${i+1}. ${inv.name}`);
+  console.log(`   Invested: $${inv.invested.toLocaleString()}`);
+  console.log(`   Target IRR Range: ${inv.targetIrrRange}`);
+  console.log(`   Midpoint IRR Used: ${inv.midpointIrr}%`);
+  console.log(`   Actual Current Return: ${inv.currentReturn}% ($${currentReturnAmount.toLocaleString()})`);
+  console.log(`   MIDPOINT IRR RETURN: ${inv.midpointIrr}% ($${midpointReturnAmount.toLocaleString()})`);
+  console.log(`   Midpoint IRR Value: $${midpointValue.toLocaleString()}`);
+  console.log('');
 });
 
-// This function will be called with actual API response
-global.verifyAPICalculations = verifyAPICalculations;
+console.log('=== MIDPOINT IRR PORTFOLIO SUMMARY ===\n');
+
+const currentPortfolioReturn = (totalCurrentReturn / totalInvested) * 100;
+const midpointPortfolioReturn = (totalMidpointReturn / totalInvested) * 100;
+
+console.log('COMPARISON:');
+console.log(`Total Invested: $${totalInvested.toLocaleString()}`);
+console.log(`\nActual Current Portfolio:`);
+console.log(`  Return: $${totalCurrentReturn.toLocaleString()} (${currentPortfolioReturn.toFixed(2)}%)`);
+console.log(`  Total Value: $${totalCurrentValue.toLocaleString()}`);
+
+console.log(`\nMIDPOINT IRR PORTFOLIO:`);
+console.log(`  Return: $${totalMidpointReturn.toLocaleString()} (${midpointPortfolioReturn.toFixed(2)}%)`);
+console.log(`  Total Value: $${totalMidpointValue.toLocaleString()}`);
+
+console.log('\nMIDPOINT IRR CALCULATION BREAKDOWN:');
+console.log(`Real Estate: $500,000 × 11% = $${(500000 * 0.11).toLocaleString()}`);
+console.log(`Corporate Credit: $300,000 × 11% = $${(300000 * 0.11).toLocaleString()}`);
+console.log(`VC Fund: $750,000 × 18% = $${(750000 * 0.18).toLocaleString()}`);
+console.log(`Bitcoin: $150,000 × 15% = $${(150000 * 0.15).toLocaleString()}`);
+console.log(`Ethereum: $75,000 × 5.75% = $${(75000 * 0.0575).toLocaleString()}`);
+console.log(`TOTAL MIDPOINT RETURN: $${totalMidpointReturn.toLocaleString()}`);
+
+const weightedAvgMidpointIrr = ((500000 * 11 + 300000 * 11 + 750000 * 18 + 150000 * 15 + 75000 * 5.75) / totalInvested);
+console.log(`\nWeighted Average Midpoint IRR: ${weightedAvgMidpointIrr.toFixed(2)}%`);
+console.log(`This equals: $${totalInvested.toLocaleString()} × ${weightedAvgMidpointIrr.toFixed(2)}% = $${totalMidpointReturn.toLocaleString()}`);
+
+console.log('\n=== MIDPOINT IRR JUSTIFICATION ===');
+console.log(`Using midpoint IRR values, the portfolio should generate:`);
+console.log(`• Portfolio Return: ${midpointPortfolioReturn.toFixed(2)}% ($${totalMidpointReturn.toLocaleString()})`);
+console.log(`• This represents the expected return if all funds hit their midpoint targets`);
+console.log(`• Actual current return: ${currentPortfolioReturn.toFixed(2)}% ($${totalCurrentReturn.toLocaleString()})`);
+console.log(`• Performance ratio: ${((currentPortfolioReturn/midpointPortfolioReturn)*100).toFixed(1)}% of midpoint potential`);
+
+console.log('\nMIDPOINT IRR PORTFOLIO COMPOSITION:');
+console.log(`• Real Estate (28.2%): 11% IRR on $500K = $55K`);
+console.log(`• Corporate Credit (16.9%): 11% IRR on $300K = $33K`);
+console.log(`• VC Fund (42.3%): 18% IRR on $750K = $135K`);
+console.log(`• Bitcoin (8.5%): 15% IRR on $150K = $22.5K`);
+console.log(`• Ethereum (4.2%): 5.75% IRR on $75K = $4.3K`);
+console.log(`• TOTAL: ${midpointPortfolioReturn.toFixed(2)}% return = $${totalMidpointReturn.toLocaleString()}`);
