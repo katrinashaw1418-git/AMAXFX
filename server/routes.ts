@@ -67,8 +67,8 @@ function calculateInvestmentPerformance(
   
   // Calculate current value using compound interest formula: Current Value = Principal × (1 + Rate)^Time
   const growthFactor = Math.pow(1 + targetIRR, timeInYears);
-  const currentValue = Math.round((investedAmount * growthFactor) * 100) / 100; // Round to 2 decimal places for consistency
-  const returnAmount = Math.round((currentValue - investedAmount) * 100) / 100; // Round to 2 decimal places for consistency
+  const currentValue = investedAmount * growthFactor;
+  const returnAmount = currentValue - investedAmount;
   const returnPercentage = investedAmount > 0 ? (returnAmount / investedAmount) * 100 : 0;
   
   return {
@@ -143,12 +143,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const investmentDate = new Date(investment.investmentDate);
           const investedAmount = parseFloat(investment.investedAmount);
           const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, evaluationDate);
-          investmentValue += performance.currentValue; // currentValue is already rounded in the function
+          investmentValue += performance.currentValue;
         }
       }
-      
-      // Ensure final investment value is properly rounded to prevent floating point precision errors
-      investmentValue = Math.round(investmentValue * 100) / 100;
       
       // Calculate total portfolio value including stablecoins
       const totalValue = fiatValue + cryptoValue + stablecoinValue + investmentValue;

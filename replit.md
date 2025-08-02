@@ -4,9 +4,7 @@
 This platform is a comprehensive cross-border wealth management solution designed for high-net-worth individuals, the global Chinese diaspora, and SMEs with international financial needs. It integrates traditional finance and cryptocurrency services, offering dual-channel support for FX and crypto trading, multi-currency wallets, AI-powered wealth advisory, and robust compliance features. The vision is to provide a unified, intelligent, and secure platform for managing diverse global assets.
 
 ## Recent Changes (August 2025)
-- **1 Cent Discrepancy RESOLVED**: Fixed critical precision issue where Portfolio API returned $1,966,908.85 instead of correct $1,966,908.84
-- **Perfect API Consistency**: All endpoints now return identical values - Portfolio API, User Investments API, and Investment Performance API all unified
-- **Precision Calculation Fix**: Added proper rounding (Math.round() * 100 / 100) to calculateInvestmentPerformance() function for consistent 2-decimal precision
+- **Endpoint Consistency Achievement**: Resolved critical inconsistency between user-investments and investment-performance APIs
 - **Unified Calculation System**: Both endpoints now use same calculateInvestmentPerformance() function for real-time accuracy
 - **Frontend Integration Success**: Dashboard wealth overview now displays actual investment performance ($116,908.84 / 6.32%) instead of hardcoded values
 - **Real-Time Performance Tracking**: Investment performance refreshes every 5 seconds with automatic midpoint IRR calculations
