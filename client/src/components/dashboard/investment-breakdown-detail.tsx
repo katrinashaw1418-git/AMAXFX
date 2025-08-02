@@ -99,12 +99,12 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
 
   // Calculate current values directly from user investments with accurate IRR and actual terms
   const productIRRMapping: Record<number, { midpointIRR: number; targetIRRDisplay: string; termYears: number; termDescription: string }> = {
-    1: { midpointIRR: 0.104, targetIRRDisplay: '10.4%', termYears: 5, termDescription: '5-7 years (midpoint: 6 years)' }, // Real Estate Equity Fund
-    2: { midpointIRR: 0.11, targetIRRDisplay: '11.0%', termYears: 2.5, termDescription: '2-3 years (midpoint: 2.5 years)' },  // Real Estate Credit Fund
-    3: { midpointIRR: 0.09, targetIRRDisplay: '9.0%', termYears: 3, termDescription: '2-4 years (midpoint: 3 years)' },   // Real Estate First Mortgage Fund
-    4: { midpointIRR: 0.11, targetIRRDisplay: '11.0%', termYears: 4, termDescription: '3-5 years (midpoint: 4 years)' },  // Cash Flow-Based Corporate Credit Fund
-    5: { midpointIRR: 0.135, targetIRRDisplay: '13.5%', termYears: 3.5, termDescription: '2-5 years (midpoint: 3.5 years)' }, // Security-Backed Corporate Credit Fund
-    6: { midpointIRR: 0.18, targetIRRDisplay: '18.0%', termYears: 7, termDescription: '5-9 years (midpoint: 7 years)' },  // VC / Growth Equity Fund
+    1: { midpointIRR: 0.104, targetIRRDisplay: '10.4%', termYears: 4.25, termDescription: '2–6.5 years (midpoint: 4.25 years)' }, // Real Estate Equity Fund
+    2: { midpointIRR: 0.11, targetIRRDisplay: '11.0%', termYears: 0.85, termDescription: '~10.2 months (rolling)' },  // Real Estate Credit Fund
+    3: { midpointIRR: 0.09, targetIRRDisplay: '9.0%', termYears: 0.78, termDescription: '~9.4 months' },   // Real Estate First Mortgage Fund
+    4: { midpointIRR: 0.11, targetIRRDisplay: '11.0%', termYears: 2.5, termDescription: '2–3 years (midpoint: 2.5 years)' },  // Cash Flow-Based Corporate Credit Fund
+    5: { midpointIRR: 0.135, targetIRRDisplay: '13.5%', termYears: 2.875, termDescription: '30–39 months (midpoint: 2.875 years)' }, // Security-Backed Corporate Credit Fund
+    6: { midpointIRR: 0.18, targetIRRDisplay: '18.0%', termYears: 6, termDescription: '5–7+ years (midpoint: 6 years)' },  // VC / Growth Equity Fund
   };
 
   // Helper function to calculate holding period
@@ -154,7 +154,7 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
     group.totalReturn = totalReturn;
     group.returnPercent = group.totalInvested > 0 ? (group.totalReturn / group.totalInvested) * 100 : 0;
     
-    // Use exact midpoint IRR for display and projections
+    // Use exact midpoint IRR for display and term expiry projections
     const productIRR = productIRRMapping[group.product.id];
     if (productIRR) {
       group.targetIRR = productIRR.midpointIRR * 100;
@@ -166,35 +166,30 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
       group.termExpiryValue = group.totalInvested * termExpiryGrowthFactor;
       group.termExpiryReturn = group.termExpiryValue - group.totalInvested;
       group.termExpiryPercent = ((group.termExpiryReturn / group.totalInvested) * 100);
-      
-      // Calculate 7-year projection using exact midpoint IRR
-      const growthFactor = Math.pow(1 + productIRR.midpointIRR, 7);
-      group.sevenYearValue = group.totalInvested * growthFactor;
-      group.sevenYearReturn = group.sevenYearValue - group.totalInvested;
-      group.sevenYearPercent = ((group.sevenYearReturn / group.totalInvested) * 100);
     } else {
       // Fallback for products not in mapping
       group.targetIRR = 11;
       group.targetIRRDisplay = '11.0%';
-      group.termDescription = '5 years (estimated)';
-      const termExpiryGrowthFactor = Math.pow(1.11, 5);
+      group.termDescription = '3 years (estimated)';
+      const termExpiryGrowthFactor = Math.pow(1.11, 3);
       group.termExpiryValue = group.totalInvested * termExpiryGrowthFactor;
       group.termExpiryReturn = group.termExpiryValue - group.totalInvested;
       group.termExpiryPercent = ((group.termExpiryReturn / group.totalInvested) * 100);
-      const growthFactor = Math.pow(1.11, 7);
-      group.sevenYearValue = group.totalInvested * growthFactor;
-      group.sevenYearReturn = group.sevenYearValue - group.totalInvested;
-      group.sevenYearPercent = ((group.sevenYearReturn / group.totalInvested) * 100);
     }
   });
 
   const sortedGroups = Object.values(productGroups).sort((a: any, b: any) => b.returnPercent - a.returnPercent);
 
-  // Calculate totals from user investments (accurate data)
+  // Calculate totals from user investments (current values)
   const actualTotalInvested = userInvestments.reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0);
   const actualTotalCurrentValue = userInvestments.reduce((sum: number, inv: any) => sum + parseFloat(inv.currentValue), 0);
   const actualTotalReturn = actualTotalCurrentValue - actualTotalInvested;
   const actualTotalReturnPercent = actualTotalInvested > 0 ? (actualTotalReturn / actualTotalInvested) * 100 : 0;
+  
+  // Calculate term expiry totals
+  const totalTermExpiryValue = Object.values(productGroups).reduce((sum: number, group: any) => sum + (group.termExpiryValue || 0), 0);
+  const totalTermExpiryReturn = totalTermExpiryValue - actualTotalInvested;
+  const totalTermExpiryPercent = actualTotalInvested > 0 ? (totalTermExpiryReturn / actualTotalInvested) * 100 : 0;
   
   const totalInvested = actualTotalInvested;
   const totalReturn = actualTotalReturn;
@@ -208,22 +203,28 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
             <TrendingUp className="h-5 w-5" />
             Investment Breakdown by Product
           </CardTitle>
-          <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
+          <div className="grid grid-cols-4 gap-4 mt-4 text-sm">
             <div>
               <p className="text-gray-600">Total Invested</p>
               <p className="text-xl font-bold">${totalInvested.toLocaleString()}</p>
             </div>
             <div>
-              <p className="text-gray-600">Total Return</p>
+              <p className="text-gray-600">Current Return</p>
               <p className={`text-xl font-bold ${totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 ${Math.abs(totalReturn).toLocaleString()}
               </p>
             </div>
             <div>
-              <p className="text-gray-600">Overall Return</p>
-              <Badge variant={totalReturnPercent >= 0 ? "default" : "destructive"}>
-                {totalReturnPercent >= 0 ? '+' : ''}{totalReturnPercent.toFixed(2)}%
-              </Badge>
+              <p className="text-gray-600">Term Expiry Value</p>
+              <p className="text-xl font-bold text-blue-600">
+                ${totalTermExpiryValue.toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-600">Expected Return</p>
+              <p className="text-xl font-bold text-purple-600">
+                +${totalTermExpiryReturn.toLocaleString()} ({totalTermExpiryPercent.toFixed(1)}%)
+              </p>
             </div>
           </div>
         </CardHeader>
@@ -276,47 +277,25 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
                 </div>
                 
                 {!compact && (
-                  <>
-                    <div className="pt-2 border-t mb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Target className="h-4 w-4 text-green-600" />
-                          <span className="text-sm font-medium">Term Expiry Projection</span>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-600">
-                            ${group.termExpiryValue.toLocaleString()} 
-                            <span className="ml-2 text-green-600">
-                              (+${group.termExpiryReturn.toLocaleString()})
-                            </span>
-                          </p>
-                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
-                            {group.termExpiryPercent.toFixed(0)}% return ({group.termDescription})
-                          </Badge>
-                        </div>
+                  <div className="pt-2 border-t">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Target className="h-4 w-4 text-green-600" />
+                        <span className="text-sm font-medium">Term Expiry Projection</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-600">
+                          ${group.termExpiryValue.toLocaleString()} 
+                          <span className="ml-2 text-green-600">
+                            (+${group.termExpiryReturn.toLocaleString()})
+                          </span>
+                        </p>
+                        <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
+                          {group.termExpiryPercent.toFixed(0)}% return ({group.termDescription})
+                        </Badge>
                       </div>
                     </div>
-                    
-                    <div className="pt-2 border-t">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Target className="h-4 w-4 text-blue-500" />
-                          <span className="text-sm font-medium">7-Year Projection</span>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-600">
-                            ${group.sevenYearValue.toLocaleString()} 
-                            <span className="ml-2 text-green-600">
-                              (+${group.sevenYearReturn.toLocaleString()})
-                            </span>
-                          </p>
-                          <Badge variant="outline" className="text-xs">
-                            {group.sevenYearPercent.toFixed(0)}% total return
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </>
+                  </div>
                 )}
                 
                 {/* Investment Details */}
@@ -361,7 +340,7 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
             <p>• All calculations use consistent midpoint IRR methodology</p>
             <p>• Current values update automatically when new investments are added</p>
             <p>• Term expiry projections based on actual product investment terms</p>
-            <p>• 7-year projections based on compound growth at target IRR rates</p>
+            <p>• Each product matures at different times based on real terms</p>
           </div>
         </div>
       </CardContent>
