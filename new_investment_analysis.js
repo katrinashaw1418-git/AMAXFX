@@ -1,39 +1,32 @@
-// NEW INVESTMENT ANALYSIS - SYNCHRONIZATION FIX
-console.log('=== NEW INVESTMENT ANALYSIS - SYNCHRONIZATION FIX ===\n');
+// NEW REAL ESTATE FIRST MORTGAGE FUND INVESTMENT ANALYSIS
+console.log('=== NEW INVESTMENT NAVIGATION GUIDE ===\n');
 
-console.log('ISSUE ANALYSIS:');
-console.log('✅ New $25,000 Bitcoin Tracker investment was successfully created in API response');
-console.log('✅ Wallet balance correctly reduced from $2,000,000 to $1,975,000');
-console.log('❌ New investment not appearing in dashboard calculations');
-console.log('❌ Total invested still shows $1,850,000 instead of $1,875,000\n');
+console.log('✅ INVESTMENT SUCCESSFULLY CREATED:');
+console.log('• Real Estate First Mortgage Fund: $25,000');
+console.log('• Investment ID: 39 (new)');
+console.log('• Status: Active and calculating real-time returns');
+console.log('• API Response: 2 Product ID 3 investments found');
+console.log('• Total Portfolio: 9 investments (increased from 8)\n');
 
-console.log('DATABASE STATE:');
-console.log('• Total Bitcoin Tracker investments: $225,000');
-console.log('• Total investments in database: 7 (should be 8)');
-console.log('• API /user-investments returning only 7 investments');
-console.log('• Missing the new $25,000 Bitcoin Tracker investment\n');
+console.log('📍 WHERE TO FIND CAPITAL INVESTED DISPLAY:');
+console.log('The "Capital Invested" breakdown is on the INVESTMENTS page, not Dashboard');
+console.log('• Dashboard: Shows overall portfolio metrics');
+console.log('• Investments page: Shows detailed "Investment Breakdown by Product"');
+console.log('• Navigation: Use sidebar menu → "Investments" section\n');
 
-console.log('ROOT CAUSE:');
-console.log('The new investment was created successfully via POST /api/investments,');
-console.log('but the GET /api/user-investments endpoint is not returning it.');
-console.log('This suggests either:');
-console.log('1. Database insertion failed silently');
-console.log('2. Query in getUserInvestments is filtering out the new record');
-console.log('3. Transaction not committed properly\n');
+console.log('💡 EXPECTED ON INVESTMENTS PAGE:');
+console.log('• "Total Invested" section showing $1,900,000 (was $1,875,000)');
+console.log('• Real Estate First Mortgage Fund entry with $25,000 invested');
+console.log('• Current Value: $25,000+ with real-time IRR calculations');
+console.log('• Investment breakdown shows 2 separate investments for Product 3');
+console.log('• Available to invest section updated with reduced USD balance\n');
 
-console.log('EXPECTED AFTER FIX:');
-console.log('• Total investments: 8 (current: 7)');
-console.log('• Bitcoin Tracker total: $250,000 ($225,000 + $25,000)');
-console.log('• Portfolio term expiry: $2,877,404 (+$40,000 from new investment)');
-console.log('• Dashboard sections: All update with new totals\n');
+console.log('🔍 VERIFICATION STEPS:');
+console.log('1. Navigate to Investments page via sidebar');
+console.log('2. Look for "Investment Breakdown by Product" section');
+console.log('3. Find Real Estate First Mortgage Fund entry');
+console.log('4. Verify $25,000 invested amount is displayed');
+console.log('5. Check Total Invested shows $1,900,000\n');
 
-console.log('NEXT ACTIONS:');
-console.log('1. Check database insertion - verify new record exists');
-console.log('2. Test getUserInvestments query directly');
-console.log('3. Force cache invalidation on frontend');
-console.log('4. Verify real-time calculation includes new investment\n');
-
-console.log('📊 CALCULATION IMPACT:');
-console.log('New Investment: $25,000 × (1.60)^1 = $40,000 at term expiry');
-console.log('Additional Portfolio Value: +$40,000');
-console.log('Updated Total Return: +$1,027,404 (55.5%)');
+console.log('✅ SYSTEM STATUS: Investment creation successful, data available on Investments page');
+console.log('User should navigate to /investments to see Capital Invested breakdown');
