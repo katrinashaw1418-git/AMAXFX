@@ -18,6 +18,9 @@ This platform is a comprehensive cross-border wealth management solution designe
 - **Calculation Precision Fixed**: Implemented term expiry capping in server calculation function to ensure no growth beyond product maturity
 - **API Consistency Achieved**: Both User Investments API and Investment Performance API now return identical values with high precision
 - **Automated Real-Time Calculation**: Current value updates automatically with any input changes using unified midpoint IRR methodology
+- **Cumulative vs Current Return Distinction**: Fixed fundamental calculation difference between Performance by Period (cumulative returns over investment timeline) and Investment Breakdown (current snapshot returns)
+- **Detailed Calculation Tables**: Added comprehensive calculation breakdown tables showing cumulative returns by period and product-by-product analysis
+- **Performance Methodology Documentation**: Implemented detailed calculation methodology with quarterly breakdowns and product-specific return analysis
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

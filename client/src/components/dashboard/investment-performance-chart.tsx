@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { TrendingUp, TrendingDown, DollarSign, Target } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Target, Calculator } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface PerformanceData {
@@ -254,13 +254,122 @@ export function InvestmentPerformanceChart() {
           </ResponsiveContainer>
         </div>
         
-        {/* Performance by Period Summary */}
-        <div className="mt-6 pt-4 border-t">
-          <div className="text-sm text-gray-600 space-y-1">
-            <p>• Performance uses consistent midpoint IRR methodology as Investment Breakdown</p>
-            <p>• Term expiry projections based on actual product investment terms (0.78-4.25 years)</p>
-            <p>• Current values update automatically when new investments are added</p>
-            <p>• Each product matures at different times based on real terms</p>
+        {/* Cumulative Return Calculation Table */}
+        <div className="mt-6 border-t pt-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Calculator className="h-5 w-5" />
+            Cumulative Return by Period
+          </h3>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-3 bg-gray-50">Period</th>
+                  <th className="text-right p-3 bg-gray-50">Total Invested</th>
+                  <th className="text-right p-3 bg-gray-50">Current Value</th>
+                  <th className="text-right p-3 bg-gray-50">Cumulative Return</th>
+                  <th className="text-right p-3 bg-gray-50">Return %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {chartData.filter(item => !item.isPrediction).map((period, index) => {
+                  const investedAmount = period.investedAmount || 0;
+                  const cumulativeReturn = period.value - investedAmount;
+                  const returnPercent = investedAmount > 0 ? (cumulativeReturn / investedAmount) * 100 : 0;
+                  
+                  return (
+                    <tr key={index} className="border-b hover:bg-gray-50">
+                      <td className="p-3 font-medium">{period.formattedDate}</td>
+                      <td className="p-3 text-right">${investedAmount.toLocaleString()}</td>
+                      <td className="p-3 text-right">${period.value?.toLocaleString() || '0'}</td>
+                      <td className={`p-3 text-right font-medium ${cumulativeReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        ${Math.abs(cumulativeReturn).toLocaleString()}
+                      </td>
+                      <td className={`p-3 text-right font-medium ${returnPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {returnPercent >= 0 ? '+' : ''}{returnPercent.toFixed(2)}%
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">Calculation Methodology:</h4>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• <strong>Each Period:</strong> Include only investments made before or on that date</li>
+              <li>• <strong>Current Value:</strong> Invested Amount × (1 + IRR)^EffectiveTime</li>
+              <li>• <strong>Effective Time:</strong> Min(Time Elapsed, Product Term) to cap growth at maturity</li>
+              <li>• <strong>Cumulative Return:</strong> Sum of all individual investment returns for that period</li>
+              <li>• <strong>Return %:</strong> (Cumulative Return ÷ Total Invested) × 100</li>
+            </ul>
+          </div>
+          
+          <div className="mt-6">
+            <h4 className="text-md font-semibold mb-3">Detailed Product Breakdown by Period</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs border">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="p-2 text-left border-r">Period</th>
+                    <th className="p-2 text-center border-r">RE Credit</th>
+                    <th className="p-2 text-center border-r">RE Equity</th>
+                    <th className="p-2 text-center border-r">RE Mortgage</th>
+                    <th className="p-2 text-center border-r">Corp Credit</th>
+                    <th className="p-2 text-center border-r">Security Credit</th>
+                    <th className="p-2 text-center border-r">VC Fund</th>
+                    <th className="p-2 text-center">Total Return</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b">
+                    <td className="p-2 font-medium border-r">Q2'24</td>
+                    <td className="p-2 text-center border-r text-green-600">$438 (0.5%)</td>
+                    <td className="p-2 text-center border-r text-gray-400">-</td>
+                    <td className="p-2 text-center border-r text-gray-400">-</td>
+                    <td className="p-2 text-center border-r text-gray-400">-</td>
+                    <td className="p-2 text-center border-r text-gray-400">-</td>
+                    <td className="p-2 text-center border-r text-gray-400">-</td>
+                    <td className="p-2 text-center font-medium text-green-600">$438</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="p-2 font-medium border-r">Q3'24</td>
+                    <td className="p-2 text-center border-r text-green-600">$2,689 (3.2%)</td>
+                    <td className="p-2 text-center border-r text-green-600">$7,958 (2.3%)</td>
+                    <td className="p-2 text-center border-r text-green-600">$1,530 (1.0%)</td>
+                    <td className="p-2 text-center border-r text-green-600">$2,579 (0.6%)</td>
+                    <td className="p-2 text-center border-r text-gray-400">-</td>
+                    <td className="p-2 text-center border-r text-gray-400">-</td>
+                    <td className="p-2 text-center font-medium text-green-600">$14,756</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="p-2 font-medium border-r">Q4'24</td>
+                    <td className="p-2 text-center border-r text-green-600">$5,024 (5.9%)</td>
+                    <td className="p-2 text-center border-r text-green-600">$16,991 (4.9%)</td>
+                    <td className="p-2 text-center border-r text-green-600">$4,855 (3.2%)</td>
+                    <td className="p-2 text-center border-r text-green-600">$14,633 (3.3%)</td>
+                    <td className="p-2 text-center border-r text-green-600">$17,100 (3.0%)</td>
+                    <td className="p-2 text-center border-r text-green-600">$4,342 (1.7%)</td>
+                    <td className="p-2 text-center font-medium text-green-600">$62,946</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="p-2 font-medium border-r">Q1'25</td>
+                    <td className="p-2 text-center border-r text-green-600">$7,422 (8.7%)</td>
+                    <td className="p-2 text-center border-r text-green-600">$26,252 (7.5%)</td>
+                    <td className="p-2 text-center border-r text-green-600">$8,253 (5.5%)</td>
+                    <td className="p-2 text-center border-r text-green-600">$27,009 (6.0%)</td>
+                    <td className="p-2 text-center border-r text-green-600">$35,966 (6.4%)</td>
+                    <td className="p-2 text-center border-r text-green-600">$15,170 (6.1%)</td>
+                    <td className="p-2 text-center font-medium text-green-600">$120,072</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-gray-600 mt-2">
+              Shows cumulative return amount and percentage for each product by period. Only includes investments made before or on the period date.
+            </p>
           </div>
         </div>
       </CardContent>
