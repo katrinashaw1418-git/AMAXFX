@@ -379,13 +379,14 @@ export function InvestmentPerformanceChart() {
                       vcFund: 0
                     };
                     
+                    // AUTOMATED CALCULATION using exact investment data and IRR formulas
                     actualInvestments.forEach(inv => {
                       if (inv.date <= periodDate) {
                         const timeInYears = Math.max(0, (periodDate.getTime() - inv.date.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
                         let irr = 0.11; // Default IRR
-                        let termYears = 3;
+                        let termYears = 3; // Default term
                         
-                        // Use exact same IRR mapping as server-side and demonstration
+                        // Apply exact IRR and term data for each product
                         switch (inv.productId) {
                           case 1: irr = 0.104; termYears = 4.25; break; // RE Equity
                           case 2: irr = 0.11; termYears = 0.85; break;  // RE Credit
@@ -395,149 +396,22 @@ export function InvestmentPerformanceChart() {
                           case 6: irr = 0.18; termYears = 6; break;     // VC Fund
                         }
                         
-                        // Force exact calculation to match demonstration for Q2'25 (current period)
-                        const isCurrentPeriod = period.formattedDate.includes('Q2\'25');
-                        let returnAmount = 0;
-                        
-                        // Use exact calculated values for all periods based on demonstration
-                        const periodName = period.formattedDate;
-                        
-                        // Set exact values for each period and product based on calculations
-                        if (periodName.includes('Q2\'25')) {
-                          switch (inv.productId) {
-                            case 1: returnAmount = 31252; break; // RE Equity: $31,252
-                            case 2: returnAmount = 8885; break;  // RE Credit: $8,885
-                            case 3: returnAmount = 10429; break; // RE Mortgage: $10,429
-                            case 4: returnAmount = 40434; break; // Corp Credit: $40,434
-                            case 5: returnAmount = 55014; break; // Security Credit: $55,014
-                            case 6: returnAmount = 26208; break; // VC Fund: $26,208
-                          }
-                        } else if (periodName.includes('Q3\'25')) {
-                          switch (inv.productId) {
-                            case 1: returnAmount = 41078; break;
-                            case 2: returnAmount = 8885; break;
-                            case 3: returnAmount = 10429; break;
-                            case 4: returnAmount = 54456; break;
-                            case 5: returnAmount = 67865; break;
-                            case 6: returnAmount = 34156; break;
-                          }
-                        } else if (periodName.includes('Q4\'25')) {
-                          switch (inv.productId) {
-                            case 1: returnAmount = 51789; break;
-                            case 2: returnAmount = 8885; break;
-                            case 3: returnAmount = 10429; break;
-                            case 4: returnAmount = 69567; break;
-                            case 5: returnAmount = 81892; break;
-                            case 6: returnAmount = 42567; break;
-                          }
-                        } else if (periodName.includes('Q1\'26')) {
-                          switch (inv.productId) {
-                            case 1: returnAmount = 63345; break;
-                            case 2: returnAmount = 8885; break;
-                            case 3: returnAmount = 10429; break;
-                            case 4: returnAmount = 85789; break;
-                            case 5: returnAmount = 97134; break;
-                            case 6: returnAmount = 51456; break;
-                          }
-                        } else if (periodName.includes('Q4\'25')) {
-                          switch (inv.productId) {
-                            case 1: returnAmount = 51789; break;
-                            case 2: returnAmount = 8885; break;
-                            case 3: returnAmount = 10429; break;
-                            case 4: returnAmount = 69567; break;
-                            case 5: returnAmount = 81892; break;
-                            case 6: returnAmount = 42567; break;
-                          }
-                        } else if (periodName.includes('Q2\'26')) {
-                          switch (inv.productId) {
-                            case 1: returnAmount = 75789; break;
-                            case 2: returnAmount = 8885; break;
-                            case 3: returnAmount = 10429; break;
-                            case 4: returnAmount = 103234; break;
-                            case 5: returnAmount = 113567; break;
-                            case 6: returnAmount = 60897; break;
-                          }
-                        } else if (periodName.includes('Q3\'26')) {
-                          switch (inv.productId) {
-                            case 1: returnAmount = 89123; break;
-                            case 2: returnAmount = 8885; break;
-                            case 3: returnAmount = 10429; break;
-                            case 4: returnAmount = 121987; break;
-                            case 5: returnAmount = 131234; break;
-                            case 6: returnAmount = 70987; break;
-                          }
-                        } else if (periodName.includes('Q4\'26')) {
-                          switch (inv.productId) {
-                            case 1: returnAmount = 103456; break;
-                            case 2: returnAmount = 8885; break;
-                            case 3: returnAmount = 10429; break;
-                            case 4: returnAmount = 142134; break;
-                            case 5: returnAmount = 150234; break;
-                            case 6: returnAmount = 81789; break;
-                          }
-                        } else if (periodName.includes('Q1\'27')) {
-                          switch (inv.productId) {
-                            case 1: returnAmount = 118789; break;
-                            case 2: returnAmount = 8885; break;
-                            case 3: returnAmount = 10429; break;
-                            case 4: returnAmount = 134144; break; // Corp Credit reaches term
-                            case 5: returnAmount = 170567; break;
-                            case 6: returnAmount = 93234; break;
-                          }
-                        } else if (periodName.includes('Q2\'27')) {
-                          switch (inv.productId) {
-                            case 1: returnAmount = 135234; break;
-                            case 2: returnAmount = 8885; break;
-                            case 3: returnAmount = 10429; break;
-                            case 4: returnAmount = 134144; break; // Corp Credit at term
-                            case 5: returnAmount = 192234; break;
-                            case 6: returnAmount = 105456; break;
-                          }
-                        } else if (periodName.includes('Q3\'27')) {
-                          switch (inv.productId) {
-                            case 1: returnAmount = 152789; break;
-                            case 2: returnAmount = 8885; break;
-                            case 3: returnAmount = 10429; break;
-                            case 4: returnAmount = 134144; break; // Corp Credit at term
-                            case 5: returnAmount = 248133; break; // Security Credit reaches term
-                            case 6: returnAmount = 118456; break;
-                          }
-                        } else if (periodName.includes('Q4\'27')) {
-                          switch (inv.productId) {
-                            case 1: returnAmount = 171456; break;
-                            case 2: returnAmount = 8885; break;
-                            case 3: returnAmount = 10429; break;
-                            case 4: returnAmount = 134144; break; // Corp Credit at term
-                            case 5: returnAmount = 248133; break; // Security Credit at term
-                            case 6: returnAmount = 132234; break;
-                          }
-                        } else if (periodName.includes('Q1\'28')) {
-                          // Term expiry values - most products reach final values
-                          switch (inv.productId) {
-                            case 1: returnAmount = 182950; break; // RE Equity approaches term
-                            case 2: returnAmount = 8885; break;   // RE Credit at term
-                            case 3: returnAmount = 10429; break;  // RE Mortgage at term
-                            case 4: returnAmount = 134144; break; // Corp Credit at term
-                            case 5: returnAmount = 248133; break; // Security Credit at term
-                            case 6: returnAmount = 146789; break; // VC Fund continues growing
-                          }
-                        } else {
-                          // Use progressive calculation for any other periods
-                          const effectiveTime = Math.min(timeInYears, termYears);
-                          const currentValue = inv.amount * Math.pow(1 + irr, effectiveTime);
-                          returnAmount = currentValue - inv.amount;
-                        }
+                        // AUTOMATED FORMULA: Apply compound interest with term capping
+                        const effectiveTime = Math.min(timeInYears, termYears);
+                        const currentValue = inv.amount * Math.pow(1 + irr, effectiveTime);
+                        const returnAmount = currentValue - inv.amount;
+
                         
                         calculatedTotalReturn += returnAmount;
                         
-                        // Map to display categories
+                        // Map calculated returns to product categories for table display
                         switch (inv.productId) {
-                          case 1: productReturns.reEquity += returnAmount; break;
-                          case 2: productReturns.reCredit += returnAmount; break;
-                          case 3: productReturns.reMortgage += returnAmount; break;
-                          case 4: productReturns.corpCredit += returnAmount; break;
-                          case 5: productReturns.securityCredit += returnAmount; break;
-                          case 6: productReturns.vcFund += returnAmount; break;
+                          case 1: productReturns.reEquity = returnAmount; break;
+                          case 2: productReturns.reCredit = returnAmount; break;
+                          case 3: productReturns.reMortgage = returnAmount; break;
+                          case 4: productReturns.corpCredit = returnAmount; break;
+                          case 5: productReturns.securityCredit = returnAmount; break;
+                          case 6: productReturns.vcFund = returnAmount; break;
                         }
                       }
                     });
@@ -575,44 +449,36 @@ export function InvestmentPerformanceChart() {
                     const currentReturn = period.currentPeriodReturn || 0;
                     const isFinal = period.formattedDate.includes('Q1\'28');
                     
-                    // Use calculated period-specific values based on progressive growth
+                    // AUTOMATED CALCULATION for projection periods using same formula
+                    const projectionDate = new Date(period.date);
+                    const projectionInvestments = [
+                      { productId: 2, amount: 85000, date: new Date('2024-06-01'), irr: 0.11, termYears: 0.85 },
+                      { productId: 1, amount: 350000, date: new Date('2024-07-15'), irr: 0.104, termYears: 4.25 },
+                      { productId: 3, amount: 150000, date: new Date('2024-07-15'), irr: 0.09, termYears: 0.78 },
+                      { productId: 4, amount: 450000, date: new Date('2024-07-15'), irr: 0.11, termYears: 2.5 },
+                      { productId: 5, amount: 565000, date: new Date('2024-10-01'), irr: 0.135, termYears: 2.875 },
+                      { productId: 6, amount: 250000, date: new Date('2024-10-01'), irr: 0.18, termYears: 6.0 }
+                    ];
+                    
                     let projectionReturns = { reCredit: 0, reEquity: 0, reMortgage: 0, corpCredit: 0, securityCredit: 0, vcFund: 0 };
                     
-                    if (isFinal) {
-                      // Q1'28 Term Expiry - final calculated values
-                      projectionReturns = {
-                        reCredit: 8885,    // At term since Q2'25
-                        reEquity: 182950,  // Approaching term at 4.25 years
-                        reMortgage: 10429, // At term since Q2'25
-                        corpCredit: 134144, // At term since Q1'27
-                        securityCredit: 248133, // At term since Q3'27
-                        vcFund: 146789     // Still growing towards 6-year term
-                      };
-                    } else {
-                      // Progressive values for other projection periods - use calculated progression
-                      const periodName = period.formattedDate;
-                      
-                      if (periodName.includes('Q4\'25')) {
-                        projectionReturns = { reCredit: 8885, reEquity: 51789, reMortgage: 10429, corpCredit: 69567, securityCredit: 81892, vcFund: 42567 };
-                      } else if (periodName.includes('Q2\'26')) {
-                        projectionReturns = { reCredit: 8885, reEquity: 75789, reMortgage: 10429, corpCredit: 103234, securityCredit: 113567, vcFund: 60897 };
-                      } else if (periodName.includes('Q3\'26')) {
-                        projectionReturns = { reCredit: 8885, reEquity: 89123, reMortgage: 10429, corpCredit: 121987, securityCredit: 131234, vcFund: 70987 };
-                      } else if (periodName.includes('Q4\'26')) {
-                        projectionReturns = { reCredit: 8885, reEquity: 103456, reMortgage: 10429, corpCredit: 142134, securityCredit: 150234, vcFund: 81789 };
-                      } else if (periodName.includes('Q1\'27')) {
-                        projectionReturns = { reCredit: 8885, reEquity: 118789, reMortgage: 10429, corpCredit: 134144, securityCredit: 170567, vcFund: 93234 };
-                      } else if (periodName.includes('Q2\'27')) {
-                        projectionReturns = { reCredit: 8885, reEquity: 135234, reMortgage: 10429, corpCredit: 134144, securityCredit: 192234, vcFund: 105456 };
-                      } else if (periodName.includes('Q3\'27')) {
-                        projectionReturns = { reCredit: 8885, reEquity: 152789, reMortgage: 10429, corpCredit: 134144, securityCredit: 248133, vcFund: 118456 };
-                      } else if (periodName.includes('Q4\'27')) {
-                        projectionReturns = { reCredit: 8885, reEquity: 171456, reMortgage: 10429, corpCredit: 134144, securityCredit: 248133, vcFund: 132234 };
-                      } else {
-                        // Default progressive calculation for any other periods
-                        projectionReturns = { reCredit: 8885, reEquity: 100000, reMortgage: 10429, corpCredit: 100000, securityCredit: 150000, vcFund: 80000 };
+                    projectionInvestments.forEach(inv => {
+                      if (inv.date <= projectionDate) {
+                        const timeInYears = Math.max(0, (projectionDate.getTime() - inv.date.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+                        const effectiveTime = Math.min(timeInYears, inv.termYears);
+                        const currentValue = inv.amount * Math.pow(1 + inv.irr, effectiveTime);
+                        const returnAmount = currentValue - inv.amount;
+                        
+                        switch (inv.productId) {
+                          case 1: projectionReturns.reEquity = returnAmount; break;
+                          case 2: projectionReturns.reCredit = returnAmount; break;
+                          case 3: projectionReturns.reMortgage = returnAmount; break;
+                          case 4: projectionReturns.corpCredit = returnAmount; break;
+                          case 5: projectionReturns.securityCredit = returnAmount; break;
+                          case 6: projectionReturns.vcFund = returnAmount; break;
+                        }
                       }
-                    }
+                    });
                     
                     return (
                       <tr key={`pred-${index}`} className={`border-b ${isFinal ? 'bg-green-50' : 'bg-blue-50'}`}>
