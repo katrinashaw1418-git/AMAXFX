@@ -37,6 +37,7 @@ This platform is a comprehensive cross-border wealth management solution designe
 - **Zero Discrepancy System**: Eliminated all calculation inconsistencies by implementing unified product ID-based IRR mapping and identical calculation methods across all APIs and dashboard sections
 - **Real-Time Data Source Consistency**: Updated all frontend components to use Filter Products real-time data source instead of independent calculations, ensuring automatic synchronization across dashboard sections
 - **Investment Creation Issue Resolved**: Fixed Real Estate First Mortgage Fund minimum investment from $50,000 to $25,000, successfully created $25,000 investment, updated MemStorage demo data to include new investment, portfolio now shows 9 total investments with real-time Capital Invested display updates
+- **Dashboard Investment Breakdown Added**: Added InvestmentBreakdownDetail component directly to main Dashboard page for immediate Capital Invested visibility without requiring navigation to separate Investments page
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

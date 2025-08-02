@@ -88,7 +88,14 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
           </CardHeader>
         )}
         <CardContent>
-          <p className="text-gray-500">No investment data available</p>
+          <div className="text-yellow-600 bg-yellow-50 p-4 rounded-lg">
+            <p className="font-medium">Loading investment data...</p>
+            <p className="text-sm mt-1">
+              Performance: {investmentPerformance ? '✓' : '⏳'} | 
+              Investments: {userInvestments ? `✓ (${userInvestments.length})` : '⏳'} | 
+              Products: {products ? '✓' : '⏳'}
+            </p>
+          </div>
         </CardContent>
       </Card>
     );
@@ -265,6 +272,15 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
   const actualTotalCurrentValue = userInvestments.reduce((sum: number, inv: any) => sum + parseFloat(inv.currentValue), 0);
   const actualTotalReturn = actualTotalCurrentValue - actualTotalInvested;
   const actualTotalReturnPercent = actualTotalInvested > 0 ? (actualTotalReturn / actualTotalInvested) * 100 : 0;
+
+  // Debug logging for verification
+  console.log('Investment Breakdown Component Data:', {
+    totalInvestments: userInvestments.length,
+    totalInvested: actualTotalInvested,
+    productGroups: Object.keys(productGroups).length,
+    hasProduct3: !!productGroups[3],
+    product3Total: productGroups[3]?.totalInvested
+  });
   
   // Calculate term expiry totals
   const totalTermExpiryValue = Object.values(productGroups).reduce((sum: number, group: any) => sum + (group.termExpiryValue || 0), 0);
