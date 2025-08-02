@@ -277,7 +277,6 @@ export function InvestmentPerformanceChart() {
                   <th className="text-right p-3 bg-gray-50">Total Invested</th>
                   <th className="text-right p-3 bg-gray-50">Current Value</th>
                   <th className="text-right p-3 bg-gray-50">Current Return</th>
-                  <th className="text-right p-3 bg-gray-50">Cumulative Return</th>
                   <th className="text-right p-3 bg-gray-50">Return %</th>
                 </tr>
               </thead>
@@ -285,7 +284,6 @@ export function InvestmentPerformanceChart() {
                 {chartData.filter(item => !item.isPrediction).map((period, index) => {
                   const investedAmount = period.currentInvestment || 0;
                   const currentReturn = period.currentPeriodReturn || 0;
-                  const cumulativeReturn = period.totalReturn || 0; // This is now cumulative from chart data
                   const returnPercent = investedAmount > 0 ? (currentReturn / investedAmount) * 100 : 0;
                   
                   return (
@@ -295,9 +293,6 @@ export function InvestmentPerformanceChart() {
                       <td className="p-3 text-right">${period.value?.toLocaleString() || '0'}</td>
                       <td className={`p-3 text-right font-medium ${currentReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         ${Math.abs(currentReturn).toLocaleString()}
-                      </td>
-                      <td className={`p-3 text-right font-medium ${cumulativeReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        ${Math.abs(cumulativeReturn).toLocaleString()}
                       </td>
                       <td className={`p-3 text-right font-medium ${returnPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {returnPercent >= 0 ? '+' : ''}{returnPercent.toFixed(2)}%
@@ -310,7 +305,6 @@ export function InvestmentPerformanceChart() {
                 {chartData.filter(item => item.isPrediction).map((period, index) => {
                   const investedAmount = period.currentInvestment || 0;
                   const currentReturn = period.currentPeriodReturn || 0;
-                  const cumulativeReturn = period.totalReturn || 0; // This is now cumulative from chart data
                   const returnPercent = investedAmount > 0 ? (currentReturn / investedAmount) * 100 : 0;
                   const isFinal = period.formattedDate.includes('Q1\'28');
                   
@@ -321,9 +315,6 @@ export function InvestmentPerformanceChart() {
                       <td className="p-3 text-right">${period.value?.toLocaleString() || '0'}</td>
                       <td className={`p-3 text-right font-medium ${isFinal ? 'text-green-700' : 'text-blue-600'}`}>
                         ${Math.abs(currentReturn).toLocaleString()}
-                      </td>
-                      <td className={`p-3 text-right font-medium ${isFinal ? 'text-green-700' : 'text-blue-600'}`}>
-                        ${Math.abs(cumulativeReturn).toLocaleString()}
                       </td>
                       <td className={`p-3 text-right font-medium ${isFinal ? 'text-green-700' : 'text-blue-600'}`}>
                         {returnPercent >= 0 ? '+' : ''}{returnPercent.toFixed(2)}%
@@ -341,7 +332,7 @@ export function InvestmentPerformanceChart() {
               <li>• <strong>Each Period:</strong> Include only investments made before or on that date</li>
               <li>• <strong>Current Value:</strong> Invested Amount × (1 + IRR)^EffectiveTime</li>
               <li>• <strong>Effective Time:</strong> Min(Time Elapsed, Product Term) to cap growth at maturity</li>
-              <li>• <strong>Cumulative Return:</strong> Running total of all returns from start to current period</li>
+              <li>• <strong>Current Return:</strong> Current Value - Invested Amount (point-in-time snapshot)</li>
               <li>• <strong>Return %:</strong> (Current Return ÷ Total Invested) × 100</li>
             </ul>
           </div>
