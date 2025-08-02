@@ -115,7 +115,7 @@ export function InvestmentPerformanceChart() {
 
   // Calculate current totals from API data
   const currentTotalReturn = Math.round(totalReturnValue);
-  const currentTotalInvested = userInvestments ? userInvestments.reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0) : 1850000;
+  const currentTotalInvested = userInvestments ? userInvestments.reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0) : 0;
   const currentReturnPercent = currentTotalInvested > 0 ? (currentTotalReturn / currentTotalInvested) * 100 : 0;
 
   // Use real-time data source from Filter Products system - NO independent calculation
