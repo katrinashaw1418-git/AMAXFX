@@ -5,12 +5,13 @@ This platform is a comprehensive cross-border wealth management solution designe
 
 ## Recent Changes (August 2025)
 - **Investment Products Section Removed**: Removed the Investment Products overview cards section per user request, keeping Performance by Period chart and Investment Breakdown Detail intact
-- **Streamlined Investment Page**: Now focuses on Performance by Period chart and detailed Investment Breakdown by Product with term expiry projections
+- **Performance Chart Updated with Term Expiry**: Performance by Period chart now uses term expiry projections instead of 7-year projections, showing realistic portfolio maturity timeline
+- **Available Capital Added**: Added Available Capital section to Investment Breakdown by Product with currency selector and real-time balance display
 - **Unified Calculation Methodology**: Performance by Period chart and Investment Breakdown sections use consistent `calculateInvestmentPerformance` function with exact midpoint IRR values
 - **Term Expiry Projections**: Implemented realistic term-based expiry calculations using actual product terms (0.78-4.25 years) instead of generic 7-year projections
 - **Investment Performance API Fixed**: Updated to use unified calculation function instead of cached database values for real-time accuracy
 - **Complete Data Consistency**: Performance by Period chart and Investment Breakdown show consistent $1,964,891.91 current value with $114,891.91 return (6.21%)
-- **Term-Based Portfolio Projections**: Portfolio term expiry value of $2,409,598 with $559,598 expected return (30.25%) using realistic product terms
+- **Term-Based Portfolio Projections**: Portfolio term expiry value of $2,409,598 with $559,598 expected return (30.25%) using realistic product terms across both sections
 - **Real-Time Tracking**: Investment performance refreshes every 5 seconds with live calculations across remaining dashboard sections
 - **Midpoint IRR Accuracy**: Precise IRR values per product (Real Estate Equity 10.4%, Credit 11%, Corporate Credit 11-13.5%, VC 18%, etc.)
 - **Focused Investment View**: Investments page now provides focused view with performance chart and detailed product breakdown only

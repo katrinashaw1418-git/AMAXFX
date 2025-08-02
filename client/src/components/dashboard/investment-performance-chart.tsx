@@ -36,6 +36,17 @@ export function InvestmentPerformanceChart() {
     refetchInterval: 5000, // Refresh every 5 seconds to track investment changes
   });
 
+  const { data: userInvestments } = useQuery({
+    queryKey: ["/api/user-investments"],
+    queryFn: () => api.getUserInvestments(),
+    refetchInterval: 5000,
+  });
+
+  const { data: products } = useQuery({
+    queryKey: ["/api/investment-products"],
+    queryFn: () => api.getInvestmentProducts(),
+  });
+
   if (isLoading) {
     return (
       <Card>
@@ -98,9 +109,42 @@ export function InvestmentPerformanceChart() {
   const totalReturnPercent = parseFloat(performanceData.totalReturnPercent);
   const isPositiveReturn = totalReturnPercent >= 0;
 
-  // Calculate predicted 7-year return (final prediction in array)
-  const predicted7YearReturn = performanceData.predictions[performanceData.predictions.length - 1]?.weightedReturn || 0;
-  const isPredictionPositive = predicted7YearReturn >= 0;
+  // Calculate term expiry projections using the same methodology as Investment Breakdown by Product
+  const calculateTermExpiryProjections = () => {
+    if (!userInvestments || !products) return { termExpiryValue: 0, termExpiryReturn: 0, termExpiryPercent: 0 };
+
+    const productIRRMapping: Record<number, { midpointIRR: number; termYears: number }> = {
+      1: { midpointIRR: 0.104, termYears: 4.25 }, // Real Estate Equity Fund
+      2: { midpointIRR: 0.11, termYears: 0.85 },  // Real Estate Credit Fund
+      3: { midpointIRR: 0.09, termYears: 0.78 },  // Real Estate First Mortgage Fund
+      4: { midpointIRR: 0.11, termYears: 2.5 },   // Cash Flow-Based Corporate Credit Fund
+      5: { midpointIRR: 0.135, termYears: 2.875 }, // Security-Backed Corporate Credit Fund
+      6: { midpointIRR: 0.18, termYears: 6 },     // VC / Growth Equity Fund
+    };
+
+    let totalInvested = 0;
+    let totalTermExpiryValue = 0;
+
+    userInvestments.forEach((investment: any) => {
+      const productData = productIRRMapping[investment.productId];
+      if (productData) {
+        const investedAmount = parseFloat(investment.investedAmount);
+        totalInvested += investedAmount;
+        
+        const termExpiryGrowthFactor = Math.pow(1 + productData.midpointIRR, productData.termYears);
+        const termExpiryValue = investedAmount * termExpiryGrowthFactor;
+        totalTermExpiryValue += termExpiryValue;
+      }
+    });
+
+    const termExpiryReturn = totalTermExpiryValue - totalInvested;
+    const termExpiryPercent = totalInvested > 0 ? (termExpiryReturn / totalInvested) * 100 : 0;
+
+    return { termExpiryValue: totalTermExpiryValue, termExpiryReturn, termExpiryPercent };
+  };
+
+  const { termExpiryValue, termExpiryReturn, termExpiryPercent } = calculateTermExpiryProjections();
+  const isTermExpiryPositive = termExpiryPercent >= 0;
 
   const chartColor = "#8b5cf6"; // Purple for quarterly display
 
@@ -133,13 +177,18 @@ export function InvestmentPerformanceChart() {
           </div>
           
           <div className="space-y-1">
-            <p className="text-sm text-gray-600">7-Year Projection</p>
+            <p className="text-sm text-gray-600">Term Expiry Projection</p>
             <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-blue-500" />
-              <Badge variant={isPredictionPositive ? "default" : "destructive"} className="flex items-center gap-1">
-                {isPredictionPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                {predicted7YearReturn >= 0 ? '+' : ''}{predicted7YearReturn.toFixed(2)}%
-              </Badge>
+              <Target className="h-4 w-4 text-green-600" />
+              <div className="text-right">
+                <p className="text-lg font-bold text-green-600">
+                  ${termExpiryValue.toLocaleString()}
+                </p>
+                <Badge variant={isTermExpiryPositive ? "default" : "destructive"} className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200">
+                  {isTermExpiryPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                  +${termExpiryReturn.toLocaleString()} ({termExpiryPercent.toFixed(1)}%)
+                </Badge>
+              </div>
             </div>
           </div>
         </div>
@@ -200,24 +249,13 @@ export function InvestmentPerformanceChart() {
           </ResponsiveContainer>
         </div>
         
-        {/* Portfolio Allocation Summary */}
+        {/* Performance by Period Summary */}
         <div className="mt-6 pt-4 border-t">
-          <h4 className="text-sm font-medium mb-3">Current Investment Allocation</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {Object.entries(performanceData.portfolioAllocation).map(([category, allocation]) => {
-              const percentage = (allocation.value / performanceData.currentValue) * 100;
-              const categoryLabel = category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-              
-              return (
-                <div key={category} className="space-y-1">
-                  <p className="text-xs text-gray-600">{categoryLabel}</p>
-                  <p className="text-sm font-medium">${allocation.value.toLocaleString()}</p>
-                  <Badge variant="outline" className="text-xs">
-                    {percentage.toFixed(1)}% • {(allocation.annualReturn * 100).toFixed(0)}% target
-                  </Badge>
-                </div>
-              );
-            })}
+          <div className="text-sm text-gray-600 space-y-1">
+            <p>• Performance uses consistent midpoint IRR methodology as Investment Breakdown</p>
+            <p>• Term expiry projections based on actual product investment terms (0.78-4.25 years)</p>
+            <p>• Current values update automatically when new investments are added</p>
+            <p>• Each product matures at different times based on real terms</p>
           </div>
         </div>
       </CardContent>
