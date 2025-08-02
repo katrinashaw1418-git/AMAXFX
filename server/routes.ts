@@ -1434,8 +1434,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (investmentDate <= intervalDate) {
               const investedAmount = parseFloat(investment.investedAmount);
               
-              // Calculate cumulative performance from investment date to this interval date
-              const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, intervalDate);
+              // Use same real-time calculation as User Investments API for consistency
+              let realTimeIRR = 0.08; // Default fallback
+              switch (product.id) {
+                case 1: realTimeIRR = 0.085; break; // Real Estate Equity Fund
+                case 2: realTimeIRR = 0.60; break;  // Bitcoin Tracker Fund
+                case 3: realTimeIRR = 0.11; break;  // Corporate Credit Fund
+                case 4: realTimeIRR = 0.18; break;  // Web3 Innovation Fund
+                case 5: realTimeIRR = 0.0575; break; // Ethereum Staking Fund
+              }
+              
+              const timeElapsedMs = intervalDate.getTime() - investmentDate.getTime();
+              const timeElapsed = Math.max(0, timeElapsedMs / (1000 * 60 * 60 * 24 * 365.25));
+              const growthFactor = Math.pow(1 + realTimeIRR, timeElapsed);
+              const currentValue = Math.round((investedAmount * growthFactor) * 100) / 100;
+              const returnAmount = Math.round((currentValue - investedAmount) * 100) / 100;
+              const returnPercentage = (returnAmount / investedAmount) * 100;
+              
+              const performance = {
+                currentValue,
+                returnAmount,
+                returnPercentage
+              };
               
               totalInvestmentValue += performance.currentValue;
               totalInvestedAmount += investedAmount;
@@ -1529,12 +1549,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         predictionDate.setMonth(predictionDate.getMonth() + 3);
       }
       
-      // Calculate cumulative performance across all investment periods for Performance by Period
+      // Calculate cumulative performance using same method as User Investments API
       let totalInvestedNow = 0;
       let totalCurrentValueNow = 0;
       let cumulativeTotalReturn = 0;
       
-      // Calculate cumulative returns across the entire investment timeline
+      // Calculate cumulative returns using identical calculation methodology
       const calculationDate = new Date();
       for (const investment of investments) {
         const product = allProducts.find(p => p.id === investment.productId);
@@ -1542,14 +1562,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const investmentDate = new Date(investment.investmentDate);
           const investedAmount = parseFloat(investment.investedAmount);
           
-          // Get performance from investment date to current date for cumulative calculation
-          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, calculationDate);
+          // Use identical IRR mapping and calculation as User Investments API
+          let realTimeIRR = 0.08; // Default fallback
+          switch (product.id) {
+            case 1: realTimeIRR = 0.085; break; // Real Estate Equity Fund
+            case 2: realTimeIRR = 0.60; break;  // Bitcoin Tracker Fund
+            case 3: realTimeIRR = 0.11; break;  // Corporate Credit Fund
+            case 4: realTimeIRR = 0.18; break;  // Web3 Innovation Fund
+            case 5: realTimeIRR = 0.0575; break; // Ethereum Staking Fund
+          }
+          
+          const timeElapsedMs = calculationDate.getTime() - investmentDate.getTime();
+          const timeElapsed = Math.max(0, timeElapsedMs / (1000 * 60 * 60 * 24 * 365.25));
+          const growthFactor = Math.pow(1 + realTimeIRR, timeElapsed);
+          const currentValue = Math.round((investedAmount * growthFactor) * 100) / 100;
+          const returnAmount = Math.round((currentValue - investedAmount) * 100) / 100;
           
           totalInvestedNow += investedAmount;
-          totalCurrentValueNow += performance.currentValue;
-          
-          // Cumulative return is the total gain/loss across investment periods
-          cumulativeTotalReturn += performance.returnAmount;
+          totalCurrentValueNow += currentValue;
+          cumulativeTotalReturn += returnAmount;
         }
       }
       
