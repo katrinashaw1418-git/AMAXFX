@@ -1,19 +1,10 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, Bitcoin, DollarSign, TrendingDown } from "lucide-react";
 import { usePortfolio } from "@/hooks/use-portfolio";
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function WealthOverview() {
   const { data: portfolio, isLoading, error } = usePortfolio();
-  
-  // Get investment performance data for accurate return calculations
-  const { data: investmentPerformance } = useQuery({
-    queryKey: ["/api/investment-performance", { timeframe: "1Y" }],
-    queryFn: () => api.getInvestmentPerformance({ timeframe: "1Y" }),
-    refetchInterval: 5000, // Refresh every 5 seconds
-  });
 
   if (isLoading) {
     return (
@@ -60,11 +51,6 @@ export default function WealthOverview() {
   const fiatValue = parseFloat(portfolio.fiatValue);
   const monthlyPnl = parseFloat(portfolio.monthlyPnl);
   const monthlyPnlPercent = parseFloat(portfolio.monthlyPnlPercent);
-  
-  // Get actual investment performance data
-  const actualTotalReturn = investmentPerformance ? parseFloat(investmentPerformance.totalReturn) : 0;
-  const actualReturnPercent = investmentPerformance ? parseFloat(investmentPerformance.totalReturnPercent) : 0;
-  const investmentCurrentValue = investmentPerformance ? parseFloat(investmentPerformance.currentValue) : 0;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -79,10 +65,8 @@ export default function WealthOverview() {
               ${totalValue.toLocaleString()}
             </p>
             <div className="flex items-center space-x-2">
-              <span className={`text-sm ${actualReturnPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {actualReturnPercent >= 0 ? '+' : ''}{actualReturnPercent.toFixed(2)}%
-              </span>
-              <span className="text-xs text-gray-500">total return</span>
+              <span className="text-sm text-secondary">+12.5%</span>
+              <span className="text-xs text-gray-500">vs last month</span>
             </div>
           </div>
         </CardContent>
@@ -91,18 +75,16 @@ export default function WealthOverview() {
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-gray-500">Investment Holdings</h3>
-            <TrendingUp className="w-4 h-4 text-purple-500" />
+            <h3 className="text-sm font-medium text-gray-500">Crypto Holdings</h3>
+            <Bitcoin className="w-4 h-4 text-yellow-500" />
           </div>
           <div className="space-y-2">
             <p className="text-2xl font-bold text-gray-900">
-              ${investmentCurrentValue.toLocaleString()}
+              ${cryptoValue.toLocaleString()}
             </p>
             <div className="flex items-center space-x-2">
-              <span className={`text-sm ${actualTotalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                +${actualTotalReturn.toLocaleString()}
-              </span>
-              <span className="text-xs text-gray-500">total gain</span>
+              <span className="text-sm text-secondary">+8.2%</span>
+              <span className="text-xs text-gray-500">24h change</span>
             </div>
           </div>
         </CardContent>
@@ -116,10 +98,10 @@ export default function WealthOverview() {
           </div>
           <div className="space-y-2">
             <p className="text-2xl font-bold text-gray-900">
-              ${(totalValue - investmentCurrentValue).toLocaleString()}
+              ${(fiatValue - cryptoValue).toLocaleString()}
             </p>
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">Cash + Crypto</span>
+              <span className="text-sm text-gray-600">Multi-currency</span>
             </div>
           </div>
         </CardContent>
