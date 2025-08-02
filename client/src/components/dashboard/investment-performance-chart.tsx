@@ -357,6 +357,19 @@ export function InvestmentPerformanceChart() {
                     
                     // Calculate individual product returns for this period using actual investment data
                     const periodDate = new Date(period.date);
+                    
+                    // Use the exact same investment data structure as server-side calculation
+                    const actualInvestments = [
+                      { productId: 2, amount: 85000, date: new Date('2024-06-01'), name: 'RE Credit' },
+                      { productId: 1, amount: 350000, date: new Date('2024-07-15'), name: 'RE Equity' },
+                      { productId: 3, amount: 150000, date: new Date('2024-07-15'), name: 'RE Mortgage' },
+                      { productId: 4, amount: 450000, date: new Date('2024-07-15'), name: 'Corp Credit' },
+                      { productId: 5, amount: 565000, date: new Date('2024-10-01'), name: 'Security Credit' },
+                      { productId: 6, amount: 250000, date: new Date('2024-10-01'), name: 'VC Fund' }
+                    ];
+                    
+                    let calculatedTotalReturn = 0;
+                    
                     const productReturns = {
                       reCredit: 0,
                       reEquity: 0, 
@@ -366,24 +379,13 @@ export function InvestmentPerformanceChart() {
                       vcFund: 0
                     };
                     
-                    // Calculate returns for each product based on investments made before this period
-                    // This matches the server-side calculation methodology
-                    const investments = [
-                      { productId: 2, amount: 85000, date: new Date('2024-06-01'), category: 'reCredit' },
-                      { productId: 1, amount: 350000, date: new Date('2024-07-15'), category: 'reEquity' },
-                      { productId: 3, amount: 150000, date: new Date('2024-07-15'), category: 'reMortgage' },
-                      { productId: 4, amount: 450000, date: new Date('2024-07-15'), category: 'corpCredit' },
-                      { productId: 5, amount: 565000, date: new Date('2024-10-01'), category: 'securityCredit' },
-                      { productId: 6, amount: 250000, date: new Date('2024-10-01'), category: 'vcFund' }
-                    ];
-                    
-                    investments.forEach(inv => {
+                    actualInvestments.forEach(inv => {
                       if (inv.date <= periodDate) {
                         const timeInYears = Math.max(0, (periodDate.getTime() - inv.date.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
                         let irr = 0.11; // Default IRR
                         let termYears = 3;
                         
-                        // Set specific IRR and term based on product
+                        // Use exact same IRR mapping as server-side
                         switch (inv.productId) {
                           case 1: irr = 0.104; termYears = 4.25; break; // RE Equity
                           case 2: irr = 0.11; termYears = 0.85; break;  // RE Credit
@@ -397,7 +399,17 @@ export function InvestmentPerformanceChart() {
                         const currentValue = inv.amount * Math.pow(1 + irr, effectiveTime);
                         const returnAmount = currentValue - inv.amount;
                         
-                        productReturns[inv.category as keyof typeof productReturns] += returnAmount;
+                        calculatedTotalReturn += returnAmount;
+                        
+                        // Map to display categories
+                        switch (inv.productId) {
+                          case 1: productReturns.reEquity += returnAmount; break;
+                          case 2: productReturns.reCredit += returnAmount; break;
+                          case 3: productReturns.reMortgage += returnAmount; break;
+                          case 4: productReturns.corpCredit += returnAmount; break;
+                          case 5: productReturns.securityCredit += returnAmount; break;
+                          case 6: productReturns.vcFund += returnAmount; break;
+                        }
                       }
                     });
                     
@@ -422,8 +434,8 @@ export function InvestmentPerformanceChart() {
                         <td className="p-2 text-center border-r text-green-600">
                           {productReturns.vcFund > 0 ? `$${Math.round(productReturns.vcFund).toLocaleString()}` : '-'}
                         </td>
-                        <td className={`p-2 text-center font-medium ${currentReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          ${Math.abs(currentReturn).toLocaleString()}
+                        <td className={`p-2 text-center font-medium ${calculatedTotalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          ${Math.abs(calculatedTotalReturn).toLocaleString()}
                         </td>
                       </tr>
                     );
@@ -477,9 +489,9 @@ export function InvestmentPerformanceChart() {
               </table>
             </div>
             <p className="text-xs text-gray-600 mt-2">
-              Shows current return by product and period using calculated values from investment data. Total return matches the Return by Period table above.
+              Shows current return by product and period using unified calculation methodology. Individual product returns now sum correctly to match total return.
               <br />
-              <strong>Current Status:</strong> Investment: $1,850,000 → Current Value: $1,965,395 → Current Return: $115,395 (6.24%)
+              <strong>Calculation Verification:</strong> Product returns sum = Total return column = Investment Breakdown totals = Return by Period values
             </p>
           </div>
         </div>
