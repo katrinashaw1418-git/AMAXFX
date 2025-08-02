@@ -52,20 +52,20 @@ function calculateInvestmentPerformance(
       targetIRR = 0.085; // Exactly 8.5% from database
       termYears = 2.0; // 24 months = 2.0 years
       break;
-    case 2: // Bitcoin Tracker Fund - target_net_irr: 15.0%, term: 12 months
-      targetIRR = 0.15; // Exactly 15.0% from database
+    case 2: // Bitcoin Tracker Fund - "midpoint IRR targeting 15% annual returns"
+      targetIRR = 0.15; // Exactly 15% from investment_strategy description
       termYears = 1.0; // 12 months = 1.0 year
       break;
-    case 3: // Corporate Credit Fund - target_net_irr: 6.2%, term: 18 months
-      targetIRR = 0.062; // Exactly 6.2% from database
+    case 3: // Corporate Credit Fund - "midpoint IRR targeting 11% annual returns"
+      targetIRR = 0.11; // Exactly 11% from investment_strategy description
       termYears = 1.5; // 18 months = 1.5 years
       break;
-    case 4: // Web3 Innovation Fund - target_net_irr: 25-35%, term: 3-5 years
-      targetIRR = 0.30; // Midpoint: (25 + 35) / 2 = 30%
+    case 4: // Web3 Innovation Fund - "midpoint IRR targeting 18% annual returns"
+      targetIRR = 0.18; // Exactly 18% from investment_strategy description
       termYears = 4.0; // Midpoint: (3 + 5) / 2 = 4.0 years
       break;
-    case 5: // Ethereum Staking Fund - target_net_irr: 6-8%, term: Open-ended (using 2 years)
-      targetIRR = 0.07; // Midpoint: (6 + 8) / 2 = 7%
+    case 5: // Ethereum Staking Fund - "midpoint IRR targeting 5.75% annual returns"
+      targetIRR = 0.0575; // Exactly 5.75% from investment_strategy description
       termYears = 2.0; // 2 years for open-ended product
       break;
     case 6: // VC / Growth Equity Fund - Target IRR: 16–20%
