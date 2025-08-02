@@ -242,10 +242,10 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
       group.targetIRRDisplay = productIRR.targetIRRDisplay;
       group.termDescription = productIRR.termDescription;
       
-      // Calculate projection upon term expiry using actual midpoint term
+      // Calculate term expiry projection using automated formula with floor for consistency  
       const termExpiryGrowthFactor = Math.pow(1 + productIRR.midpointIRR, productIRR.termYears);
-      group.termExpiryValue = group.totalInvested * termExpiryGrowthFactor;
-      group.termExpiryReturn = group.termExpiryValue - group.totalInvested;
+      group.termExpiryValue = Math.floor(group.totalInvested * termExpiryGrowthFactor);
+      group.termExpiryReturn = Math.floor(group.termExpiryValue - group.totalInvested);
       group.termExpiryPercent = ((group.termExpiryReturn / group.totalInvested) * 100);
     } else {
       // Fallback for products not in mapping
@@ -253,8 +253,8 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
       group.targetIRRDisplay = '11.0%';
       group.termDescription = '3 years (estimated)';
       const termExpiryGrowthFactor = Math.pow(1.11, 3);
-      group.termExpiryValue = group.totalInvested * termExpiryGrowthFactor;
-      group.termExpiryReturn = group.termExpiryValue - group.totalInvested;
+      group.termExpiryValue = Math.floor(group.totalInvested * termExpiryGrowthFactor);
+      group.termExpiryReturn = Math.floor(group.termExpiryValue - group.totalInvested);
       group.termExpiryPercent = ((group.termExpiryReturn / group.totalInvested) * 100);
     }
   });
