@@ -161,25 +161,44 @@ export function InvestmentPerformanceChart() {
         </CardTitle>
         
         {/* Performance Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-4">
-          <div className="flex flex-col justify-between h-20">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+          <div className="space-y-1">
             <p className="text-sm text-gray-600">Current Investment Value</p>
             <p className="text-2xl font-bold">$1,965,395</p>
           </div>
           
-          <div className="flex flex-col justify-between h-20">
+          <div className="space-y-1">
             <p className="text-sm text-gray-600">Total Invested</p>
             <p className="text-2xl font-bold">$1,850,000</p>
           </div>
           
-          <div className="flex flex-col justify-between h-20">
+          <div className="space-y-2">
             <p className="text-sm text-gray-600">Up to Date Current Return</p>
-            <p className="text-2xl font-bold text-green-600">$115,395</p>
+            <div className="space-y-1">
+              <p className="text-2xl font-bold text-green-600">
+                $115,395
+              </p>
+              <Badge variant="default" className="flex items-center gap-1 w-fit">
+                <TrendingUp className="h-3 w-3" />
+                +6.24%
+              </Badge>
+            </div>
           </div>
           
-          <div className="flex flex-col justify-between h-20">
+          <div className="space-y-2">
             <p className="text-sm text-gray-600">Term Expiry Projection</p>
-            <p className="text-2xl font-bold text-green-600">${termExpiryValue.toLocaleString()}</p>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-green-600" />
+                <p className="text-lg font-bold text-green-600">
+                  ${termExpiryValue.toLocaleString()}
+                </p>
+              </div>
+              <Badge variant={isTermExpiryPositive ? "default" : "destructive"} className="flex items-center gap-1 w-fit bg-green-50 text-green-700 border-green-200">
+                {isTermExpiryPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                +${termExpiryReturn.toLocaleString()} ({termExpiryPercent.toFixed(1)}%)
+              </Badge>
+            </div>
           </div>
         </div>
       </CardHeader>
