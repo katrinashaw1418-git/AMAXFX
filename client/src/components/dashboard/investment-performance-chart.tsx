@@ -159,13 +159,13 @@ export function InvestmentPerformanceChart() {
         {/* Performance Summary */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
           <div className="space-y-1">
-            <p className="text-sm text-gray-600">Total Invested</p>
-            <p className="text-2xl font-bold">$1,850,000</p>
+            <p className="text-sm text-gray-600">Current Investment Value</p>
+            <p className="text-2xl font-bold">$1,965,379.8</p>
           </div>
           
           <div className="space-y-1">
-            <p className="text-sm text-gray-600">Current Investment Value</p>
-            <p className="text-2xl font-bold">${performanceData.currentValue.toLocaleString()}</p>
+            <p className="text-sm text-gray-600">Total Invested</p>
+            <p className="text-2xl font-bold">$1,850,000</p>
           </div>
           
           <div className="space-y-1">
