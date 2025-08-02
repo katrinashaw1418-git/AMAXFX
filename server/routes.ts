@@ -1441,16 +1441,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Calculate overall performance metrics - use database values directly for accuracy
+      // Calculate overall performance metrics using unified midpoint IRR calculation
       let totalInvestedNow = 0;
       let totalCurrentValueNow = 0;
       let totalReturnNow = 0;
       
-      // Use the actual database values instead of recalculating
+      // Use the unified calculateInvestmentPerformance function for consistency
       for (const investment of investments) {
-        totalInvestedNow += parseFloat(investment.investedAmount);
-        totalCurrentValueNow += parseFloat(investment.currentValue);
-        totalReturnNow += parseFloat(investment.totalReturn);
+        const product = allProducts.find(p => p.id === investment.productId);
+        if (product) {
+          const investmentDate = new Date(investment.investmentDate);
+          const investedAmount = parseFloat(investment.investedAmount);
+          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, endDate);
+          
+          totalInvestedNow += investedAmount;
+          totalCurrentValueNow += performance.currentValue;
+          totalReturnNow += performance.returnAmount;
+        }
       }
       
       const totalReturnPercent = totalInvestedNow > 0 ? (totalReturnNow / totalInvestedNow) * 100 : 0;
