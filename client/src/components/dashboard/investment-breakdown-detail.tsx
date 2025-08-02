@@ -178,14 +178,13 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
     }
   });
 
-  // Calculate current values directly from user investments with accurate IRR and actual terms
+  // Use exact midpoint IRR and terms from actual Filter Products data  
   const productIRRMapping: Record<number, { midpointIRR: number; targetIRRDisplay: string; termYears: number; termDescription: string }> = {
-    1: { midpointIRR: 0.104, targetIRRDisplay: '10.4%', termYears: 4.25, termDescription: '2–6.5 years (midpoint: 4.25 years)' }, // Real Estate Equity Fund
-    2: { midpointIRR: 0.11, targetIRRDisplay: '11.0%', termYears: 0.85, termDescription: '~10.2 months (rolling)' },  // Real Estate Credit Fund
-    3: { midpointIRR: 0.09, targetIRRDisplay: '9.0%', termYears: 0.78, termDescription: '~9.4 months' },   // Real Estate First Mortgage Fund
-    4: { midpointIRR: 0.11, targetIRRDisplay: '11.0%', termYears: 2.5, termDescription: '2–3 years (midpoint: 2.5 years)' },  // Cash Flow-Based Corporate Credit Fund
-    5: { midpointIRR: 0.135, targetIRRDisplay: '13.5%', termYears: 2.875, termDescription: '30–39 months (midpoint: 2.875 years)' }, // Security-Backed Corporate Credit Fund
-    6: { midpointIRR: 0.18, targetIRRDisplay: '18.0%', termYears: 6, termDescription: '5–7+ years (midpoint: 6 years)' },  // VC / Growth Equity Fund
+    1: { midpointIRR: 0.085, targetIRRDisplay: '8.5%', termYears: 2.0, termDescription: '24 months' }, // Real Estate Equity Fund
+    2: { midpointIRR: 0.60, targetIRRDisplay: '60.0%', termYears: 1.0, termDescription: '12 months (market-based)' },  // Bitcoin Tracker Fund
+    3: { midpointIRR: 0.11, targetIRRDisplay: '11.0%', termYears: 1.5, termDescription: '18 months' },   // Corporate Credit Fund
+    4: { midpointIRR: 0.18, targetIRRDisplay: '18.0%', termYears: 4.0, termDescription: '3-5 years (midpoint: 4.0 years)' },  // Web3 Innovation Fund
+    5: { midpointIRR: 0.0575, targetIRRDisplay: '5.75%', termYears: 2.0, termDescription: 'Open-ended (2.0 years)' }, // Ethereum Staking Fund
   };
 
   // Helper function to calculate holding period
@@ -479,13 +478,13 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
                 <div className="border rounded p-3 bg-white">
                   <strong className="text-green-700">Performance by Period (Q2'25)</strong>
                   <div className="mt-2 space-y-1 text-xs">
-                    <div>Investment: $1,850,000</div>
-                    <div>Current Value: $1,965,395</div>
-                    <div>Up to Date Return: $115,395</div>
-                    <div>Return %: 6.24%</div>
+                    <div>Investment: ${actualTotalInvested.toLocaleString()}</div>
+                    <div>Current Value: ${actualTotalCurrentValue.toLocaleString()}</div>
+                    <div>Up to Date Return: ${Math.abs(actualTotalReturn).toLocaleString()}</div>
+                    <div>Return %: {actualTotalReturnPercent.toFixed(2)}%</div>
                     <div className="text-purple-600 mt-2">
-                      Term Expiry (Q1'28): $2,697,647
-                      <br />Expected Return: +$847,647 (45.8%)
+                      Term Expiry (Q1'28): ${totalTermExpiryValue.toLocaleString()}
+                      <br />Expected Return: +${totalTermExpiryReturn.toLocaleString()} ({totalTermExpiryPercent.toFixed(1)}%)
                     </div>
                   </div>
                 </div>
@@ -495,11 +494,11 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
                   <strong className="text-orange-700">Return by Period (Q2'25)</strong>
                   <div className="mt-2 space-y-1 text-xs">
                     <div>Period: Q2'25 (Current)</div>
-                    <div>Current Return: $115,395</div>
-                    <div>Return %: 6.24%</div>
+                    <div>Current Return: ${Math.abs(actualTotalReturn).toLocaleString()}</div>
+                    <div>Return %: {actualTotalReturnPercent.toFixed(2)}%</div>
                     <div className="text-purple-600 mt-2">
-                      Term Expiry (Q1'28): $847,647
-                      <br />Final Return %: 45.8%
+                      Term Expiry (Q1'28): ${totalTermExpiryReturn.toLocaleString()}
+                      <br />Final Return %: {totalTermExpiryPercent.toFixed(1)}%
                     </div>
                   </div>
                 </div>
@@ -509,11 +508,11 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
               <div className="mt-3 p-2 bg-green-100 rounded text-sm">
                 <strong className="text-green-800">✓ CONSISTENCY VERIFIED:</strong>
                 <div className="text-green-700 text-xs mt-1">
-                  • All sections show identical current return: $115,395 (6.24%)
+                  • All sections show identical current return: ${Math.abs(actualTotalReturn).toLocaleString()} ({actualTotalReturnPercent.toFixed(2)}%)
                   <br />
-                  • All sections show identical term expiry projection: $2,697,647 with $847,647 return (45.8%)
+                  • All sections show identical term expiry projection: ${totalTermExpiryValue.toLocaleString()} with ${totalTermExpiryReturn.toLocaleString()} return ({totalTermExpiryPercent.toFixed(1)}%)
                   <br />
-                  • Calculations use unified midpoint IRR methodology across all components
+                  • Calculations use unified midpoint IRR methodology with 60% Bitcoin IRR across all components
                   <br />
                   • Real-time synchronization ensures data consistency every 5 seconds
                 </div>

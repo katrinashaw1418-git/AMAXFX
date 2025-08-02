@@ -118,12 +118,11 @@ export function InvestmentPerformanceChart() {
     if (!userInvestments || !products) return { termExpiryValue: 0, termExpiryReturn: 0, termExpiryPercent: 0 };
 
     const productIRRMapping: Record<number, { midpointIRR: number; termYears: number }> = {
-      1: { midpointIRR: 0.104, termYears: 4.25 }, // Real Estate Equity Fund
-      2: { midpointIRR: 0.11, termYears: 0.85 },  // Real Estate Credit Fund
-      3: { midpointIRR: 0.09, termYears: 0.78 },  // Real Estate First Mortgage Fund
-      4: { midpointIRR: 0.11, termYears: 2.5 },   // Cash Flow-Based Corporate Credit Fund
-      5: { midpointIRR: 0.135, termYears: 2.875 }, // Security-Backed Corporate Credit Fund
-      6: { midpointIRR: 0.18, termYears: 6 },     // VC / Growth Equity Fund
+      1: { midpointIRR: 0.085, termYears: 2.0 }, // Real Estate Equity Fund
+      2: { midpointIRR: 0.60, termYears: 1.0 },  // Bitcoin Tracker Fund  
+      3: { midpointIRR: 0.11, termYears: 1.5 },  // Corporate Credit Fund
+      4: { midpointIRR: 0.18, termYears: 4.0 },  // Web3 Innovation Fund
+      5: { midpointIRR: 0.0575, termYears: 2.0 }, // Ethereum Staking Fund
     };
 
     let totalInvested = 0;
@@ -388,12 +387,11 @@ export function InvestmentPerformanceChart() {
                         
                         // Apply exact IRR and term data for each product
                         switch (inv.productId) {
-                          case 1: irr = 0.104; termYears = 4.25; break; // RE Equity
-                          case 2: irr = 0.11; termYears = 0.85; break;  // RE Credit
-                          case 3: irr = 0.09; termYears = 0.78; break;  // RE Mortgage
-                          case 4: irr = 0.11; termYears = 2.5; break;   // Corp Credit
-                          case 5: irr = 0.135; termYears = 2.875; break; // Security Credit
-                          case 6: irr = 0.18; termYears = 6; break;     // VC Fund
+                          case 1: irr = 0.085; termYears = 2.0; break; // Real Estate Equity Fund
+                          case 2: irr = 0.60; termYears = 1.0; break;  // Bitcoin Tracker Fund
+                          case 3: irr = 0.11; termYears = 1.5; break;  // Corporate Credit Fund
+                          case 4: irr = 0.18; termYears = 4.0; break;  // Web3 Innovation Fund
+                          case 5: irr = 0.0575; termYears = 2.0; break; // Ethereum Staking Fund
                         }
                         
                         // AUTOMATED FORMULA: Apply compound interest with term capping

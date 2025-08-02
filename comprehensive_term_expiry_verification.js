@@ -1,121 +1,105 @@
-// COMPREHENSIVE TERM EXPIRY CONSISTENCY VERIFICATION
-console.log('=== TERM EXPIRY CONSISTENCY VERIFICATION ===\n');
+// COMPREHENSIVE DISCREPANCY ANALYSIS
+console.log('=== DISCREPANCY ANALYSIS BETWEEN DASHBOARD SECTIONS ===\n');
 
-// Test all API endpoints to ensure consistent calculations
-const endpoints = [
-  'http://localhost:5000/api/investment-performance?timeframe=1Y',
-  'http://localhost:5000/api/user-investments',
-  'http://localhost:5000/api/portfolio'
-];
+// Expected values from step-by-step calculation
+const expectedValues = {
+  totalInvested: 1850000,
+  currentValue: 2047006,
+  currentReturn: 197006,
+  currentReturnPercent: 10.6,
+  termExpiryValue: 2837404,
+  termExpiryReturn: 987404,
+  termExpiryReturnPercent: 53.4
+};
 
-async function testEndpointConsistency() {
-  console.log('📡 TESTING API ENDPOINT CONSISTENCY:');
-  console.log('═'.repeat(50));
-  
-  try {
-    // Test investment performance endpoint
-    const performanceResponse = await fetch('http://localhost:5000/api/investment-performance?timeframe=1Y');
-    const performanceData = await performanceResponse.json();
-    
-    console.log('📊 Investment Performance API:');
-    console.log(`Current Value: $${parseFloat(performanceData.currentValue).toLocaleString()}`);
-    console.log(`Total Return: $${parseFloat(performanceData.totalReturn).toLocaleString()}`);
-    console.log(`Return Percentage: ${performanceData.totalReturnPercent}%`);
-    
-    // Test user investments endpoint
-    const investmentsResponse = await fetch('http://localhost:5000/api/user-investments');
-    const investmentsData = await investmentsResponse.json();
-    
-    console.log('\n📋 User Investments API:');
-    console.log(`Number of investments: ${investmentsData.length}`);
-    
-    let totalInvested = 0;
-    let totalCurrentValue = 0;
-    
-    investmentsData.forEach(inv => {
-      totalInvested += parseFloat(inv.investedAmount);
-      totalCurrentValue += parseFloat(inv.currentValue);
-    });
-    
-    console.log(`Total Invested: $${totalInvested.toLocaleString()}`);
-    console.log(`Total Current Value: $${totalCurrentValue.toLocaleString()}`);
-    console.log(`Total Return: $${(totalCurrentValue - totalInvested).toLocaleString()}`);
-    console.log(`Return Percentage: ${((totalCurrentValue - totalInvested) / totalInvested * 100).toFixed(2)}%`);
-    
-    // Test portfolio endpoint
-    const portfolioResponse = await fetch('http://localhost:5000/api/portfolio');
-    const portfolioData = await portfolioResponse.json();
-    
-    console.log('\n💼 Portfolio API:');
-    console.log(`Total Value: $${parseFloat(portfolioData.totalValue).toLocaleString()}`);
-    console.log(`Investment Value: $${parseFloat(portfolioData.investmentValue).toLocaleString()}`);
-    
-    // Verify consistency
-    console.log('\n🔍 CONSISTENCY CHECK:');
-    console.log('═'.repeat(30));
-    
-    const investmentPerformanceValue = parseFloat(performanceData.currentValue);
-    const userInvestmentsTotalValue = totalCurrentValue;
-    const portfolioInvestmentValue = parseFloat(portfolioData.investmentValue);
-    
-    const isConsistent = Math.abs(investmentPerformanceValue - userInvestmentsTotalValue) < 1 &&
-                        Math.abs(investmentPerformanceValue - portfolioInvestmentValue) < 1;
-    
-    if (isConsistent) {
-      console.log('✅ ALL ENDPOINTS CONSISTENT!');
-      console.log(`Common Value: $${investmentPerformanceValue.toLocaleString()}`);
-    } else {
-      console.log('❌ INCONSISTENCY DETECTED:');
-      console.log(`Investment Performance: $${investmentPerformanceValue.toLocaleString()}`);
-      console.log(`User Investments Total: $${userInvestmentsTotalValue.toLocaleString()}`);
-      console.log(`Portfolio Investment: $${portfolioInvestmentValue.toLocaleString()}`);
-    }
-    
-    // Calculate and verify term expiry projections
-    console.log('\n🎯 TERM EXPIRY PROJECTION CALCULATIONS:');
-    console.log('═'.repeat(45));
-    
-    const productTerms = {
-      1: { name: 'Real Estate Equity Fund', termYears: 4.25, irr: 0.104 },
-      2: { name: 'Real Estate Credit Fund', termYears: 0.85, irr: 0.11 },
-      3: { name: 'Real Estate First Mortgage Fund', termYears: 0.78, irr: 0.09 },
-      4: { name: 'Cash Flow-Based Corporate Credit Fund', termYears: 2.5, irr: 0.11 },
-      5: { name: 'Security-Backed Corporate Credit Fund', termYears: 2.875, irr: 0.135 }
-    };
-    
-    let totalTermExpiryValue = 0;
-    
-    investmentsData.forEach(inv => {
-      const product = productTerms[inv.productId];
-      if (product) {
-        const investedAmount = parseFloat(inv.investedAmount);
-        const termExpiryGrowthFactor = Math.pow(1 + product.irr, product.termYears);
-        const termExpiryValue = investedAmount * termExpiryGrowthFactor;
-        
-        totalTermExpiryValue += termExpiryValue;
-        
-        console.log(`${product.name}:`);
-        console.log(`  Invested: $${investedAmount.toLocaleString()}`);
-        console.log(`  Term: ${product.termYears} years @ ${(product.irr * 100).toFixed(1)}%`);
-        console.log(`  Value at Expiry: $${termExpiryValue.toFixed(2)}`);
-        console.log('');
-      }
-    });
-    
-    const totalTermExpiryReturn = totalTermExpiryValue - totalInvested;
-    const portfolioTermExpiryPercent = (totalTermExpiryReturn / totalInvested) * 100;
-    
-    console.log('📈 PORTFOLIO TERM EXPIRY SUMMARY:');
-    console.log('─'.repeat(35));
-    console.log(`Total Invested: $${totalInvested.toLocaleString()}`);
-    console.log(`Value at Term Expiry: $${totalTermExpiryValue.toLocaleString()}`);
-    console.log(`Expected Return: $${totalTermExpiryReturn.toLocaleString()}`);
-    console.log(`Portfolio Return: ${portfolioTermExpiryPercent.toFixed(2)}%`);
-    
-  } catch (error) {
-    console.error('Error testing endpoints:', error.message);
+// Actual values shown in different dashboard sections
+const dashboardSections = {
+  investmentBreakdown: {
+    name: 'Investment Breakdown by Product',
+    totalInvested: 1850000,
+    currentValue: 2047032,
+    currentReturn: 197032,
+    currentReturnPercent: 10.65,
+    termExpiryValue: 2409595,
+    termExpiryReturn: 559595,
+    termExpiryReturnPercent: 30.2
+  },
+  performanceByPeriod: {
+    name: 'Performance by Period (Q2\'25)',
+    totalInvested: 1850000,
+    currentValue: 1965395,
+    currentReturn: 115395,
+    currentReturnPercent: 6.24,
+    termExpiryValue: 2697647,
+    termExpiryReturn: 847647,
+    termExpiryReturnPercent: 45.8
+  },
+  returnByPeriod: {
+    name: 'Return by Period (Q2\'25)',
+    currentReturn: 115395,
+    currentReturnPercent: 6.24,
+    termExpiryReturn: 847647
   }
-}
+};
 
-// Run the test
-testEndpointConsistency();
+console.log('EXPECTED VALUES (from step-by-step calculation):');
+console.log(`Total Invested: $${expectedValues.totalInvested.toLocaleString()}`);
+console.log(`Current Value: $${expectedValues.currentValue.toLocaleString()}`);
+console.log(`Current Return: +$${expectedValues.currentReturn.toLocaleString()} (${expectedValues.currentReturnPercent}%)`);
+console.log(`Term Expiry Value: $${expectedValues.termExpiryValue.toLocaleString()}`);
+console.log(`Term Expiry Return: +$${expectedValues.termExpiryReturn.toLocaleString()} (${expectedValues.termExpiryReturnPercent}%)\n`);
+
+Object.entries(dashboardSections).forEach(([key, section]) => {
+  console.log(`${section.name.toUpperCase()}:`);
+  if (section.totalInvested) console.log(`Total Invested: $${section.totalInvested.toLocaleString()}`);
+  if (section.currentValue) console.log(`Current Value: $${section.currentValue.toLocaleString()}`);
+  if (section.currentReturn) console.log(`Current Return: $${section.currentReturn.toLocaleString()}`);
+  if (section.currentReturnPercent) console.log(`Return %: ${section.currentReturnPercent}%`);
+  if (section.termExpiryValue) console.log(`Term Expiry Value: $${section.termExpiryValue.toLocaleString()}`);
+  if (section.termExpiryReturn) console.log(`Expected Return: +$${section.termExpiryReturn.toLocaleString()}`);
+  if (section.termExpiryReturnPercent) console.log(`Expected Return %: ${section.termExpiryReturnPercent}%`);
+  console.log('');
+});
+
+console.log('DISCREPANCY ANALYSIS:\n');
+
+// Current Value discrepancies
+console.log('1. CURRENT VALUE DISCREPANCIES:');
+console.log(`Expected Current Value: $${expectedValues.currentValue.toLocaleString()}`);
+console.log(`Investment Breakdown shows: $${dashboardSections.investmentBreakdown.currentValue.toLocaleString()} (diff: $${(dashboardSections.investmentBreakdown.currentValue - expectedValues.currentValue).toLocaleString()})`);
+console.log(`Performance by Period shows: $${dashboardSections.performanceByPeriod.currentValue.toLocaleString()} (diff: $${(dashboardSections.performanceByPeriod.currentValue - expectedValues.currentValue).toLocaleString()})`);
+console.log('');
+
+// Current Return discrepancies
+console.log('2. CURRENT RETURN DISCREPANCIES:');
+console.log(`Expected Current Return: $${expectedValues.currentReturn.toLocaleString()} (${expectedValues.currentReturnPercent}%)`);
+console.log(`Investment Breakdown shows: $${dashboardSections.investmentBreakdown.currentReturn.toLocaleString()} (${dashboardSections.investmentBreakdown.currentReturnPercent}%)`);
+console.log(`Performance by Period shows: $${dashboardSections.performanceByPeriod.currentReturn.toLocaleString()} (${dashboardSections.performanceByPeriod.currentReturnPercent}%)`);
+console.log(`Return by Period shows: $${dashboardSections.returnByPeriod.currentReturn.toLocaleString()} (${dashboardSections.returnByPeriod.currentReturnPercent}%)`);
+console.log('');
+
+// Term Expiry discrepancies
+console.log('3. TERM EXPIRY VALUE DISCREPANCIES:');
+console.log(`Expected Term Expiry Value: $${expectedValues.termExpiryValue.toLocaleString()}`);
+console.log(`Investment Breakdown shows: $${dashboardSections.investmentBreakdown.termExpiryValue.toLocaleString()} (diff: $${(dashboardSections.investmentBreakdown.termExpiryValue - expectedValues.termExpiryValue).toLocaleString()})`);
+console.log(`Performance by Period shows: $${dashboardSections.performanceByPeriod.termExpiryValue.toLocaleString()} (diff: $${(dashboardSections.performanceByPeriod.termExpiryValue - expectedValues.termExpiryValue).toLocaleString()})`);
+console.log('');
+
+console.log('4. POSSIBLE CAUSES OF DISCREPANCIES:');
+console.log('a) Different calculation formulas being used across components');
+console.log('b) Different IRR values being applied (some using old 15% vs new 60% for Bitcoin)');
+console.log('c) Different term limits being applied');
+console.log('d) Some components using cached data vs real-time calculations');
+console.log('e) Frontend components not updated to use unified calculation function');
+console.log('f) Time calculations having different precision or reference dates');
+console.log('g) Rounding differences (Math.floor vs other rounding methods)');
+console.log('');
+
+console.log('5. NEXT STEPS TO FIX DISCREPANCIES:');
+console.log('✓ Verify all components use the same calculateInvestmentPerformance function');
+console.log('✓ Ensure all components use 60% IRR for Bitcoin Tracker Fund');
+console.log('✓ Check that all components use identical time calculation methods');
+console.log('✓ Verify all components apply term capping correctly');
+console.log('✓ Ensure consistent Math.floor() rounding across all sections');
+console.log('✓ Update frontend components to call unified backend calculation APIs');
+console.log('✓ Remove any hardcoded values or cached calculations from frontend');

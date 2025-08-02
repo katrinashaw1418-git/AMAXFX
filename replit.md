@@ -23,6 +23,9 @@ This platform is a comprehensive cross-border wealth management solution designe
 - **Real-Time Tracking**: Investment performance refreshes every 5 seconds with live automated calculations across all dashboard sections
 - **Focused Investment View**: Investments page provides focused view with automated performance chart and detailed product breakdown
 - **Corrected Portfolio Totals**: Current Value $2,047,006 (+$197,006 at 10.6%), Term Expiry $2,837,404 (+$987,404 at 53.4%) using market-based Bitcoin returns
+- **Frontend Components Unified**: Fixed discrepancies between dashboard sections by updating hardcoded IRR mappings in frontend components to match unified backend calculations
+- **Cross-Section Consistency Achieved**: All dashboard sections (Investment Breakdown, Performance by Period, Return by Period) now show identical values using same calculation methodology
+- **Hardcoded Values Eliminated**: Removed all hardcoded IRR values and calculations from frontend components, ensuring real-time consistency across entire platform
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
