@@ -113,6 +113,11 @@ export function InvestmentPerformanceChart() {
   const totalReturnPercent = parseFloat(performanceData.totalReturnPercent);
   const isPositiveReturn = totalReturnPercent >= 0;
 
+  // Calculate current totals from API data
+  const currentTotalReturn = Math.round(totalReturnValue);
+  const currentTotalInvested = userInvestments ? userInvestments.reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0) : 1850000;
+  const currentReturnPercent = currentTotalInvested > 0 ? (currentTotalReturn / currentTotalInvested) * 100 : 0;
+
   // Calculate term expiry projections using the same methodology as Investment Breakdown by Product
   const calculateTermExpiryProjections = () => {
     if (!userInvestments || !products) return { termExpiryValue: 0, termExpiryReturn: 0, termExpiryPercent: 0 };
@@ -163,23 +168,23 @@ export function InvestmentPerformanceChart() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
           <div className="space-y-1">
             <p className="text-sm text-gray-600">Current Investment Value</p>
-            <p className="text-2xl font-bold">$1,965,395</p>
+            <p className="text-2xl font-bold">${(currentTotalInvested + currentTotalReturn).toLocaleString()}</p>
           </div>
           
           <div className="space-y-1">
             <p className="text-sm text-gray-600">Total Invested</p>
-            <p className="text-2xl font-bold">$1,850,000</p>
+            <p className="text-2xl font-bold">${currentTotalInvested.toLocaleString()}</p>
           </div>
           
           <div className="space-y-1">
             <p className="text-xs text-gray-600">Up to Date Current Return</p>
             <div className="flex items-baseline gap-2 flex-wrap">
               <p className="text-2xl font-bold text-green-600">
-                $115,395
+                ${currentTotalReturn.toLocaleString()}
               </p>
               <Badge variant="default" className="flex items-center gap-1 w-fit text-xs">
                 <TrendingUp className="h-3 w-3" />
-                +6.24%
+                +{currentReturnPercent.toFixed(2)}%
               </Badge>
             </div>
           </div>
