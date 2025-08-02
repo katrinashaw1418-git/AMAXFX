@@ -168,32 +168,32 @@ export function InvestmentPerformanceChart() {
             <p className="text-2xl font-bold">$1,850,000</p>
           </div>
           
-          <div className="space-y-1">
+          <div className="space-y-2">
             <p className="text-sm text-gray-600">Total Return</p>
-            <div className="flex items-center gap-2">
+            <div className="space-y-1">
               <p className={`text-2xl font-bold ${isPositiveReturn ? 'text-green-600' : 'text-red-600'}`}>
                 ${Math.abs(totalReturnValue).toLocaleString()}
               </p>
-              <Badge variant={isPositiveReturn ? "default" : "destructive"} className="flex items-center gap-1">
+              <Badge variant={isPositiveReturn ? "default" : "destructive"} className="flex items-center gap-1 w-fit">
                 {isPositiveReturn ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                 {totalReturnPercent >= 0 ? '+' : ''}{totalReturnPercent.toFixed(2)}%
               </Badge>
             </div>
           </div>
           
-          <div className="space-y-1">
+          <div className="space-y-2">
             <p className="text-sm text-gray-600">Term Expiry Projection</p>
-            <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-green-600" />
-              <div className="text-right">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-green-600" />
                 <p className="text-lg font-bold text-green-600">
                   ${termExpiryValue.toLocaleString()}
                 </p>
-                <Badge variant={isTermExpiryPositive ? "default" : "destructive"} className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200">
-                  {isTermExpiryPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                  +${termExpiryReturn.toLocaleString()} ({termExpiryPercent.toFixed(1)}%)
-                </Badge>
               </div>
+              <Badge variant={isTermExpiryPositive ? "default" : "destructive"} className="flex items-center gap-1 w-fit bg-green-50 text-green-700 border-green-200">
+                {isTermExpiryPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                +${termExpiryReturn.toLocaleString()} ({termExpiryPercent.toFixed(1)}%)
+              </Badge>
             </div>
           </div>
         </div>
