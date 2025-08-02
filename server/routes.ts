@@ -2,13 +2,13 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 
-// IRR mapping - Market-based for Bitcoin, midpoint for others
+// IRR mapping - Using midpoint IRR for all investments (as requested)
 function getAnnualReturn(category: string, productName?: string): number {
   const rates = {
     'real_estate': 0.11,      // 11% midpoint
     'corporate_credit': 0.11, // 11% midpoint (10-12% range)
     'venture_capital': 0.18,  // 18% midpoint (16-20% range)
-    'digital_assets': (productName && typeof productName === 'string' && productName.includes('Bitcoin')) ? 0.60 : 0.0575, // Bitcoin 60% market-based, Ethereum 5.75%
+    'digital_assets': (productName && typeof productName === 'string' && productName.includes('Bitcoin')) ? 0.15 : 0.0575, // Bitcoin 15% midpoint IRR, Ethereum 5.75%
     'default': 0.11
   };
   return rates[category as keyof typeof rates] || rates.default;
@@ -1517,12 +1517,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: `Investment in ${product.name}${currency !== "USD" ? ` (converted from ${currency})` : ""}`,
       });
 
+      // Calculate initial performance for new investment (using midpoint IRR)
+      const currentDate = new Date();
+      const initialPerformance = calculateInvestmentPerformance(product, investmentAmount, currentDate, currentDate);
+      
       // Create investment record (always in USD equivalent)
       const investment = await storage.createUserInvestment({
         userId,
         productId,
         investedAmount: investmentAmount.toString(), // USD equivalent
-        currentValue: investmentAmount.toString(), // Initially same as invested amount
+        currentValue: initialPerformance.currentValue.toString(), // Use calculated performance
         totalReturn: "0.00",
         returnPercent: "0.00",
         status: "active",

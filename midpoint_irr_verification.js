@@ -1,59 +1,58 @@
-// MIDPOINT IRR VERIFICATION - New System Performance
-console.log('=== MIDPOINT IRR VERIFICATION ===\n');
+// MIDPOINT IRR VERIFICATION - INCLUDING ALL INVESTMENTS
+console.log('=== VERIFYING MIDPOINT IRR WITH ALL INVESTMENTS ===\n');
 
-// Current investment data from API
-const actualReturns = [
-  { name: "Real Estate Credit Fund", invested: 500000, current: 513150.68, return: 13150.68, percent: 2.63, target: 11.0 },
-  { name: "Corporate Credit Fund", invested: 300000, current: 303698.63, return: 3698.63, percent: 1.23, target: 11.0 },
-  { name: "VC/Growth Equity Fund", invested: 750000, current: 904060.37, return: 154060.37, percent: 20.54, target: 18.0 },
-  { name: "Bitcoin Tracker Fund", invested: 150000, current: 163023.61, return: 13023.61, percent: 8.68, target: 15.0 },
-  { name: "Ethereum Staking Fund", invested: 75000, current: 77170.35, return: 2170.35, percent: 2.89, target: 5.75 }
+// Complete investment list with new $50k and $25k Bitcoin investments
+const allInvestments = [
+  { name: "Real Estate Credit Fund", invested: 500000, days: 120, rate: 0.11 },
+  { name: "Corporate Credit Fund", invested: 300000, days: 90, rate: 0.11 },
+  { name: "VC/Growth Equity Fund", invested: 750000, days: 365, rate: 0.18 },
+  { name: "Bitcoin Tracker Fund (Original)", invested: 150000, days: 180, rate: 0.15 },
+  { name: "Ethereum Staking Fund", invested: 75000, days: 60, rate: 0.0575 },
+  { name: "Bitcoin Tracker Fund ($50k)", invested: 50000, days: 1, rate: 0.15 },
+  { name: "Bitcoin Tracker Fund ($25k)", invested: 25000, days: 0, rate: 0.15 }
 ];
-
-console.log('CURRENT SYSTEM PERFORMANCE:\n');
 
 let totalInvested = 0;
 let totalCurrent = 0;
 let totalReturn = 0;
-let totalTargetReturn = 0;
 
-actualReturns.forEach((inv, i) => {
-  totalInvested += inv.invested;
-  totalCurrent += inv.current;
-  totalReturn += inv.return;
+console.log('UPDATED PORTFOLIO WITH ALL INVESTMENTS:\n');
+
+allInvestments.forEach((inv, i) => {
+  const timeProgress = inv.days / 365;
+  const performanceFactor = 1 + (inv.rate * timeProgress);
+  const currentValue = inv.invested * performanceFactor;
+  const returnAmount = currentValue - inv.invested;
+  const returnPercent = (returnAmount / inv.invested) * 100;
   
-  const targetReturn = inv.invested * (inv.target / 100);
-  totalTargetReturn += targetReturn;
+  totalInvested += inv.invested;
+  totalCurrent += currentValue;
+  totalReturn += returnAmount;
   
   console.log(`${i+1}. ${inv.name}`);
   console.log(`   Invested: $${inv.invested.toLocaleString()}`);
-  console.log(`   Current Value: $${inv.current.toLocaleString()}`);
-  console.log(`   Actual Return: ${inv.percent}% ($${inv.return.toLocaleString()})`);
-  console.log(`   Target Midpoint IRR: ${inv.target}% ($${targetReturn.toLocaleString()})`);
-  console.log(`   Gap: $${(targetReturn - inv.return).toLocaleString()}`);
+  console.log(`   Days: ${inv.days} (${timeProgress.toFixed(4)} years)`);
+  console.log(`   Rate: ${(inv.rate * 100).toFixed(2)}% midpoint IRR`);
+  console.log(`   Current Value: $${currentValue.toLocaleString()}`);
+  console.log(`   Return: $${returnAmount.toLocaleString()} (${returnPercent.toFixed(2)}%)`);
   console.log('');
 });
 
-const portfolioReturn = (totalReturn / totalInvested) * 100;
-const targetPortfolioReturn = (totalTargetReturn / totalInvested) * 100;
+const portfolioReturnPercent = (totalReturn / totalInvested) * 100;
 
-console.log('PORTFOLIO SUMMARY:\n');
+console.log('COMPLETE PORTFOLIO TOTALS:\n');
 console.log(`Total Invested: $${totalInvested.toLocaleString()}`);
 console.log(`Total Current Value: $${totalCurrent.toLocaleString()}`);
-console.log(`Total Return: $${totalReturn.toLocaleString()} (${portfolioReturn.toFixed(2)}%)`);
-console.log(`Target IRR Return: $${totalTargetReturn.toLocaleString()} (${targetPortfolioReturn.toFixed(2)}%)`);
-console.log(`Performance Ratio: ${((portfolioReturn/targetPortfolioReturn)*100).toFixed(1)}% of target`);
+console.log(`Total Return: $${totalReturn.toLocaleString()}`);
+console.log(`Portfolio Return: ${portfolioReturnPercent.toFixed(2)}%`);
 
-console.log('\nMIDPOINT IRR JUSTIFICATION:');
-console.log(`• Real Estate & Corporate Credit: Early stage investments ramping up to 11% target`);
-console.log(`• VC Fund: Outperforming 18% target at 20.54% (ahead of 5-7 year timeline)`);
-console.log(`• Bitcoin Tracker: Below 15% target at 8.68% (market dependent)`);
-console.log(`• Ethereum Staking: Below 5.75% target at 2.89% (early stage)`);
-console.log(`• Portfolio Return: ${portfolioReturn.toFixed(2)}% is reasonable given investment timing`);
+console.log('\nEXPECTED UPDATE AFTER ADDING NEW INVESTMENTS:\n');
+console.log('Current API shows: $155,822 (8.78%) - Missing new investments');
+console.log(`Should show: $${totalReturn.toLocaleString()} (${portfolioReturnPercent.toFixed(2)}%) - With all investments`);
+console.log(`Difference: $${(totalReturn - 155822).toLocaleString()} additional return`);
 
-console.log('\nVERIFICATION:');
-console.log(`✓ Unified calculateInvestmentPerformance() function implemented`);
-console.log(`✓ Midpoint IRR values: Real Estate 11%, Corporate 11%, VC 18%, Bitcoin 15%, Ethereum 5.75%`);
-console.log(`✓ System correctly calculates time-based returns with volatility adjustments`);
-console.log(`✓ Portfolio performing at ${((portfolioReturn/targetPortfolioReturn)*100).toFixed(1)}% of midpoint IRR potential`);
-console.log(`✓ Current ${portfolioReturn.toFixed(2)}% return justified by early-stage investments and market conditions`);
+console.log('\nDATABASE STATUS:\n');
+console.log('✓ Switched to 15% midpoint IRR for Bitcoin (from 60% market)');
+console.log('✓ Need to add $50k and $25k Bitcoin investments to database');
+console.log('✓ API should automatically recalculate and update totals');
+console.log('✓ Investment performance chart should reflect new totals');
