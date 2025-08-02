@@ -39,30 +39,74 @@ function calculateInvestmentPerformance(
   const daysHeld = Math.max(0, Math.floor((currentDate.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24)));
   const timeInYears = daysHeld / 365.25; // Use precise leap year calculation
   
-  // Get midpoint IRR based on product category using consistent rates
+  // Get exact midpoint IRR based on specific product ID and target IRR from descriptions
   let targetIRR = 0.08; // Default 8% annual return
   
-  switch (product.category) {
-    case 'real_estate':
-      targetIRR = 0.11; // 11% for real estate
+  // Use exact midpoint IRR values from current product descriptions
+  switch (product.id) {
+    case 1: // Real Estate Equity Fund - Target IRR: 9.8–11.0%
+      targetIRR = 0.104; // Midpoint: (9.8 + 11.0) / 2 = 10.4%
       break;
-    case 'corporate_credit':
-      targetIRR = 0.11; // 11% for corporate credit
+    case 2: // Real Estate Credit Fund - Target IRR: ~11%
+      targetIRR = 0.11; // Exactly 11%
       break;
-    case 'venture_capital':
-      targetIRR = 0.18; // 18% for venture capital
+    case 3: // Real Estate First Mortgage Fund - Target IRR: ~9%
+      targetIRR = 0.09; // Exactly 9%
       break;
-    case 'digital_assets':
-      if (product.name?.toLowerCase().includes('bitcoin')) {
-        targetIRR = 0.15; // 15% for Bitcoin (conservative midpoint, not 60% market rate)
-      } else if (product.name?.toLowerCase().includes('ethereum')) {
-        targetIRR = 0.0575; // 5.75% for Ethereum staking
-      } else {
-        targetIRR = 0.12; // 12% for other digital assets
-      }
+    case 4: // Cash Flow-Based Corporate Credit Fund - Target IRR: 10–12%
+      targetIRR = 0.11; // Midpoint: (10 + 12) / 2 = 11%
+      break;
+    case 5: // Security-Backed Corporate Credit Fund - Target IRR: 12–15%
+      targetIRR = 0.135; // Midpoint: (12 + 15) / 2 = 13.5%
+      break;
+    case 6: // VC / Growth Equity Fund - Target IRR: 16–20%
+      targetIRR = 0.18; // Midpoint: (16 + 20) / 2 = 18%
+      break;
+    case 7: // Hybrid Capital Fund - Target IRR: 12–16%
+      targetIRR = 0.14; // Midpoint: (12 + 16) / 2 = 14%
+      break;
+    case 8: // Bitcoin Tracker Fund - Target IRR: Market-based (using conservative 15% midpoint)
+      targetIRR = 0.15; // 15% conservative midpoint (not full 60%+ market rate)
+      break;
+    case 9: // Web3 Innovation Fund - Target IRR: 30–50%+
+      targetIRR = 0.40; // Midpoint: (30 + 50) / 2 = 40%
+      break;
+    case 10: // Diversified Crypto Fund - Target IRR: 25–35%
+      targetIRR = 0.30; // Midpoint: (25 + 35) / 2 = 30%
+      break;
+    case 11: // Ethereum Staking Fund - Target IRR: 4.5–7% APY
+      targetIRR = 0.0575; // Midpoint: (4.5 + 7) / 2 = 5.75%
+      break;
+    case 12: // High-Yield Savings Account - Target IRR: 4.5–5.5%
+      targetIRR = 0.05; // Midpoint: (4.5 + 5.5) / 2 = 5%
+      break;
+    case 13: // Money Market Sweep Fund - Target IRR: 3.8–4.8%
+      targetIRR = 0.043; // Midpoint: (3.8 + 4.8) / 2 = 4.3%
+      break;
+    case 14: // Premium Treasury Deposit - Target IRR: 2.5–3.5%
+      targetIRR = 0.03; // Midpoint: (2.5 + 3.5) / 2 = 3%
       break;
     default:
-      targetIRR = 0.08; // 8% for unspecified categories
+      // Fallback to category-based logic for any new products
+      switch (product.category) {
+        case 'real_estate':
+          targetIRR = 0.104; // Default to Real Estate Equity midpoint
+          break;
+        case 'corporate_credit':
+          targetIRR = 0.11; // Default to Cash Flow-Based Corporate Credit midpoint
+          break;
+        case 'venture_capital':
+          targetIRR = 0.18; // Default to VC/Growth Equity midpoint
+          break;
+        case 'digital_assets':
+          targetIRR = 0.15; // Default to Bitcoin conservative midpoint
+          break;
+        case 'cash_deposit':
+          targetIRR = 0.05; // Default to High-Yield Savings midpoint
+          break;
+        default:
+          targetIRR = 0.08; // 8% for unspecified
+      }
   }
   
   // Calculate current value using compound interest formula: Current Value = Principal × (1 + Rate)^Time
