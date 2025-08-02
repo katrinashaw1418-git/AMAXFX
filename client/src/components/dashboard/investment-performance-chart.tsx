@@ -254,11 +254,11 @@ export function InvestmentPerformanceChart() {
           </ResponsiveContainer>
         </div>
         
-        {/* Current Return Calculation Table */}
+        {/* Return by Period Calculation Table */}
         <div className="mt-6 border-t pt-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Calculator className="h-5 w-5" />
-            Current Return by Period
+            Return by Period
           </h3>
           
           <div className="overflow-x-auto">
@@ -269,51 +269,69 @@ export function InvestmentPerformanceChart() {
                   <th className="text-right p-3 bg-gray-50">Total Invested</th>
                   <th className="text-right p-3 bg-gray-50">Current Value</th>
                   <th className="text-right p-3 bg-gray-50">Current Return</th>
+                  <th className="text-right p-3 bg-gray-50">Cumulative Return</th>
                   <th className="text-right p-3 bg-gray-50">Return %</th>
                 </tr>
               </thead>
               <tbody>
-                {chartData.filter(item => !item.isPrediction).map((period, index) => {
-                  const investedAmount = period.currentInvestment || 0;
-                  const currentReturn = period.totalReturn || 0;
-                  const returnPercent = investedAmount > 0 ? (currentReturn / investedAmount) * 100 : 0;
-                  
-                  return (
-                    <tr key={index} className="border-b hover:bg-gray-50">
-                      <td className="p-3 font-medium">{period.formattedDate}</td>
-                      <td className="p-3 text-right">${investedAmount.toLocaleString()}</td>
-                      <td className="p-3 text-right">${period.value?.toLocaleString() || '0'}</td>
-                      <td className={`p-3 text-right font-medium ${currentReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        ${Math.abs(currentReturn).toLocaleString()}
-                      </td>
-                      <td className={`p-3 text-right font-medium ${returnPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {returnPercent >= 0 ? '+' : ''}{returnPercent.toFixed(2)}%
-                      </td>
-                    </tr>
-                  );
-                })}
+                {(() => {
+                  let cumulativeReturn = 0;
+                  return chartData.filter(item => !item.isPrediction).map((period, index) => {
+                    const investedAmount = period.currentInvestment || 0;
+                    const currentReturn = period.totalReturn || 0;
+                    cumulativeReturn += currentReturn;
+                    const returnPercent = investedAmount > 0 ? (currentReturn / investedAmount) * 100 : 0;
+                    
+                    return (
+                      <tr key={index} className="border-b hover:bg-gray-50">
+                        <td className="p-3 font-medium">{period.formattedDate}</td>
+                        <td className="p-3 text-right">${investedAmount.toLocaleString()}</td>
+                        <td className="p-3 text-right">${period.value?.toLocaleString() || '0'}</td>
+                        <td className={`p-3 text-right font-medium ${currentReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          ${Math.abs(currentReturn).toLocaleString()}
+                        </td>
+                        <td className={`p-3 text-right font-medium ${cumulativeReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          ${Math.abs(cumulativeReturn).toLocaleString()}
+                        </td>
+                        <td className={`p-3 text-right font-medium ${returnPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {returnPercent >= 0 ? '+' : ''}{returnPercent.toFixed(2)}%
+                        </td>
+                      </tr>
+                    );
+                  });
+                })()}
                 
                 {/* Add projection periods using actual server-generated data */}
-                {chartData.filter(item => item.isPrediction).map((period, index) => {
-                  const investedAmount = period.currentInvestment || 0;
-                  const currentReturn = period.totalReturn || 0;
-                  const returnPercent = investedAmount > 0 ? (currentReturn / investedAmount) * 100 : 0;
-                  const isFinal = period.formattedDate.includes('Q1\'28');
+                {(() => {
+                  // Get the last cumulative return from historical data
+                  const historicalData = chartData.filter(item => !item.isPrediction);
+                  let cumulativeReturn = historicalData.reduce((sum, period) => sum + (period.totalReturn || 0), 0);
                   
-                  return (
-                    <tr key={`pred-${index}`} className={`border-b ${isFinal ? 'bg-green-50' : 'bg-blue-50'} hover:opacity-90`}>
-                      <td className="p-3 font-medium">{period.formattedDate} {isFinal ? '(Term Expiry)' : '(Projection)'}</td>
-                      <td className="p-3 text-right">${investedAmount.toLocaleString()}</td>
-                      <td className="p-3 text-right">${period.value?.toLocaleString() || '0'}</td>
-                      <td className={`p-3 text-right font-medium ${isFinal ? 'text-green-700' : 'text-blue-600'}`}>
-                        ${Math.abs(currentReturn).toLocaleString()}
-                      </td>
-                      <td className={`p-3 text-right font-medium ${isFinal ? 'text-green-700' : 'text-blue-600'}`}>
-                        {returnPercent >= 0 ? '+' : ''}{returnPercent.toFixed(2)}%
-                      </td>
-                    </tr>
-                  );
-                })}
+                  return chartData.filter(item => item.isPrediction).map((period, index) => {
+                    const investedAmount = period.currentInvestment || 0;
+                    const currentReturn = period.totalReturn || 0;
+                    cumulativeReturn += currentReturn;
+                    const returnPercent = investedAmount > 0 ? (currentReturn / investedAmount) * 100 : 0;
+                    const isFinal = period.formattedDate.includes('Q1\'28');
+                    
+                    return (
+                      <tr key={`pred-${index}`} className={`border-b ${isFinal ? 'bg-green-50' : 'bg-blue-50'} hover:opacity-90`}>
+                        <td className="p-3 font-medium">{period.formattedDate} {isFinal ? '(Term Expiry)' : '(Projection)'}</td>
+                        <td className="p-3 text-right">${investedAmount.toLocaleString()}</td>
+                        <td className="p-3 text-right">${period.value?.toLocaleString() || '0'}</td>
+                        <td className={`p-3 text-right font-medium ${isFinal ? 'text-green-700' : 'text-blue-600'}`}>
+                          ${Math.abs(currentReturn).toLocaleString()}
+                        </td>
+                        <td className={`p-3 text-right font-medium ${isFinal ? 'text-green-700' : 'text-blue-600'}`}>
+                          ${Math.abs(cumulativeReturn).toLocaleString()}
+                        </td>
+                        <td className={`p-3 text-right font-medium ${isFinal ? 'text-green-700' : 'text-blue-600'}`}>
+                          {returnPercent >= 0 ? '+' : ''}{returnPercent.toFixed(2)}%
+                        </td>
+                      </tr>
+                    );
+                  });
+                })()}
               </tbody>
             </table>
           </div>
