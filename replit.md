@@ -6,7 +6,7 @@ This platform is a comprehensive cross-border wealth management solution designe
 ## Recent Changes (August 2025)
 - **Complete Automated Calculation System**: Implemented fully automated calculation system using exact compound interest formulas for all products across all periods
 - **Unified Database Calculation Function**: `calculateInvestmentPerformance` function in server provides automated calculations with exact IRR values and term capping
-- **Exact IRR Values from Product Descriptions**: Real Estate Equity 8.5%, Bitcoin Tracker 15%, Corporate Credit 11%, Web3 Innovation 18%, Ethereum Staking 5.75%
+- **Exact IRR Values from Product Descriptions**: Real Estate Equity 8.5%, Bitcoin Tracker 60% (market-based historical), Corporate Credit 11%, Web3 Innovation 18%, Ethereum Staking 5.75%
 - **Product Description IRR Mapping**: All IRR values extracted from actual investment_strategy descriptions in database for mathematical accuracy
 - **Exact Term Limits from Database**: Real Estate Equity 2.0yr, Bitcoin Tracker 1.0yr, Corporate Credit 1.5yr, Web3 Innovation 4.0yr, Ethereum Staking 2.0yr
 - **Automated Formula Application**: Current Value = Principal × (1 + IRR)^min(TimeElapsed, TermLimit) for all calculations using actual database amounts
@@ -22,7 +22,7 @@ This platform is a comprehensive cross-border wealth management solution designe
 - **Investment Performance API Automated**: Updated to use unified automated calculation function instead of cached database values for real-time accuracy
 - **Real-Time Tracking**: Investment performance refreshes every 5 seconds with live automated calculations across all dashboard sections
 - **Focused Investment View**: Investments page provides focused view with automated performance chart and detailed product breakdown
-- **Corrected Portfolio Totals**: Current Value $2,018,378 (+$168,378 at 9.1%), Term Expiry $2,736,152 (+$886,152 at 47.9%) using exact product descriptions
+- **Corrected Portfolio Totals**: Current Value $2,047,006 (+$197,006 at 10.6%), Term Expiry $2,837,404 (+$987,404 at 53.4%) using market-based Bitcoin returns
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

@@ -52,8 +52,8 @@ function calculateInvestmentPerformance(
       targetIRR = 0.085; // Exactly 8.5% from database
       termYears = 2.0; // 24 months = 2.0 years
       break;
-    case 2: // Bitcoin Tracker Fund - "midpoint IRR targeting 15% annual returns"
-      targetIRR = 0.15; // Exactly 15% from investment_strategy description
+    case 2: // Bitcoin Tracker Fund - "Market-based (historical 60%+ annualized)"
+      targetIRR = 0.60; // 60% based on historical Bitcoin returns
       termYears = 1.0; // 12 months = 1.0 year
       break;
     case 3: // Corporate Credit Fund - "midpoint IRR targeting 11% annual returns"
