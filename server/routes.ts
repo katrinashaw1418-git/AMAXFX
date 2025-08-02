@@ -1445,7 +1445,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const predictionDate = new Date(endDate);
       predictionDate.setMonth(predictionDate.getMonth() + 3); // Start predictions from next quarter
       
-      while (predictionDate <= latestExpiryDate) {
+      // Extended projection to 2030 to cover full term expiry lifecycle
+      const maxProjectionDate = new Date('2030-12-31');
+      
+      while (predictionDate <= maxProjectionDate) {
         let totalPredictedValue = 0;
         let totalInvestedAmount = 0;
         

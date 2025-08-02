@@ -292,6 +292,26 @@ export function InvestmentPerformanceChart() {
                     </tr>
                   );
                 })}
+                
+                {/* Add key projection periods from the extended data */}
+                {[
+                  { quarter: 'Q2\'25', invested: 1850000, value: 2024507, return: 174507, percent: 9.43, isProjection: true },
+                  { quarter: 'Q1\'26', invested: 1850000, value: 2238021, return: 388021, percent: 20.97, isProjection: true },
+                  { quarter: 'Q1\'27', invested: 1850000, value: 2465432, return: 615432, percent: 33.27, isProjection: true },
+                  { quarter: 'Q1\'28', invested: 1850000, value: 2697647, return: 847647, percent: 45.82, isProjection: true, isFinal: true }
+                ].map((proj, index) => (
+                  <tr key={`proj-${index}`} className={`border-b ${proj.isFinal ? 'bg-green-50' : 'bg-blue-50'} hover:opacity-90`}>
+                    <td className="p-3 font-medium">{proj.quarter} {proj.isFinal ? '(Term Expiry)' : '(Projection)'}</td>
+                    <td className="p-3 text-right">${proj.invested.toLocaleString()}</td>
+                    <td className="p-3 text-right">${proj.value.toLocaleString()}</td>
+                    <td className={`p-3 text-right font-medium ${proj.isFinal ? 'text-green-700' : 'text-blue-600'}`}>
+                      ${proj.return.toLocaleString()}
+                    </td>
+                    <td className={`p-3 text-right font-medium ${proj.isFinal ? 'text-green-700' : 'text-blue-600'}`}>
+                      +{proj.percent.toFixed(2)}%
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -364,11 +384,43 @@ export function InvestmentPerformanceChart() {
                     <td className="p-2 text-center border-r text-green-600">$15,170 (6.1%)</td>
                     <td className="p-2 text-center font-medium text-green-600">$120,072</td>
                   </tr>
+                  <tr className="border-b bg-blue-50">
+                    <td className="p-2 font-medium border-r">Q2'25</td>
+                    <td className="p-2 text-center border-r text-blue-600">$7,885 (9.3%)</td>
+                    <td className="p-2 text-center border-r text-blue-600">$35,537 (10.2%)</td>
+                    <td className="p-2 text-center border-r text-blue-600">$10,429 (7.0%)</td>
+                    <td className="p-2 text-center border-r text-blue-600">$39,434 (8.8%)</td>
+                    <td className="p-2 text-center border-r text-blue-600">$55,014 (9.7%)</td>
+                    <td className="p-2 text-center border-r text-blue-600">$26,208 (10.5%)</td>
+                    <td className="p-2 text-center font-medium text-blue-600">$174,507</td>
+                  </tr>
+                  <tr className="border-b bg-blue-50">
+                    <td className="p-2 font-medium border-r">Q1'26</td>
+                    <td className="p-2 text-center border-r text-blue-600">$7,885 (9.3%)</td>
+                    <td className="p-2 text-center border-r text-blue-600">$76,142 (21.8%)</td>
+                    <td className="p-2 text-center border-r text-blue-600">$10,429 (7.0%)</td>
+                    <td className="p-2 text-center border-r text-blue-600">$89,556 (19.9%)</td>
+                    <td className="p-2 text-center border-r text-blue-600">$133,566 (23.6%)</td>
+                    <td className="p-2 text-center border-r text-blue-600">$70,443 (28.2%)</td>
+                    <td className="p-2 text-center font-medium text-blue-600">$388,021</td>
+                  </tr>
+                  <tr className="border-b bg-green-50">
+                    <td className="p-2 font-medium border-r">Q1'28 (Term Expiry)</td>
+                    <td className="p-2 text-center border-r text-green-700">$7,885 (9.3%)</td>
+                    <td className="p-2 text-center border-r text-green-700">$182,950 (52.3%)</td>
+                    <td className="p-2 text-center border-r text-green-700">$10,429 (7.0%)</td>
+                    <td className="p-2 text-center border-r text-green-700">$134,144 (29.8%)</td>
+                    <td className="p-2 text-center border-r text-green-700">$248,133 (43.9%)</td>
+                    <td className="p-2 text-center border-r text-green-700">$264,106 (105.6%)</td>
+                    <td className="p-2 text-center font-medium text-green-700">$847,647</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
             <p className="text-xs text-gray-600 mt-2">
-              Shows cumulative return amount and percentage for each product by period. Only includes investments made before or on the period date.
+              Shows cumulative return amount and percentage for each product by period. Blue rows are projections, green row shows final term expiry values.
+              <br />
+              <strong>Portfolio Term Expiry Summary:</strong> Total Investment: $1,850,000 → Final Value: $2,697,647 → Total Return: $847,647 (45.8%)
             </p>
           </div>
         </div>
