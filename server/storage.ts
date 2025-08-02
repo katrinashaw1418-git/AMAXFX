@@ -3175,7 +3175,36 @@ export class MemStorage implements IStorage {
   }
 
   async getUserInvestments(userId: number): Promise<UserInvestment[]> {
-    return this.userInvestments.get(userId) || [];
+    // For real-time tracking, always try database first using Drizzle ORM
+    try {
+      // Use drizzle to query user investments directly
+      const dbInvestments = await db.select().from(userInvestments).where(eq(userInvestments.userId, userId));
+      
+      if (dbInvestments && dbInvestments.length > 0) {
+        console.log(`Found ${dbInvestments.length} investments in database for user ${userId}`);
+        return dbInvestments.map(inv => ({
+          id: inv.id,
+          userId: inv.userId,
+          productId: inv.productId,
+          investedAmount: inv.investedAmount,
+          currentValue: inv.currentValue,
+          totalReturn: inv.totalReturn,
+          returnPercent: inv.returnPercent,
+          status: inv.status,
+          investmentDate: inv.investmentDate,
+          maturityDate: inv.maturityDate,
+          updatedAt: inv.updatedAt
+        }));
+      }
+    } catch (error) {
+      console.log('Database query failed:', error);
+      console.log('Using memory storage as fallback');
+    }
+    
+    // Fallback to memory storage only if database fails
+    const memoryInvestments = this.userInvestments.get(userId) || [];
+    console.log(`Using memory storage: ${memoryInvestments.length} investments`);
+    return memoryInvestments;
   }
 
   async createUserInvestment(insertInvestment: InsertUserInvestment): Promise<UserInvestment> {

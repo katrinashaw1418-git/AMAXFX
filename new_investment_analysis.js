@@ -1,68 +1,49 @@
-// ANALYSIS: New Bitcoin Investment Impact on Portfolio
-console.log('=== NEW BITCOIN INVESTMENT IMPACT ANALYSIS ===\n');
+// NEW INVESTMENT ANALYSIS - Endpoint Consistency Fix
+console.log('=== ENDPOINT CONSISTENCY ANALYSIS ===\n');
 
-// Current investments after new $50k Bitcoin investment
-const investments = [
-  { name: "Real Estate Credit Fund", invested: 500000, return: 18082.19, percent: 3.62 },
-  { name: "Corporate Credit Fund", invested: 300000, return: 8136.99, percent: 2.71 },
-  { name: "VC/Growth Equity Fund", invested: 750000, return: 122303.79, percent: 16.31 },
-  { name: "Bitcoin Tracker Fund (Original)", invested: 150000, return: 39877.64, percent: 26.59 },
-  { name: "Ethereum Staking Fund", invested: 75000, return: 708.90, percent: 0.95 },
-  { name: "Bitcoin Tracker Fund (NEW)", invested: 50000, return: 0.00, percent: 0.00 } // Just invested today
-];
-
-console.log('CURRENT PORTFOLIO BREAKDOWN:\n');
-
-let totalInvested = 0;
-let totalCurrent = 0;
-let totalReturn = 0;
-
-investments.forEach((inv, i) => {
-  const currentValue = inv.invested + inv.return;
-  totalInvested += inv.invested;
-  totalCurrent += currentValue;
-  totalReturn += inv.return;
-  
-  console.log(`${i+1}. ${inv.name}`);
-  console.log(`   Invested: $${inv.invested.toLocaleString()}`);
-  console.log(`   Current: $${currentValue.toLocaleString()}`);
-  console.log(`   Return: $${inv.return.toLocaleString()} (${inv.percent}%)`);
-  console.log('');
-});
-
-const portfolioReturnPercent = (totalReturn / totalInvested) * 100;
-
-console.log('NEW PORTFOLIO TOTALS:\n');
-console.log(`Total Invested: $${totalInvested.toLocaleString()}`);
-console.log(`Total Current Value: $${totalCurrent.toLocaleString()}`);
-console.log(`Total Return: $${totalReturn.toLocaleString()}`);
-console.log(`Portfolio Return: ${portfolioReturnPercent.toFixed(2)}%`);
-
-console.log('\nIMPACT ANALYSIS:\n');
-console.log('BEFORE New Investment:');
-console.log('  • Total Invested: $1,775,000');
-console.log('  • Total Return: $189,109.51');
-console.log('  • Portfolio Return: 10.65%');
+console.log('🔍 ROOT CAUSE IDENTIFIED:');
+console.log('• user-investments endpoint: Uses real-time calculateInvestmentPerformance()');
+console.log('• investment-performance endpoint: Was using stored database values');
+console.log('• Database values were updated manually but calculations differed');
+console.log('• This caused inconsistency: $116K vs $171K total return');
 console.log('');
-console.log('AFTER New Investment:');
-console.log(`  • Total Invested: $${totalInvested.toLocaleString()}`);
-console.log(`  • Total Return: $${totalReturn.toLocaleString()}`);
-console.log(`  • Portfolio Return: ${portfolioReturnPercent.toFixed(2)}%`);
-console.log('');
-console.log('MATHEMATICAL EXPLANATION:');
-console.log('When you add new money to the portfolio with 0% initial return,');
-console.log('the total return stays the same but gets divided by a larger invested amount.');
-console.log('');
-console.log(`Formula: Portfolio Return % = Total Return ÷ Total Invested × 100`);
-console.log(`New calculation: $189,109.51 ÷ $${totalInvested.toLocaleString()} × 100 = ${portfolioReturnPercent.toFixed(2)}%`);
-console.log('');
-console.log('EXPECTED BEHAVIOR:');
-console.log('✓ Total return amount stays the same: $189,109.51');
-console.log('✓ Portfolio percentage decreases due to dilution effect');
-console.log('✓ New Bitcoin investment will generate returns over time');
-console.log('✓ Future portfolio returns will increase as new investment gains value');
 
-console.log('\nDATA INTEGRITY ISSUE:');
-console.log('⚠️  Database shows duplicate ID (id: 1) for two different investments');
-console.log('⚠️  This can cause calculation conflicts and data inconsistency');
-console.log('⚠️  Need to fix the auto-increment ID issue in the database');
+console.log('🛠️ SOLUTION IMPLEMENTED:');
+console.log('• Updated investment-performance endpoint to use same calculation function');
+console.log('• Both endpoints now call calculateInvestmentPerformance() consistently');
+console.log('• Removed dependency on stored database current_value/total_return');
+console.log('• Real-time calculations ensure accuracy across all endpoints');
+console.log('');
+
+console.log('⚡ UNIFIED CALCULATION METHOD:');
+console.log('Formula: Current Value = Principal × (1 + Annual Rate)^(Time in Years)');
+console.log('Rates:');
+console.log('  • Real Estate: 11% annual');
+console.log('  • Corporate Credit: 11% annual');
+console.log('  • Venture Capital: 18% annual');
+console.log('  • Bitcoin: 15% annual (conservative)');
+console.log('  • Ethereum: 5.75% annual (staking)');
+console.log('');
+
+console.log('📊 EXPECTED CONSISTENT RESULTS:');
+console.log('Both endpoints should now show:');
+console.log('• Same total return amount');
+console.log('• Same return percentage');
+console.log('• Same current value calculations');
+console.log('• Automatic updates as time progresses');
+console.log('');
+
+console.log('✅ VERIFICATION PROCESS:');
+console.log('1. Test user-investments endpoint');
+console.log('2. Test investment-performance endpoint');
+console.log('3. Compare total return values');
+console.log('4. Confirm consistency across dashboard');
+console.log('5. Validate new investments work correctly');
+console.log('');
+
+console.log('🎯 BENEFITS:');
+console.log('• No more manual database updates needed');
+console.log('• Real-time accuracy as investments age');
+console.log('• Consistent display across all frontend views');
+console.log('• Automatic handling of new investments');
+console.log('• Single source of truth for calculations');
