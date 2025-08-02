@@ -2618,7 +2618,7 @@ export class MemStorage implements IStorage {
         structure: "First-ranking mortgage",
         distributions: "Quarterly",
         liquidity: "Quarterly redemption",
-        minimumInvestment: "50000.00",
+        minimumInvestment: "25000.00",
         riskProfile: "moderate",
         returnType: "income",
         lvr: "64%",
