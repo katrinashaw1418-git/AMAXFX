@@ -97,17 +97,48 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
     }
   });
 
-  // Calculate current values using midpoint IRR from portfolio allocation
+  // Calculate current values directly from user investments with accurate IRR
+  const productIRRMapping: Record<number, { midpointIRR: number; targetIRRDisplay: string }> = {
+    1: { midpointIRR: 0.104, targetIRRDisplay: '10.4%' }, // Real Estate Equity Fund (9.8-11.0% midpoint)
+    2: { midpointIRR: 0.11, targetIRRDisplay: '11.0%' },  // Real Estate Credit Fund (~11%)
+    3: { midpointIRR: 0.09, targetIRRDisplay: '9.0%' },   // Real Estate First Mortgage Fund (~9%)
+    4: { midpointIRR: 0.11, targetIRRDisplay: '11.0%' },  // Cash Flow-Based Corporate Credit Fund (10-12% midpoint)
+    5: { midpointIRR: 0.135, targetIRRDisplay: '13.5%' }, // Security-Backed Corporate Credit Fund (12-15% midpoint)
+    6: { midpointIRR: 0.18, targetIRRDisplay: '18.0%' },  // VC / Growth Equity Fund (16-20% midpoint)
+  };
+
   Object.values(productGroups).forEach((group: any) => {
-    const categoryAllocation = investmentPerformance.portfolioAllocation[group.product.category];
-    if (categoryAllocation) {
-      group.totalCurrentValue = categoryAllocation.value;
-      group.totalReturn = group.totalCurrentValue - group.totalInvested;
-      group.returnPercent = group.totalInvested > 0 ? (group.totalReturn / group.totalInvested) * 100 : 0;
-      group.targetIRR = categoryAllocation.annualReturn * 100;
+    let totalCurrentValue = 0;
+    let totalReturn = 0;
+    
+    // Calculate from individual investments using exact midpoint IRR
+    group.investments.forEach((investment: any) => {
+      const currentValue = parseFloat(investment.currentValue);
+      const returnAmount = parseFloat(investment.totalReturn);
+      totalCurrentValue += currentValue;
+      totalReturn += returnAmount;
+    });
+    
+    group.totalCurrentValue = totalCurrentValue;
+    group.totalReturn = totalReturn;
+    group.returnPercent = group.totalInvested > 0 ? (group.totalReturn / group.totalInvested) * 100 : 0;
+    
+    // Use exact midpoint IRR for display and projections
+    const productIRR = productIRRMapping[group.product.id];
+    if (productIRR) {
+      group.targetIRR = productIRR.midpointIRR * 100;
+      group.targetIRRDisplay = productIRR.targetIRRDisplay;
       
-      // Calculate 7-year projection
-      const growthFactor = Math.pow(1 + categoryAllocation.annualReturn, 7);
+      // Calculate 7-year projection using exact midpoint IRR
+      const growthFactor = Math.pow(1 + productIRR.midpointIRR, 7);
+      group.sevenYearValue = group.totalInvested * growthFactor;
+      group.sevenYearReturn = group.sevenYearValue - group.totalInvested;
+      group.sevenYearPercent = ((group.sevenYearReturn / group.totalInvested) * 100);
+    } else {
+      // Fallback for products not in mapping
+      group.targetIRR = 11;
+      group.targetIRRDisplay = '11.0%';
+      const growthFactor = Math.pow(1.11, 7);
       group.sevenYearValue = group.totalInvested * growthFactor;
       group.sevenYearReturn = group.sevenYearValue - group.totalInvested;
       group.sevenYearPercent = ((group.sevenYearReturn / group.totalInvested) * 100);
@@ -116,9 +147,15 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
 
   const sortedGroups = Object.values(productGroups).sort((a: any, b: any) => b.returnPercent - a.returnPercent);
 
-  const totalInvested = parseFloat(investmentPerformance.currentValue) - parseFloat(investmentPerformance.totalReturn);
-  const totalReturn = parseFloat(investmentPerformance.totalReturn);
-  const totalReturnPercent = parseFloat(investmentPerformance.totalReturnPercent);
+  // Calculate totals from user investments (accurate data)
+  const actualTotalInvested = userInvestments.reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0);
+  const actualTotalCurrentValue = userInvestments.reduce((sum: number, inv: any) => sum + parseFloat(inv.currentValue), 0);
+  const actualTotalReturn = actualTotalCurrentValue - actualTotalInvested;
+  const actualTotalReturnPercent = actualTotalInvested > 0 ? (actualTotalReturn / actualTotalInvested) * 100 : 0;
+  
+  const totalInvested = actualTotalInvested;
+  const totalReturn = actualTotalReturn;
+  const totalReturnPercent = actualTotalReturnPercent;
 
   return (
     <Card>
@@ -191,7 +228,7 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
                   </div>
                   <div>
                     <p className="text-gray-600">Target IRR</p>
-                    <p className="font-medium">{group.targetIRR.toFixed(1)}%</p>
+                    <p className="font-medium">{group.targetIRRDisplay || group.targetIRR.toFixed(1) + '%'}</p>
                   </div>
                 </div>
                 
@@ -219,7 +256,7 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
                 
                 <div className="text-xs text-gray-500">
                   {group.investments.length} investment{group.investments.length !== 1 ? 's' : ''} • 
-                  Using {group.targetIRR.toFixed(1)}% midpoint IRR calculation
+                  Using {group.targetIRRDisplay || group.targetIRR.toFixed(1) + '%'} midpoint IRR calculation
                 </div>
               </div>
             );
