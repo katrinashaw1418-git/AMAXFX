@@ -173,12 +173,12 @@ export function InvestmentPerformanceChart() {
           </div>
           
           <div className="space-y-1">
-            <p className="text-sm text-gray-600">Up to Date Current Return</p>
-            <div className="flex items-center gap-3">
+            <p className="text-xs text-gray-600">Up to Date Current Return</p>
+            <div className="flex items-baseline gap-2 flex-wrap">
               <p className="text-2xl font-bold text-green-600">
                 $115,395
               </p>
-              <Badge variant="default" className="flex items-center gap-1 w-fit">
+              <Badge variant="default" className="flex items-center gap-1 w-fit text-xs">
                 <TrendingUp className="h-3 w-3" />
                 +6.24%
               </Badge>
