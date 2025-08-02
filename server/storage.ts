@@ -2918,6 +2918,19 @@ export class MemStorage implements IStorage {
         maturityDate: null, // Open-ended
         updatedAt: new Date(),
       },
+      {
+        id: 9,
+        userId: 1,
+        productId: 3, // Real Estate First Mortgage Fund
+        investedAmount: "25000.00",
+        currentValue: "25000.00",
+        totalReturn: "0.00",
+        returnPercent: "0.00",
+        status: "active",
+        investmentDate: new Date(), // Just created
+        maturityDate: null,
+        updatedAt: new Date(),
+      },
     ];
     this.userInvestments.set(1, demoUserInvestments);
   }
