@@ -346,98 +346,10 @@ export default function Investments() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Investment Products</h1>
-          <p className="text-gray-600">Explore and invest in structured wealth management products</p>
+          <h1 className="text-2xl font-bold">Investment Performance</h1>
+          <p className="text-gray-600">Track your investment portfolio performance and detailed breakdowns</p>
         </div>
       </div>
-
-      {/* Portfolio Overview */}
-      {userInvestments && userInvestments.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="flex flex-col h-32">
-            <CardContent className="p-4 flex flex-col justify-between h-full">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-medium text-gray-500">Total Invested</h3>
-                <DollarSign className="w-3 h-3 text-primary" />
-              </div>
-              <div className="flex flex-col justify-end h-16">
-                <div className="flex items-end h-6">
-                  <p className="text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis w-full leading-none">${totalInvested.toLocaleString()}</p>
-                </div>
-                <div className="h-4"></div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="flex flex-col h-32">
-            <CardContent className="p-4 flex flex-col justify-between h-full">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-medium text-gray-500">Current Value</h3>
-                <TrendingUp className="w-3 h-3 text-green-600" />
-              </div>
-              <div className="flex flex-col justify-end h-16">
-                <div className="flex items-end h-6">
-                  <p className="text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis w-full leading-none">${totalCurrentValue.toLocaleString()}</p>
-                </div>
-                <div className="h-4"></div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="flex flex-col h-32">
-            <CardContent className="p-4 flex flex-col justify-between h-full">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <h3 className="text-xs font-medium text-gray-500">Total Return</h3>
-                  <span className={`text-xs ${totalReturnPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {totalReturnPercent >= 0 ? '+' : ''}{totalReturnPercent.toFixed(2)}%
-                  </span>
-                </div>
-                <TrendingUp className="w-3 h-3 text-secondary" />
-              </div>
-              <div className="flex flex-col justify-end h-16">
-                <div className="flex items-end h-6">
-                  <p className={`text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis w-full leading-none ${totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    ${totalReturn.toLocaleString()}
-                  </p>
-                </div>
-                <div className="h-4"></div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="flex flex-col h-32">
-            <CardContent className="p-4 flex flex-col justify-between h-full">
-              <div className="flex items-center space-x-2">
-                <h3 className="text-xs font-medium text-gray-500">Available Capital</h3>
-                <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
-                  <SelectTrigger className="w-auto min-w-12 h-5 text-xs border border-green-200 rounded px-1 py-0 focus:ring-1 focus:ring-green-500 bg-green-50 hover:bg-green-100 transition-colors font-semibold text-green-700">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableCurrencies.map((currency) => (
-                      <SelectItem key={currency.currency} value={currency.currency}>
-                        <span className="font-medium">{currency.currency}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col justify-end h-16">
-                <div className="flex items-end h-6">
-                  <p className="text-lg font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis w-full leading-none">
-                    {currencySymbols[selectedCurrency] || selectedCurrency}{availableBalance.toLocaleString()}
-                  </p>
-                </div>
-                <div className="h-4 flex items-center">
-                  {selectedCurrency !== 'USD' && (
-                    <span className="text-xs text-gray-600">
-                      US${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
 
       {/* Performance by Period Chart */}
       {userInvestments && userInvestments.length > 0 && (
