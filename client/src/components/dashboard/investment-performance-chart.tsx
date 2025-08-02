@@ -85,19 +85,15 @@ export function InvestmentPerformanceChart() {
   // Combine historical data with predictions for chart display
   const combinedData = [...(performanceData.data || []), ...(performanceData.predictions || [])];
 
-  // Format data for chart display with compact quarterly formatting and cumulative returns
-  let cumulativeReturn = 0;
+  // Format data for chart display with compact quarterly formatting
   const chartData = combinedData.map((point, index) => {
     const date = new Date(point.date);
     const month = date.toLocaleDateString('en-US', { month: 'short' });
     const year = date.getFullYear().toString().slice(-2);
     const formattedDate = `Q${Math.floor(date.getMonth() / 3) + 1}'${year}`;
     
-    // Calculate current period return
+    // Calculate current period return (same for both chart and table)
     const currentPeriodReturn = point.isPrediction ? (point.totalReturn || 0) : (point.value - (point.investedAmount || 0));
-    
-    // Add to cumulative return
-    cumulativeReturn += currentPeriodReturn;
     
     return {
       ...point,
@@ -105,10 +101,10 @@ export function InvestmentPerformanceChart() {
       quarter: `Q${Math.floor(date.getMonth() / 3) + 1} ${year}`,
       valueFormatted: `$${point.value.toLocaleString()}`,
       returnFormatted: `${(point.weightedReturn || 0) >= 0 ? '+' : ''}${(point.weightedReturn || 0).toFixed(2)}%`,
-      // For chart bars, use cumulative return instead of individual period return
+      // Use individual period return for both chart and table
       currentInvestment: point.isPrediction ? (point.currentInvestment || 0) : (point.investedAmount || 0),
-      totalReturn: cumulativeReturn, // This is now cumulative
-      currentPeriodReturn: currentPeriodReturn, // Keep individual period return for table
+      totalReturn: currentPeriodReturn, // Individual period return
+      currentPeriodReturn: currentPeriodReturn, // Same value for table display
       sortIndex: index // Add sort index for proper ordering
     };
   });
@@ -177,7 +173,7 @@ export function InvestmentPerformanceChart() {
           </div>
           
           <div className="space-y-2">
-            <p className="text-sm text-gray-600">Cumulative Return</p>
+            <p className="text-sm text-gray-600">Current Return</p>
             <div className="space-y-1">
               <p className="text-2xl font-bold text-green-600">
                 $115,395
@@ -251,12 +247,12 @@ export function InvestmentPerformanceChart() {
                 name="Total Invested"
               />
               
-              {/* Cumulative Return (Purple) */}
+              {/* Current Return (Purple) */}
               <Bar
                 dataKey="totalReturn"
                 stackId="investment"
                 fill="#8b5cf6"
-                name="Cumulative Return"
+                name="Current Return"
               />
             </ComposedChart>
           </ResponsiveContainer>
@@ -428,9 +424,9 @@ export function InvestmentPerformanceChart() {
               </table>
             </div>
             <p className="text-xs text-gray-600 mt-2">
-              Shows cumulative return amount that progressively adds returns from each period. This shows the running total of all investment gains.
+              Shows current return amount and percentage for each period. This matches the table data below.
               <br />
-              <strong>Current Status:</strong> Investment: $1,850,000 → Current Value: $1,965,395 → Cumulative Return: $115,395 (6.24%)
+              <strong>Current Status:</strong> Investment: $1,850,000 → Current Value: $1,965,395 → Current Return: $115,395 (6.24%)
             </p>
           </div>
         </div>
