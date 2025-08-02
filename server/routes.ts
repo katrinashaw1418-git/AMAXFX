@@ -1373,27 +1373,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Generate data points at 3-month intervals for the timeframe
       const dataPoints = [];
-      const currentDate = new Date(startDate);
+      const intervalDate = new Date(startDate);
       
-      while (currentDate <= endDate) {
+      while (intervalDate <= endDate) {
         let totalInvestmentValue = 0;
         let weightedReturn = 0;
         let totalInvestedAmount = 0;
         
-        // Calculate investment values and returns for this date
+        // Calculate investment values and returns for this date using consistent methodology
         for (const investment of investments) {
           const product = allProducts.find(p => p.id === investment.productId);
           if (product) {
             const investmentDate = new Date(investment.investmentDate);
-            if (investmentDate <= currentDate) {
+            // Only include investments that existed at this point in time
+            if (investmentDate <= intervalDate) {
               const investedAmount = parseFloat(investment.investedAmount);
-              const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, currentDate);
+              
+              // Use the unified calculation function for consistency
+              const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, intervalDate);
               
               totalInvestmentValue += performance.currentValue;
               totalInvestedAmount += investedAmount;
               
               // Weight the return by the investment amount
-              weightedReturn += (performance.returnPercent * investedAmount);
+              weightedReturn += (performance.returnPercentage * investedAmount);
             }
           }
         }
@@ -1402,73 +1405,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const avgReturn = totalInvestedAmount > 0 ? weightedReturn / totalInvestedAmount : 0;
         
         dataPoints.push({
-          date: currentDate.toISOString().split('T')[0],
+          date: intervalDate.toISOString().split('T')[0],
           value: Math.round(totalInvestmentValue),
           investedAmount: Math.round(totalInvestedAmount),
           weightedReturn: Number(avgReturn.toFixed(2)),
-          timestamp: currentDate.getTime()
+          timestamp: intervalDate.getTime()
         });
         
         // Move to next 3-month interval
-        currentDate.setMonth(currentDate.getMonth() + 3);
+        intervalDate.setMonth(intervalDate.getMonth() + 3);
       }
       
-      // Calculate 12-month prediction based on current allocation
-      const currentPortfolioAllocation: Record<string, { value: number; annualReturn: number }> = {};
-      let totalCurrentInvestment = 0;
+      // Calculate term expiry projections using individual product terms and expiry dates
+      const currentCalculationDate = new Date();
+      const predictions = [];
       
+      // Find the latest expiry date among all investments to determine prediction end
+      let latestExpiryDate = new Date(currentCalculationDate);
+      const productTermMapping: Record<number, number> = {
+        1: 4.25,  // Real Estate Equity Fund - 4.25 years
+        2: 0.85,  // Real Estate Credit Fund - 0.85 years (10.2 months)  
+        3: 0.78,  // Real Estate First Mortgage Fund - 0.78 years (9.3 months)
+        4: 2.5,   // Cash Flow-Based Corporate Credit Fund - 2.5 years
+        5: 2.875, // Security-Backed Corporate Credit Fund - 2.875 years (34.5 months)
+        6: 6,     // VC / Growth Equity Fund - 6 years
+      };
+      
+      // Calculate actual expiry dates for each investment
       for (const investment of investments) {
-        const product = allProducts.find(p => p.id === investment.productId);
-        if (product) {
-          const investedAmount = parseFloat(investment.investedAmount);
-          const investmentDate = new Date(investment.investmentDate);
-          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, endDate);
-          const currentValue = performance.currentValue;
-          totalCurrentInvestment += currentValue;
-          
-          if (!currentPortfolioAllocation[product.category]) {
-            currentPortfolioAllocation[product.category] = { value: 0, annualReturn: 0 };
-          }
-          currentPortfolioAllocation[product.category].value += currentValue;
-          
-          // Set expected annual returns for predictions based on actual calculation methodology
-          const predictedReturn = getAnnualReturn(product.category, product.name);
-          currentPortfolioAllocation[product.category].annualReturn = predictedReturn;
+        const investmentDate = new Date(investment.investmentDate);
+        const termYears = productTermMapping[investment.productId] || 5;
+        const expiryDate = new Date(investmentDate.getTime() + (termYears * 365.25 * 24 * 60 * 60 * 1000));
+        if (expiryDate > latestExpiryDate) {
+          latestExpiryDate = expiryDate;
         }
       }
       
-      // Generate 7-year prediction (28 data points at 3-month intervals)
-      const predictions = [];
-      const predictionStartDate = new Date(endDate);
+      // Generate predictions from current date to latest expiry in 3-month intervals
+      const predictionDate = new Date(endDate);
+      predictionDate.setMonth(predictionDate.getMonth() + 3); // Start predictions from next quarter
       
-      // Calculate weighted annual return for the portfolio
-      let portfolioWeightedReturn = 0;
-      for (const [category, allocation] of Object.entries(currentPortfolioAllocation)) {
-        const { value, annualReturn } = allocation as { value: number; annualReturn: number };
-        const weight = value / totalCurrentInvestment;
-        portfolioWeightedReturn += (annualReturn * weight);
-      }
-      
-      for (let i = 1; i <= 28; i++) {
-        predictionStartDate.setMonth(predictionStartDate.getMonth() + 3);
+      while (predictionDate <= latestExpiryDate) {
+        let totalPredictedValue = 0;
+        let totalInvestedAmount = 0;
         
-        // Calculate time in years (3-month intervals)
-        const timeInYears = (i * 3) / 12;
+        // Calculate predicted value for each investment at this future date
+        for (const investment of investments) {
+          const product = allProducts.find(p => p.id === investment.productId);
+          if (product) {
+            const investedAmount = parseFloat(investment.investedAmount);
+            const investmentDate = new Date(investment.investmentDate);
+            
+            // Calculate performance at this prediction date using term expiry capping
+            const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, predictionDate);
+            
+            totalPredictedValue += performance.currentValue;
+            totalInvestedAmount += investedAmount;
+          }
+        }
         
-        // Apply compound growth with portfolio weighted return
-        const futureValue = totalCurrentInvestment * Math.pow(1 + portfolioWeightedReturn, timeInYears);
-        const totalReturn = futureValue - totalCurrentInvestment;
-        const totalReturnPercent = (totalReturn / totalCurrentInvestment) * 100;
+        const totalReturn = totalPredictedValue - totalInvestedAmount;
+        const totalReturnPercent = totalInvestedAmount > 0 ? (totalReturn / totalInvestedAmount) * 100 : 0;
         
         predictions.push({
-          date: predictionStartDate.toISOString().split('T')[0],
-          value: Math.round(futureValue),
+          date: predictionDate.toISOString().split('T')[0],
+          value: Math.round(totalPredictedValue),
           totalReturn: Math.round(totalReturn),
           weightedReturn: Number(totalReturnPercent.toFixed(2)),
-          currentInvestment: Math.round(totalCurrentInvestment),
+          currentInvestment: Math.round(totalInvestedAmount),
           isPrediction: true,
-          timestamp: predictionStartDate.getTime()
+          timestamp: predictionDate.getTime()
         });
+        
+        // Move to next 3-month interval  
+        predictionDate.setMonth(predictionDate.getMonth() + 3);
       }
       
       // Calculate overall performance metrics using unified midpoint IRR calculation
@@ -1499,8 +1509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         predictions,
         currentValue: Number(totalCurrentValueNow.toFixed(2)), // Ensure consistent rounding
         totalReturn: Number(totalReturnNow.toFixed(2)),
-        totalReturnPercent: Number(totalReturnPercent.toFixed(2)),
-        portfolioAllocation: currentPortfolioAllocation
+        totalReturnPercent: Number(totalReturnPercent.toFixed(2))
       });
     } catch (error) {
       console.error("Investment performance error:", error);
