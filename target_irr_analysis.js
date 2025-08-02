@@ -1,186 +1,230 @@
-// TARGET IRR ANALYSIS - DETAILED CALCULATION BREAKDOWN
-console.log('=== DETAILED INVESTMENT RETURN CALCULATIONS ===\n');
+// COMPLETE CALCULATION BREAKDOWN - CURRENT DATABASE VS TARGET IRR
+console.log('=== INVESTMENT CALCULATION VERIFICATION ===\n');
 
-// Current investment portfolio with actual data
-const investmentPortfolio = [
+console.log('DATABASE CURRENT VALUES:');
+console.log('ID | Product Name                    | Invested    | Current     | Return      | Return%');
+console.log('---|--------------------------------|-------------|-------------|-------------|--------');
+console.log('37 | Bitcoin Tracker ($25k)         | $25,000     | $25,000     | $0          | 0.00%');
+console.log('26 | Real Estate Credit Fund        | $500,000    | $518,082.19 | $18,082.19  | 3.62%');
+console.log('27 | Corporate Credit Fund           | $300,000    | $308,136.99 | $8,136.99   | 2.71%');
+console.log('29 | Bitcoin Tracker (Original)     | $150,000    | $158,136.99 | $8,136.99   | 5.42%');
+console.log('28 | VC/Growth Equity Fund           | $750,000    | $832,500    | $82,500     | 11.00%');
+console.log('30 | Ethereum Staking Fund           | $75,000     | $76,356.16  | $1,356.16   | 1.81%');
+console.log('36 | Bitcoin Tracker ($50k)         | $50,000     | $50,000     | $0          | 0.00%');
+console.log('---|--------------------------------|-------------|-------------|-------------|--------');
+console.log('   | TOTALS                         | $1,850,000  | $1,968,212  | $118,212    | 6.39%');
+
+console.log('\n=== DETAILED CALCULATION ANALYSIS ===\n');
+
+// Investment details with exact dates and rates
+const investments = [
   {
-    name: "Real Estate Credit Fund",
-    invested: 500000,
-    investmentDate: new Date('2025-04-03'),
-    currentDate: new Date('2025-08-02'),
-    targetIRR: 0.11, // 11% annual
-    category: "real_estate"
-  },
-  {
-    name: "Corporate Credit Fund", 
-    invested: 300000,
-    investmentDate: new Date('2025-05-03'),
-    currentDate: new Date('2025-08-02'),
-    targetIRR: 0.11, // 11% annual
-    category: "corporate_credit"
-  },
-  {
-    name: "VC/Growth Equity Fund",
-    invested: 750000,
-    investmentDate: new Date('2024-08-01'),
-    currentDate: new Date('2025-08-02'),
-    targetIRR: 0.18, // 18% annual
-    category: "venture_capital"
-  },
-  {
-    name: "Bitcoin Tracker Fund (Original)",
-    invested: 150000,
-    investmentDate: new Date('2025-02-02'),
-    currentDate: new Date('2025-08-02'),
-    targetIRR: 0.15, // 15% annual (midpoint IRR)
-    category: "digital_assets"
-  },
-  {
-    name: "Ethereum Staking Fund",
-    invested: 75000,
-    investmentDate: new Date('2025-06-02'),
-    currentDate: new Date('2025-08-02'),
-    targetIRR: 0.0575, // 5.75% annual
-    category: "digital_assets"
-  },
-  {
-    name: "Bitcoin Tracker Fund ($50k)",
-    invested: 50000,
-    investmentDate: new Date('2025-08-01'),
-    currentDate: new Date('2025-08-02'),
-    targetIRR: 0.15, // 15% annual
-    category: "digital_assets"
-  },
-  {
-    name: "Bitcoin Tracker Fund ($25k)",
-    invested: 25000,
+    id: 37,
+    name: "Bitcoin Tracker ($25k)",
+    principal: 25000,
+    dbCurrent: 25000,
+    dbReturn: 0,
     investmentDate: new Date('2025-08-02'),
-    currentDate: new Date('2025-08-02'),
-    targetIRR: 0.15, // 15% annual
-    category: "digital_assets"
+    targetIRR: 0.15,
+    category: "Digital Assets"
+  },
+  {
+    id: 26,
+    name: "Real Estate Credit Fund",
+    principal: 500000,
+    dbCurrent: 518082.19,
+    dbReturn: 18082.19,
+    investmentDate: new Date('2025-04-03'),
+    targetIRR: 0.11,
+    category: "Real Estate"
+  },
+  {
+    id: 27,
+    name: "Corporate Credit Fund",
+    principal: 300000,
+    dbCurrent: 308136.99,
+    dbReturn: 8136.99,
+    investmentDate: new Date('2025-05-03'),
+    targetIRR: 0.11,
+    category: "Corporate Credit"
+  },
+  {
+    id: 29,
+    name: "Bitcoin Tracker (Original)",
+    principal: 150000,
+    dbCurrent: 158136.99,
+    dbReturn: 8136.99,
+    investmentDate: new Date('2025-02-02'),
+    targetIRR: 0.15,
+    category: "Digital Assets"
+  },
+  {
+    id: 28,
+    name: "VC/Growth Equity Fund",
+    principal: 750000,
+    dbCurrent: 832500,
+    dbReturn: 82500,
+    investmentDate: new Date('2024-08-02'),
+    targetIRR: 0.18,
+    category: "Venture Capital"
+  },
+  {
+    id: 30,
+    name: "Ethereum Staking Fund",
+    principal: 75000,
+    dbCurrent: 76356.16,
+    dbReturn: 1356.16,
+    investmentDate: new Date('2025-06-02'),
+    targetIRR: 0.0575,
+    category: "Digital Assets"
+  },
+  {
+    id: 36,
+    name: "Bitcoin Tracker ($50k)",
+    principal: 50000,
+    dbCurrent: 50000,
+    dbReturn: 0,
+    investmentDate: new Date('2025-08-01'),
+    targetIRR: 0.15,
+    category: "Digital Assets"
   }
 ];
 
-console.log('TARGET IRR CALCULATION FORMULA:\n');
-console.log('Current Value = Principal × (1 + Annual Rate)^Time');
-console.log('Time = Days Held / 365.25 (accounting for leap years)');
-console.log('Total Return = Current Value - Principal');
-console.log('Return % = (Total Return / Principal) × 100\n');
+const currentDate = new Date('2025-08-02');
+let totalPrincipal = 0;
+let totalDBCurrent = 0;
+let totalDBReturn = 0;
+let totalCalculatedCurrent = 0;
+let totalCalculatedReturn = 0;
 
-let totalInvested = 0;
-let totalCurrentValue = 0;
-let totalReturn = 0;
+console.log('INVESTMENT-BY-INVESTMENT DETAILED BREAKDOWN:\n');
 
-console.log('DETAILED CALCULATIONS BY INVESTMENT:\n');
-
-investmentPortfolio.forEach((investment, index) => {
-  // Calculate time held in years (precise calculation)
-  const timeDiff = investment.currentDate - investment.investmentDate;
-  const daysHeld = timeDiff / (1000 * 60 * 60 * 24);
-  const yearsHeld = daysHeld / 365.25;
+investments.forEach((investment, index) => {
+  const daysHeld = Math.max(0, Math.floor((currentDate.getTime() - investment.investmentDate.getTime()) / (1000 * 60 * 60 * 24)));
+  const timeInYears = daysHeld / 365.25;
+  const growthFactor = Math.pow(1 + investment.targetIRR, timeInYears);
+  const calculatedCurrent = investment.principal * growthFactor;
+  const calculatedReturn = calculatedCurrent - investment.principal;
+  const calculatedReturnPercent = (calculatedReturn / investment.principal) * 100;
+  const dbReturnPercent = (investment.dbReturn / investment.principal) * 100;
   
-  // Target IRR calculation
-  const growthFactor = Math.pow(1 + investment.targetIRR, yearsHeld);
-  const currentValue = investment.invested * growthFactor;
-  const returnAmount = currentValue - investment.invested;
-  const returnPercent = (returnAmount / investment.invested) * 100;
+  totalPrincipal += investment.principal;
+  totalDBCurrent += investment.dbCurrent;
+  totalDBReturn += investment.dbReturn;
+  totalCalculatedCurrent += calculatedCurrent;
+  totalCalculatedReturn += calculatedReturn;
   
-  totalInvested += investment.invested;
-  totalCurrentValue += currentValue;
-  totalReturn += returnAmount;
-  
-  console.log(`${index + 1}. ${investment.name}`);
-  console.log(`   Investment Date: ${investment.investmentDate.toDateString()}`);
-  console.log(`   Current Date: ${investment.currentDate.toDateString()}`);
-  console.log(`   Days Held: ${Math.round(daysHeld)} days`);
-  console.log(`   Time Factor: ${yearsHeld.toFixed(4)} years`);
-  console.log(`   Target IRR: ${(investment.targetIRR * 100).toFixed(2)}% annual`);
-  console.log(`   Growth Factor: (1 + ${investment.targetIRR})^${yearsHeld.toFixed(4)} = ${growthFactor.toFixed(6)}`);
-  console.log(`   Calculation: $${investment.invested.toLocaleString()} × ${growthFactor.toFixed(6)}`);
-  console.log(`   Current Value: $${currentValue.toFixed(2)}`);
-  console.log(`   Total Return: $${returnAmount.toFixed(2)}`);
-  console.log(`   Return %: ${returnPercent.toFixed(2)}%`);
+  console.log(`${index + 1}. ${investment.name} (ID: ${investment.id})`);
+  console.log(`   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+  console.log(`   📊 INVESTMENT DETAILS:`);
+  console.log(`   • Category: ${investment.category}`);
+  console.log(`   • Principal: $${investment.principal.toLocaleString()}`);
+  console.log(`   • Investment Date: ${investment.investmentDate.toISOString().split('T')[0]}`);
+  console.log(`   • Days Held: ${daysHeld} days`);
+  console.log(`   • Time Held: ${timeInYears.toFixed(4)} years`);
+  console.log(`   • Target IRR: ${(investment.targetIRR * 100).toFixed(2)}% annual`);
+  console.log('');
+  console.log(`   🧮 MIDPOINT IRR CALCULATION:`);
+  console.log(`   • Formula: Current Value = Principal × (1 + IRR)^Time`);
+  console.log(`   • Calculation: $${investment.principal.toLocaleString()} × (1 + ${investment.targetIRR})^${timeInYears.toFixed(4)}`);
+  console.log(`   • Growth Factor: ${growthFactor.toFixed(6)}`);
+  console.log(`   • Calculated Current: $${calculatedCurrent.toFixed(2)}`);
+  console.log(`   • Calculated Return: $${calculatedReturn.toFixed(2)} (${calculatedReturnPercent.toFixed(2)}%)`);
+  console.log('');
+  console.log(`   💾 DATABASE VALUES:`);
+  console.log(`   • Database Current: $${investment.dbCurrent.toFixed(2)}`);
+  console.log(`   • Database Return: $${investment.dbReturn.toFixed(2)} (${dbReturnPercent.toFixed(2)}%)`);
+  console.log('');
+  console.log(`   📈 PERFORMANCE ANALYSIS:`);
+  if (Math.abs(calculatedCurrent - investment.dbCurrent) < 1) {
+    console.log(`   • ✅ Perfect Match: Database values align with midpoint IRR calculations`);
+  } else if (investment.dbCurrent > calculatedCurrent) {
+    console.log(`   • ⬆️  Database shows higher performance than midpoint IRR target`);
+  } else {
+    console.log(`   • ⬇️  Database shows lower performance than midpoint IRR target`);
+  }
   console.log('');
 });
 
-const portfolioReturnPercent = (totalReturn / totalInvested) * 100;
+console.log('═══════════════════════════════════════════════════════════════════════════════');
+console.log('📊 OVERALL PORTFOLIO ANALYSIS');
+console.log('═══════════════════════════════════════════════════════════════════════════════\n');
 
-console.log('PORTFOLIO TOTALS:\n');
-console.log(`Total Invested: $${totalInvested.toLocaleString()}`);
-console.log(`Total Current Value: $${totalCurrentValue.toFixed(2)}`);
-console.log(`Total Return: $${totalReturn.toFixed(2)}`);
-console.log(`Portfolio Return: ${portfolioReturnPercent.toFixed(2)}%`);
+console.log('💰 TOTALS COMPARISON:');
+console.log(`• Total Principal Invested: $${totalPrincipal.toLocaleString()}`);
+console.log(`• Database Current Value: $${totalDBCurrent.toFixed(2)}`);
+console.log(`• Database Total Return: $${totalDBReturn.toFixed(2)} (${(totalDBReturn/totalPrincipal*100).toFixed(2)}%)`);
+console.log(`• Calculated Current Value: $${totalCalculatedCurrent.toFixed(2)}`);
+console.log(`• Calculated Total Return: $${totalCalculatedReturn.toFixed(2)} (${(totalCalculatedReturn/totalPrincipal*100).toFixed(2)}%)`);
+console.log(`• Difference: $${(totalCalculatedReturn - totalDBReturn).toFixed(2)}`);
 
-console.log('\n=== 7-YEAR PROJECTION ANALYSIS ===\n');
+console.log('\n🏷️ BREAKDOWN BY CATEGORY:\n');
 
-// Calculate 7-year projections for each investment
-console.log('7-YEAR TARGET IRR PROJECTIONS:\n');
+const categoryBreakdown = {};
+investments.forEach(investment => {
+  if (!categoryBreakdown[investment.category]) {
+    categoryBreakdown[investment.category] = {
+      count: 0,
+      principal: 0,
+      dbCurrent: 0,
+      dbReturn: 0
+    };
+  }
+  categoryBreakdown[investment.category].count += 1;
+  categoryBreakdown[investment.category].principal += investment.principal;
+  categoryBreakdown[investment.category].dbCurrent += investment.dbCurrent;
+  categoryBreakdown[investment.category].dbReturn += investment.dbReturn;
+});
 
-let total7YearInvested = totalInvested;
+Object.entries(categoryBreakdown).forEach(([category, data]) => {
+  const returnPercent = (data.dbReturn / data.principal) * 100;
+  const portfolioWeight = (data.principal / totalPrincipal) * 100;
+  
+  console.log(`${category}:`);
+  console.log(`   • Investments: ${data.count}`);
+  console.log(`   • Principal: $${data.principal.toLocaleString()}`);
+  console.log(`   • Current Value: $${data.dbCurrent.toFixed(2)}`);
+  console.log(`   • Total Return: $${data.dbReturn.toFixed(2)} (${returnPercent.toFixed(2)}%)`);
+  console.log(`   • Portfolio Weight: ${portfolioWeight.toFixed(1)}%`);
+  console.log('');
+});
+
+console.log('🚀 7-YEAR PROJECTION ANALYSIS:\n');
+
 let total7YearValue = 0;
-
-investmentPortfolio.forEach((investment, index) => {
-  const growthFactor7Year = Math.pow(1 + investment.targetIRR, 7);
-  const value7Year = investment.invested * growthFactor7Year;
-  const return7Year = value7Year - investment.invested;
-  const return7YearPercent = (return7Year / investment.invested) * 100;
+investments.forEach((investment, index) => {
+  const daysHeld = Math.max(0, Math.floor((currentDate.getTime() - investment.investmentDate.getTime()) / (1000 * 60 * 60 * 24)));
+  const timeInYears = daysHeld / 365.25;
+  const currentGrowthFactor = Math.pow(1 + investment.targetIRR, timeInYears);
+  const currentValue = investment.principal * currentGrowthFactor;
   
-  total7YearValue += value7Year;
+  const sevenYearGrowthFactor = Math.pow(1 + investment.targetIRR, 7);
+  const sevenYearValue = currentValue * sevenYearGrowthFactor;
+  const sevenYearGain = sevenYearValue - currentValue;
+  const sevenYearGainPercent = (sevenYearGain / currentValue) * 100;
+  
+  total7YearValue += sevenYearValue;
   
   console.log(`${index + 1}. ${investment.name}`);
-  console.log(`   Initial Investment: $${investment.invested.toLocaleString()}`);
-  console.log(`   Target IRR: ${(investment.targetIRR * 100).toFixed(2)}% annual`);
-  console.log(`   7-Year Growth Factor: (1 + ${investment.targetIRR})^7 = ${growthFactor7Year.toFixed(4)}`);
-  console.log(`   7-Year Value: $${value7Year.toFixed(2)}`);
-  console.log(`   7-Year Return: $${return7Year.toFixed(2)} (${return7YearPercent.toFixed(1)}%)`);
+  console.log(`   • Current: $${currentValue.toFixed(2)}`);
+  console.log(`   • 7-Year Factor: ${sevenYearGrowthFactor.toFixed(4)}`);
+  console.log(`   • 7-Year Value: $${sevenYearValue.toFixed(2)}`);
+  console.log(`   • 7-Year Gain: $${sevenYearGain.toFixed(2)} (${sevenYearGainPercent.toFixed(1)}%)`);
   console.log('');
 });
 
-const total7YearReturn = total7YearValue - total7YearInvested;
-const total7YearReturnPercent = (total7YearReturn / total7YearInvested) * 100;
+const total7YearGain = total7YearValue - totalCalculatedCurrent;
+const total7YearGainPercent = (total7YearGain / totalCalculatedCurrent) * 100;
+const averageAnnualReturn = (Math.pow(total7YearValue / totalCalculatedCurrent, 1/7) - 1) * 100;
 
-console.log('7-YEAR PORTFOLIO PROJECTIONS:\n');
-console.log(`Total Initial Investment: $${total7YearInvested.toLocaleString()}`);
-console.log(`Total 7-Year Value: $${total7YearValue.toFixed(2)}`);
-console.log(`Total 7-Year Return: $${total7YearReturn.toFixed(2)}`);
-console.log(`Total 7-Year Return %: ${total7YearReturnPercent.toFixed(1)}%`);
-console.log(`Annualized Return: ${(Math.pow(total7YearValue / total7YearInvested, 1/7) - 1).toFixed(4)} (${((Math.pow(total7YearValue / total7YearInvested, 1/7) - 1) * 100).toFixed(2)}%)`);
+console.log('📈 7-YEAR PORTFOLIO PROJECTION:');
+console.log(`• Current Portfolio: $${totalCalculatedCurrent.toFixed(2)}`);
+console.log(`• 7-Year Projected: $${total7YearValue.toFixed(2)}`);
+console.log(`• 7-Year Gain: $${total7YearGain.toFixed(2)} (${total7YearGainPercent.toFixed(1)}%)`);
+console.log(`• Average Annual Return: ${averageAnnualReturn.toFixed(2)}%`);
 
-console.log('\n=== DEMONSTRATION WITH SAMPLE NEW INVESTMENT ===\n');
-
-// Demonstrate calculation with a new hypothetical investment
-const sampleInvestment = {
-  name: "Sample New Investment (e.g., $100k)",
-  invested: 100000,
-  investmentDate: new Date('2025-08-02'),
-  currentDate: new Date('2025-08-02'),
-  targetIRR: 0.12 // 12% annual
-};
-
-const sampleDaysHeld = (sampleInvestment.currentDate - sampleInvestment.investmentDate) / (1000 * 60 * 60 * 24);
-const sampleYearsHeld = sampleDaysHeld / 365.25;
-const sampleGrowthFactor = Math.pow(1 + sampleInvestment.targetIRR, sampleYearsHeld);
-const sampleCurrentValue = sampleInvestment.invested * sampleGrowthFactor;
-const sampleReturn = sampleCurrentValue - sampleInvestment.invested;
-
-console.log('NEW INVESTMENT CALCULATION EXAMPLE:');
-console.log(`Investment: ${sampleInvestment.name}`);
-console.log(`Amount: $${sampleInvestment.invested.toLocaleString()}`);
-console.log(`Target IRR: ${(sampleInvestment.targetIRR * 100)}%`);
-console.log(`Days Held: ${sampleDaysHeld} (just invested today)`);
-console.log(`Current Value: $${sampleCurrentValue.toFixed(2)}`);
-console.log(`Return: $${sampleReturn.toFixed(2)}`);
-
-// Show updated portfolio totals with new investment
-const newTotalInvested = totalInvested + sampleInvestment.invested;
-const newTotalCurrent = totalCurrentValue + sampleCurrentValue;
-const newTotalReturn = totalReturn + sampleReturn;
-const newPortfolioPercent = (newTotalReturn / newTotalInvested) * 100;
-
-console.log('\nUPDATED PORTFOLIO WITH NEW INVESTMENT:');
-console.log(`New Total Invested: $${newTotalInvested.toLocaleString()}`);
-console.log(`New Total Current: $${newTotalCurrent.toFixed(2)}`);
-console.log(`New Total Return: $${newTotalReturn.toFixed(2)}`);
-console.log(`New Portfolio Return: ${newPortfolioPercent.toFixed(2)}%`);
-
-console.log('\nVERIFICATION: System automatically updates when new investments added ✓');
+console.log('\n✅ FINAL VERIFICATION:');
+console.log(`• Portfolio shows $${totalPrincipal.toLocaleString()} invested`);
+console.log(`• Database return: $${totalDBReturn.toFixed(2)} (${(totalDBReturn/totalPrincipal*100).toFixed(2)}%)`);
+console.log(`• Midpoint IRR calculation: $${totalCalculatedReturn.toFixed(2)} (${(totalCalculatedReturn/totalPrincipal*100).toFixed(2)}%)`);
+console.log(`• All 7 investments tracked with consistent methodology`);
