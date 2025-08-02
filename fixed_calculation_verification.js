@@ -1,134 +1,72 @@
-// FIXED CALCULATION VERIFICATION
-console.log('=== FIXED CALCULATION VERIFICATION ===\n');
+// FIXED: Corporate Credit Calculation Based on User's Actual Data
+// User shows: $750,000 invested on Aug 2, 2024, current return $82,677
 
-async function verifyFixedCalculation() {
-  console.log('🔧 VERIFYING FIXED CALCULATION WITH TERM EXPIRY CAPPING:');
-  console.log('═'.repeat(60));
-  
-  try {
-    // Wait a moment for server to reload
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // 1. Test Investment Performance API (should now match manual calculation)
-    const performanceResponse = await fetch('http://localhost:5000/api/investment-performance?timeframe=1Y');
-    const performanceData = await performanceResponse.json();
-    
-    console.log('📊 UPDATED Investment Performance API:');
-    console.log(`  Current Value: $${parseFloat(performanceData.currentValue).toLocaleString()}`);
-    console.log(`  Total Return: $${parseFloat(performanceData.totalReturn).toLocaleString()}`);
-    console.log(`  Return Percentage: ${performanceData.totalReturnPercent}%`);
-    
-    // 2. Test User Investments API
-    const investmentsResponse = await fetch('http://localhost:5000/api/user-investments');
-    const investmentsData = await investmentsResponse.json();
-    
-    console.log('\n📋 Updated User Investments API:');
-    let totalInvestedFromAPI = 0;
-    let totalCurrentFromAPI = 0;
-    let totalReturnFromAPI = 0;
-    
-    investmentsData.forEach((investment, index) => {
-      const invested = parseFloat(investment.investedAmount);
-      const current = parseFloat(investment.currentValue);
-      const returns = parseFloat(investment.totalReturn);
-      
-      totalInvestedFromAPI += invested;
-      totalCurrentFromAPI += current;
-      totalReturnFromAPI += returns;
-      
-      console.log(`  Investment ${index + 1}:`);
-      console.log(`    Invested: $${invested.toLocaleString()}`);
-      console.log(`    Current: $${current.toLocaleString()}`);
-      console.log(`    Return: $${returns.toLocaleString()} (${investment.returnPercent}%)`);
-    });
-    
-    console.log('\n📈 API TOTALS:');
-    console.log(`  Total Invested: $${totalInvestedFromAPI.toLocaleString()}`);
-    console.log(`  Total Current: $${totalCurrentFromAPI.toLocaleString()}`);
-    console.log(`  Total Return: $${totalReturnFromAPI.toLocaleString()}`);
-    console.log(`  Portfolio Return %: ${((totalReturnFromAPI / totalInvestedFromAPI) * 100).toFixed(2)}%`);
-    
-    // 3. Manual calculation verification
-    const productsResponse = await fetch('http://localhost:5000/api/investment-products');
-    const productsData = await productsResponse.json();
-    
-    const productIRRMapping = {
-      1: { midpointIRR: 0.104, termYears: 4.25 }, // Real Estate Equity Fund
-      2: { midpointIRR: 0.11, termYears: 0.85 },  // Real Estate Credit Fund
-      3: { midpointIRR: 0.09, termYears: 0.78 },  // Real Estate First Mortgage Fund
-      4: { midpointIRR: 0.11, termYears: 2.5 },   // Cash Flow-Based Corporate Credit Fund
-      5: { midpointIRR: 0.135, termYears: 2.875 }, // Security-Backed Corporate Credit Fund
-      6: { midpointIRR: 0.18, termYears: 6 },     // VC / Growth Equity Fund
-    };
+console.log('=== CORPORATE CREDIT FUND - CORRECTED CALCULATION ===');
 
-    let manualTotalInvested = 0;
-    let manualTotalCurrent = 0;
-    let manualTotalReturn = 0;
-    const currentDate = new Date();
+const actualData = {
+  invested: 750000,
+  investmentDate: new Date('2024-08-02'), // Aug 2, 2024  
+  irr: 0.11,
+  termYears: 2.5,
+  currentDate: new Date('2025-08-02') // Current date
+};
 
-    investmentsData.forEach(investment => {
-      const productData = productIRRMapping[investment.productId];
-      if (productData) {
-        const investedAmount = parseFloat(investment.investedAmount);
-        const investmentDate = new Date(investment.investmentDate);
-        
-        // Manual calculation with term capping
-        const timeElapsedMs = currentDate.getTime() - investmentDate.getTime();
-        const timeElapsedYears = timeElapsedMs / (1000 * 60 * 60 * 24 * 365.25);
-        const effectiveTime = Math.min(timeElapsedYears, productData.termYears);
-        const growthFactor = Math.pow(1 + productData.midpointIRR, effectiveTime);
-        const currentValue = investedAmount * growthFactor;
-        const returnAmount = currentValue - investedAmount;
-        
-        manualTotalInvested += investedAmount;
-        manualTotalCurrent += currentValue;
-        manualTotalReturn += returnAmount;
-      }
-    });
+console.log(`Investment Amount: $${actualData.invested.toLocaleString()}`);
+console.log(`Investment Date: ${actualData.investmentDate.toDateString()}`);
+console.log(`Current Date: ${actualData.currentDate.toDateString()}`);
+console.log(`IRR: ${actualData.irr * 100}%`);
+console.log(`Term: ${actualData.termYears} years`);
 
-    console.log('\n🧮 MANUAL CALCULATION (Term-Capped):');
-    console.log(`  Total Invested: $${manualTotalInvested.toLocaleString()}`);
-    console.log(`  Total Current: $${manualTotalCurrent.toLocaleString()}`);
-    console.log(`  Total Return: $${manualTotalReturn.toLocaleString()}`);
-    console.log(`  Portfolio Return %: ${((manualTotalReturn / manualTotalInvested) * 100).toFixed(2)}%`);
-    
-    // 4. Comparison
-    const apiCurrent = parseFloat(performanceData.currentValue);
-    const apiReturn = parseFloat(performanceData.totalReturn);
-    const apiPercent = parseFloat(performanceData.totalReturnPercent);
-    
-    const currentDiff = Math.abs(apiCurrent - manualTotalCurrent);
-    const returnDiff = Math.abs(apiReturn - manualTotalReturn);
-    
-    console.log('\n🎯 ACCURACY VERIFICATION:');
-    console.log('─'.repeat(40));
-    console.log(`Performance API Current Value: $${apiCurrent.toLocaleString()}`);
-    console.log(`Manual Calculation Current Value: $${manualTotalCurrent.toLocaleString()}`);
-    console.log(`Difference: $${currentDiff.toFixed(2)} ${currentDiff < 1 ? '✅ EXCELLENT' : currentDiff < 10 ? '✅ GOOD' : '❌ NEEDS FIX'}`);
-    
-    console.log(`\nPerformance API Return: $${apiReturn.toLocaleString()}`);
-    console.log(`Manual Calculation Return: $${manualTotalReturn.toLocaleString()}`);
-    console.log(`Difference: $${returnDiff.toFixed(2)} ${returnDiff < 1 ? '✅ EXCELLENT' : returnDiff < 10 ? '✅ GOOD' : '❌ NEEDS FIX'}`);
-    
-    console.log('\n✅ CALCULATION METHODOLOGY VERIFICATION:');
-    console.log('Current Value = Sum of (Invested Amount × Growth Factor)');
-    console.log('Growth Factor = (1 + IRR)^(Effective Time)');
-    console.log('Effective Time = Min(Time Elapsed, Product Term)');
-    console.log('CRITICAL: Time is now capped at product term (no growth beyond maturity)');
-    
-    if (currentDiff < 1 && returnDiff < 1) {
-      console.log('\n🎉 SUCCESS: API and manual calculations now match perfectly!');
-      console.log('✅ Term expiry capping implemented correctly');
-      console.log('✅ Real-time automated calculation working');
-      console.log('✅ Consistent with Investment Breakdown by Product section');
-    } else {
-      console.log('\n❌ Still some discrepancy - may need additional adjustment');
-    }
-    
-  } catch (error) {
-    console.error('Error during verification:', error.message);
-  }
-}
+// Calculate exact time elapsed
+const timeInYears = Math.max(0, (actualData.currentDate.getTime() - actualData.investmentDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+console.log(`\nTime Elapsed: ${timeInYears.toFixed(4)} years (exactly 1 year)`);
 
-// Run the verification
-verifyFixedCalculation();
+// Apply term capping
+const effectiveTime = Math.min(timeInYears, actualData.termYears);
+console.log(`Effective Time (capped): ${effectiveTime.toFixed(4)} years`);
+
+// Calculate using automated compound interest formula  
+const growthFactor = Math.pow(1 + actualData.irr, effectiveTime);
+console.log(`Growth Factor: (1 + ${actualData.irr})^${effectiveTime.toFixed(4)} = ${growthFactor.toFixed(6)}`);
+
+const currentValue = Math.floor(actualData.invested * growthFactor);
+const returnAmount = Math.floor(currentValue - actualData.invested);
+
+console.log(`\n=== CURRENT VALUE CALCULATION ===`);
+console.log(`Current Value: $${actualData.invested.toLocaleString()} × ${growthFactor.toFixed(6)} = $${currentValue.toLocaleString()}`);
+console.log(`Return Amount: $${currentValue.toLocaleString()} - $${actualData.invested.toLocaleString()} = $${returnAmount.toLocaleString()}`);
+console.log(`Return Percentage: ${((returnAmount / actualData.invested) * 100).toFixed(2)}%`);
+
+// Calculate term expiry projection
+const termExpiryGrowthFactor = Math.pow(1 + actualData.irr, actualData.termYears);
+const termExpiryValue = Math.floor(actualData.invested * termExpiryGrowthFactor);
+const termExpiryReturn = Math.floor(termExpiryValue - actualData.invested);
+
+console.log(`\n=== TERM EXPIRY PROJECTION ===`);
+console.log(`Term Expiry Growth Factor: (1.11)^${actualData.termYears} = ${termExpiryGrowthFactor.toFixed(6)}`);
+console.log(`Term Expiry Value: $${actualData.invested.toLocaleString()} × ${termExpiryGrowthFactor.toFixed(6)} = $${termExpiryValue.toLocaleString()}`);
+console.log(`Term Expiry Return: $${termExpiryValue.toLocaleString()} - $${actualData.invested.toLocaleString()} = $${termExpiryReturn.toLocaleString()}`);
+console.log(`Term Expiry Percentage: ${((termExpiryReturn / actualData.invested) * 100).toFixed(0)}%`);
+
+console.log(`\n=== VERIFICATION WITH USER'S DISPLAYED VALUES ===`);
+console.log(`User Shows - Current Return: $82,677`);
+console.log(`Calculated - Current Return: $${returnAmount.toLocaleString()}`);
+console.log(`Match: ${returnAmount === 82677 ? '✓ CORRECT' : '✗ MISMATCH - off by $' + Math.abs(returnAmount - 82677)}`);
+
+console.log(`\nUser Shows - Term Expiry: $973,573 (+$223,573)`);
+console.log(`Calculated - Term Expiry: $${termExpiryValue.toLocaleString()} (+$${termExpiryReturn.toLocaleString()})`);
+console.log(`Match: ${termExpiryValue === 973573 && termExpiryReturn === 223573 ? '✓ CORRECT' : '✗ MISMATCH'}`);
+
+// Also calculate for Q2'25 table verification
+const q2_25_date = new Date('2025-06-25');
+const q2_25_timeInYears = Math.max(0, (q2_25_date.getTime() - actualData.investmentDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+const q2_25_effectiveTime = Math.min(q2_25_timeInYears, actualData.termYears);
+const q2_25_growthFactor = Math.pow(1 + actualData.irr, q2_25_effectiveTime);
+const q2_25_currentValue = Math.floor(actualData.invested * q2_25_growthFactor);
+const q2_25_return = Math.floor(q2_25_currentValue - actualData.invested);
+
+console.log(`\n=== Q2'25 TABLE VALUE (for verification) ===`);
+console.log(`Q2'25 Date: ${q2_25_date.toDateString()}`);
+console.log(`Q2'25 Time Elapsed: ${q2_25_timeInYears.toFixed(4)} years`);
+console.log(`Q2'25 Return: $${q2_25_return.toLocaleString()}`);
+console.log(`This should match the table value for Corp Credit in Q2'25`);
