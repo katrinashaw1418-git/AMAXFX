@@ -118,16 +118,17 @@ export function InvestmentPerformanceChart() {
   const currentTotalInvested = userInvestments ? userInvestments.reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0) : 1850000;
   const currentReturnPercent = currentTotalInvested > 0 ? (currentTotalReturn / currentTotalInvested) * 100 : 0;
 
-  // Calculate term expiry projections using the same methodology as Investment Breakdown by Product
+  // Calculate term expiry projections using the same Filter Products methodology as APIs
   const calculateTermExpiryProjections = () => {
     if (!userInvestments || !products) return { termExpiryValue: 0, termExpiryReturn: 0, termExpiryPercent: 0 };
 
-    const productIRRMapping: Record<number, { midpointIRR: number; termYears: number }> = {
-      1: { midpointIRR: 0.085, termYears: 2.0 }, // Real Estate Equity Fund
-      2: { midpointIRR: 0.60, termYears: 1.0 },  // Bitcoin Tracker Fund  
-      3: { midpointIRR: 0.11, termYears: 1.5 },  // Corporate Credit Fund
-      4: { midpointIRR: 0.18, termYears: 4.0 },  // Web3 Innovation Fund
-      5: { midpointIRR: 0.0575, termYears: 2.0 }, // Ethereum Staking Fund
+    // Use EXACT same IRR mapping and term limits as Filter Products real-time system
+    const productIRRMapping: Record<number, { realTimeIRR: number; termYears: number }> = {
+      1: { realTimeIRR: 0.085, termYears: 2.0 },   // Real Estate Equity Fund - 8.5% IRR
+      2: { realTimeIRR: 0.60, termYears: 1.0 },    // Bitcoin Tracker Fund - 60% IRR (market-based)  
+      3: { realTimeIRR: 0.11, termYears: 1.5 },    // Corporate Credit Fund - 11% IRR
+      4: { realTimeIRR: 0.18, termYears: 4.0 },    // Web3 Innovation Fund - 18% IRR
+      5: { realTimeIRR: 0.0575, termYears: 2.0 },  // Ethereum Staking Fund - 5.75% IRR
     };
 
     let totalInvested = 0;
@@ -137,15 +138,18 @@ export function InvestmentPerformanceChart() {
       const productData = productIRRMapping[investment.productId];
       if (productData) {
         const investedAmount = parseFloat(investment.investedAmount);
+        const investmentDate = new Date(investment.investmentDate);
         totalInvested += investedAmount;
         
-        const termExpiryGrowthFactor = Math.pow(1 + productData.midpointIRR, productData.termYears);
-        const termExpiryValue = investedAmount * termExpiryGrowthFactor;
+        // Calculate term expiry using Filter Products compound interest formula
+        // Current Value = Principal × (1 + IRR)^TermLimit (exact term expiry calculation)
+        const termExpiryGrowthFactor = Math.pow(1 + productData.realTimeIRR, productData.termYears);
+        const termExpiryValue = Math.round((investedAmount * termExpiryGrowthFactor) * 100) / 100;
         totalTermExpiryValue += termExpiryValue;
       }
     });
 
-    const termExpiryReturn = totalTermExpiryValue - totalInvested;
+    const termExpiryReturn = Math.round((totalTermExpiryValue - totalInvested) * 100) / 100;
     const termExpiryPercent = totalInvested > 0 ? (termExpiryReturn / totalInvested) * 100 : 0;
 
     return { termExpiryValue: totalTermExpiryValue, termExpiryReturn, termExpiryPercent };
