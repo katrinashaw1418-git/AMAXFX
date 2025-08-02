@@ -1,129 +1,76 @@
-// TERM EXPIRY PROJECTION VERIFICATION - BASED ON ACTUAL PRODUCT TERMS
-console.log('=== TERM EXPIRY PROJECTION VERIFICATION ===\n');
+// Term Expiry Value Discrepancy Analysis
+// User shows: $2,409,595 (+$559,595) which doesn't match table calculations
 
-// Actual product terms from database
-const productTerms = {
-  1: { name: 'Real Estate Equity Fund', term: '2–6.5 years', midpointTerm: 4.25, irr: 0.104 },
-  2: { name: 'Real Estate Credit Fund', term: '~10.2 months (rolling)', midpointTerm: 0.85, irr: 0.11 },
-  3: { name: 'Real Estate First Mortgage Fund', term: '~9.4 months', midpointTerm: 0.78, irr: 0.09 },
-  4: { name: 'Cash Flow-Based Corporate Credit Fund', term: '2–3 years', midpointTerm: 2.5, irr: 0.11 },
-  5: { name: 'Security-Backed Corporate Credit Fund', term: '30–39 months', midpointTerm: 2.875, irr: 0.135 }
-};
+console.log('=== TERM EXPIRY VALUE DISCREPANCY ANALYSIS ===');
 
-// Current investments
-const userInvestments = [
-  { id: 26, productId: 1, amount: 500000.00 },
-  { id: 27, productId: 3, amount: 300000.00 },
-  { id: 28, productId: 4, amount: 750000.00 },
-  { id: 29, productId: 2, amount: 150000.00 },
-  { id: 30, productId: 5, amount: 75000.00 },
-  { id: 36, productId: 2, amount: 50000.00 },
-  { id: 37, productId: 2, amount: 25000.00 }
+// All investment data from database (should match what frontend calculates)
+const portfolioInvestments = [
+  { product: 'RE Equity', invested: 600000, irr: 0.104, termYears: 4.25 },
+  { product: 'RE Credit', invested: 175000, irr: 0.11, termYears: 0.85 },
+  { product: 'RE Mortgage', invested: 325000, irr: 0.09, termYears: 0.78 },
+  { product: 'Corp Credit', invested: 750000, irr: 0.11, termYears: 2.5 },
+  { product: 'Security Credit', invested: 125000, irr: 0.135, termYears: 2.875 },
+  { product: 'VC Fund', invested: 200000, irr: 0.18, termYears: 6.0 }
 ];
 
-console.log('📊 TERM EXPIRY CALCULATIONS BY PRODUCT:');
-console.log('======================================');
+console.log('INDIVIDUAL PRODUCT TERM EXPIRY CALCULATIONS:');
 
-// Group investments by product
-const productGroups = {};
-userInvestments.forEach(investment => {
-  const productId = investment.productId;
-  if (!productGroups[productId]) {
-    productGroups[productId] = {
-      product: productTerms[productId],
-      investments: [],
-      totalInvested: 0
-    };
-  }
-  productGroups[productId].investments.push(investment);
-  productGroups[productId].totalInvested += investment.amount;
-});
-
-Object.entries(productGroups).forEach(([productId, group]) => {
-  console.log(`\n${group.product.name}`);
-  console.log('═'.repeat(50));
-  console.log(`Product Term: ${group.product.term}`);
-  console.log(`Midpoint Term: ${group.product.midpointTerm} years`);
-  console.log(`Target IRR: ${(group.product.irr * 100).toFixed(1)}%`);
-  console.log(`Total Invested: $${group.totalInvested.toLocaleString()}`);
-  console.log('');
-  
-  // Calculate term expiry projection
-  const termExpiryGrowthFactor = Math.pow(1 + group.product.irr, group.product.midpointTerm);
-  const termExpiryValue = group.totalInvested * termExpiryGrowthFactor;
-  const termExpiryReturn = termExpiryValue - group.totalInvested;
-  const termExpiryPercent = (termExpiryReturn / group.totalInvested) * 100;
-  
-  console.log('🧮 TERM EXPIRY CALCULATION:');
-  console.log('──────────────────────────────────────────────────────');
-  console.log(`Formula: Future Value = Principal × (1 + IRR)^Term`);
-  console.log(`Formula: Future Value = $${group.totalInvested.toLocaleString()} × (1 + ${group.product.irr})^${group.product.midpointTerm}`);
-  console.log(`Growth Factor: (1 + ${group.product.irr})^${group.product.midpointTerm} = ${termExpiryGrowthFactor.toFixed(8)}`);
-  console.log(`Value at Term Expiry: $${termExpiryValue.toFixed(2)}`);
-  console.log(`Expected Return: $${termExpiryReturn.toFixed(2)}`);
-  console.log(`Return Percentage: ${termExpiryPercent.toFixed(2)}%`);
-  console.log('');
-  
-  // Calculate 7-year projection for comparison
-  const sevenYearGrowthFactor = Math.pow(1 + group.product.irr, 7);
-  const sevenYearValue = group.totalInvested * sevenYearGrowthFactor;
-  const sevenYearReturn = sevenYearValue - group.totalInvested;
-  const sevenYearPercent = (sevenYearReturn / group.totalInvested) * 100;
-  
-  console.log('🔮 7-YEAR PROJECTION (FOR COMPARISON):');
-  console.log('──────────────────────────────────────────────────────');
-  console.log(`Growth Factor: (1 + ${group.product.irr})^7 = ${sevenYearGrowthFactor.toFixed(8)}`);
-  console.log(`7-Year Value: $${sevenYearValue.toFixed(2)}`);
-  console.log(`7-Year Return: $${sevenYearReturn.toFixed(2)} (${sevenYearPercent.toFixed(1)}%)`);
-  console.log('');
-  
-  console.log('📈 COMPARISON:');
-  console.log('──────────────────────────────────────────────────────');
-  if (group.product.midpointTerm < 7) {
-    console.log(`✅ Term expiry (${group.product.midpointTerm}y) is SHORTER than 7 years`);
-    console.log(`   Lower return at term expiry: ${termExpiryPercent.toFixed(1)}% vs ${sevenYearPercent.toFixed(1)}%`);
-  } else {
-    console.log(`⚠️  Term expiry (${group.product.midpointTerm}y) is LONGER than 7 years`);
-    console.log(`   Higher return at term expiry: ${termExpiryPercent.toFixed(1)}% vs ${sevenYearPercent.toFixed(1)}%`);
-  }
-});
-
-console.log('\n\n💰 PORTFOLIO TERM EXPIRY SUMMARY:');
-console.log('═'.repeat(40));
-
-let totalInvestedPortfolio = 0;
+let totalInvested = 0;
 let totalTermExpiryValue = 0;
 
-Object.values(productGroups).forEach(group => {
-  const termExpiryGrowthFactor = Math.pow(1 + group.product.irr, group.product.midpointTerm);
-  const termExpiryValue = group.totalInvested * termExpiryGrowthFactor;
+portfolioInvestments.forEach(investment => {
+  const termExpiryGrowthFactor = Math.pow(1 + investment.irr, investment.termYears);
+  const termExpiryValue = Math.floor(investment.invested * termExpiryGrowthFactor);
+  const termExpiryReturn = Math.floor(termExpiryValue - investment.invested);
   
-  totalInvestedPortfolio += group.totalInvested;
-  totalTermExpiryValue += termExpiryValue;
-  
-  console.log(`${group.product.name}:`);
-  console.log(`  Term: ${group.product.term} (${group.product.midpointTerm}y)`);
-  console.log(`  Invested: $${group.totalInvested.toLocaleString()}`);
-  console.log(`  Value at Expiry: $${termExpiryValue.toFixed(2)}`);
-  console.log(`  Return: $${(termExpiryValue - group.totalInvested).toFixed(2)} (${((termExpiryValue - group.totalInvested) / group.totalInvested * 100).toFixed(1)}%)`);
+  console.log(`${investment.product}:`);
+  console.log(`  Invested: $${investment.invested.toLocaleString()}`);
+  console.log(`  Growth Factor: (1 + ${investment.irr})^${investment.termYears} = ${termExpiryGrowthFactor.toFixed(6)}`);
+  console.log(`  Term Expiry Value: $${termExpiryValue.toLocaleString()}`);
+  console.log(`  Term Expiry Return: +$${termExpiryReturn.toLocaleString()}`);
   console.log('');
+  
+  totalInvested += investment.invested;
+  totalTermExpiryValue += termExpiryValue;
 });
 
-const totalTermExpiryReturn = totalTermExpiryValue - totalInvestedPortfolio;
-const portfolioTermExpiryPercent = (totalTermExpiryReturn / totalInvestedPortfolio) * 100;
+const totalTermExpiryReturn = totalTermExpiryValue - totalInvested;
+const totalReturnPercent = (totalTermExpiryReturn / totalInvested) * 100;
 
-console.log('🏆 PORTFOLIO TOTALS:');
-console.log('══════════════════════════════════════════════════════');
-console.log(`Total Portfolio Invested: $${totalInvestedPortfolio.toLocaleString()}`);
-console.log(`Total Value at Various Term Expiries: $${totalTermExpiryValue.toFixed(2)}`);
-console.log(`Total Expected Return: $${totalTermExpiryReturn.toFixed(2)}`);
-console.log(`Portfolio-Wide Return: ${portfolioTermExpiryPercent.toFixed(2)}%`);
+console.log('=== TOTAL PORTFOLIO TERM EXPIRY ===');
+console.log(`Total Invested: $${totalInvested.toLocaleString()}`);
+console.log(`Total Term Expiry Value: $${totalTermExpiryValue.toLocaleString()}`);
+console.log(`Total Term Expiry Return: +$${totalTermExpiryReturn.toLocaleString()}`);
+console.log(`Total Return Percentage: ${totalReturnPercent.toFixed(1)}%`);
 
-console.log('\n\n✅ METHODOLOGY NOTES:');
-console.log('═'.repeat(30));
-console.log('✓ Uses actual product term descriptions from database');
-console.log('✓ Calculates midpoint of term ranges (e.g., 2-3 years = 2.5 years)');
-console.log('✓ Rolling terms use monthly averages (e.g., 10.2 months = 0.85 years)');
-console.log('✓ Compound interest formula: FV = PV × (1 + r)^t');
-console.log('✓ Each product expires at different times based on actual terms');
-console.log('✓ More realistic than generic 7-year projections for all products');
+console.log('\n=== COMPARISON WITH USER\'S DISPLAYED VALUES ===');
+console.log(`User Shows: $2,409,595 (+$559,595) at 30.2%`);
+console.log(`Calculated: $${totalTermExpiryValue.toLocaleString()} (+$${totalTermExpiryReturn.toLocaleString()}) at ${totalReturnPercent.toFixed(1)}%`);
+
+const discrepancy = Math.abs(2409595 - totalTermExpiryValue);
+console.log(`Discrepancy: $${discrepancy.toLocaleString()}`);
+
+if (discrepancy > 0) {
+  console.log('\n=== POSSIBLE CAUSES OF DISCREPANCY ===');
+  console.log('1. Frontend may be using different investment amounts than database');
+  console.log('2. Frontend may be using different IRR values');
+  console.log('3. Frontend may be using different term lengths');
+  console.log('4. Frontend may have different rounding/calculation logic');
+  console.log('5. Database may have additional investments not included in calculation');
+}
+
+// Check if it matches the $1,850,000 investment total we expect
+console.log('\n=== INVESTMENT TOTAL VERIFICATION ===');
+console.log(`Expected Total Investment: $1,850,000`);
+console.log(`Calculated Total Investment: $${totalInvested.toLocaleString()}`);
+console.log(`Match: ${totalInvested === 1850000 ? '✓' : '✗'}`);
+
+// Calculate what the term expiry should be for $1,850,000
+if (totalInvested === 1850000) {
+  console.log('\n=== CORRECT TERM EXPIRY FOR $1,850,000 PORTFOLIO ===');
+  console.log(`This matches the Performance by Period and Return by Period tables`);
+} else {
+  console.log('\n=== INVESTIGATING MISMATCH ===');
+  console.log(`The investment total doesn't match expected $1,850,000`);
+  console.log(`Need to check what the frontend Investment Breakdown is actually calculating`);
+}

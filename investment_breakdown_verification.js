@@ -1,36 +1,90 @@
-// Investment Breakdown Calculation Verification for Corp Credit
-// This should match the exact calculation used in the Investment Breakdown component
+// Investment Breakdown Frontend vs Database Comparison
+// Investigating why Term Expiry shows $2,409,595 instead of calculated $3,145,836
 
-const corpCreditData = {
-  totalInvested: 450000, // Corp Credit investment amount
-  midpointIRR: 0.11,     // 11% IRR
-  termYears: 2.5         // 2.5 year term
+console.log('=== INVESTMENT BREAKDOWN DISCREPANCY INVESTIGATION ===');
+
+// Database investment amounts (actual data)
+const databaseInvestments = {
+  'Real Estate Equity Fund': 600000,    // RE Equity 
+  'Real Estate Credit Fund': 175000,    // RE Credit
+  'Real Estate Mortgage Fund': 325000,  // RE Mortgage  
+  'Corporate Credit Fund': 750000,      // Corp Credit (updated from 450k)
+  'Security Credit Fund': 125000,       // Security Credit
+  'Venture Capital Fund': 200000        // VC Fund
 };
 
-console.log('=== Investment Breakdown Corp Credit Calculation ===');
-console.log(`Total Invested: $${corpCreditData.totalInvested.toLocaleString()}`);
-console.log(`Midpoint IRR: ${corpCreditData.midpointIRR * 100}%`);
-console.log(`Term: ${corpCreditData.termYears} years`);
+// Frontend expected amounts (what tables show)
+const frontendExpected = {
+  'Real Estate Equity Fund': 600000,    // Same
+  'Real Estate Credit Fund': 175000,    // Same
+  'Real Estate Mortgage Fund': 325000,  // Same
+  'Corporate Credit Fund': 450000,      // Different! Frontend expects 450k but DB has 750k
+  'Security Credit Fund': 125000,       // Same
+  'Venture Capital Fund': 200000        // Same
+};
 
-// Calculate term expiry projection (what Investment Breakdown shows)
-const termExpiryGrowthFactor = Math.pow(1 + corpCreditData.midpointIRR, corpCreditData.termYears);
-console.log(`Growth Factor: (1 + ${corpCreditData.midpointIRR})^${corpCreditData.termYears} = ${termExpiryGrowthFactor.toFixed(6)}`);
+console.log('DATABASE vs FRONTEND INVESTMENT AMOUNTS:');
+Object.keys(databaseInvestments).forEach(product => {
+  const dbAmount = databaseInvestments[product];
+  const frontendAmount = frontendExpected[product];
+  const match = dbAmount === frontendAmount;
+  
+  console.log(`${product}:`);
+  console.log(`  Database: $${dbAmount.toLocaleString()}`);
+  console.log(`  Frontend Expected: $${frontendAmount.toLocaleString()}`);
+  console.log(`  Match: ${match ? '✓' : '✗ MISMATCH'}`);
+  if (!match) {
+    console.log(`  Difference: $${Math.abs(dbAmount - frontendAmount).toLocaleString()}`);
+  }
+  console.log('');
+});
 
-const termExpiryValue = Math.floor(corpCreditData.totalInvested * termExpiryGrowthFactor);
-const termExpiryReturn = Math.floor(termExpiryValue - corpCreditData.totalInvested);
-const termExpiryPercent = ((termExpiryReturn / corpCreditData.totalInvested) * 100);
+const dbTotal = Object.values(databaseInvestments).reduce((sum, amount) => sum + amount, 0);
+const frontendTotal = Object.values(frontendExpected).reduce((sum, amount) => sum + amount, 0);
 
-console.log(`Term Expiry Value: $${corpCreditData.totalInvested.toLocaleString()} × ${termExpiryGrowthFactor.toFixed(6)} = $${termExpiryValue.toLocaleString()}`);
-console.log(`Term Expiry Return: $${termExpiryValue.toLocaleString()} - $${corpCreditData.totalInvested.toLocaleString()} = $${termExpiryReturn.toLocaleString()}`);
-console.log(`Term Expiry Percent: ${termExpiryPercent.toFixed(1)}%`);
+console.log('=== TOTALS ===');
+console.log(`Database Total: $${dbTotal.toLocaleString()}`);
+console.log(`Frontend Expected Total: $${frontendTotal.toLocaleString()}`);
+console.log(`Difference: $${Math.abs(dbTotal - frontendTotal).toLocaleString()}`);
 
-console.log('\n=== Expected Investment Breakdown Display ===');
-console.log(`Term Expiry Projection: $${termExpiryValue.toLocaleString()} (+$${termExpiryReturn.toLocaleString()})`);
-console.log(`This should match: $584,144 (+$134,144) instead of $973,573.424 (+$223,573.424)`);
+// Calculate term expiry with frontend expected amounts
+console.log('\n=== TERM EXPIRY WITH FRONTEND EXPECTED AMOUNTS ===');
 
-// Also check current value calculation (should come from server API)
-console.log('\n=== Current Value (from server API) ===');
-console.log('The current return should come from the server API calculateInvestmentPerformance function');
-console.log('For August 2025 (1.0486 years): $52,039 current return');
-console.log('For Q2\'25 (0.9446 years): $46,618 table return');
-console.log('Current discrepancy: showing $82,677 instead of correct server value');
+const irrMappings = {
+  'Real Estate Equity Fund': { irr: 0.104, termYears: 4.25 },
+  'Real Estate Credit Fund': { irr: 0.11, termYears: 0.85 },
+  'Real Estate Mortgage Fund': { irr: 0.09, termYears: 0.78 },
+  'Corporate Credit Fund': { irr: 0.11, termYears: 2.5 },
+  'Security Credit Fund': { irr: 0.135, termYears: 2.875 },
+  'Venture Capital Fund': { irr: 0.18, termYears: 6.0 }
+};
+
+let frontendTermExpiryTotal = 0;
+
+Object.keys(frontendExpected).forEach(product => {
+  const invested = frontendExpected[product];
+  const { irr, termYears } = irrMappings[product];
+  const termExpiryGrowthFactor = Math.pow(1 + irr, termYears);
+  const termExpiryValue = Math.floor(invested * termExpiryGrowthFactor);
+  
+  console.log(`${product}: $${invested.toLocaleString()} → $${termExpiryValue.toLocaleString()}`);
+  frontendTermExpiryTotal += termExpiryValue;
+});
+
+const frontendTermExpiryReturn = frontendTermExpiryTotal - frontendTotal;
+console.log(`\nFrontend Expected Term Expiry: $${frontendTermExpiryTotal.toLocaleString()} (+$${frontendTermExpiryReturn.toLocaleString()})`);
+console.log(`User Shows: $2,409,595 (+$559,595)`);
+console.log(`Match: ${frontendTermExpiryTotal === 2409595 ? '✓ PERFECT MATCH' : '✗ Still different'}`);
+
+console.log('\n=== ROOT CAUSE ===');
+console.log('The Investment Breakdown component is using the userInvestments API data,');
+console.log('which shows $750,000 for Corporate Credit Fund instead of expected $450,000.');
+console.log('This creates inconsistency between:');
+console.log('1. Investment Breakdown (uses actual DB amounts)');
+console.log('2. Performance by Period tables (uses expected amounts)');
+console.log('3. Return by Period tables (uses expected amounts)');
+
+console.log('\n=== SOLUTION NEEDED ===');
+console.log('Either:');
+console.log('A) Update all tables to use actual $750,000 Corporate Credit amount, OR');
+console.log('B) Update database to have $450,000 Corporate Credit amount to match tables');
