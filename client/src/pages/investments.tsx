@@ -86,14 +86,18 @@ export default function Investments() {
         title: "Investment Created",
         description: `Successfully invested $${parseFloat(response.investment.investedAmount).toLocaleString()}. New wallet balance: $${parseFloat(response.newBalance).toLocaleString()}`,
       });
-      // Invalidate multiple queries to update UI
+      // Invalidate ALL queries to ensure complete UI refresh
       queryClient.invalidateQueries({ queryKey: ["/api/user-investments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio/history"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio/allocation"] });
       queryClient.invalidateQueries({ queryKey: ["/api/investment-breakdown"] });
       queryClient.invalidateQueries({ queryKey: ["/api/investment-performance"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/investment-products"] });
+      // Force complete cache refresh to ensure all dashboard sections update
+      queryClient.refetchQueries();
       setInvestModalOpen(false);
       setInvestmentAmount("");
       setSelectedProduct(null);

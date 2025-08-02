@@ -57,7 +57,7 @@ export const api = {
 
 
 
-  createInvestment: (data: { productId: number; amount: number }) =>
+  createInvestment: (data: { productId: number; amount: number; sourceCurrency?: string; sourceAmount?: number }) =>
     apiRequest("POST", "/api/investments", data).then(res => res.json()),
 
   // Investment Performance
