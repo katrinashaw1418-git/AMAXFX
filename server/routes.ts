@@ -46,27 +46,27 @@ function calculateInvestmentPerformance(
   let targetIRR = 0.08; // Default 8% annual return
   let termYears = 5; // Default 5 year term
   
-  // Use exact midpoint IRR values and term years from current product descriptions
+  // Use exact IRR values and terms from actual database product descriptions
   switch (product.id) {
-    case 1: // Real Estate Equity Fund - Target IRR: 9.8–11.0%
-      targetIRR = 0.104; // Midpoint: (9.8 + 11.0) / 2 = 10.4%
-      termYears = 4.25; // 4.25 year term
+    case 1: // Real Estate Equity Fund - target_net_irr: 8.5%, term: 24 months
+      targetIRR = 0.085; // Exactly 8.5% from database
+      termYears = 2.0; // 24 months = 2.0 years
       break;
-    case 2: // Real Estate Credit Fund - Target IRR: ~11%
-      targetIRR = 0.11; // Exactly 11%
-      termYears = 0.85; // 0.85 year term (10.2 months)
+    case 2: // Bitcoin Tracker Fund - target_net_irr: 15.0%, term: 12 months
+      targetIRR = 0.15; // Exactly 15.0% from database
+      termYears = 1.0; // 12 months = 1.0 year
       break;
-    case 3: // Real Estate First Mortgage Fund - Target IRR: ~9%
-      targetIRR = 0.09; // Exactly 9%
-      termYears = 0.78; // 0.78 year term (9.4 months)
+    case 3: // Corporate Credit Fund - target_net_irr: 6.2%, term: 18 months
+      targetIRR = 0.062; // Exactly 6.2% from database
+      termYears = 1.5; // 18 months = 1.5 years
       break;
-    case 4: // Cash Flow-Based Corporate Credit Fund - Target IRR: 10–12%
-      targetIRR = 0.11; // Midpoint: (10 + 12) / 2 = 11%
-      termYears = 2.5; // 2.5 year term
+    case 4: // Web3 Innovation Fund - target_net_irr: 25-35%, term: 3-5 years
+      targetIRR = 0.30; // Midpoint: (25 + 35) / 2 = 30%
+      termYears = 4.0; // Midpoint: (3 + 5) / 2 = 4.0 years
       break;
-    case 5: // Security-Backed Corporate Credit Fund - Target IRR: 12–15%
-      targetIRR = 0.135; // Midpoint: (12 + 15) / 2 = 13.5%
-      termYears = 2.875; // 2.875 year term (2 years 10.5 months)
+    case 5: // Ethereum Staking Fund - target_net_irr: 6-8%, term: Open-ended (using 2 years)
+      targetIRR = 0.07; // Midpoint: (6 + 8) / 2 = 7%
+      termYears = 2.0; // 2 years for open-ended product
       break;
     case 6: // VC / Growth Equity Fund - Target IRR: 16–20%
       targetIRR = 0.18; // Midpoint: (16 + 20) / 2 = 18%
@@ -76,21 +76,21 @@ function calculateInvestmentPerformance(
       targetIRR = 0.14; // Midpoint: (12 + 16) / 2 = 14%
       termYears = 4; // 4 year term
       break;
-    case 8: // Bitcoin Tracker Fund - Target IRR: Market-based (using conservative 15% midpoint)
-      targetIRR = 0.15; // 15% conservative midpoint (not full 60%+ market rate)
-      termYears = 3; // 3 year term
+    case 8: // Real Estate Credit Fund - Target IRR: ~11%
+      targetIRR = 0.11; // Exactly 11%
+      termYears = 0.85; // 0.85 year term (10.2 months)
       break;
-    case 9: // Web3 Innovation Fund - Target IRR: 30–50%+
-      targetIRR = 0.40; // Midpoint: (30 + 50) / 2 = 40%
-      termYears = 5; // 5 year term
+    case 9: // Real Estate First Mortgage Fund - Target IRR: ~9%
+      targetIRR = 0.09; // Exactly 9%
+      termYears = 0.78; // 0.78 year term (9.4 months)
       break;
     case 10: // Diversified Crypto Fund - Target IRR: 25–35%
       targetIRR = 0.30; // Midpoint: (25 + 35) / 2 = 30%
       termYears = 4; // 4 year term
       break;
-    case 11: // Ethereum Staking Fund - Target IRR: 4.5–7% APY
-      targetIRR = 0.0575; // Midpoint: (4.5 + 7) / 2 = 5.75%
-      termYears = 2; // 2 year term
+    case 11: // Security-Backed Corporate Credit Fund - Target IRR: 12–15%
+      targetIRR = 0.135; // Midpoint: (12 + 15) / 2 = 13.5%
+      termYears = 2.875; // 2.875 year term (2 years 10.5 months)
       break;
     case 12: // High-Yield Savings Account - Target IRR: 4.5–5.5%
       targetIRR = 0.05; // Midpoint: (4.5 + 5.5) / 2 = 5%
