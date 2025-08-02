@@ -109,7 +109,7 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
     'USDC': '◎'
   };
 
-  const availableCurrencies = wallets?.map(wallet => ({
+  const availableCurrencies = wallets?.map((wallet: any) => ({
     currency: wallet.currency,
     balance: parseFloat(wallet.availableBalance || '0'),
     displayName: wallet.displayName || wallet.currency,
@@ -121,11 +121,11 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
     if (currency === 'USD') return amount;
     
     // Look for direct rate from currency to USD
-    let rate = fxRates?.find(r => r.baseCurrency === currency && r.targetCurrency === 'USD')?.rate;
+    let rate = fxRates?.find((r: any) => r.baseCurrency === currency && r.targetCurrency === 'USD')?.rate;
     
     // If not found, look for USD to currency rate and invert it
     if (!rate) {
-      const inverseRate = fxRates?.find(r => r.baseCurrency === 'USD' && r.targetCurrency === currency)?.rate;
+      const inverseRate = fxRates?.find((r: any) => r.baseCurrency === 'USD' && r.targetCurrency === currency)?.rate;
       if (inverseRate) {
         rate = 1 / parseFloat(inverseRate);
       }
@@ -156,7 +156,7 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
     return amount * rate;
   };
 
-  const selectedWallet = wallets?.find(w => w.currency === selectedCurrency);
+  const selectedWallet = wallets?.find((w: any) => w.currency === selectedCurrency);
   const availableBalance = selectedWallet?.availableBalance ? parseFloat(selectedWallet.availableBalance) : 0;
 
   // Group investments by product
@@ -533,7 +533,7 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {availableCurrencies.map((currency) => (
+                {availableCurrencies.map((currency: any) => (
                   <SelectItem key={currency.currency} value={currency.currency}>
                     <span className="font-medium">{currency.currency}</span>
                   </SelectItem>
