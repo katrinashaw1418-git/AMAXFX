@@ -1,127 +1,67 @@
-// FINAL VERIFICATION: EXACT MIDPOINT IRR CALCULATION WITH CURRENT DATABASE VALUES
-console.log('=== FINAL CALCULATION VERIFICATION WITH EXACT MIDPOINT IRR ===\n');
+// FINAL CALCULATION VERIFICATION AND FIX
+console.log('=== FINAL CALCULATION VERIFICATION AND FIX ===\n');
 
-// Current database values (correct mapping)
-const actualUserInvestments = [
-  { id: 37, productId: 2, amount: 25000.00, date: '2025-08-02T09:45:46.000Z' },   // Real Estate Credit Fund
-  { id: 26, productId: 1, amount: 500000.00, date: '2025-04-03T15:37:02.000Z' },  // Real Estate Equity Fund  
-  { id: 27, productId: 3, amount: 300000.00, date: '2025-05-03T15:37:02.000Z' },  // Real Estate First Mortgage Fund
-  { id: 29, productId: 2, amount: 150000.00, date: '2025-02-02T15:37:02.000Z' },  // Real Estate Credit Fund
-  { id: 28, productId: 4, amount: 750000.00, date: '2024-08-01T15:37:02.000Z' },  // Cash Flow-Based Corporate Credit Fund
-  { id: 30, productId: 5, amount: 75000.00, date: '2025-06-02T15:37:02.000Z' },   // Security-Backed Corporate Credit Fund
-  { id: 36, productId: 2, amount: 50000.00, date: '2025-08-01T15:31:58.000Z' }    // Real Estate Credit Fund
+console.log('CURRENT SITUATION:');
+console.log('• User Investments API showing ~$85,680 (8% IRR fallback for all)');
+console.log('• Expected Filter Products showing ~$197,259 (strategy-based IRR)');
+console.log('• Database has correct products with strategy descriptions');
+console.log('• API code needs to use exact product names for IRR mapping');
+console.log('');
+
+console.log('CORRECT DATABASE MAPPING (from SQL query):');
+const correctMapping = [
+  {id: 26, productId: 1, amount: 500000, name: 'Real Estate Equity Fund', expectedIRR: '8.5%', strategy: 'Core Plus Strategy'},
+  {id: 30, productId: 5, amount: 75000, name: 'Ethereum Staking Fund', expectedIRR: '5.75%', strategy: 'targeting 5.75% annual returns'},
+  {id: 28, productId: 4, amount: 750000, name: 'Web3 Innovation Fund', expectedIRR: '18%', strategy: 'targeting 18% annual returns'},
+  {id: 27, productId: 3, amount: 300000, name: 'Corporate Credit Fund', expectedIRR: '11%', strategy: 'targeting 11% annual returns'},
+  {id: 36, productId: 2, amount: 50000, name: 'Bitcoin Tracker Fund', expectedIRR: '60%', strategy: 'historical 60%+ annualized'},
+  {id: 29, productId: 2, amount: 150000, name: 'Bitcoin Tracker Fund', expectedIRR: '60%', strategy: 'historical 60%+ annualized'},
+  {id: 37, productId: 2, amount: 25000, name: 'Bitcoin Tracker Fund', expectedIRR: '60%', strategy: 'historical 60%+ annualized'}
 ];
 
-// Updated IRR mapping with exact midpoint values from product descriptions
-const productIRRMapping = {
-  1: { name: 'Real Estate Equity Fund', targetIRR: '9.8–11.0%', midpointIRR: 0.104, calculation: '(9.8 + 11.0) / 2 = 10.4%' },
-  2: { name: 'Real Estate Credit Fund', targetIRR: '~11%', midpointIRR: 0.11, calculation: 'Exactly 11%' },
-  3: { name: 'Real Estate First Mortgage Fund', targetIRR: '~9%', midpointIRR: 0.09, calculation: 'Exactly 9%' },
-  4: { name: 'Cash Flow-Based Corporate Credit Fund', targetIRR: '10–12%', midpointIRR: 0.11, calculation: '(10 + 12) / 2 = 11%' },
-  5: { name: 'Security-Backed Corporate Credit Fund', targetIRR: '12–15%', midpointIRR: 0.135, calculation: '(12 + 15) / 2 = 13.5%' },
-  6: { name: 'VC / Growth Equity Fund', targetIRR: '16–20%', midpointIRR: 0.18, calculation: '(16 + 20) / 2 = 18%' }
-};
+correctMapping.forEach((investment, index) => {
+  console.log(`${index + 1}. Investment ${investment.id} → Product ${investment.productId}: ${investment.name}`);
+  console.log(`   Amount: $${investment.amount.toLocaleString()}, Expected IRR: ${investment.expectedIRR}`);
+  console.log(`   Strategy Pattern: "${investment.strategy}"`);
+  console.log('');
+});
 
-console.log('📊 CURRENT PORTFOLIO WITH EXACT MIDPOINT IRR CALCULATION:');
-console.log('=========================================================');
+console.log('ISSUE IDENTIFIED:');
+console.log('The API logs show products with different names than expected:');
+console.log('• Seeing "Cash Flow-Based Corporate Credit Fund" instead of "Web3 Innovation Fund"');
+console.log('• Seeing "Real Estate Credit Fund" instead of "Bitcoin Tracker Fund"');
+console.log('• Product IDs are mapping to wrong products in the API call');
 console.log('');
 
-const currentDate = new Date('2025-08-02');
-let totalInvested = 0;
-let totalCurrentValue = 0;
-
-console.log('🔍 INVESTMENT-BY-INVESTMENT BREAKDOWN:');
-console.log('=====================================');
-
-actualUserInvestments.forEach((inv, index) => {
-  const product = productIRRMapping[inv.productId];
-  const investmentDate = new Date(inv.date);
-  const daysHeld = Math.max(0, Math.floor((currentDate.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24)));
-  const timeInYears = daysHeld / 365.25;
-  
-  const growthFactor = Math.pow(1 + product.midpointIRR, timeInYears);
-  const currentValue = inv.amount * growthFactor;
-  const returnAmount = currentValue - inv.amount;
-  const returnPercent = (returnAmount / inv.amount) * 100;
-  
-  totalInvested += inv.amount;
-  totalCurrentValue += currentValue;
-  
-  console.log(`${index + 1}. ${product.name} (Investment ID: ${inv.id})`);
-  console.log(`   ✅ Target IRR from Description: ${product.targetIRR}`);
-  console.log(`   🎯 Midpoint IRR Calculation: ${product.calculation}`);
-  console.log(`   📈 Applied IRR Rate: ${(product.midpointIRR * 100).toFixed(2)}%`);
-  console.log(`   💰 Principal Investment: $${inv.amount.toLocaleString()}`);
-  console.log(`   📅 Investment Date: ${investmentDate.toDateString()}`);
-  console.log(`   ⏱️  Days Held: ${daysHeld} days (${timeInYears.toFixed(4)} years)`);
-  console.log(`   📊 Growth Factor: (1 + ${product.midpointIRR})^${timeInYears.toFixed(4)} = ${growthFactor.toFixed(6)}`);
-  console.log(`   💵 Current Value: $${inv.amount.toLocaleString()} × ${growthFactor.toFixed(6)} = $${currentValue.toFixed(2)}`);
-  console.log(`   📈 Return: $${returnAmount.toFixed(2)} (${returnPercent.toFixed(2)}%)`);
-  console.log('');
-});
-
-const totalReturn = totalCurrentValue - totalInvested;
-const totalReturnPercent = (totalReturn / totalInvested) * 100;
-
-console.log('📈 FINAL PORTFOLIO CALCULATION WITH EXACT MIDPOINT IRR:');
-console.log('======================================================');
-console.log(`💰 Total Invested: $${totalInvested.toLocaleString()}`);
-console.log(`💵 Total Current Value: $${totalCurrentValue.toFixed(2)}`);
-console.log(`📈 Total Return: $${totalReturn.toFixed(2)}`);
-console.log(`📊 Return Percentage: ${totalReturnPercent.toFixed(2)}%`);
+console.log('SOLUTION:');
+console.log('1. API must use the exact product names from database');
+console.log('2. Fix product name matching logic in User Investments API');
+console.log('3. Ensure strategy pattern matching works correctly');
+console.log('4. Test with updated IRR extraction logic');
 console.log('');
 
-console.log('🎯 MIDPOINT IRR USED FOR EACH PRODUCT:');
-console.log('=====================================');
+console.log('EXPECTED RESULTS AFTER FIX:');
+const expectedCalculation = [
+  {investment: 26, return: 13726.24}, // Real Estate Equity: 8.5%
+  {investment: 30, return: 706.50},   // Ethereum Staking: 5.75%
+  {investment: 28, return: 135402.52}, // Web3 Innovation: 18%
+  {investment: 27, return: 7924.80},   // Corporate Credit: 11%
+  {investment: 36, return: 80.94},     // Bitcoin Tracker: 60%
+  {investment: 29, return: 39402.09},  // Bitcoin Tracker: 60%
+  {investment: 37, return: 16.01}      // Bitcoin Tracker: 60%
+];
 
-// Group by product to show unique IRR rates used
-const productGroups = {};
-actualUserInvestments.forEach(inv => {
-  if (!productGroups[inv.productId]) {
-    productGroups[inv.productId] = {
-      product: productIRRMapping[inv.productId],
-      totalInvested: 0,
-      count: 0
-    };
-  }
-  productGroups[inv.productId].totalInvested += inv.amount;
-  productGroups[inv.productId].count += 1;
+let expectedTotal = 0;
+expectedCalculation.forEach((calc, index) => {
+  console.log(`Investment ${calc.investment}: $${calc.return.toLocaleString()} return`);
+  expectedTotal += calc.return;
 });
 
-Object.entries(productGroups).forEach(([productId, group]) => {
-  console.log(`✅ ${group.product.name}:`);
-  console.log(`   Target IRR Range: ${group.product.targetIRR}`);
-  console.log(`   Midpoint Calculation: ${group.product.calculation}`);
-  console.log(`   Applied IRR: ${(group.product.midpointIRR * 100).toFixed(2)}%`);
-  console.log(`   Total Invested: $${group.totalInvested.toLocaleString()} (${group.count} investment${group.count > 1 ? 's' : ''})`);
-  console.log('');
-});
+console.log('');
+console.log(`EXPECTED TOTAL RETURN: $${expectedTotal.toLocaleString()}`);
+console.log('This should match Filter Products calculation of $197,259.10');
+console.log('');
 
-console.log('🚀 7-YEAR PROJECTIONS WITH EXACT MIDPOINT IRR:');
-console.log('==============================================');
-
-Object.entries(productGroups).forEach(([productId, group]) => {
-  const growthFactor7Year = Math.pow(1 + group.product.midpointIRR, 7);
-  const value7Year = group.totalInvested * growthFactor7Year;
-  const return7Year = value7Year - group.totalInvested;
-  const returnPercent7Year = ((return7Year / group.totalInvested) * 100);
-  
-  console.log(`🏢 ${group.product.name}:`);
-  console.log(`   Current Investment: $${group.totalInvested.toLocaleString()}`);
-  console.log(`   Midpoint IRR Applied: ${(group.product.midpointIRR * 100).toFixed(2)}%`);
-  console.log(`   7-Year Growth Factor: (1 + ${group.product.midpointIRR})^7 = ${growthFactor7Year.toFixed(6)}`);
-  console.log(`   Projected 7-Year Value: $${value7Year.toFixed(2)}`);
-  console.log(`   Projected 7-Year Return: $${return7Year.toFixed(2)} (${returnPercent7Year.toFixed(2)}%)`);
-  console.log('');
-});
-
-console.log('✅ VERIFICATION SUMMARY:');
-console.log('========================');
-console.log('✓ Using exact midpoint IRR values from current product descriptions');
-console.log('✓ Real Estate Equity Fund: 10.4% (midpoint of 9.8–11.0%)');
-console.log('✓ Real Estate Credit Fund: 11% (exact from ~11%)');
-console.log('✓ Real Estate First Mortgage Fund: 9% (exact from ~9%)');
-console.log('✓ Cash Flow-Based Corporate Credit Fund: 11% (midpoint of 10–12%)');
-console.log('✓ Security-Backed Corporate Credit Fund: 13.5% (midpoint of 12–15%)');
-console.log('✓ All calculations use compound interest formula with exact day counting');
-console.log('✓ Investment performance reflects true IRR values from product descriptions');
+console.log('🎯 ACTION REQUIRED:');
+console.log('Fix User Investments API to use correct product names for IRR mapping');
+console.log('Ensure both APIs return identical total return values');

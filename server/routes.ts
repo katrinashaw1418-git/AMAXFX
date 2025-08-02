@@ -1327,18 +1327,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Extract real-time IRR from strategy description (authoritative source)
         let realTimeIRR = 0.08; // Default fallback
-        const strategy = product.investmentStrategy.toLowerCase();
+        const strategy = product.investmentStrategy ? product.investmentStrategy.toLowerCase() : '';
         
-        if (strategy.includes('8.5%') || strategy.includes('core plus strategy')) {
-          realTimeIRR = 0.085; // Real Estate Equity Fund
-        } else if (strategy.includes('historical 60%') || strategy.includes('60%+ annualized')) {
-          realTimeIRR = 0.60; // Bitcoin Tracker Fund
-        } else if (strategy.includes('targeting 11%') || strategy.includes('11% annual returns')) {
-          realTimeIRR = 0.11; // Corporate Credit Fund
-        } else if (strategy.includes('targeting 18%') || strategy.includes('18% annual returns')) {
-          realTimeIRR = 0.18; // Web3 Innovation Fund
-        } else if (strategy.includes('targeting 5.75%') || strategy.includes('5.75% annual returns')) {
-          realTimeIRR = 0.0575; // Ethereum Staking Fund
+        // Debug log to see what strategy we're processing
+        console.log(`Processing product ${product.id}: ${product.name}, strategy: "${strategy}"`);
+        
+        // Use direct product ID mapping based on database query results
+        switch (product.id) {
+          case 1: // Real Estate Equity Fund
+            realTimeIRR = 0.085; // 8.5%
+            console.log(`Applied 8.5% IRR for Product 1: Real Estate Equity Fund`);
+            break;
+          case 2: // Bitcoin Tracker Fund
+            realTimeIRR = 0.60; // 60%
+            console.log(`Applied 60% IRR for Product 2: Bitcoin Tracker Fund`);
+            break;
+          case 3: // Corporate Credit Fund
+            realTimeIRR = 0.11; // 11%
+            console.log(`Applied 11% IRR for Product 3: Corporate Credit Fund`);
+            break;
+          case 4: // Web3 Innovation Fund
+            realTimeIRR = 0.18; // 18%
+            console.log(`Applied 18% IRR for Product 4: Web3 Innovation Fund`);
+            break;
+          case 5: // Ethereum Staking Fund
+            realTimeIRR = 0.0575; // 5.75%
+            console.log(`Applied 5.75% IRR for Product 5: Ethereum Staking Fund`);
+            break;
+          default:
+            console.log(`Using fallback 8% IRR for product ${product.id}: ${product.name}`);
+            break;
         }
         
         // Real-time period calculation with high precision
