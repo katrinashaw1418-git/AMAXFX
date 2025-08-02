@@ -1371,31 +1371,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Calculate overall performance metrics - use real-time current values from all investments with unified function
+      // Calculate overall performance metrics - use database values directly for accuracy
       let totalInvestedNow = 0;
       let totalCurrentValueNow = 0;
+      let totalReturnNow = 0;
       
+      // Use the actual database values instead of recalculating
       for (const investment of investments) {
-        const product = allProducts.find(p => p.id === investment.productId);
-        if (product) {
-          const investedAmount = parseFloat(investment.investedAmount);
-          const investmentDate = new Date(investment.investmentDate);
-          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, endDate);
-          
-          totalInvestedNow += investedAmount;
-          totalCurrentValueNow += performance.currentValue;
-        }
+        totalInvestedNow += parseFloat(investment.investedAmount);
+        totalCurrentValueNow += parseFloat(investment.currentValue);
+        totalReturnNow += parseFloat(investment.totalReturn);
       }
       
-      const totalReturn = totalCurrentValueNow - totalInvestedNow;
-      const totalReturnPercent = totalInvestedNow > 0 ? (totalReturn / totalInvestedNow) * 100 : 0;
+      const totalReturnPercent = totalInvestedNow > 0 ? (totalReturnNow / totalInvestedNow) * 100 : 0;
       
       res.json({
         timeframe,
         data: dataPoints,
         predictions,
         currentValue: totalCurrentValueNow,
-        totalReturn: totalReturn.toFixed(2),
+        totalReturn: totalReturnNow.toFixed(2),
         totalReturnPercent: totalReturnPercent.toFixed(2),
         portfolioAllocation: currentPortfolioAllocation
       });
