@@ -340,91 +340,48 @@ export function InvestmentPerformanceChart() {
                 <thead>
                   <tr className="bg-gray-100">
                     <th className="p-2 text-left border-r">Period</th>
-                    <th className="p-2 text-center border-r">RE Credit</th>
-                    <th className="p-2 text-center border-r">RE Equity</th>
-                    <th className="p-2 text-center border-r">RE Mortgage</th>
-                    <th className="p-2 text-center border-r">Corp Credit</th>
-                    <th className="p-2 text-center border-r">Security Credit</th>
-                    <th className="p-2 text-center border-r">VC Fund</th>
-                    <th className="p-2 text-center">Total Return</th>
+                    <th className="p-2 text-center border-r">Total Return</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b">
-                    <td className="p-2 font-medium border-r">Q2'24</td>
-                    <td className="p-2 text-center border-r text-green-600">$438 (0.5%)</td>
-                    <td className="p-2 text-center border-r text-gray-400">-</td>
-                    <td className="p-2 text-center border-r text-gray-400">-</td>
-                    <td className="p-2 text-center border-r text-gray-400">-</td>
-                    <td className="p-2 text-center border-r text-gray-400">-</td>
-                    <td className="p-2 text-center border-r text-gray-400">-</td>
-                    <td className="p-2 text-center font-medium text-green-600">$438</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="p-2 font-medium border-r">Q3'24</td>
-                    <td className="p-2 text-center border-r text-green-600">$2,689 (3.2%)</td>
-                    <td className="p-2 text-center border-r text-green-600">$7,958 (2.3%)</td>
-                    <td className="p-2 text-center border-r text-green-600">$1,530 (1.0%)</td>
-                    <td className="p-2 text-center border-r text-green-600">$2,579 (0.6%)</td>
-                    <td className="p-2 text-center border-r text-gray-400">-</td>
-                    <td className="p-2 text-center border-r text-gray-400">-</td>
-                    <td className="p-2 text-center font-medium text-green-600">$14,756</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="p-2 font-medium border-r">Q4'24</td>
-                    <td className="p-2 text-center border-r text-green-600">$5,024 (5.9%)</td>
-                    <td className="p-2 text-center border-r text-green-600">$16,991 (4.9%)</td>
-                    <td className="p-2 text-center border-r text-green-600">$4,855 (3.2%)</td>
-                    <td className="p-2 text-center border-r text-green-600">$14,633 (3.3%)</td>
-                    <td className="p-2 text-center border-r text-green-600">$17,100 (3.0%)</td>
-                    <td className="p-2 text-center border-r text-green-600">$4,342 (1.7%)</td>
-                    <td className="p-2 text-center font-medium text-green-600">$62,946</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="p-2 font-medium border-r">Q1'25</td>
-                    <td className="p-2 text-center border-r text-green-600">$7,422 (8.7%)</td>
-                    <td className="p-2 text-center border-r text-green-600">$26,252 (7.5%)</td>
-                    <td className="p-2 text-center border-r text-green-600">$8,253 (5.5%)</td>
-                    <td className="p-2 text-center border-r text-green-600">$27,009 (6.0%)</td>
-                    <td className="p-2 text-center border-r text-green-600">$35,966 (6.4%)</td>
-                    <td className="p-2 text-center border-r text-green-600">$15,170 (6.1%)</td>
-                    <td className="p-2 text-center font-medium text-green-600">$120,072</td>
-                  </tr>
-                  <tr className="border-b bg-blue-50">
-                    <td className="p-2 font-medium border-r">Q2'25</td>
-                    <td className="p-2 text-center border-r text-blue-600">$7,885 (9.3%)</td>
-                    <td className="p-2 text-center border-r text-blue-600">$35,537 (10.2%)</td>
-                    <td className="p-2 text-center border-r text-blue-600">$10,429 (7.0%)</td>
-                    <td className="p-2 text-center border-r text-blue-600">$39,434 (8.8%)</td>
-                    <td className="p-2 text-center border-r text-blue-600">$55,014 (9.7%)</td>
-                    <td className="p-2 text-center border-r text-blue-600">$26,208 (10.5%)</td>
-                    <td className="p-2 text-center font-medium text-blue-600">$174,507</td>
-                  </tr>
-                  <tr className="border-b bg-blue-50">
-                    <td className="p-2 font-medium border-r">Q1'26</td>
-                    <td className="p-2 text-center border-r text-blue-600">$7,885 (9.3%)</td>
-                    <td className="p-2 text-center border-r text-blue-600">$76,142 (21.8%)</td>
-                    <td className="p-2 text-center border-r text-blue-600">$10,429 (7.0%)</td>
-                    <td className="p-2 text-center border-r text-blue-600">$89,556 (19.9%)</td>
-                    <td className="p-2 text-center border-r text-blue-600">$133,566 (23.6%)</td>
-                    <td className="p-2 text-center border-r text-blue-600">$70,443 (28.2%)</td>
-                    <td className="p-2 text-center font-medium text-blue-600">$388,021</td>
-                  </tr>
-                  <tr className="border-b bg-green-50">
-                    <td className="p-2 font-medium border-r">Q1'28 (Term Expiry)</td>
-                    <td className="p-2 text-center border-r text-green-700">$7,885 (9.3%)</td>
-                    <td className="p-2 text-center border-r text-green-700">$182,950 (52.3%)</td>
-                    <td className="p-2 text-center border-r text-green-700">$10,429 (7.0%)</td>
-                    <td className="p-2 text-center border-r text-green-700">$134,144 (29.8%)</td>
-                    <td className="p-2 text-center border-r text-green-700">$248,133 (43.9%)</td>
-                    <td className="p-2 text-center border-r text-green-700">$264,106 (105.6%)</td>
-                    <td className="p-2 text-center font-medium text-green-700">$847,647</td>
-                  </tr>
+                  {chartData.filter(item => !item.isPrediction).map((period, index) => {
+                    const currentReturn = period.currentPeriodReturn || 0;
+                    const investedAmount = period.currentInvestment || 0;
+                    const returnPercent = investedAmount > 0 ? (currentReturn / investedAmount) * 100 : 0;
+                    
+                    return (
+                      <tr key={index} className="border-b">
+                        <td className="p-2 font-medium border-r">{period.formattedDate}</td>
+                        <td className={`p-2 text-center font-medium ${currentReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          ${Math.abs(currentReturn).toLocaleString()} ({returnPercent >= 0 ? '+' : ''}{returnPercent.toFixed(2)}%)
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  
+                  {/* Add projection periods */}
+                  {chartData.filter(item => item.isPrediction).map((period, index) => {
+                    const currentReturn = period.currentPeriodReturn || 0;
+                    const investedAmount = period.currentInvestment || 0;
+                    const returnPercent = investedAmount > 0 ? (currentReturn / investedAmount) * 100 : 0;
+                    const isFinal = period.formattedDate.includes('Q1\'28');
+                    
+                    return (
+                      <tr key={`pred-${index}`} className={`border-b ${isFinal ? 'bg-green-50' : 'bg-blue-50'}`}>
+                        <td className="p-2 font-medium border-r">
+                          {period.formattedDate} {isFinal ? '(Term Expiry)' : '(Projection)'}
+                        </td>
+                        <td className={`p-2 text-center font-medium ${isFinal ? 'text-green-700' : 'text-blue-600'}`}>
+                          ${Math.abs(currentReturn).toLocaleString()} ({returnPercent >= 0 ? '+' : ''}{returnPercent.toFixed(2)}%)
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
             <p className="text-xs text-gray-600 mt-2">
-              Shows current return amount and percentage for each period. This matches the table data below.
+              Shows current return amount and percentage for each period. Values now match the Return by Period table above.
               <br />
               <strong>Current Status:</strong> Investment: $1,850,000 → Current Value: $1,965,395 → Current Return: $115,395 (6.24%)
             </p>
