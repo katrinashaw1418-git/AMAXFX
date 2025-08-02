@@ -100,7 +100,7 @@ export function InvestmentPerformanceChart() {
       returnFormatted: `${(point.weightedReturn || 0) >= 0 ? '+' : ''}${(point.weightedReturn || 0).toFixed(2)}%`,
       // For predictions, use the new format with currentInvestment and totalReturn
       currentInvestment: point.isPrediction ? (point.currentInvestment || 0) : (point.investedAmount || 0),
-      totalReturn: point.isPrediction ? (point.totalReturn || 0) : Math.max(0, point.value - (point.investedAmount || 0)),
+      totalReturn: point.isPrediction ? (point.totalReturn || 0) : (point.value - (point.investedAmount || 0)),
       sortIndex: index // Add sort index for proper ordering
     };
   });
@@ -274,8 +274,8 @@ export function InvestmentPerformanceChart() {
               </thead>
               <tbody>
                 {chartData.filter(item => !item.isPrediction).map((period, index) => {
-                  const investedAmount = period.investedAmount || 0;
-                  const currentReturn = period.value - investedAmount;
+                  const investedAmount = period.currentInvestment || 0;
+                  const currentReturn = period.totalReturn || 0;
                   const returnPercent = investedAmount > 0 ? (currentReturn / investedAmount) * 100 : 0;
                   
                   return (
