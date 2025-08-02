@@ -1,9 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { Building, CreditCard, Rocket, Bitcoin, DollarSign, TrendingUp, TrendingDown, Target, Calendar, Clock } from "lucide-react";
+import { Building, CreditCard, Rocket, Bitcoin, DollarSign, TrendingUp, TrendingDown, Target, Calendar, Clock, Wallet } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
 
 const categoryIcons = {
   real_estate: Building,
@@ -27,6 +29,8 @@ interface ProductBreakdownProps {
 }
 
 export function InvestmentBreakdownDetail({ showTitle = true, compact = false }: ProductBreakdownProps) {
+  const [selectedCurrency, setSelectedCurrency] = useState('USD');
+
   const { data: investmentPerformance, isLoading } = useQuery({
     queryKey: ["/api/investment-performance", { timeframe: "1Y" }],
     queryFn: () => api.getInvestmentPerformance({ timeframe: "1Y" }),
@@ -42,6 +46,18 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
   const { data: products } = useQuery({
     queryKey: ["/api/investment-products"],
     queryFn: () => api.getInvestmentProducts(),
+  });
+
+  const { data: wallets } = useQuery({
+    queryKey: ["/api/wallets"],
+    queryFn: () => api.getWallets(),
+    refetchInterval: 5000,
+  });
+
+  const { data: fxRates } = useQuery({
+    queryKey: ["/api/fx-rates"],
+    queryFn: () => api.getFxRates(),
+    refetchInterval: 30000,
   });
 
   if (isLoading) {
@@ -77,6 +93,71 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
       </Card>
     );
   }
+
+  // Currency symbols and helper functions
+  const currencySymbols: Record<string, string> = {
+    'USD': '$',
+    'CAD': 'C$',
+    'EUR': '€',
+    'GBP': '£',
+    'AUD': 'A$',
+    'HKD': 'HK$',
+    'SGD': 'S$',
+    'BTC': '₿',
+    'ETH': 'Ξ',
+    'USDT': '₮',
+    'USDC': '◎'
+  };
+
+  const availableCurrencies = wallets?.map(wallet => ({
+    currency: wallet.currency,
+    balance: parseFloat(wallet.availableBalance || '0'),
+    displayName: wallet.displayName || wallet.currency,
+    symbol: currencySymbols[wallet.currency] || wallet.currency
+  })) || [];
+
+  // Convert to USD for display if not USD
+  const getUsdEquivalent = (amount: number, currency: string): number => {
+    if (currency === 'USD') return amount;
+    
+    // Look for direct rate from currency to USD
+    let rate = fxRates?.find(r => r.baseCurrency === currency && r.targetCurrency === 'USD')?.rate;
+    
+    // If not found, look for USD to currency rate and invert it
+    if (!rate) {
+      const inverseRate = fxRates?.find(r => r.baseCurrency === 'USD' && r.targetCurrency === currency)?.rate;
+      if (inverseRate) {
+        rate = 1 / parseFloat(inverseRate);
+      }
+    }
+    
+    // Parse the rate as it comes as string from API
+    if (rate) {
+      rate = parseFloat(rate);
+    }
+    
+    // Fallback rates for common currencies if no FX data
+    if (!rate) {
+      const fallbackRates: Record<string, number> = {
+        'CAD': 0.75,
+        'EUR': 1.10,
+        'GBP': 1.25,
+        'AUD': 0.67,
+        'HKD': 0.13,
+        'SGD': 0.74,
+        'BTC': 42000,
+        'ETH': 2500,
+        'USDT': 1.0,
+        'USDC': 1.0
+      };
+      rate = fallbackRates[currency] || 1;
+    }
+    
+    return amount * rate;
+  };
+
+  const selectedWallet = wallets?.find(w => w.currency === selectedCurrency);
+  const availableBalance = selectedWallet?.availableBalance ? parseFloat(selectedWallet.availableBalance) : 0;
 
   // Group investments by product
   const productGroups: Record<string, any> = {};
@@ -335,7 +416,50 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
           })}
         </div>
         
+        {/* Available Capital Section */}
         <div className="mt-6 pt-4 border-t">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-green-600" />
+              <h4 className="font-medium">Available Capital</h4>
+            </div>
+            <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+              <SelectTrigger className="w-auto min-w-16 h-6 text-xs border border-green-200 rounded px-2 py-0 focus:ring-1 focus:ring-green-500 bg-green-50 hover:bg-green-100 transition-colors font-semibold text-green-700">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableCurrencies.map((currency) => (
+                  <SelectItem key={currency.currency} value={currency.currency}>
+                    <span className="font-medium">{currency.currency}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="bg-green-50 rounded-lg p-4 mb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Available in {selectedCurrency} wallet</p>
+                <p className="text-xl font-bold text-green-600">
+                  {currencySymbols[selectedCurrency] || selectedCurrency}{availableBalance.toLocaleString()}
+                </p>
+                {selectedCurrency !== 'USD' && (
+                  <p className="text-xs text-gray-600 mt-1">
+                    US${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()} equivalent
+                  </p>
+                )}
+              </div>
+              <div className="text-right">
+                <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
+                  Ready to Invest
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t">
           <div className="text-sm text-gray-600 space-y-1">
             <p>• All calculations use consistent midpoint IRR methodology</p>
             <p>• Current values update automatically when new investments are added</p>
