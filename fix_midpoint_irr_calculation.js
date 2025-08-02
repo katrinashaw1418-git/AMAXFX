@@ -1,103 +1,139 @@
-// FINAL FIX - MIDPOINT IRR IMPLEMENTATION VERIFICATION
-console.log('=== MIDPOINT IRR FINAL DATABASE VERIFICATION ===\n');
+// FIX MIDPOINT IRR CALCULATION - Update Database Values
+console.log('=== FIXING MIDPOINT IRR CALCULATION INCONSISTENCIES ===\n');
 
-console.log('ISSUE DIAGNOSIS:');
-console.log('✓ Database has correct values: $173,044.52 total return');
-console.log('✗ API still shows incorrect: $118,212.33 total return');
-console.log('✗ API is recalculating instead of using database values\n');
+// Define the correct investment data with midpoint IRR calculations
+const currentDate = new Date('2025-08-02');
 
-console.log('CRITICAL FINDING:');
-console.log('The investment-performance API must be updated to use database values directly');
-console.log('It should not recalculate performance - just sum up the database values\n');
-
-// Expected correct database values
-const expectedDBValues = {
-  totalInvested: 1850000,
-  investments: [
-    { id: 29, invested: 150000, current: 161095.89, return: 11095.89, name: "Bitcoin (Original)" },
-    { id: 36, invested: 50000, current: 50020.55, return: 20.55, name: "Bitcoin ($50k)" },
-    { id: 37, invested: 25000, current: 25000.00, return: 0.00, name: "Bitcoin ($25k)" },
-    { id: 26, invested: 500000, current: 518082.19, return: 18082.19, name: "Real Estate" },
-    { id: 27, invested: 300000, current: 308136.99, return: 8136.99, name: "Corporate Credit" },
-    { id: 28, invested: 750000, current: 885000.00, return: 135000.00, name: "VC/Growth" },
-    { id: 30, invested: 75000, current: 75708.90, return: 708.90, name: "Ethereum" }
-  ]
-};
-
-const totalReturn = expectedDBValues.investments.reduce((sum, inv) => sum + inv.return, 0);
-const totalCurrent = expectedDBValues.investments.reduce((sum, inv) => sum + inv.current, 0);
-const returnPercent = (totalReturn / expectedDBValues.totalInvested) * 100;
-
-console.log('EXPECTED FINAL RESULTS:');
-console.log(`Total Invested: $${expectedDBValues.totalInvested.toLocaleString()}`);
-console.log(`Total Current Value: $${totalCurrent.toLocaleString()}`);
-console.log(`Total Return: $${totalReturn.toLocaleString()}`);
-console.log(`Return Percentage: ${returnPercent.toFixed(2)}%`);
-console.log(`Number of Investments: ${expectedDBValues.investments.length}`);
-
-console.log('\nDETAILED CALCULATIONS BREAKDOWN:');
-expectedDBValues.investments.forEach((inv, i) => {
-  const returnPct = (inv.return / inv.invested) * 100;
-  console.log(`${i+1}. ${inv.name} (ID: ${inv.id})`);
-  console.log(`   Invested: $${inv.invested.toLocaleString()}`);
-  console.log(`   Current: $${inv.current.toLocaleString()}`);
-  console.log(`   Return: $${inv.return.toLocaleString()} (${returnPct.toFixed(2)}%)`);
-});
-
-console.log('\n7-YEAR PROJECTIONS (using midpoint IRR):');
-
-const sevenYearProjections = [
-  { name: "Real Estate (11%)", factor: Math.pow(1.11, 7), currentValue: 518082.19 },
-  { name: "Corporate Credit (11%)", factor: Math.pow(1.11, 7), currentValue: 308136.99 },
-  { name: "VC/Growth (18%)", factor: Math.pow(1.18, 7), currentValue: 885000.00 },
-  { name: "Bitcoin Total (15%)", factor: Math.pow(1.15, 7), currentValue: 236116.44 },
-  { name: "Ethereum (5.75%)", factor: Math.pow(1.0575, 7), currentValue: 75708.90 }
+const investmentUpdates = [
+  {
+    id: 37,
+    name: "Bitcoin Tracker ($25k)",
+    principal: 25000,
+    investmentDate: new Date('2025-08-02'),
+    targetIRR: 0.15,
+    category: "Digital Assets",
+    productId: 2
+  },
+  {
+    id: 26,
+    name: "Real Estate Credit Fund",
+    principal: 500000,
+    investmentDate: new Date('2025-04-03'),
+    targetIRR: 0.11,
+    category: "Real Estate",
+    productId: 1
+  },
+  {
+    id: 27,
+    name: "Corporate Credit Fund",
+    principal: 300000,
+    investmentDate: new Date('2025-05-03'),
+    targetIRR: 0.11,
+    category: "Corporate Credit",
+    productId: 3
+  },
+  {
+    id: 29,
+    name: "Bitcoin Tracker (Original)",
+    principal: 150000,
+    investmentDate: new Date('2025-02-02'),
+    targetIRR: 0.15,
+    category: "Digital Assets",
+    productId: 2
+  },
+  {
+    id: 28,
+    name: "VC/Growth Equity Fund",
+    principal: 750000,
+    investmentDate: new Date('2024-08-02'),
+    targetIRR: 0.18,
+    category: "Venture Capital",
+    productId: 4
+  },
+  {
+    id: 30,
+    name: "Ethereum Staking Fund",
+    principal: 75000,
+    investmentDate: new Date('2025-06-02'),
+    targetIRR: 0.0575,
+    category: "Digital Assets",
+    productId: 5
+  },
+  {
+    id: 36,
+    name: "Bitcoin Tracker ($50k)",
+    principal: 50000,
+    investmentDate: new Date('2025-08-01'),
+    targetIRR: 0.15,
+    category: "Digital Assets",
+    productId: 2
+  }
 ];
 
-let totalSevenYear = 0;
-sevenYearProjections.forEach(proj => {
-  const sevenYearValue = proj.currentValue * proj.factor;
-  totalSevenYear += sevenYearValue;
-  const totalGain = sevenYearValue - proj.currentValue;
-  console.log(`${proj.name}: $${proj.currentValue.toLocaleString()} → $${sevenYearValue.toLocaleString()} (+$${totalGain.toLocaleString()})`);
+console.log('CALCULATING CORRECT VALUES USING MIDPOINT IRR:\n');
+
+let totalPrincipal = 0;
+let totalCurrentValue = 0;
+let totalReturn = 0;
+const updateStatements = [];
+
+investmentUpdates.forEach((investment, index) => {
+  const daysHeld = Math.max(0, Math.floor((currentDate.getTime() - investment.investmentDate.getTime()) / (1000 * 60 * 60 * 24)));
+  const timeInYears = daysHeld / 365.25;
+  const growthFactor = Math.pow(1 + investment.targetIRR, timeInYears);
+  const currentValue = investment.principal * growthFactor;
+  const totalReturnAmount = currentValue - investment.principal;
+  const returnPercentage = (totalReturnAmount / investment.principal) * 100;
+  
+  totalPrincipal += investment.principal;
+  totalCurrentValue += currentValue;
+  totalReturn += totalReturnAmount;
+  
+  console.log(`${index + 1}. ${investment.name} (ID: ${investment.id})`);
+  console.log(`   Principal: $${investment.principal.toLocaleString()}`);
+  console.log(`   Days Held: ${daysHeld} days`);
+  console.log(`   Time: ${timeInYears.toFixed(4)} years`);
+  console.log(`   Target IRR: ${(investment.targetIRR * 100).toFixed(2)}%`);
+  console.log(`   Growth Factor: ${growthFactor.toFixed(6)}`);
+  console.log(`   Correct Current Value: $${currentValue.toFixed(2)}`);
+  console.log(`   Correct Return: $${totalReturnAmount.toFixed(2)} (${returnPercentage.toFixed(2)}%)`);
+  
+  // Generate SQL update statement
+  updateStatements.push(`UPDATE user_investments SET 
+    current_value = '${currentValue.toFixed(2)}', 
+    total_return = '${totalReturnAmount.toFixed(2)}' 
+    WHERE id = ${investment.id};`);
+  
+  console.log('');
 });
 
-const sevenYearTotalGain = totalSevenYear - totalCurrent;
-const sevenYearTotalPercent = (sevenYearTotalGain / totalCurrent) * 100;
+const overallReturnPercentage = (totalReturn / totalPrincipal) * 100;
 
-console.log(`\n7-Year Portfolio Total: $${totalSevenYear.toLocaleString()}`);
-console.log(`7-Year Total Gain: $${sevenYearTotalGain.toLocaleString()} (${sevenYearTotalPercent.toFixed(1)}%)`);
+console.log('CORRECTED PORTFOLIO TOTALS:\n');
+console.log(`Total Principal: $${totalPrincipal.toLocaleString()}`);
+console.log(`Total Current Value: $${totalCurrentValue.toFixed(2)}`);
+console.log(`Total Return: $${totalReturn.toFixed(2)}`);
+console.log(`Overall Return: ${overallReturnPercentage.toFixed(2)}%`);
 
-console.log('\nDEMONSTRATION: NEW INVESTMENT IMPACT');
-const newInvestment = {
-  amount: 100000,
-  targetIRR: 0.12,
-  name: "Sample 12% Product"
-};
+console.log('\n=== SQL UPDATE STATEMENTS ===\n');
+updateStatements.forEach(statement => {
+  console.log(statement);
+});
 
-const newPortfolioInvested = expectedDBValues.totalInvested + newInvestment.amount;
-const newPortfolioCurrent = totalCurrent + newInvestment.amount; // Starts at invested amount
-const newPortfolioReturn = totalReturn + 0; // No return initially
-const newPortfolioPercent = (newPortfolioReturn / newPortfolioInvested) * 100;
+console.log('\n=== VERIFICATION CHECK ===\n');
+console.log('Before Fix:');
+console.log('Database Total Return: $118,212.33 (6.39%)');
+console.log('Investment-Performance API: $173,044.52 (9.35%)');
+console.log('');
+console.log('After Fix (Expected):');
+console.log(`Database Total Return: $${totalReturn.toFixed(2)} (${overallReturnPercentage.toFixed(2)}%)`);
+console.log(`Investment-Performance API: $${totalReturn.toFixed(2)} (${overallReturnPercentage.toFixed(2)}%)`);
+console.log('');
+console.log('✅ Both should now match perfectly using consistent midpoint IRR methodology');
 
-console.log(`\nWith $${newInvestment.amount.toLocaleString()} new investment:`);
-console.log(`New Total Invested: $${newPortfolioInvested.toLocaleString()}`);
-console.log(`New Total Current: $${newPortfolioCurrent.toLocaleString()}`);
-console.log(`New Total Return: $${newPortfolioReturn.toLocaleString()}`);
-console.log(`New Return %: ${newPortfolioPercent.toFixed(2)}%`);
-
-console.log('\n=== SUCCESS CRITERIA ===');
-console.log('✓ All 7 investments tracked in real-time database');
-console.log('✓ Midpoint IRR methodology consistently applied');
-console.log('✓ Bitcoin at 15% (not 60% market rate)');
-console.log('✓ Detailed calculation verification provided');
-console.log('✓ 7-year projection calculations shown');
-console.log('✓ System demonstrates handling of new investments');
-console.log('✓ Portfolio total: $1,850,000 invested, $173,044.52 return (9.35%)');
-
-console.log('\nAPI CORRECTION NEEDED:');
-console.log('The investment-performance endpoint must return:');
-console.log(`"totalReturn": "${totalReturn.toFixed(2)}"`);
-console.log(`"totalReturnPercent": "${returnPercent.toFixed(2)}"`);
-console.log(`"currentValue": ${totalCurrent}`);
-console.log('Instead of the incorrect values it currently shows.');
+console.log('\n=== IMPLEMENTATION PLAN ===\n');
+console.log('1. Update user_investments table with corrected current_value and total_return');
+console.log('2. Verify unified calculateInvestmentPerformance function uses midpoint IRR');
+console.log('3. Test all API endpoints return consistent values');
+console.log('4. Confirm new investments automatically use correct calculations');
+console.log('5. Validate 7-year projections use same methodology');
