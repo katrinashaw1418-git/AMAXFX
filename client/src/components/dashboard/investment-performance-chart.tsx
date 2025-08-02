@@ -157,7 +157,12 @@ export function InvestmentPerformanceChart() {
         </CardTitle>
         
         {/* Performance Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+          <div className="space-y-1">
+            <p className="text-sm text-gray-600">Total Invested</p>
+            <p className="text-2xl font-bold">$1,850,000</p>
+          </div>
+          
           <div className="space-y-1">
             <p className="text-sm text-gray-600">Current Investment Value</p>
             <p className="text-2xl font-bold">${performanceData.currentValue.toLocaleString()}</p>
@@ -213,7 +218,7 @@ export function InvestmentPerformanceChart() {
               />
               <Tooltip 
                 formatter={(value: any, name: string) => {
-                  if (name === "Current Investment" || name === "Total Return") {
+                  if (name === "Total Invested" || name === "Total Return") {
                     return [`$${Number(value).toLocaleString()}`, name];
                   }
                   if (name === "Weighted Return") {
@@ -230,12 +235,12 @@ export function InvestmentPerformanceChart() {
               />
               <Legend />
               
-              {/* Current Investment Value (Blue) */}
+              {/* Total Invested (Blue) */}
               <Bar
                 dataKey="currentInvestment"
                 stackId="investment"
                 fill="#3b82f6"
-                name="Current Investment"
+                name="Total Invested"
               />
               
               {/* Total Return (Purple) */}
