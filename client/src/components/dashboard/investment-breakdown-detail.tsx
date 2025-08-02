@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { Building, CreditCard, Rocket, Bitcoin, DollarSign, TrendingUp, TrendingDown, Target } from "lucide-react";
+import { Building, CreditCard, Rocket, Bitcoin, DollarSign, TrendingUp, TrendingDown, Target, Calendar, Clock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const categoryIcons = {
@@ -107,16 +107,47 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
     6: { midpointIRR: 0.18, targetIRRDisplay: '18.0%' },  // VC / Growth Equity Fund (16-20% midpoint)
   };
 
+  // Helper function to calculate holding period
+  const calculateHoldingPeriod = (investmentDate: string) => {
+    const now = new Date();
+    const invested = new Date(investmentDate);
+    const diffMs = now.getTime() - invested.getTime();
+    const days = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+    
+    if (days === 0) return 'Today';
+    if (days === 1) return '1 day';
+    if (days < 30) return `${days} days`;
+    if (days < 365) {
+      const months = Math.floor(days / 30);
+      const remainingDays = days % 30;
+      if (remainingDays === 0) return `${months} month${months > 1 ? 's' : ''}`;
+      return `${months}m ${remainingDays}d`;
+    }
+    const years = Math.floor(days / 365);
+    const remainingDays = days % 365;
+    if (remainingDays < 30) return `${years} year${years > 1 ? 's' : ''}`;
+    const months = Math.floor(remainingDays / 30);
+    return `${years}y ${months}m`;
+  };
+
   Object.values(productGroups).forEach((group: any) => {
     let totalCurrentValue = 0;
     let totalReturn = 0;
     
-    // Calculate from individual investments using exact midpoint IRR
+    // Calculate from individual investments using exact midpoint IRR and add holding period info
     group.investments.forEach((investment: any) => {
       const currentValue = parseFloat(investment.currentValue);
       const returnAmount = parseFloat(investment.totalReturn);
       totalCurrentValue += currentValue;
       totalReturn += returnAmount;
+      
+      // Add holding period and formatted date
+      investment.holdingPeriod = calculateHoldingPeriod(investment.investmentDate);
+      investment.formattedDate = new Date(investment.investmentDate).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
     });
     
     group.totalCurrentValue = totalCurrentValue;
@@ -254,7 +285,35 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
                   </div>
                 )}
                 
-                <div className="text-xs text-gray-500">
+                {/* Investment Details */}
+                <div className="mt-3 space-y-2">
+                  {group.investments.map((investment: any, invIndex: number) => (
+                    <div key={investment.id} className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">
+                          #{investment.id}
+                        </Badge>
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <Calendar className="h-3 w-3" />
+                          <span>{investment.formattedDate}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <Clock className="h-3 w-3" />
+                          <span>{investment.holdingPeriod}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-medium">${parseFloat(investment.investedAmount).toLocaleString()}</div>
+                        <div className={`text-xs ${parseFloat(investment.totalReturn) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {parseFloat(investment.totalReturn) >= 0 ? '+' : ''}${Math.abs(parseFloat(investment.totalReturn)).toLocaleString()} 
+                          ({parseFloat(investment.returnPercent).toFixed(2)}%)
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="text-xs text-gray-500 mt-2">
                   {group.investments.length} investment{group.investments.length !== 1 ? 's' : ''} • 
                   Using {group.targetIRRDisplay || group.targetIRR.toFixed(1) + '%'} midpoint IRR calculation
                 </div>
