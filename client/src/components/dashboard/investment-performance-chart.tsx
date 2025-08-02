@@ -169,7 +169,7 @@ export function InvestmentPerformanceChart() {
           </div>
           
           <div className="space-y-2">
-            <p className="text-sm text-gray-600">Total Return</p>
+            <p className="text-sm text-gray-600">Cumulative Return</p>
             <div className="space-y-1">
               <p className={`text-2xl font-bold ${isPositiveReturn ? 'text-green-600' : 'text-red-600'}`}>
                 ${Math.abs(totalReturnValue).toLocaleString()}

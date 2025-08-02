@@ -1380,7 +1380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let weightedReturn = 0;
         let totalInvestedAmount = 0;
         
-        // Calculate investment values and returns for this date using consistent methodology
+        // Calculate cumulative investment performance over time periods
         for (const investment of investments) {
           const product = allProducts.find(p => p.id === investment.productId);
           if (product) {
@@ -1389,13 +1389,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (investmentDate <= intervalDate) {
               const investedAmount = parseFloat(investment.investedAmount);
               
-              // Use the unified calculation function for consistency
+              // Calculate cumulative performance from investment date to this interval date
               const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, intervalDate);
               
               totalInvestmentValue += performance.currentValue;
               totalInvestedAmount += investedAmount;
               
-              // Weight the return by the investment amount
+              // Weight the return by the investment amount for period-based returns
               weightedReturn += (performance.returnPercentage * investedAmount);
             }
           }
@@ -1481,35 +1481,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         predictionDate.setMonth(predictionDate.getMonth() + 3);
       }
       
-      // Calculate overall performance metrics using unified midpoint IRR calculation
+      // Calculate cumulative performance across all investment periods for Performance by Period
       let totalInvestedNow = 0;
       let totalCurrentValueNow = 0;
-      let totalReturnNow = 0;
+      let cumulativeTotalReturn = 0;
       
-      // Use the unified calculateInvestmentPerformance function for consistency with single current date
-      const calculationDate = new Date(); // Use single consistent current date
+      // Calculate cumulative returns across the entire investment timeline
+      const calculationDate = new Date();
       for (const investment of investments) {
         const product = allProducts.find(p => p.id === investment.productId);
         if (product) {
           const investmentDate = new Date(investment.investmentDate);
           const investedAmount = parseFloat(investment.investedAmount);
+          
+          // Get performance from investment date to current date for cumulative calculation
           const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, calculationDate);
           
           totalInvestedNow += investedAmount;
           totalCurrentValueNow += performance.currentValue;
-          totalReturnNow += performance.returnAmount;
+          
+          // Cumulative return is the total gain/loss across investment periods
+          cumulativeTotalReturn += performance.returnAmount;
         }
       }
       
-      const totalReturnPercent = totalInvestedNow > 0 ? (totalReturnNow / totalInvestedNow) * 100 : 0;
+      // Performance by Period shows cumulative returns over investment periods
+      const cumulativeTotalReturnPercent = totalInvestedNow > 0 ? (cumulativeTotalReturn / totalInvestedNow) * 100 : 0;
       
       res.json({
         timeframe,
         data: dataPoints,
         predictions,
-        currentValue: Number(totalCurrentValueNow.toFixed(2)), // Ensure consistent rounding
-        totalReturn: Number(totalReturnNow.toFixed(2)),
-        totalReturnPercent: Number(totalReturnPercent.toFixed(2))
+        currentValue: Number(totalCurrentValueNow.toFixed(2)), // Current portfolio value
+        totalReturn: Number(cumulativeTotalReturn.toFixed(2)), // Cumulative returns over investment periods
+        totalReturnPercent: Number(cumulativeTotalReturnPercent.toFixed(2)) // Cumulative return percentage
       });
     } catch (error) {
       console.error("Investment performance error:", error);
