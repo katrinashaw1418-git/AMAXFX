@@ -293,25 +293,27 @@ export function InvestmentPerformanceChart() {
                   );
                 })}
                 
-                {/* Add key projection periods from the extended data */}
-                {[
-                  { quarter: 'Q2\'25', invested: 1850000, value: 2024507, return: 174507, percent: 9.43, isProjection: true },
-                  { quarter: 'Q1\'26', invested: 1850000, value: 2238021, return: 388021, percent: 20.97, isProjection: true },
-                  { quarter: 'Q1\'27', invested: 1850000, value: 2465432, return: 615432, percent: 33.27, isProjection: true },
-                  { quarter: 'Q1\'28', invested: 1850000, value: 2697647, return: 847647, percent: 45.82, isProjection: true, isFinal: true }
-                ].map((proj, index) => (
-                  <tr key={`proj-${index}`} className={`border-b ${proj.isFinal ? 'bg-green-50' : 'bg-blue-50'} hover:opacity-90`}>
-                    <td className="p-3 font-medium">{proj.quarter} {proj.isFinal ? '(Term Expiry)' : '(Projection)'}</td>
-                    <td className="p-3 text-right">${proj.invested.toLocaleString()}</td>
-                    <td className="p-3 text-right">${proj.value.toLocaleString()}</td>
-                    <td className={`p-3 text-right font-medium ${proj.isFinal ? 'text-green-700' : 'text-blue-600'}`}>
-                      ${proj.return.toLocaleString()}
-                    </td>
-                    <td className={`p-3 text-right font-medium ${proj.isFinal ? 'text-green-700' : 'text-blue-600'}`}>
-                      +{proj.percent.toFixed(2)}%
-                    </td>
-                  </tr>
-                ))}
+                {/* Add projection periods using actual server-generated data */}
+                {chartData.filter(item => item.isPrediction).map((period, index) => {
+                  const investedAmount = period.currentInvestment || 0;
+                  const currentReturn = period.totalReturn || 0;
+                  const returnPercent = investedAmount > 0 ? (currentReturn / investedAmount) * 100 : 0;
+                  const isFinal = period.formattedDate.includes('Q1\'28');
+                  
+                  return (
+                    <tr key={`pred-${index}`} className={`border-b ${isFinal ? 'bg-green-50' : 'bg-blue-50'} hover:opacity-90`}>
+                      <td className="p-3 font-medium">{period.formattedDate} {isFinal ? '(Term Expiry)' : '(Projection)'}</td>
+                      <td className="p-3 text-right">${investedAmount.toLocaleString()}</td>
+                      <td className="p-3 text-right">${period.value?.toLocaleString() || '0'}</td>
+                      <td className={`p-3 text-right font-medium ${isFinal ? 'text-green-700' : 'text-blue-600'}`}>
+                        ${Math.abs(currentReturn).toLocaleString()}
+                      </td>
+                      <td className={`p-3 text-right font-medium ${isFinal ? 'text-green-700' : 'text-blue-600'}`}>
+                        {returnPercent >= 0 ? '+' : ''}{returnPercent.toFixed(2)}%
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
