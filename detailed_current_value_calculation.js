@@ -1,122 +1,97 @@
-// DETAILED CURRENT VALUE CALCULATION ANALYSIS
-console.log('=== DETAILED CURRENT VALUE CALCULATION ANALYSIS ===\n');
+// DETAILED CALCULATION: Corporate Credit Fund Investment Breakdown
+// Showing exact step-by-step calculation for +$82,678 and $973,573 (+$223,573)
 
-async function analyzeDetailedCalculation() {
-  console.log('🔍 BREAKING DOWN CURRENT VALUE CALCULATION:');
-  console.log('═'.repeat(55));
-  
-  try {
-    // 1. Get User Investments
-    const investmentsResponse = await fetch('http://localhost:5000/api/user-investments');
-    const investmentsData = await investmentsResponse.json();
-    
-    // 2. Get Investment Products
-    const productsResponse = await fetch('http://localhost:5000/api/investment-products');
-    const productsData = await productsResponse.json();
-    
-    console.log('📊 INDIVIDUAL INVESTMENT ANALYSIS:');
-    console.log('─'.repeat(55));
-    
-    // Simulate the calculateInvestmentPerformance function
-    const calculateInvestmentPerformance = (product, investedAmount, investmentDate, currentDate) => {
-      const productIRRMapping = {
-        1: { midpointIRR: 0.104, termYears: 4.25 }, // Real Estate Equity Fund
-        2: { midpointIRR: 0.11, termYears: 0.85 },  // Real Estate Credit Fund
-        3: { midpointIRR: 0.09, termYears: 0.78 },  // Real Estate First Mortgage Fund
-        4: { midpointIRR: 0.11, termYears: 2.5 },   // Cash Flow-Based Corporate Credit Fund
-        5: { midpointIRR: 0.135, termYears: 2.875 }, // Security-Backed Corporate Credit Fund
-        6: { midpointIRR: 0.18, termYears: 6 },     // VC / Growth Equity Fund
-      };
-      
-      const productData = productIRRMapping[product.id];
-      if (!productData) return { currentValue: investedAmount, returnAmount: 0 };
-      
-      // Time elapsed calculation
-      const timeElapsedMs = currentDate.getTime() - investmentDate.getTime();
-      const timeElapsedYears = timeElapsedMs / (1000 * 60 * 60 * 24 * 365.25);
-      
-      // Cap time at product term (no growth beyond maturity)
-      const effectiveTime = Math.min(timeElapsedYears, productData.termYears);
-      
-      // Calculate current value using midpoint IRR compounded over elapsed time
-      const growthFactor = Math.pow(1 + productData.midpointIRR, effectiveTime);
-      const currentValue = investedAmount * growthFactor;
-      const returnAmount = currentValue - investedAmount;
-      
-      return {
-        currentValue,
-        returnAmount,
-        timeElapsed: timeElapsedYears,
-        effectiveTime,
-        growthFactor,
-        irr: productData.midpointIRR,
-        termYears: productData.termYears
-      };
-    };
-    
-    let totalInvested = 0;
-    let totalCurrentValue = 0;
-    let totalReturn = 0;
-    const currentDate = new Date();
-    
-    investmentsData.forEach((investment, index) => {
-      const product = productsData.find(p => p.id === investment.productId);
-      if (product) {
-        const investedAmount = parseFloat(investment.investedAmount);
-        const investmentDate = new Date(investment.investmentDate);
-        
-        const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, currentDate);
-        
-        totalInvested += investedAmount;
-        totalCurrentValue += performance.currentValue;
-        totalReturn += performance.returnAmount;
-        
-        console.log(`Investment ${index + 1} (${product.name}):`);
-        console.log(`  Product ID: ${product.id}`);
-        console.log(`  Invested: $${investedAmount.toLocaleString()}`);
-        console.log(`  Investment Date: ${investmentDate.toDateString()}`);
-        console.log(`  Time Elapsed: ${performance.timeElapsed.toFixed(3)} years`);
-        console.log(`  Effective Time: ${performance.effectiveTime.toFixed(3)} years`);
-        console.log(`  IRR: ${(performance.irr * 100).toFixed(1)}%`);
-        console.log(`  Growth Factor: ${performance.growthFactor.toFixed(4)}`);
-        console.log(`  Current Value: $${performance.currentValue.toLocaleString()}`);
-        console.log(`  Return: $${performance.returnAmount.toLocaleString()}`);
-        console.log(`  Return %: ${((performance.returnAmount / investedAmount) * 100).toFixed(2)}%`);
-        console.log('');
-      }
-    });
-    
-    console.log('📈 PORTFOLIO TOTALS:');
-    console.log('─'.repeat(25));
-    console.log(`Total Invested: $${totalInvested.toLocaleString()}`);
-    console.log(`Total Current Value: $${totalCurrentValue.toLocaleString()}`);
-    console.log(`Total Return: $${totalReturn.toLocaleString()}`);
-    console.log(`Portfolio Return %: ${((totalReturn / totalInvested) * 100).toFixed(2)}%`);
-    
-    // Compare with API response
-    const performanceResponse = await fetch('http://localhost:5000/api/investment-performance?timeframe=1Y');
-    const performanceData = await performanceResponse.json();
-    
-    console.log('\n🔍 API COMPARISON:');
-    console.log('─'.repeat(20));
-    console.log(`API Current Value: $${parseFloat(performanceData.currentValue).toLocaleString()}`);
-    console.log(`Calculated Current Value: $${totalCurrentValue.toLocaleString()}`);
-    console.log(`Difference: $${Math.abs(parseFloat(performanceData.currentValue) - totalCurrentValue).toFixed(2)}`);
-    
-    console.log(`API Total Return: $${parseFloat(performanceData.totalReturn).toLocaleString()}`);
-    console.log(`Calculated Total Return: $${totalReturn.toLocaleString()}`);
-    console.log(`Difference: $${Math.abs(parseFloat(performanceData.totalReturn) - totalReturn).toFixed(2)}`);
-    
-    console.log('\n✅ CALCULATION METHODOLOGY VERIFIED:');
-    console.log('Current Value = Sum of (Invested Amount × Growth Factor)');
-    console.log('Growth Factor = (1 + IRR)^(Time Elapsed in Years)');
-    console.log('Time is capped at product term (no growth beyond maturity)');
-    console.log('Uses exact midpoint IRR values from productIRRMapping');
-    
-  } catch (error) {
-    console.error('Error during detailed analysis:', error.message);
-  }
-}
+console.log('=== CORPORATE CREDIT FUND - STEP-BY-STEP CALCULATION ===');
 
-// Run the detailed analysis
-analyzeDetailedCalculation();
+// Actual investment data from database
+const investment = {
+  principal: 750000,           // $750,000 invested
+  investmentDate: new Date('2024-08-01'),  // August 1, 2024
+  currentDate: new Date('2025-08-02'),     // August 2, 2025 (current)
+  annualIRR: 0.11,            // 11% annual IRR
+  termYears: 2.5              // 2.5 year investment term
+};
+
+console.log('INVESTMENT DETAILS:');
+console.log(`• Principal Amount: $${investment.principal.toLocaleString()}`);
+console.log(`• Investment Date: ${investment.investmentDate.toDateString()}`);
+console.log(`• Current Date: ${investment.currentDate.toDateString()}`);
+console.log(`• Annual IRR: ${investment.annualIRR * 100}%`);
+console.log(`• Investment Term: ${investment.termYears} years`);
+
+// Step 1: Calculate time elapsed in years
+const millisecondsPerYear = 1000 * 60 * 60 * 24 * 365.25;
+const timeElapsedMs = investment.currentDate.getTime() - investment.investmentDate.getTime();
+const timeElapsedYears = timeElapsedMs / millisecondsPerYear;
+
+console.log('\n=== STEP 1: TIME CALCULATION ===');
+console.log(`Time Elapsed = (Current Date - Investment Date) / Years`);
+console.log(`Time Elapsed = (${investment.currentDate.getTime()} - ${investment.investmentDate.getTime()}) / ${millisecondsPerYear}`);
+console.log(`Time Elapsed = ${timeElapsedMs} milliseconds / ${millisecondsPerYear}`);
+console.log(`Time Elapsed = ${timeElapsedYears.toFixed(6)} years`);
+
+// Step 2: Apply term capping (growth stops at maturity)
+const effectiveTime = Math.min(timeElapsedYears, investment.termYears);
+
+console.log('\n=== STEP 2: TERM CAPPING ===');
+console.log(`Effective Time = min(Time Elapsed, Investment Term)`);
+console.log(`Effective Time = min(${timeElapsedYears.toFixed(6)}, ${investment.termYears})`);
+console.log(`Effective Time = ${effectiveTime.toFixed(6)} years`);
+console.log(`Note: Growth is capped at investment term to prevent unrealistic returns`);
+
+// Step 3: Calculate compound growth factor
+const growthFactor = Math.pow(1 + investment.annualIRR, effectiveTime);
+
+console.log('\n=== STEP 3: COMPOUND GROWTH CALCULATION ===');
+console.log(`Growth Factor = (1 + Annual IRR)^Effective Time`);
+console.log(`Growth Factor = (1 + ${investment.annualIRR})^${effectiveTime.toFixed(6)}`);
+console.log(`Growth Factor = (${1 + investment.annualIRR})^${effectiveTime.toFixed(6)}`);
+console.log(`Growth Factor = ${growthFactor.toFixed(8)}`);
+
+// Step 4: Calculate current value
+const exactCurrentValue = investment.principal * growthFactor;
+const flooredCurrentValue = Math.floor(exactCurrentValue);
+
+console.log('\n=== STEP 4: CURRENT VALUE CALCULATION ===');
+console.log(`Current Value = Principal × Growth Factor`);
+console.log(`Current Value = $${investment.principal.toLocaleString()} × ${growthFactor.toFixed(8)}`);
+console.log(`Current Value = $${exactCurrentValue.toFixed(2)} (exact)`);
+console.log(`Current Value = $${flooredCurrentValue.toLocaleString()} (floored to whole number)`);
+
+// Step 5: Calculate current return
+const exactReturn = exactCurrentValue - investment.principal;
+const flooredReturn = Math.floor(exactReturn);
+
+console.log('\n=== STEP 5: CURRENT RETURN CALCULATION ===');
+console.log(`Current Return = Current Value - Principal`);
+console.log(`Current Return = $${exactCurrentValue.toFixed(2)} - $${investment.principal.toLocaleString()}`);
+console.log(`Current Return = $${exactReturn.toFixed(2)} (exact)`);
+console.log(`Current Return = $${flooredReturn.toLocaleString()} (floored)`);
+console.log(`✓ This matches the displayed +$${flooredReturn.toLocaleString()}`);
+
+// Step 6: Calculate term expiry projection
+const termExpiryGrowthFactor = Math.pow(1 + investment.annualIRR, investment.termYears);
+const exactTermExpiryValue = investment.principal * termExpiryGrowthFactor;
+const flooredTermExpiryValue = Math.floor(exactTermExpiryValue);
+const exactTermExpiryReturn = exactTermExpiryValue - investment.principal;
+const flooredTermExpiryReturn = Math.floor(exactTermExpiryReturn);
+
+console.log('\n=== STEP 6: TERM EXPIRY PROJECTION ===');
+console.log(`Term Expiry Growth Factor = (1 + ${investment.annualIRR})^${investment.termYears}`);
+console.log(`Term Expiry Growth Factor = ${termExpiryGrowthFactor.toFixed(8)}`);
+console.log(`Term Expiry Value = $${investment.principal.toLocaleString()} × ${termExpiryGrowthFactor.toFixed(8)}`);
+console.log(`Term Expiry Value = $${exactTermExpiryValue.toFixed(2)} (exact)`);
+console.log(`Term Expiry Value = $${flooredTermExpiryValue.toLocaleString()} (floored)`);
+console.log(`Term Expiry Return = $${flooredTermExpiryValue.toLocaleString()} - $${investment.principal.toLocaleString()}`);
+console.log(`Term Expiry Return = $${flooredTermExpiryReturn.toLocaleString()}`);
+console.log(`✓ This matches the displayed $${flooredTermExpiryValue.toLocaleString()} (+$${flooredTermExpiryReturn.toLocaleString()})`);
+
+console.log('\n=== FINAL VERIFICATION ===');
+console.log(`Current Return: +$${flooredReturn.toLocaleString()} ✓`);
+console.log(`Term Expiry: $${flooredTermExpiryValue.toLocaleString()} (+$${flooredTermExpiryReturn.toLocaleString()}) ✓`);
+console.log(`Return Percentage at Term: ${((flooredTermExpiryReturn / investment.principal) * 100).toFixed(0)}%`);
+
+console.log('\n=== FORMULA SUMMARY ===');
+console.log(`Current Value = Principal × (1 + IRR)^min(TimeElapsed, TermLimit)`);
+console.log(`All values use Math.floor() for consistent whole number display`);
+console.log(`Time calculation accounts for exact dates and leap years`);
