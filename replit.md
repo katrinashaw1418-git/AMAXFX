@@ -4,26 +4,24 @@
 This platform is a comprehensive cross-border wealth management solution designed for high-net-worth individuals, the global Chinese diaspora, and SMEs with international financial needs. It integrates traditional finance and cryptocurrency services, offering dual-channel support for FX and crypto trading, multi-currency wallets, AI-powered wealth advisory, and robust compliance features. The vision is to provide a unified, intelligent, and secure platform for managing diverse global assets.
 
 ## Recent Changes (August 2025)
-- **Investment Products Section Removed**: Removed the Investment Products overview cards section per user request, keeping Performance by Period chart and Investment Breakdown Detail intact
-- **Performance Chart Updated with Term Expiry**: Performance by Period chart now uses term expiry projections instead of 7-year projections, showing realistic portfolio maturity timeline
+- **Complete Automated Calculation System**: Implemented fully automated calculation system using exact compound interest formulas for all products across all periods
+- **Unified Database Calculation Function**: `calculateInvestmentPerformance` function in server provides automated calculations with exact IRR values and term capping
+- **Exact IRR Values**: RE Equity 10.4%, RE Credit 11%, RE Mortgage 9%, Corp Credit 11%, Security Credit 13.5%, VC Fund 18%
+- **Exact Term Limits**: RE Equity 4.25yr, RE Credit 0.85yr, RE Mortgage 0.78yr, Corp Credit 2.5yr, Security Credit 2.875yr, VC Fund 6yr
+- **Automated Formula Application**: Current Value = Principal × (1 + IRR)^min(TimeElapsed, TermLimit) - Principal for all calculations
+- **Term Expiry Capping**: Growth automatically stops when products reach their individual term limits, preventing unrealistic growth
+- **Real-Time Synchronized Updates**: Frontend table now uses same automated calculation system as backend APIs for perfect consistency
+- **Mathematical Consistency**: All sections (Performance by Period, Investment Breakdown, Detailed Product Breakdown) use identical automated formulas
+- **Input-Responsive System**: Changes to investment amounts, dates, IRRs, or terms automatically update all calculations across entire platform
+- **Precise Period Calculations**: Automated quarterly calculations showing exact progression: Q2'25 $172,222 → Q1'28 $731,330 (term expiry)
+- **Complete Calculation Transparency**: Each product return calculated using transparent compound interest formula with exact time elapsed and term constraints
+- **Database-Driven Accuracy**: All values derived from actual investment data in database rather than static hardcoded numbers
+- **Performance Chart Updated with Term Expiry**: Performance by Period chart uses automated term expiry projections showing realistic portfolio maturity timeline
 - **Available Capital Added**: Added Available Capital section to Investment Breakdown by Product with currency selector and real-time balance display
-- **Unified Calculation Methodology**: Performance by Period chart and Investment Breakdown sections use consistent `calculateInvestmentPerformance` function with exact midpoint IRR values
-- **Term Expiry Projections**: Implemented realistic term-based expiry calculations using actual product terms (0.78-4.25 years) instead of generic 7-year projections
-- **Investment Performance API Fixed**: Updated to use unified calculation function instead of cached database values for real-time accuracy
-- **Complete Data Consistency**: Performance by Period chart and Investment Breakdown show consistent $1,964,891.91 current value with $114,891.91 return (6.21%)
-- **Term-Based Portfolio Projections**: Portfolio term expiry value of $2,409,598 with $559,598 expected return (30.25%) using realistic product terms across both sections
-- **Real-Time Tracking**: Investment performance refreshes every 5 seconds with live calculations across remaining dashboard sections
-- **Midpoint IRR Accuracy**: Precise IRR values per product (Real Estate Equity 10.4%, Credit 11%, Corporate Credit 11-13.5%, VC 18%, etc.)
-- **Focused Investment View**: Investments page now provides focused view with performance chart and detailed product breakdown only
-- **Calculation Precision Fixed**: Implemented term expiry capping in server calculation function to ensure no growth beyond product maturity
-- **API Consistency Achieved**: Both User Investments API and Investment Performance API now return identical values with high precision
-- **Automated Real-Time Calculation**: Current value updates automatically with any input changes using unified midpoint IRR methodology
-- **Cumulative vs Current Return Distinction**: Fixed fundamental calculation difference between Performance by Period (cumulative returns over investment timeline) and Investment Breakdown (current snapshot returns)
-- **Detailed Calculation Tables**: Added comprehensive calculation breakdown tables showing cumulative returns by period and product-by-product analysis
-- **Performance Methodology Documentation**: Implemented detailed calculation methodology with quarterly breakdowns and product-specific return analysis
-- **Chart Label Updated**: Changed "Total Return" to "Cumulative Return" in chart legend and tooltip to match table terminology
-- **Extended Term Projections**: Added complete term expiry calculations covering Q2'25 through Q1'28 with final portfolio value of $2,697,647
-- **Consistent Return Values**: Performance by Period summary now shows exact values matching Investment Breakdown: $115,395 current return (6.24%)
+- **Investment Performance API Automated**: Updated to use unified automated calculation function instead of cached database values for real-time accuracy
+- **Real-Time Tracking**: Investment performance refreshes every 5 seconds with live automated calculations across all dashboard sections
+- **Focused Investment View**: Investments page provides focused view with automated performance chart and detailed product breakdown
+- **Extended Term Projections**: Automated calculations covering Q2'25 through Q1'28 with progressive growth until individual product terms reached
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
