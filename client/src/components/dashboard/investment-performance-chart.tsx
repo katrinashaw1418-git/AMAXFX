@@ -399,7 +399,7 @@ export function InvestmentPerformanceChart() {
                         // AUTOMATED FORMULA: Apply compound interest with term capping
                         const effectiveTime = Math.min(timeInYears, termYears);
                         const currentValue = inv.amount * Math.pow(1 + irr, effectiveTime);
-                        const returnAmount = currentValue - inv.amount;
+                        const returnAmount = Math.floor(currentValue - inv.amount);
 
                         
                         calculatedTotalReturn += returnAmount;
@@ -467,7 +467,7 @@ export function InvestmentPerformanceChart() {
                         const timeInYears = Math.max(0, (projectionDate.getTime() - inv.date.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
                         const effectiveTime = Math.min(timeInYears, inv.termYears);
                         const currentValue = inv.amount * Math.pow(1 + inv.irr, effectiveTime);
-                        const returnAmount = currentValue - inv.amount;
+                        const returnAmount = Math.floor(currentValue - inv.amount);
                         
                         switch (inv.productId) {
                           case 1: projectionReturns.reEquity = returnAmount; break;

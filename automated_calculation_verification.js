@@ -26,14 +26,14 @@ function calculateAutomatedReturns(periodDate, investments) {
       const currentValue = inv.amount * Math.pow(1 + inv.irr, effectiveTime);
       const returnAmount = currentValue - inv.amount;
       
-      results[inv.name] = Math.round(returnAmount);
+      results[inv.name] = Math.floor(returnAmount);
       totalReturn += returnAmount;
     } else {
       results[inv.name] = 0;
     }
   });
   
-  results['Total'] = Math.round(totalReturn);
+  results['Total'] = Math.floor(totalReturn);
   return results;
 }
 

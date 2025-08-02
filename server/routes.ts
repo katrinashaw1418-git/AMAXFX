@@ -139,8 +139,8 @@ function calculateInvestmentPerformance(
   // Calculate current value using compound interest formula with term-capped time
   // Current Value = Principal × (1 + Rate)^(Effective Time)
   const growthFactor = Math.pow(1 + targetIRR, effectiveTime);
-  const currentValue = investedAmount * growthFactor;
-  const returnAmount = currentValue - investedAmount;
+  const currentValue = Math.floor(investedAmount * growthFactor);
+  const returnAmount = Math.floor(currentValue - investedAmount);
   const returnPercentage = investedAmount > 0 ? (returnAmount / investedAmount) * 100 : 0;
   
   return {
