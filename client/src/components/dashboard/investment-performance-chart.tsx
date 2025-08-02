@@ -173,7 +173,7 @@ export function InvestmentPerformanceChart() {
           </div>
           
           <div className="space-y-2">
-            <p className="text-sm text-gray-600">Current Return</p>
+            <p className="text-sm text-gray-600">Up to Date Current Return</p>
             <div className="space-y-1">
               <p className="text-2xl font-bold text-green-600">
                 $115,395
