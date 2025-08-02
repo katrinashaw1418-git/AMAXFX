@@ -160,7 +160,7 @@ export function InvestmentPerformanceChart() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
           <div className="space-y-1">
             <p className="text-sm text-gray-600">Current Investment Value</p>
-            <p className="text-2xl font-bold">$1,970,072</p>
+            <p className="text-2xl font-bold">$1,964,892</p>
           </div>
           
           <div className="space-y-1">
@@ -169,14 +169,14 @@ export function InvestmentPerformanceChart() {
           </div>
           
           <div className="space-y-2">
-            <p className="text-sm text-gray-600">Cumulative Return</p>
+            <p className="text-sm text-gray-600">Current Return</p>
             <div className="space-y-1">
               <p className="text-2xl font-bold text-green-600">
-                $120,072
+                $114,892
               </p>
               <Badge variant="default" className="flex items-center gap-1 w-fit">
                 <TrendingUp className="h-3 w-3" />
-                +6.49%
+                +6.21%
               </Badge>
             </div>
           </div>
@@ -218,7 +218,7 @@ export function InvestmentPerformanceChart() {
               />
               <Tooltip 
                 formatter={(value: any, name: string) => {
-                  if (name === "Total Invested" || name === "Cumulative Return") {
+                  if (name === "Total Invested" || name === "Current Return") {
                     return [`$${Number(value).toLocaleString()}`, name];
                   }
                   if (name === "Weighted Return") {
@@ -243,22 +243,22 @@ export function InvestmentPerformanceChart() {
                 name="Total Invested"
               />
               
-              {/* Cumulative Return (Purple) */}
+              {/* Current Return (Purple) */}
               <Bar
                 dataKey="totalReturn"
                 stackId="investment"
                 fill="#8b5cf6"
-                name="Cumulative Return"
+                name="Current Return"
               />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
         
-        {/* Cumulative Return Calculation Table */}
+        {/* Current Return Calculation Table */}
         <div className="mt-6 border-t pt-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Calculator className="h-5 w-5" />
-            Cumulative Return by Period
+            Current Return by Period
           </h3>
           
           <div className="overflow-x-auto">
@@ -268,23 +268,23 @@ export function InvestmentPerformanceChart() {
                   <th className="text-left p-3 bg-gray-50">Period</th>
                   <th className="text-right p-3 bg-gray-50">Total Invested</th>
                   <th className="text-right p-3 bg-gray-50">Current Value</th>
-                  <th className="text-right p-3 bg-gray-50">Cumulative Return</th>
+                  <th className="text-right p-3 bg-gray-50">Current Return</th>
                   <th className="text-right p-3 bg-gray-50">Return %</th>
                 </tr>
               </thead>
               <tbody>
                 {chartData.filter(item => !item.isPrediction).map((period, index) => {
                   const investedAmount = period.investedAmount || 0;
-                  const cumulativeReturn = period.value - investedAmount;
-                  const returnPercent = investedAmount > 0 ? (cumulativeReturn / investedAmount) * 100 : 0;
+                  const currentReturn = period.value - investedAmount;
+                  const returnPercent = investedAmount > 0 ? (currentReturn / investedAmount) * 100 : 0;
                   
                   return (
                     <tr key={index} className="border-b hover:bg-gray-50">
                       <td className="p-3 font-medium">{period.formattedDate}</td>
                       <td className="p-3 text-right">${investedAmount.toLocaleString()}</td>
                       <td className="p-3 text-right">${period.value?.toLocaleString() || '0'}</td>
-                      <td className={`p-3 text-right font-medium ${cumulativeReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        ${Math.abs(cumulativeReturn).toLocaleString()}
+                      <td className={`p-3 text-right font-medium ${currentReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        ${Math.abs(currentReturn).toLocaleString()}
                       </td>
                       <td className={`p-3 text-right font-medium ${returnPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {returnPercent >= 0 ? '+' : ''}{returnPercent.toFixed(2)}%
@@ -322,8 +322,8 @@ export function InvestmentPerformanceChart() {
               <li>• <strong>Each Period:</strong> Include only investments made before or on that date</li>
               <li>• <strong>Current Value:</strong> Invested Amount × (1 + IRR)^EffectiveTime</li>
               <li>• <strong>Effective Time:</strong> Min(Time Elapsed, Product Term) to cap growth at maturity</li>
-              <li>• <strong>Cumulative Return:</strong> Sum of all individual investment returns for that period</li>
-              <li>• <strong>Return %:</strong> (Cumulative Return ÷ Total Invested) × 100</li>
+              <li>• <strong>Current Return:</strong> Current Value - Invested Amount (point-in-time snapshot)</li>
+              <li>• <strong>Return %:</strong> (Current Return ÷ Total Invested) × 100</li>
             </ul>
           </div>
           
@@ -418,9 +418,9 @@ export function InvestmentPerformanceChart() {
               </table>
             </div>
             <p className="text-xs text-gray-600 mt-2">
-              Shows cumulative return amount and percentage for each product by period. Blue rows are projections, green row shows final term expiry values.
+              Shows current return amount and percentage for each period. This matches the Investment Breakdown by Product methodology.
               <br />
-              <strong>Portfolio Term Expiry Summary:</strong> Total Investment: $1,850,000 → Final Value: $2,697,647 → Total Return: $847,647 (45.8%)
+              <strong>Current Status:</strong> Investment: $1,850,000 → Current Value: $1,964,892 → Current Return: $114,892 (6.21%)
             </p>
           </div>
         </div>
