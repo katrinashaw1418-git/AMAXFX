@@ -14,13 +14,13 @@ function getAnnualReturn(category: string, productName?: string): number {
   return rates[category as keyof typeof rates] || rates.default;
 }
 
-// Unified investment performance calculation using consistent midpoint IRR methodology
+// Unified investment performance calculation using consistent midpoint IRR methodology with term expiry capping
 function calculateInvestmentPerformance(
   product: any,
   investedAmount: number,
   investmentDate: Date,
   currentDate: Date = new Date()
-): { currentValue: number; returnAmount: number; returnPercentage: number; daysHeld: number; timeInYears: number; targetIRR: number; growthFactor: number } {
+): { currentValue: number; returnAmount: number; returnPercentage: number; daysHeld: number; timeInYears: number; targetIRR: number; growthFactor: number; effectiveTime: number; termYears: number } {
   // Safety check for product data
   if (!product) {
     console.error('Product is null/undefined in calculateInvestmentPerformance');
@@ -31,86 +31,114 @@ function calculateInvestmentPerformance(
       daysHeld: 0, 
       timeInYears: 0, 
       targetIRR: 0, 
-      growthFactor: 1 
+      growthFactor: 1,
+      effectiveTime: 0,
+      termYears: 0 
     };
   }
   
-  // Calculate exact days held and time in years
-  const daysHeld = Math.max(0, Math.floor((currentDate.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24)));
-  const timeInYears = daysHeld / 365.25; // Use precise leap year calculation
+  // Calculate exact time elapsed in years with high precision
+  const timeElapsedMs = currentDate.getTime() - investmentDate.getTime();
+  const timeInYears = Math.max(0, timeElapsedMs / (1000 * 60 * 60 * 24 * 365.25)); // High precision calculation
+  const daysHeld = Math.max(0, Math.floor(timeElapsedMs / (1000 * 60 * 60 * 24)));
   
-  // Get exact midpoint IRR based on specific product ID and target IRR from descriptions
+  // Get exact midpoint IRR and term years based on specific product ID
   let targetIRR = 0.08; // Default 8% annual return
+  let termYears = 5; // Default 5 year term
   
-  // Use exact midpoint IRR values from current product descriptions
+  // Use exact midpoint IRR values and term years from current product descriptions
   switch (product.id) {
     case 1: // Real Estate Equity Fund - Target IRR: 9.8–11.0%
       targetIRR = 0.104; // Midpoint: (9.8 + 11.0) / 2 = 10.4%
+      termYears = 4.25; // 4.25 year term
       break;
     case 2: // Real Estate Credit Fund - Target IRR: ~11%
       targetIRR = 0.11; // Exactly 11%
+      termYears = 0.85; // 0.85 year term (10.2 months)
       break;
     case 3: // Real Estate First Mortgage Fund - Target IRR: ~9%
       targetIRR = 0.09; // Exactly 9%
+      termYears = 0.78; // 0.78 year term (9.4 months)
       break;
     case 4: // Cash Flow-Based Corporate Credit Fund - Target IRR: 10–12%
       targetIRR = 0.11; // Midpoint: (10 + 12) / 2 = 11%
+      termYears = 2.5; // 2.5 year term
       break;
     case 5: // Security-Backed Corporate Credit Fund - Target IRR: 12–15%
       targetIRR = 0.135; // Midpoint: (12 + 15) / 2 = 13.5%
+      termYears = 2.875; // 2.875 year term (2 years 10.5 months)
       break;
     case 6: // VC / Growth Equity Fund - Target IRR: 16–20%
       targetIRR = 0.18; // Midpoint: (16 + 20) / 2 = 18%
+      termYears = 6; // 6 year term
       break;
     case 7: // Hybrid Capital Fund - Target IRR: 12–16%
       targetIRR = 0.14; // Midpoint: (12 + 16) / 2 = 14%
+      termYears = 4; // 4 year term
       break;
     case 8: // Bitcoin Tracker Fund - Target IRR: Market-based (using conservative 15% midpoint)
       targetIRR = 0.15; // 15% conservative midpoint (not full 60%+ market rate)
+      termYears = 3; // 3 year term
       break;
     case 9: // Web3 Innovation Fund - Target IRR: 30–50%+
       targetIRR = 0.40; // Midpoint: (30 + 50) / 2 = 40%
+      termYears = 5; // 5 year term
       break;
     case 10: // Diversified Crypto Fund - Target IRR: 25–35%
       targetIRR = 0.30; // Midpoint: (25 + 35) / 2 = 30%
+      termYears = 4; // 4 year term
       break;
     case 11: // Ethereum Staking Fund - Target IRR: 4.5–7% APY
       targetIRR = 0.0575; // Midpoint: (4.5 + 7) / 2 = 5.75%
+      termYears = 2; // 2 year term
       break;
     case 12: // High-Yield Savings Account - Target IRR: 4.5–5.5%
       targetIRR = 0.05; // Midpoint: (4.5 + 5.5) / 2 = 5%
+      termYears = 1; // 1 year term
       break;
     case 13: // Money Market Sweep Fund - Target IRR: 3.8–4.8%
       targetIRR = 0.043; // Midpoint: (3.8 + 4.8) / 2 = 4.3%
+      termYears = 1; // 1 year term
       break;
     case 14: // Premium Treasury Deposit - Target IRR: 2.5–3.5%
       targetIRR = 0.03; // Midpoint: (2.5 + 3.5) / 2 = 3%
+      termYears = 0.5; // 6 month term
       break;
     default:
       // Fallback to category-based logic for any new products
       switch (product.category) {
         case 'real_estate':
           targetIRR = 0.104; // Default to Real Estate Equity midpoint
+          termYears = 4.25;
           break;
         case 'corporate_credit':
           targetIRR = 0.11; // Default to Cash Flow-Based Corporate Credit midpoint
+          termYears = 2.5;
           break;
         case 'venture_capital':
           targetIRR = 0.18; // Default to VC/Growth Equity midpoint
+          termYears = 6;
           break;
         case 'digital_assets':
           targetIRR = 0.15; // Default to Bitcoin conservative midpoint
+          termYears = 3;
           break;
         case 'cash_deposit':
           targetIRR = 0.05; // Default to High-Yield Savings midpoint
+          termYears = 1;
           break;
         default:
           targetIRR = 0.08; // 8% for unspecified
+          termYears = 5;
       }
   }
   
-  // Calculate current value using compound interest formula: Current Value = Principal × (1 + Rate)^Time
-  const growthFactor = Math.pow(1 + targetIRR, timeInYears);
+  // Cap time at product term (no growth beyond maturity) - THIS IS THE KEY FIX
+  const effectiveTime = Math.min(timeInYears, termYears);
+  
+  // Calculate current value using compound interest formula with term-capped time
+  // Current Value = Principal × (1 + Rate)^(Effective Time)
+  const growthFactor = Math.pow(1 + targetIRR, effectiveTime);
   const currentValue = investedAmount * growthFactor;
   const returnAmount = currentValue - investedAmount;
   const returnPercentage = investedAmount > 0 ? (returnAmount / investedAmount) * 100 : 0;
@@ -122,7 +150,9 @@ function calculateInvestmentPerformance(
     daysHeld,
     timeInYears,
     targetIRR,
-    growthFactor
+    growthFactor,
+    effectiveTime,
+    termYears
   };
 }
 
@@ -1446,13 +1476,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let totalCurrentValueNow = 0;
       let totalReturnNow = 0;
       
-      // Use the unified calculateInvestmentPerformance function for consistency
+      // Use the unified calculateInvestmentPerformance function for consistency with single current date
+      const calculationDate = new Date(); // Use single consistent current date
       for (const investment of investments) {
         const product = allProducts.find(p => p.id === investment.productId);
         if (product) {
           const investmentDate = new Date(investment.investmentDate);
           const investedAmount = parseFloat(investment.investedAmount);
-          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, endDate);
+          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, calculationDate);
           
           totalInvestedNow += investedAmount;
           totalCurrentValueNow += performance.currentValue;
@@ -1466,9 +1497,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timeframe,
         data: dataPoints,
         predictions,
-        currentValue: totalCurrentValueNow,
-        totalReturn: totalReturnNow.toFixed(2),
-        totalReturnPercent: totalReturnPercent.toFixed(2),
+        currentValue: Number(totalCurrentValueNow.toFixed(2)), // Ensure consistent rounding
+        totalReturn: Number(totalReturnNow.toFixed(2)),
+        totalReturnPercent: Number(totalReturnPercent.toFixed(2)),
         portfolioAllocation: currentPortfolioAllocation
       });
     } catch (error) {

@@ -15,6 +15,9 @@ This platform is a comprehensive cross-border wealth management solution designe
 - **Real-Time Tracking**: Investment performance refreshes every 5 seconds with live calculations across remaining dashboard sections
 - **Midpoint IRR Accuracy**: Precise IRR values per product (Real Estate Equity 10.4%, Credit 11%, Corporate Credit 11-13.5%, VC 18%, etc.)
 - **Focused Investment View**: Investments page now provides focused view with performance chart and detailed product breakdown only
+- **Calculation Precision Fixed**: Implemented term expiry capping in server calculation function to ensure no growth beyond product maturity
+- **API Consistency Achieved**: Both User Investments API and Investment Performance API now return identical values with high precision
+- **Automated Real-Time Calculation**: Current value updates automatically with any input changes using unified midpoint IRR methodology
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
