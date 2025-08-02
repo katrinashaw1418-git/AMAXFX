@@ -7,7 +7,7 @@ import {
   type PortfolioSnapshot, type InsertPortfolioSnapshot
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -226,8 +226,6 @@ export class MemStorage implements IStorage {
         exchangeRate: null,
         status: "completed",
         description: "Wire Transfer from Bank of Montreal",
-        sourceExchange: null,
-        blockchainTxHash: null,
         createdAt: new Date(Date.now() - 86400000), // 1 day ago
       },
       {
@@ -241,8 +239,6 @@ export class MemStorage implements IStorage {
         exchangeRate: "1.3421",
         status: "completed",
         description: "USD to CAD Exchange",
-        sourceExchange: null,
-        blockchainTxHash: null,
         createdAt: new Date(Date.now() - 172800000), // 2 days ago
       },
       {
@@ -256,8 +252,6 @@ export class MemStorage implements IStorage {
         exchangeRate: "43500.00",
         status: "completed",
         description: "Bitcoin Purchase",
-        sourceExchange: "VirgoCX",
-        blockchainTxHash: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
         createdAt: new Date(Date.now() - 259200000), // 3 days ago
       },
       {
@@ -271,8 +265,6 @@ export class MemStorage implements IStorage {
         exchangeRate: null,
         status: "pending",
         description: "International Wire to Hong Kong",
-        sourceExchange: null,
-        blockchainTxHash: null,
         createdAt: new Date(Date.now() - 345600000), // 4 days ago
       },
       {
@@ -286,8 +278,6 @@ export class MemStorage implements IStorage {
         exchangeRate: "0.7891",
         status: "completed",
         description: "Currency exchange USD to GBP",
-        sourceExchange: null,
-        blockchainTxHash: null,
         createdAt: new Date(Date.now() - 432000000), // 5 days ago
       },
       {
@@ -301,8 +291,6 @@ export class MemStorage implements IStorage {
         exchangeRate: "1.1045",
         status: "completed",
         description: "Currency exchange CAD to AUD",
-        sourceExchange: null,
-        blockchainTxHash: null,
         createdAt: new Date(Date.now() - 518400000), // 6 days ago
       },
       {
@@ -316,8 +304,6 @@ export class MemStorage implements IStorage {
         exchangeRate: null,
         status: "completed",
         description: "Bank deposit from HSBC Hong Kong",
-        sourceExchange: null,
-        blockchainTxHash: null,
         createdAt: new Date(Date.now() - 604800000), // 7 days ago
       },
       {
@@ -331,8 +317,6 @@ export class MemStorage implements IStorage {
         exchangeRate: "0.9249",
         status: "pending",
         description: "Cross-border transfer to UK",
-        sourceExchange: null,
-        blockchainTxHash: null,
         createdAt: new Date(Date.now() - 86400000), // 1 day ago
       },
       {
@@ -346,8 +330,6 @@ export class MemStorage implements IStorage {
         exchangeRate: "1.0000",
         status: "completed",
         description: "USD to USDT conversion",
-        sourceExchange: "VirgoCX",
-        blockchainTxHash: "0x742d35cc6abddc34d7a4e",
         createdAt: new Date(Date.now() - 172800000), // 2 days ago
       },
       {
@@ -361,8 +343,6 @@ export class MemStorage implements IStorage {
         exchangeRate: "1.0000",
         status: "completed",
         description: "USD to USDC conversion",
-        sourceExchange: "VirgoCX",
-        blockchainTxHash: "0x742d35cc6abddc34d7a4e",
         createdAt: new Date(Date.now() - 259200000), // 3 days ago
       },
       {
@@ -376,8 +356,6 @@ export class MemStorage implements IStorage {
         exchangeRate: null,
         status: "completed",
         description: "USDT deposit from external wallet",
-        sourceExchange: null,
-        blockchainTxHash: "0x742d35cc6abddc34d7a4e",
         createdAt: new Date(Date.now() - 345600000), // 4 days ago
       },
       {
@@ -391,8 +369,6 @@ export class MemStorage implements IStorage {
         exchangeRate: "0.9998",
         status: "completed",
         description: "USDT to USDC swap",
-        sourceExchange: "VirgoCX",
-        blockchainTxHash: "0x742d35cc6abddc34d7a4e",
         createdAt: new Date(Date.now() - 432000000), // 5 days ago
       },
       {
@@ -3082,8 +3058,6 @@ export class MemStorage implements IStorage {
       exchangeRate: insertTransaction.exchangeRate || null,
       status: insertTransaction.status,
       description: insertTransaction.description,
-      sourceExchange: insertTransaction.sourceExchange || null,
-      blockchainTxHash: insertTransaction.blockchainTxHash || null,
       createdAt: new Date(),
     };
     
@@ -3432,9 +3406,9 @@ export class DatabaseStorage implements IStorage {
 
   // Transactions
   async getTransactions(userId: number, limit?: number): Promise<Transaction[]> {
-    const query = db.select().from(transactions).where(eq(transactions.userId, userId));
+    let query = db.select().from(transactions).where(eq(transactions.userId, userId));
     if (limit) {
-      return await query.limit(limit);
+      query = query.limit(limit);
     }
     return await query;
   }
@@ -3456,7 +3430,8 @@ export class DatabaseStorage implements IStorage {
 
   async getFxRate(baseCurrency: string, targetCurrency: string): Promise<FxRate | undefined> {
     const [rate] = await db.select().from(fxRates)
-      .where(and(eq(fxRates.baseCurrency, baseCurrency), eq(fxRates.targetCurrency, targetCurrency)));
+      .where(eq(fxRates.baseCurrency, baseCurrency))
+      .where(eq(fxRates.targetCurrency, targetCurrency));
     return rate || undefined;
   }
 
@@ -3525,17 +3500,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPortfolioSnapshots(userId: number, startDate?: Date, endDate?: Date): Promise<PortfolioSnapshot[]> {
-    const baseQuery = db.select().from(portfolioSnapshots).where(eq(portfolioSnapshots.userId, userId));
+    let query = db.select().from(portfolioSnapshots).where(eq(portfolioSnapshots.userId, userId));
     
     // Add date filters if provided
     if (startDate && endDate) {
-      return await baseQuery.where(
+      query = query.where(
         // Using SQL expression to filter by date range
         sql`${portfolioSnapshots.snapshotDate} >= ${startDate} AND ${portfolioSnapshots.snapshotDate} <= ${endDate}`
-      ).orderBy(portfolioSnapshots.snapshotDate);
+      );
     }
     
-    return await baseQuery.orderBy(portfolioSnapshots.snapshotDate);
+    return await query.orderBy(portfolioSnapshots.snapshotDate);
   }
 
   async createPortfolioSnapshot(insertSnapshot: InsertPortfolioSnapshot): Promise<PortfolioSnapshot> {
