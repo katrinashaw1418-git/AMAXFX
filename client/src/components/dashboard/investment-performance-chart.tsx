@@ -174,28 +174,12 @@ export function InvestmentPerformanceChart() {
           
           <div className="flex flex-col justify-between h-20">
             <p className="text-sm text-gray-600">Up to Date Current Return</p>
-            <div className="space-y-1">
-              <p className="text-2xl font-bold text-green-600">
-                $115,395
-              </p>
-              <Badge variant="default" className="flex items-center gap-1 w-fit">
-                <TrendingUp className="h-3 w-3" />
-                +6.24%
-              </Badge>
-            </div>
+            <p className="text-2xl font-bold text-green-600">$115,395</p>
           </div>
           
           <div className="flex flex-col justify-between h-20">
             <p className="text-sm text-gray-600">Term Expiry Projection</p>
-            <div className="space-y-1">
-              <p className="text-2xl font-bold text-green-600">
-                ${termExpiryValue.toLocaleString()}
-              </p>
-              <Badge variant="default" className="flex items-center gap-1 w-fit bg-green-50 text-green-700 border-green-200">
-                <TrendingUp className="h-3 w-3" />
-                +${termExpiryReturn.toLocaleString()} ({termExpiryPercent.toFixed(1)}%)
-              </Badge>
-            </div>
+            <p className="text-2xl font-bold text-green-600">${termExpiryValue.toLocaleString()}</p>
           </div>
         </div>
       </CardHeader>
