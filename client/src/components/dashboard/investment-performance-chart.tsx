@@ -169,7 +169,7 @@ export function InvestmentPerformanceChart() {
           </div>
           
           <div className="space-y-2">
-            <p className="text-sm text-gray-600">Current Return</p>
+            <p className="text-sm text-gray-600">Cumulative Return</p>
             <div className="space-y-1">
               <p className="text-2xl font-bold text-green-600">
                 $115,395
@@ -243,12 +243,12 @@ export function InvestmentPerformanceChart() {
                 name="Total Invested"
               />
               
-              {/* Current Return (Purple) */}
+              {/* Cumulative Return (Purple) */}
               <Bar
                 dataKey="totalReturn"
                 stackId="investment"
                 fill="#8b5cf6"
-                name="Current Return"
+                name="Cumulative Return"
               />
             </ComposedChart>
           </ResponsiveContainer>
@@ -342,7 +342,7 @@ export function InvestmentPerformanceChart() {
               <li>• <strong>Each Period:</strong> Include only investments made before or on that date</li>
               <li>• <strong>Current Value:</strong> Invested Amount × (1 + IRR)^EffectiveTime</li>
               <li>• <strong>Effective Time:</strong> Min(Time Elapsed, Product Term) to cap growth at maturity</li>
-              <li>• <strong>Current Return:</strong> Current Value - Invested Amount (point-in-time snapshot)</li>
+              <li>• <strong>Cumulative Return:</strong> Running total of all returns from start to current period</li>
               <li>• <strong>Return %:</strong> (Current Return ÷ Total Invested) × 100</li>
             </ul>
           </div>
@@ -438,9 +438,9 @@ export function InvestmentPerformanceChart() {
               </table>
             </div>
             <p className="text-xs text-gray-600 mt-2">
-              Shows current return amount and percentage for each period. This matches the Investment Breakdown by Product methodology.
+              Shows cumulative return amount that progressively adds returns from each period. This shows the running total of all investment gains.
               <br />
-              <strong>Current Status:</strong> Investment: $1,850,000 → Current Value: $1,965,395 → Current Return: $115,395 (6.24%)
+              <strong>Current Status:</strong> Investment: $1,850,000 → Current Value: $1,965,395 → Cumulative Return: $115,395 (6.24%)
             </p>
           </div>
         </div>
