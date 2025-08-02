@@ -160,7 +160,7 @@ export function InvestmentPerformanceChart() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
           <div className="space-y-1">
             <p className="text-sm text-gray-600">Current Investment Value</p>
-            <p className="text-2xl font-bold">$1,964,892</p>
+            <p className="text-2xl font-bold">$1,965,395</p>
           </div>
           
           <div className="space-y-1">
@@ -172,11 +172,11 @@ export function InvestmentPerformanceChart() {
             <p className="text-sm text-gray-600">Current Return</p>
             <div className="space-y-1">
               <p className="text-2xl font-bold text-green-600">
-                $114,892
+                $115,395
               </p>
               <Badge variant="default" className="flex items-center gap-1 w-fit">
                 <TrendingUp className="h-3 w-3" />
-                +6.21%
+                +6.24%
               </Badge>
             </div>
           </div>
@@ -420,7 +420,7 @@ export function InvestmentPerformanceChart() {
             <p className="text-xs text-gray-600 mt-2">
               Shows current return amount and percentage for each period. This matches the Investment Breakdown by Product methodology.
               <br />
-              <strong>Current Status:</strong> Investment: $1,850,000 → Current Value: $1,964,892 → Current Return: $114,892 (6.21%)
+              <strong>Current Status:</strong> Investment: $1,850,000 → Current Value: $1,965,395 → Current Return: $115,395 (6.24%)
             </p>
           </div>
         </div>

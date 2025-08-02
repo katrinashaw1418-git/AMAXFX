@@ -23,7 +23,7 @@ This platform is a comprehensive cross-border wealth management solution designe
 - **Performance Methodology Documentation**: Implemented detailed calculation methodology with quarterly breakdowns and product-specific return analysis
 - **Chart Label Updated**: Changed "Total Return" to "Cumulative Return" in chart legend and tooltip to match table terminology
 - **Extended Term Projections**: Added complete term expiry calculations covering Q2'25 through Q1'28 with final portfolio value of $2,697,647
-- **Consistent Return Values**: Performance by Period summary now shows exact values matching table data: $120,072 cumulative return (6.49%)
+- **Consistent Return Values**: Performance by Period summary now shows exact values matching Investment Breakdown: $115,395 current return (6.24%)
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
