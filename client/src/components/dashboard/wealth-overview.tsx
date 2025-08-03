@@ -1,10 +1,30 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, Bitcoin, DollarSign, TrendingDown } from "lucide-react";
 import { usePortfolio } from "@/hooks/use-portfolio";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function WealthOverview() {
   const { data: portfolio, isLoading, error } = usePortfolio();
+  
+  // Get investment performance data for accurate return calculations
+  const { data: investmentPerformance } = useQuery({
+    queryKey: ["/api/investment-performance", { timeframe: "1Y" }],
+    queryFn: () => api.getInvestmentPerformance({ timeframe: "1Y" }),
+    refetchInterval: 1000, // Refresh every 1 second for real-time updates
+  });
+
+  // Get user investments for Capital Invested display
+  const { data: userInvestments } = useQuery({
+    queryKey: ["/api/user-investments"],
+    queryFn: () => api.getUserInvestments(),
+    refetchInterval: 500, // Ultra-fast refresh every 500ms 
+    staleTime: 0, // Always consider data stale
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+  });
 
   if (isLoading) {
     return (
@@ -51,9 +71,53 @@ export default function WealthOverview() {
   const fiatValue = parseFloat(portfolio.fiatValue);
   const monthlyPnl = parseFloat(portfolio.monthlyPnl);
   const monthlyPnlPercent = parseFloat(portfolio.monthlyPnlPercent);
+  
+  // Get actual investment performance data
+  const actualTotalReturn = investmentPerformance ? parseFloat(investmentPerformance.totalReturn) : 0;
+  const actualReturnPercent = investmentPerformance ? parseFloat(investmentPerformance.totalReturnPercent) : 0;
+  const investmentCurrentValue = investmentPerformance ? parseFloat(investmentPerformance.currentValue) : 0;
+  
+  // Calculate Capital Invested using automated formula: Existing Capital + New Investment Input
+  const capitalInvested = userInvestments ? userInvestments.reduce((sum: number, inv: any) => {
+    const amount = parseFloat(inv.investedAmount);
+    console.log(`Adding investment ${inv.id}: $${amount.toLocaleString()}`);
+    return sum + amount;
+  }, 0) : 0;
+  
+  // Show detailed calculation breakdown
+  console.log('DETAILED CAPITAL INVESTED CALCULATION:');
+  console.log('==========================================');
+  if (userInvestments) {
+    userInvestments.forEach((inv: any, index: number) => {
+      const amount = parseFloat(inv.investedAmount);
+      console.log(`${index + 1}. Investment ID ${inv.id}: $${amount.toLocaleString()}`);
+    });
+    console.log('==========================================');
+    console.log(`TOTAL: $${capitalInvested.toLocaleString()}`);
+  }
+  
+  // Debug logging for Capital Invested calculation with detailed breakdown
+  console.log('Capital Invested Real-Time Formula:', {
+    totalInvestments: userInvestments?.length || 0,
+    individualAmounts: userInvestments?.map(inv => ({ id: inv.id, amount: inv.investedAmount })) || [],
+    capitalInvested: capitalInvested,
+    formula: 'Capital Invested = Sum of all individual investment amounts',
+    calculation: `Sum of ${userInvestments?.length || 0} investments = $${capitalInvested.toLocaleString()}`,
+    realTimeUpdate: true,
+    verifyStateUpdate: 'When new investment made, this value should increase immediately',
+    timestamp: new Date().toISOString()
+  });
+  
+  // State persistence verification
+  console.log('State Update Verification:', {
+    userInvestmentsLoaded: !!userInvestments,
+    dataFreshness: userInvestments ? 'Fresh data from API' : 'No data available',
+    reRenderTrigger: 'Component re-renders when userInvestments data changes',
+    formulaWorking: capitalInvested > 0 ? 'Yes - formula calculating correctly' : 'No - check data source'
+  });
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
@@ -65,8 +129,10 @@ export default function WealthOverview() {
               ${totalValue.toLocaleString()}
             </p>
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-secondary">+12.5%</span>
-              <span className="text-xs text-gray-500">vs last month</span>
+              <span className={`text-sm ${actualReturnPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {actualReturnPercent >= 0 ? '+' : ''}{actualReturnPercent.toFixed(2)}%
+              </span>
+              <span className="text-xs text-gray-500">total return</span>
             </div>
           </div>
         </CardContent>
@@ -75,16 +141,42 @@ export default function WealthOverview() {
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-gray-500">Crypto Holdings</h3>
-            <Bitcoin className="w-4 h-4 text-yellow-500" />
+            <h3 className="text-sm font-medium text-gray-500">Investment Holdings</h3>
+            <TrendingUp className="w-4 h-4 text-purple-500" />
           </div>
           <div className="space-y-2">
             <p className="text-2xl font-bold text-gray-900">
-              ${cryptoValue.toLocaleString()}
+              ${investmentCurrentValue.toLocaleString()}
             </p>
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-secondary">+8.2%</span>
-              <span className="text-xs text-gray-500">24h change</span>
+              <span className={`text-sm ${actualTotalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                +${actualTotalReturn.toLocaleString()}
+              </span>
+              <span className="text-xs text-gray-500">total gain</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-gray-500">Capital Invested</h3>
+            <DollarSign className="w-4 h-4 text-orange-500" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-2xl font-bold text-gray-900" key={capitalInvested}>
+              ${capitalInvested.toLocaleString()}
+            </p>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-green-600 font-medium">
+                Formula: Existing + New Investment
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-gray-500">
+                {userInvestments ? userInvestments.length : 0} total investments • Real-time updates
+              </span>
             </div>
           </div>
         </CardContent>
@@ -98,10 +190,10 @@ export default function WealthOverview() {
           </div>
           <div className="space-y-2">
             <p className="text-2xl font-bold text-gray-900">
-              ${(fiatValue - cryptoValue).toLocaleString()}
+              ${(totalValue - investmentCurrentValue).toLocaleString()}
             </p>
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">Multi-currency</span>
+              <span className="text-sm text-gray-600">Cash + Crypto</span>
             </div>
           </div>
         </CardContent>
