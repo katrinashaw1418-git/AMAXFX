@@ -12,7 +12,14 @@ export default function WealthOverview() {
   const { data: investmentPerformance } = useQuery({
     queryKey: ["/api/investment-performance", { timeframe: "1Y" }],
     queryFn: () => api.getInvestmentPerformance({ timeframe: "1Y" }),
-    refetchInterval: 5000, // Refresh every 5 seconds
+    refetchInterval: 1000, // Refresh every 1 second for real-time updates
+  });
+
+  // Get user investments for Capital Invested display
+  const { data: userInvestments } = useQuery({
+    queryKey: ["/api/user-investments"],
+    queryFn: () => api.getUserInvestments(),
+    refetchInterval: 1000, // Refresh every 1 second
   });
 
   if (isLoading) {
@@ -65,9 +72,12 @@ export default function WealthOverview() {
   const actualTotalReturn = investmentPerformance ? parseFloat(investmentPerformance.totalReturn) : 0;
   const actualReturnPercent = investmentPerformance ? parseFloat(investmentPerformance.totalReturnPercent) : 0;
   const investmentCurrentValue = investmentPerformance ? parseFloat(investmentPerformance.currentValue) : 0;
+  
+  // Calculate Capital Invested directly from user investments for real-time accuracy
+  const capitalInvested = userInvestments ? userInvestments.reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0) : 0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
@@ -103,6 +113,25 @@ export default function WealthOverview() {
                 +${actualTotalReturn.toLocaleString()}
               </span>
               <span className="text-xs text-gray-500">total gain</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-gray-500">Capital Invested</h3>
+            <DollarSign className="w-4 h-4 text-orange-500" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-2xl font-bold text-gray-900">
+              ${capitalInvested.toLocaleString()}
+            </p>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">
+                {userInvestments ? userInvestments.length : 0} investments
+              </span>
             </div>
           </div>
         </CardContent>
