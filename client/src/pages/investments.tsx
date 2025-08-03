@@ -90,7 +90,6 @@ export default function Investments() {
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio/allocation"] });
       queryClient.invalidateQueries({ queryKey: ["/api/investment-breakdown"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/investment-performance"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       setInvestModalOpen(false);
       setInvestmentAmount("");
@@ -513,7 +512,7 @@ export default function Investments() {
       {/* Investment Products Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {products?.map((product: any) => {
-          const CategoryIcon = categoryIcons[product.category as keyof typeof categoryIcons] || Bitcoin;
+          const CategoryIcon = categoryIcons[product.category as keyof typeof categoryIcons];
           const minimumInvestment = parseFloat(product.minimumInvestment);
           
           return (

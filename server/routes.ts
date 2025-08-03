@@ -53,15 +53,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Calculate investment value using unified calculation function
+      // Calculate investment value with real-time performance
       let investmentValue = 0;
-      const evaluationDate = new Date();
-      
       for (const investment of investments) {
         const product = await storage.getInvestmentProduct(investment.productId);
         if (product) {
-          const performance = calculateInvestmentPerformance(investment, product, evaluationDate);
-          investmentValue += performance.currentValue;
+          const investmentDate = new Date(investment.investmentDate);
+          const daysSinceInvestment = Math.floor((new Date().getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24));
+          const investedAmount = parseFloat(investment.investedAmount);
+          let performanceFactor = 1;
+          
+          // Apply performance calculation based on fund category
+          switch (product.category) {
+            case 'digital_assets':
+              if (daysSinceInvestment > 0) {
+                const annualReturn = 0.15;
+                const volatility = 0.4;
+                const timeProgress = daysSinceInvestment / 365;
+                const baseReturn = annualReturn * timeProgress;
+                const volatilityAdjustment = (Math.sin(daysSinceInvestment * 0.1) * volatility * 0.1);
+                performanceFactor = 1 + baseReturn + volatilityAdjustment;
+              }
+              break;
+            case 'real_estate':
+              if (daysSinceInvestment > 0) {
+                const annualReturn = 0.08;
+                const timeProgress = daysSinceInvestment / 365;
+                performanceFactor = 1 + (annualReturn * timeProgress);
+              }
+              break;
+            case 'corporate_credit':
+              if (daysSinceInvestment > 0) {
+                const annualReturn = 0.05;
+                const timeProgress = daysSinceInvestment / 365;
+                performanceFactor = 1 + (annualReturn * timeProgress);
+              }
+              break;
+            case 'venture_capital':
+              if (daysSinceInvestment > 0) {
+                const annualReturn = 0.20;
+                const volatility = 0.3;
+                const timeProgress = daysSinceInvestment / 365;
+                const baseReturn = annualReturn * timeProgress;
+                const volatilityAdjustment = (Math.random() - 0.5) * volatility * 0.1;
+                performanceFactor = 1 + baseReturn + volatilityAdjustment;
+              }
+              break;
+            default:
+              if (daysSinceInvestment > 0) {
+                const annualReturn = 0.03;
+                const timeProgress = daysSinceInvestment / 365;
+                performanceFactor = 1 + (annualReturn * timeProgress);
+              }
+          }
+          
+          performanceFactor = Math.max(0.5, performanceFactor);
+          investmentValue += investedAmount * performanceFactor;
         }
       }
       
@@ -450,15 +497,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Calculate investment value using unified calculation function
-      const evaluationDate = new Date();
-      for (const investment of investments) {
-        const product = await storage.getInvestmentProduct(investment.productId);
-        if (product) {
-          const performance = calculateInvestmentPerformance(investment, product, evaluationDate);
-          investmentValue += performance.currentValue;
-        }
-      }
+      // Calculate investment value
+      investmentValue = investments
+        .reduce((sum, inv) => sum + parseFloat(inv.currentValue), 0);
       
       const totalValue = fiatValue + cryptoValue + stablecoinValue + investmentValue;
       
@@ -579,15 +620,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Calculate investment value using unified calculation function
-      const evaluationDate = new Date();
-      for (const investment of investments) {
-        const product = await storage.getInvestmentProduct(investment.productId);
-        if (product) {
-          const performance = calculateInvestmentPerformance(investment, product, evaluationDate);
-          investmentValue += performance.currentValue;
-        }
-      }
+      // Calculate investment value
+      investmentValue = investments
+        .reduce((sum, inv) => sum + parseFloat(inv.currentValue), 0);
       
       const totalValue = fiatValue + cryptoValue + stablecoinValue + investmentValue;
       
@@ -1193,88 +1228,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Unified performance calculation function
-  const calculateInvestmentPerformance = (investment, product, evaluationDate) => {
-    const investmentDate = new Date(investment.investmentDate);
-    const daysSinceInvestment = Math.floor((evaluationDate.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24));
-    const investedAmount = parseFloat(investment.investedAmount);
-    let performanceFactor = 1;
-    
-    if (daysSinceInvestment >= 0) {
-      const timeProgress = Math.max(daysSinceInvestment / 365, 1/365); // Minimum 1 day for immediate returns
-      let annualReturn = 0;
-      
-      switch (product.category) {
-        case 'digital_assets':
-          annualReturn = 0.15;
-          const volatility = 0.4;
-          const baseReturn = annualReturn * timeProgress;
-          // Use deterministic volatility based on investment date for consistency
-          const seed = investmentDate.getTime() + daysSinceInvestment;
-          const volatilityAdjustment = (Math.sin(seed * 0.001) * volatility * 0.1);
-          performanceFactor = 1 + baseReturn + volatilityAdjustment;
-          break;
-        case 'real_estate':
-          annualReturn = 0.08;
-          performanceFactor = 1 + (annualReturn * timeProgress);
-          break;
-        case 'corporate_credit':
-          annualReturn = 0.05;
-          performanceFactor = 1 + (annualReturn * timeProgress);
-          break;
-        case 'venture_capital':
-          annualReturn = 0.20;
-          const vcVolatility = 0.3;
-          const vcBaseReturn = annualReturn * timeProgress;
-          // Use deterministic volatility for consistency
-          const vcSeed = investmentDate.getTime() + daysSinceInvestment;
-          const vcVolatilityAdjustment = (Math.sin(vcSeed * 0.001) * vcVolatility * 0.1);
-          performanceFactor = 1 + vcBaseReturn + vcVolatilityAdjustment;
-          break;
-        default:
-          annualReturn = 0.03;
-          performanceFactor = 1 + (annualReturn * timeProgress);
-      }
-      
-      performanceFactor = Math.max(0.5, performanceFactor);
-    }
-    
-    const currentValue = investedAmount * performanceFactor;
-    const totalReturn = currentValue - investedAmount;
-    const returnPercent = investedAmount > 0 ? (totalReturn / investedAmount) * 100 : 0;
-    
-    return {
-      currentValue,
-      totalReturn,
-      returnPercent,
-      performanceFactor
-    };
-  };
-
-  // Get user investments with real-time performance calculation
+  // Get user investments
   app.get("/api/user-investments", async (req, res) => {
     try {
-      const userId = 1; // Hardcoded user ID for demo
-      const investments = await storage.getUserInvestments(userId);
-      const allProducts = await storage.getInvestmentProducts();
-      const currentDate = new Date();
-      
-      // Calculate current values with performance using unified function
-      const investmentsWithPerformance = investments.map(investment => {
-        const product = allProducts.find(p => p.id === investment.productId);
-        if (!product) return investment;
-        
-        const performance = calculateInvestmentPerformance(investment, product, currentDate);
-        
-        return {
-          ...investment,
-          currentValue: performance.currentValue.toFixed(2),
-          totalReturn: performance.totalReturn.toFixed(2),
-          returnPercent: performance.returnPercent.toFixed(2)
-        };
-      });
-      
-      res.json(investmentsWithPerformance);
+      const investments = await storage.getUserInvestments(1); // Hardcoded user ID for demo
+      res.json(investments);
     } catch (error) {
       res.status(500).json({ error: "Failed to get user investments" });
     }
@@ -1308,7 +1266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           startDate.setFullYear(startDate.getFullYear() - 1);
       }
       
-      // Generate data points at 3-month intervals for the timeframe
+      // Generate monthly data points for the timeframe
       const dataPoints = [];
       const currentDate = new Date(startDate);
       
@@ -1323,14 +1281,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (product) {
             const investmentDate = new Date(investment.investmentDate);
             if (investmentDate <= currentDate) {
-              const performance = calculateInvestmentPerformance(investment, product, currentDate);
+              const daysSinceInvestment = Math.floor((currentDate.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24));
               const investedAmount = parseFloat(investment.investedAmount);
+              let performanceFactor = 1;
               
-              totalInvestmentValue += performance.currentValue;
+              // Apply performance calculation
+              if (daysSinceInvestment > 0) {
+                const timeProgress = daysSinceInvestment / 365;
+                let annualReturn = 0;
+                
+                switch (product.category) {
+                  case 'digital_assets':
+                    annualReturn = 0.15;
+                    const volatility = 0.4;
+                    const baseReturn = annualReturn * timeProgress;
+                    const volatilityAdjustment = (Math.sin(daysSinceInvestment * 0.1) * volatility * 0.1);
+                    performanceFactor = 1 + baseReturn + volatilityAdjustment;
+                    break;
+                  case 'real_estate':
+                    annualReturn = 0.08;
+                    performanceFactor = 1 + (annualReturn * timeProgress);
+                    break;
+                  case 'corporate_credit':
+                    annualReturn = 0.05;
+                    performanceFactor = 1 + (annualReturn * timeProgress);
+                    break;
+                  case 'venture_capital':
+                    annualReturn = 0.20;
+                    const vcVolatility = 0.3;
+                    const vcBaseReturn = annualReturn * timeProgress;
+                    const vcVolatilityAdjustment = (Math.random() - 0.5) * vcVolatility * 0.1;
+                    performanceFactor = 1 + vcBaseReturn + vcVolatilityAdjustment;
+                    break;
+                  default:
+                    annualReturn = 0.03;
+                    performanceFactor = 1 + (annualReturn * timeProgress);
+                }
+                
+                performanceFactor = Math.max(0.5, performanceFactor);
+              }
+              
+              const currentValue = investedAmount * performanceFactor;
+              totalInvestmentValue += currentValue;
               totalInvestedAmount += investedAmount;
               
               // Weight the return by the investment amount
-              weightedReturn += (performance.returnPercent * investedAmount);
+              const returnPercent = ((performanceFactor - 1) * 100);
+              weightedReturn += (returnPercent * investedAmount);
             }
           }
         }
@@ -1346,8 +1343,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timestamp: currentDate.getTime()
         });
         
-        // Move to next 3-month interval
-        currentDate.setMonth(currentDate.getMonth() + 3);
+        // Move to next month
+        currentDate.setMonth(currentDate.getMonth() + 1);
       }
       
       // Calculate 12-month prediction based on current allocation
@@ -1357,8 +1354,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const investment of investments) {
         const product = allProducts.find(p => p.id === investment.productId);
         if (product) {
-          const performance = calculateInvestmentPerformance(investment, product, endDate);
-          const currentValue = performance.currentValue;
+          const investmentDate = new Date(investment.investmentDate);
+          const daysSinceInvestment = Math.floor((endDate.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24));
+          const investedAmount = parseFloat(investment.investedAmount);
+          let performanceFactor = 1;
+          
+          if (daysSinceInvestment > 0) {
+            const timeProgress = daysSinceInvestment / 365;
+            let annualReturn = 0;
+            
+            switch (product.category) {
+              case 'digital_assets':
+                annualReturn = 0.15;
+                const volatility = 0.4;
+                const baseReturn = annualReturn * timeProgress;
+                const volatilityAdjustment = (Math.sin(daysSinceInvestment * 0.1) * volatility * 0.1);
+                performanceFactor = 1 + baseReturn + volatilityAdjustment;
+                break;
+              case 'real_estate':
+                annualReturn = 0.08;
+                performanceFactor = 1 + (annualReturn * timeProgress);
+                break;
+              case 'corporate_credit':
+                annualReturn = 0.05;
+                performanceFactor = 1 + (annualReturn * timeProgress);
+                break;
+              case 'venture_capital':
+                annualReturn = 0.20;
+                const vcVolatility = 0.3;
+                const vcBaseReturn = annualReturn * timeProgress;
+                const vcVolatilityAdjustment = (Math.random() - 0.5) * vcVolatility * 0.1;
+                performanceFactor = 1 + vcBaseReturn + vcVolatilityAdjustment;
+                break;
+              default:
+                annualReturn = 0.03;
+                performanceFactor = 1 + (annualReturn * timeProgress);
+            }
+            
+            performanceFactor = Math.max(0.5, performanceFactor);
+          }
+          
+          const currentValue = investedAmount * performanceFactor;
           totalCurrentInvestment += currentValue;
           
           if (!currentPortfolioAllocation[product.category]) {
@@ -1386,63 +1422,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Generate 7-year prediction (28 data points at 3-month intervals)
+      // Generate 12-month prediction
       const predictions = [];
       const predictionStartDate = new Date(endDate);
-      
-      // Calculate weighted annual return for the portfolio
-      let portfolioWeightedReturn = 0;
-      for (const [category, allocation] of Object.entries(currentPortfolioAllocation)) {
-        const { value, annualReturn } = allocation as { value: number; annualReturn: number };
-        const weight = value / totalCurrentInvestment;
-        portfolioWeightedReturn += (annualReturn * weight);
-      }
-      
-      for (let i = 1; i <= 28; i++) {
-        predictionStartDate.setMonth(predictionStartDate.getMonth() + 3);
+      for (let i = 1; i <= 12; i++) {
+        predictionStartDate.setMonth(predictionStartDate.getMonth() + 1);
         
-        // Calculate time in years (3-month intervals)
-        const timeInYears = (i * 3) / 12;
+        let predictedValue = 0;
+        let predictedWeightedReturn = 0;
         
-        // Apply compound growth with portfolio weighted return
-        const futureValue = totalCurrentInvestment * Math.pow(1 + portfolioWeightedReturn, timeInYears);
-        const totalReturn = futureValue - totalCurrentInvestment;
-        const totalReturnPercent = (totalReturn / totalCurrentInvestment) * 100;
+        for (const [category, allocation] of Object.entries(currentPortfolioAllocation)) {
+          const { value, annualReturn } = allocation as { value: number; annualReturn: number };
+          const monthlyReturn = annualReturn / 12;
+          const futureValue = value * Math.pow(1 + monthlyReturn, i);
+          predictedValue += futureValue;
+          
+          const categoryReturn = ((futureValue - value) / value) * 100;
+          predictedWeightedReturn += (categoryReturn * value);
+        }
+        
+        const avgPredictedReturn = totalCurrentInvestment > 0 ? predictedWeightedReturn / totalCurrentInvestment : 0;
         
         predictions.push({
           date: predictionStartDate.toISOString().split('T')[0],
-          value: Math.round(futureValue),
-          totalReturn: Math.round(totalReturn),
-          weightedReturn: Number(totalReturnPercent.toFixed(2)),
-          currentInvestment: Math.round(totalCurrentInvestment),
+          value: Math.round(predictedValue),
+          weightedReturn: Number(avgPredictedReturn.toFixed(2)),
           isPrediction: true,
           timestamp: predictionStartDate.getTime()
         });
       }
       
-      // Calculate overall performance metrics - use real-time current values from all investments with unified function
-      let totalInvestedNow = 0;
-      let totalCurrentValueNow = 0;
-      
-      for (const investment of investments) {
-        const product = allProducts.find(p => p.id === investment.productId);
-        if (product) {
-          const performance = calculateInvestmentPerformance(investment, product, endDate);
-          const investedAmount = parseFloat(investment.investedAmount);
-          
-          totalInvestedNow += investedAmount;
-          totalCurrentValueNow += performance.currentValue;
-        }
-      }
-      
-      const totalReturn = totalCurrentValueNow - totalInvestedNow;
-      const totalReturnPercent = totalInvestedNow > 0 ? (totalReturn / totalInvestedNow) * 100 : 0;
+      // Calculate overall performance metrics
+      const startValue = dataPoints[0]?.value || 0;
+      const endValue = dataPoints[dataPoints.length - 1]?.value || 0;
+      const totalReturn = endValue - startValue;
+      const totalReturnPercent = startValue > 0 ? (totalReturn / startValue) * 100 : 0;
       
       res.json({
         timeframe,
         data: dataPoints,
         predictions,
-        currentValue: totalCurrentValueNow,
+        currentValue: totalCurrentInvestment,
         totalReturn: totalReturn.toFixed(2),
         totalReturnPercent: totalReturnPercent.toFixed(2),
         portfolioAllocation: currentPortfolioAllocation
