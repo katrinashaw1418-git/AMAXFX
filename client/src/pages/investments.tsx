@@ -136,7 +136,7 @@ export default function Investments() {
         queryClient.invalidateQueries();
         queryClient.refetchQueries();
         console.log('URGENT: Capital Invested should now show $' + expectedNewCapitalInvested.toLocaleString() + ' - verify the update!');
-      }, 50);
+      }, 100);
       
       setTimeout(() => {
         queryClient.invalidateQueries();
