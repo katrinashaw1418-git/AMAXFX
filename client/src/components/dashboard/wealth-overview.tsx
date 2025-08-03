@@ -78,13 +78,18 @@ export default function WealthOverview() {
   const investmentCurrentValue = investmentPerformance ? parseFloat(investmentPerformance.currentValue) : 0;
   
   // Calculate Capital Invested using automated formula: Existing Capital + New Investment Input
-  const capitalInvested = userInvestments ? userInvestments.reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0) : 0;
+  const capitalInvested = userInvestments ? userInvestments.reduce((sum: number, inv: any) => {
+    const amount = parseFloat(inv.investedAmount);
+    console.log(`Adding investment ${inv.id}: $${amount}`);
+    return sum + amount;
+  }, 0) : 0;
   
-  // Debug logging for Capital Invested calculation with enhanced tracking
+  // Debug logging for Capital Invested calculation with detailed breakdown
   console.log('Capital Invested Real-Time Formula:', {
     totalInvestments: userInvestments?.length || 0,
+    individualAmounts: userInvestments?.map(inv => ({ id: inv.id, amount: inv.investedAmount })) || [],
     capitalInvested: capitalInvested,
-    formula: 'Capital Invested = Existing Capital + New Investment Input',
+    formula: 'Capital Invested = Sum of all individual investment amounts',
     calculation: `Sum of ${userInvestments?.length || 0} investments = $${capitalInvested.toLocaleString()}`,
     realTimeUpdate: true,
     timestamp: new Date().toISOString()

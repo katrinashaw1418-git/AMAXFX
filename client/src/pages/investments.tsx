@@ -111,21 +111,25 @@ export default function Investments() {
         timestamp: new Date().toISOString()
       });
       
-      // Multiple aggressive refreshes to ensure display updates
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["/api/user-investments"] });
-        queryClient.refetchQueries({ queryKey: ["/api/user-investments"] });
-      }, 100);
+      // Ultra-aggressive immediate refresh for Capital Invested display
+      queryClient.invalidateQueries();
+      queryClient.refetchQueries();
       
       setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["/api/user-investments"] });
-        queryClient.refetchQueries({ queryKey: ["/api/user-investments"] });
+        queryClient.invalidateQueries();
+        queryClient.refetchQueries();
+        console.log('URGENT: Capital Invested should update now - check if amount increased!');
+      }, 50);
+      
+      setTimeout(() => {
+        queryClient.invalidateQueries();
+        queryClient.refetchQueries();
+      }, 200);
+      
+      setTimeout(() => {
+        queryClient.invalidateQueries();
+        queryClient.refetchQueries();
       }, 500);
-      
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["/api/user-investments"] });
-        queryClient.refetchQueries({ queryKey: ["/api/user-investments"] });
-      }, 1000);
       
       setInvestModalOpen(false);
       setInvestmentAmount("");
