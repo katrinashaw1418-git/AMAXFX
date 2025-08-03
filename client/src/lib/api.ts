@@ -65,4 +65,7 @@ export const api = {
     const queryString = params?.timeframe ? `?timeframe=${params.timeframe}` : '';
     return fetch(`/api/investment-performance${queryString}`).then(res => res.json());
   },
+
+  // Filter Products
+  getFilterProducts: () => fetch("/api/filter-products").then(res => res.json()),
 };
