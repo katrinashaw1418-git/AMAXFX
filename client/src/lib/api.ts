@@ -57,15 +57,6 @@ export const api = {
 
 
 
-  createInvestment: (data: { productId: number; amount: number; sourceCurrency?: string; sourceAmount?: number }) =>
+  createInvestment: (data: { productId: number; amount: number }) =>
     apiRequest("POST", "/api/investments", data).then(res => res.json()),
-
-  // Investment Performance
-  getInvestmentPerformance: (params?: { timeframe?: string }) => {
-    const queryString = params?.timeframe ? `?timeframe=${params.timeframe}` : '';
-    return fetch(`/api/investment-performance${queryString}`).then(res => res.json());
-  },
-
-  // Filter Products
-  getFilterProducts: () => fetch("/api/filter-products").then(res => res.json()),
 };
