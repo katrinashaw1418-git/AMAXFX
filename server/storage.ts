@@ -3490,5 +3490,5 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Use database storage for data persistence
+// Use database storage for persistent, consistent data
 export const storage = new DatabaseStorage();
