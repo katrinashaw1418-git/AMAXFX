@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp, Shield, Calendar, DollarSign, AlertTriangle, Phone, MessageSquare, Building2, Coins, TrendingDown, Zap } from 'lucide-react';
+import { TrendingUp, Shield, Calendar, DollarSign, AlertTriangle, Phone, MessageSquare, Building2, Coins, TrendingDown, Zap, Wallet as WalletIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -245,7 +245,7 @@ export default function FundInvestments() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Wallet className="w-4 h-4" />
+            <WalletIcon className="w-4 h-4" />
             Available Capital
           </CardTitle>
         </CardHeader>
