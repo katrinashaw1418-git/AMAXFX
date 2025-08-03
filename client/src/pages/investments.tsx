@@ -67,6 +67,7 @@ export default function Investments() {
   const { data: userInvestments, isLoading: investmentsLoading } = useQuery({
     queryKey: ["/api/user-investments"],
     queryFn: () => api.getUserInvestments(),
+    refetchInterval: 5000, // Refresh every 5 seconds to track investment changes
   });
 
   const { data: wallets } = useWallets();
@@ -90,6 +91,7 @@ export default function Investments() {
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio/allocation"] });
       queryClient.invalidateQueries({ queryKey: ["/api/investment-breakdown"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/investment-performance"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       setInvestModalOpen(false);
       setInvestmentAmount("");
