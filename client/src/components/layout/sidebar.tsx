@@ -28,7 +28,7 @@ const navigation = [
   { name: "FX Exchange", href: "/fx-exchange", icon: ArrowRightLeft },
   { name: "Crypto Trading", href: "/crypto-trading", icon: TrendingUp },
   { name: "Portfolio", href: "/portfolio", icon: PieChart },
-  { name: "Investments", href: "/investments", icon: Building2 },
+  { name: "Investment Performance", href: "/investments", icon: Building2 },
   { name: "Fund Investments", href: "/fund-investments", icon: TrendingUp },
   { name: "AI Advisory", href: "/ai-advisory", icon: Bot },
   { name: "Transactions", href: "/transactions", icon: History },

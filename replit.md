@@ -42,6 +42,9 @@ This platform is a comprehensive cross-border wealth management solution designe
 - **Real-Time Investment Tracking**: Added dedicated Capital Invested card to dashboard with automated formula that updates instantly when new investments are made through "Invest Now" functionality
 - **Capital Invested Calculation Fixed**: Resolved persistent issue where frontend displayed $1,900,000 instead of actual invested amount by fixing database query and calculation logic, now correctly shows $1,925,000 with all 10 investments including latest $25,000 investment
 - **Automated Investment Formula Verified**: Confirmed real-time Capital Invested calculation working with formula "Existing Capital + New Investment Input" updating immediately upon investment creation
+- **Page Separation Completed**: Split investments functionality into two distinct pages - renamed "Investments" to "Investment Performance" page focusing on performance tracking and charts, created new "Fund Investments" page containing Filter Products section and investment creation functionality
+- **Available Capital Migration**: Moved Available Capital section from Investment Performance page to Fund Investments page where users can view wallet balances before making investments
+- **Navigation Menu Updated**: Added "Fund Investments" navigation link and renamed "Investments" to "Investment Performance" in sidebar for clear page separation and improved user experience
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

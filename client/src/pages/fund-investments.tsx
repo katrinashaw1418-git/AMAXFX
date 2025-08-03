@@ -73,10 +73,7 @@ export default function FundInvestments() {
   // Investment mutation
   const investMutation = useMutation({
     mutationFn: async (data: { productId: number; amount: number; currency?: string }) => {
-      return apiRequest('/api/investments', {
-        method: 'POST',
-        body: data,
-      });
+      return api.createInvestment(data);
     },
     onSuccess: () => {
       toast({
@@ -117,22 +114,22 @@ export default function FundInvestments() {
     'USDC': '◎'
   };
 
-  const availableCurrencies = wallets?.map((wallet: any) => ({
+  const availableCurrencies = (wallets || []).map((wallet: any) => ({
     currency: wallet.currency,
     balance: parseFloat(wallet.availableBalance || '0'),
     displayName: wallet.displayName || wallet.currency,
     symbol: currencySymbols[wallet.currency] || wallet.currency
-  })).filter((c: any) => c.balance > 0) || [];
+  })).filter((c: any) => c.balance > 0);
 
   const getUsdEquivalent = (amount: number, currency: string): number => {
     if (currency === 'USD') return amount;
     
     // Look for direct rate from currency to USD
-    let rate = fxRates?.find((r: any) => r.baseCurrency === currency && r.targetCurrency === 'USD')?.rate;
+    let rate = (fxRates || []).find((r: any) => r.baseCurrency === currency && r.targetCurrency === 'USD')?.rate;
     
     // If not found, look for USD to currency rate and invert it
     if (!rate) {
-      const inverseRate = fxRates?.find((r: any) => r.baseCurrency === 'USD' && r.targetCurrency === currency)?.rate;
+      const inverseRate = (fxRates || []).find((r: any) => r.baseCurrency === 'USD' && r.targetCurrency === currency)?.rate;
       if (inverseRate) {
         rate = 1 / parseFloat(inverseRate);
       }
@@ -142,10 +139,10 @@ export default function FundInvestments() {
   };
 
   // Filter products by category
-  const filteredProducts = filterProducts?.filter((product: FilterProduct) => {
+  const filteredProducts = (filterProducts || []).filter((product: FilterProduct) => {
     if (selectedCategory === 'all') return true;
     return product.category === selectedCategory;
-  }) || [];
+  });
 
   // Category options
   const categories = [
@@ -243,6 +240,36 @@ export default function FundInvestments() {
           Explore and invest in our curated selection of investment products across multiple asset classes.
         </p>
       </div>
+
+      {/* Available Capital Section */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Wallet className="w-4 h-4" />
+            Available Capital
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {wallets?.filter((wallet: any) => parseFloat(wallet.availableBalance || '0') > 0).map((wallet: any) => (
+              <div key={wallet.currency} className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-600">{wallet.displayName || wallet.currency}</span>
+                  <span className="text-lg font-bold">
+                    {currencySymbols[wallet.currency] || wallet.currency}
+                    {parseFloat(wallet.availableBalance || '0').toLocaleString()}
+                  </span>
+                </div>
+                {wallet.currency !== 'USD' && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    ≈ US${getUsdEquivalent(parseFloat(wallet.availableBalance || '0'), wallet.currency).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            )) || []}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Category Filter */}
       <div className="mb-8">
