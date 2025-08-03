@@ -4,14 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { TrendingUp, TrendingDown, DollarSign, Target } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface PerformanceData {
   date: string;
   value: number;
-  investedAmount: number;
+  investedAmount?: number;
+  totalReturn?: number;
+  currentInvestment?: number;
   weightedReturn: number;
   isPrediction?: boolean;
   timestamp: number;
@@ -28,11 +30,9 @@ interface InvestmentPerformanceResponse {
 }
 
 export function InvestmentPerformanceChart() {
-  const [selectedTimeframe, setSelectedTimeframe] = useState<"1M" | "3M" | "1Y">("1Y");
-
   const { data: performanceData, isLoading } = useQuery<InvestmentPerformanceResponse>({
-    queryKey: ["/api/investment-performance", { timeframe: selectedTimeframe }],
-    queryFn: () => api.getInvestmentPerformance({ timeframe: selectedTimeframe }),
+    queryKey: ["/api/investment-performance", { timeframe: "1Y" }],
+    queryFn: () => api.getInvestmentPerformance({ timeframe: "1Y" }),
   });
 
   if (isLoading) {
@@ -73,17 +73,25 @@ export function InvestmentPerformanceChart() {
   // Combine historical data with predictions for chart display
   const combinedData = [...performanceData.data, ...performanceData.predictions];
 
-  // Format data for chart display
-  const chartData = combinedData.map((point) => ({
-    ...point,
-    formattedDate: new Date(point.date).toLocaleDateString('en-US', { 
-      month: 'short', 
-      year: selectedTimeframe === '1Y' ? '2-digit' : undefined,
-      day: selectedTimeframe === '1M' ? 'numeric' : undefined
-    }),
-    valueFormatted: `$${point.value.toLocaleString()}`,
-    returnFormatted: `${point.weightedReturn >= 0 ? '+' : ''}${point.weightedReturn.toFixed(2)}%`
-  }));
+  // Format data for chart display with compact quarterly formatting
+  const chartData = combinedData.map((point, index) => {
+    const date = new Date(point.date);
+    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const year = date.getFullYear().toString().slice(-2);
+    const formattedDate = `Q${Math.floor(date.getMonth() / 3) + 1}'${year}`;
+    
+    return {
+      ...point,
+      formattedDate,
+      quarter: `Q${Math.floor(date.getMonth() / 3) + 1} ${year}`,
+      valueFormatted: `$${point.value.toLocaleString()}`,
+      returnFormatted: `${point.weightedReturn >= 0 ? '+' : ''}${point.weightedReturn.toFixed(2)}%`,
+      // For predictions, use the new format with currentInvestment and totalReturn
+      currentInvestment: point.isPrediction ? (point.currentInvestment || 0) : (point.investedAmount || 0),
+      totalReturn: point.isPrediction ? (point.totalReturn || 0) : Math.max(0, point.value - (point.investedAmount || 0)),
+      sortIndex: index // Add sort index for proper ordering
+    };
+  });
 
   const totalReturnValue = parseFloat(performanceData.totalReturn);
   const totalReturnPercent = parseFloat(performanceData.totalReturnPercent);
@@ -93,39 +101,15 @@ export function InvestmentPerformanceChart() {
   const predicted7YearReturn = performanceData.predictions[performanceData.predictions.length - 1]?.weightedReturn || 0;
   const isPredictionPositive = predicted7YearReturn >= 0;
 
-  // Get timeframe colors
-  const getTimeframeColor = (timeframe: string) => {
-    switch (timeframe) {
-      case "1M": return isPositiveReturn ? "#22c55e" : "#ef4444"; // Green/Red
-      case "3M": return "#3b82f6"; // Blue
-      case "1Y": return "#8b5cf6"; // Purple
-      default: return "#6b7280";
-    }
-  };
-
-  const chartColor = getTimeframeColor(selectedTimeframe);
+  const chartColor = "#8b5cf6"; // Purple for quarterly display
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Performance by Period
-          </CardTitle>
-          <div className="flex gap-1">
-            {["1M", "3M", "1Y"].map((timeframe) => (
-              <Button
-                key={timeframe}
-                variant={selectedTimeframe === timeframe ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedTimeframe(timeframe as "1M" | "3M" | "1Y")}
-              >
-                {timeframe}
-              </Button>
-            ))}
-          </div>
-        </div>
+        <CardTitle className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5" />
+          Performance by Period
+        </CardTitle>
         
         {/* Performance Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
@@ -135,7 +119,7 @@ export function InvestmentPerformanceChart() {
           </div>
           
           <div className="space-y-1">
-            <p className="text-sm text-gray-600">Total Return ({selectedTimeframe})</p>
+            <p className="text-sm text-gray-600">Total Return</p>
             <div className="flex items-center gap-2">
               <p className={`text-2xl font-bold ${isPositiveReturn ? 'text-green-600' : 'text-red-600'}`}>
                 ${Math.abs(totalReturnValue).toLocaleString()}
@@ -163,12 +147,15 @@ export function InvestmentPerformanceChart() {
       <CardContent>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <ComposedChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
               <XAxis 
                 dataKey="formattedDate" 
-                tick={{ fontSize: 12 }}
-                interval="preserveStartEnd"
+                tick={{ fontSize: 10 }}
+                interval={0}
+                angle={-45}
+                textAnchor="end"
+                height={80}
               />
               <YAxis 
                 tick={{ fontSize: 12 }}
@@ -176,7 +163,7 @@ export function InvestmentPerformanceChart() {
               />
               <Tooltip 
                 formatter={(value: any, name: string) => {
-                  if (name === "Investment Value") {
+                  if (name === "Current Investment" || name === "Total Return") {
                     return [`$${Number(value).toLocaleString()}`, name];
                   }
                   if (name === "Weighted Return") {
@@ -193,31 +180,22 @@ export function InvestmentPerformanceChart() {
               />
               <Legend />
               
-              {/* Historical Performance Line */}
-              <Line
-                type="monotone"
-                dataKey="value"
-                stroke={chartColor}
-                strokeWidth={3}
-                dot={{ fill: chartColor, strokeWidth: 2, r: 4 }}
-                connectNulls={false}
-                name="Investment Value"
-                data={chartData.filter(d => !d.isPrediction)}
+              {/* Current Investment Value (Blue) */}
+              <Bar
+                dataKey="currentInvestment"
+                stackId="investment"
+                fill="#3b82f6"
+                name="Current Investment"
               />
               
-              {/* Prediction Line */}
-              <Line
-                type="monotone"
-                dataKey="value"
-                stroke={chartColor}
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                dot={{ fill: chartColor, strokeWidth: 1, r: 3 }}
-                connectNulls={false}
-                name="Predicted Value"
-                data={chartData.filter(d => d.isPrediction)}
+              {/* Total Return (Purple) */}
+              <Bar
+                dataKey="totalReturn"
+                stackId="investment"
+                fill="#8b5cf6"
+                name="Total Return"
               />
-            </LineChart>
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
         
