@@ -48,7 +48,7 @@ export default function Portfolio() {
       if (!response.ok) throw new Error("Failed to fetch investment breakdown");
       return response.json();
     },
-    refetchInterval: 5000, // Refresh every 5 seconds to track investment changes
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Advisor contact mutation

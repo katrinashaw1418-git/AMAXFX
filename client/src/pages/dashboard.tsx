@@ -5,7 +5,6 @@ import FxExchangeTool from "@/components/dashboard/fx-exchange-tool";
 import AiAdvisoryPanel from "@/components/dashboard/ai-advisory-panel";
 import CurrencyBalances from "@/components/dashboard/currency-balances";
 import TransactionHistory from "@/components/dashboard/transaction-history";
-import { InvestmentBreakdownDetail } from "@/components/dashboard/investment-breakdown-detail";
 import KycModal from "@/components/modals/kyc-modal";
 
 export default function Dashboard() {
@@ -39,9 +38,6 @@ export default function Dashboard() {
           <CurrencyBalances />
         </div>
       </div>
-
-      {/* Investment Breakdown */}
-      <InvestmentBreakdownDetail />
 
       {/* Transaction History */}
       <TransactionHistory />

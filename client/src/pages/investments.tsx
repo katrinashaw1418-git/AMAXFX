@@ -14,8 +14,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useWallets } from "@/hooks/use-portfolio";
 import { TrendingUp, Building, CreditCard, Rocket, Bitcoin, DollarSign, Clock, Shield, Filter, X, ChevronDown, Phone, MessageCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { InvestmentPerformanceChart } from "@/components/dashboard/investment-performance-chart";
-import { InvestmentBreakdownDetail } from "@/components/dashboard/investment-breakdown-detail";
 
 const categoryIcons = {
   real_estate: Building,
@@ -68,7 +66,6 @@ export default function Investments() {
   const { data: userInvestments, isLoading: investmentsLoading } = useQuery({
     queryKey: ["/api/user-investments"],
     queryFn: () => api.getUserInvestments(),
-    refetchInterval: 5000, // Refresh every 5 seconds to track investment changes
   });
 
   const { data: wallets } = useWallets();
@@ -80,26 +77,19 @@ export default function Investments() {
   });
 
   const investMutation = useMutation({
-    mutationFn: (data: { productId: number; amount: number; sourceCurrency?: string; sourceAmount?: number }) => {
-      return api.createInvestment(data);
-    },
+    mutationFn: (data: { productId: number; amount: number }) => api.createInvestment(data),
     onSuccess: (response) => {
-      const newInvestmentAmount = response?.investment?.investedAmount || response?.investedAmount || 0;
       toast({
         title: "Investment Created",
-        description: `Successfully invested $${parseFloat(newInvestmentAmount).toLocaleString()}. New wallet balance: $${parseFloat(response.newBalance).toLocaleString()}`,
+        description: `Successfully invested $${parseFloat(response.investment.investedAmount).toLocaleString()}. New wallet balance: $${parseFloat(response.newBalance).toLocaleString()}`,
       });
-      // Invalidate ALL queries to ensure complete UI refresh
+      // Invalidate multiple queries to update UI
       queryClient.invalidateQueries({ queryKey: ["/api/user-investments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/portfolio/history"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio/allocation"] });
       queryClient.invalidateQueries({ queryKey: ["/api/investment-breakdown"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/investment-performance"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/investment-products"] });
-      
       setInvestModalOpen(false);
       setInvestmentAmount("");
       setSelectedProduct(null);
@@ -188,18 +178,10 @@ export default function Investments() {
 
   const hasActiveFilters = Object.values(filters).some(Boolean);
 
-  // Use investment performance API for accurate calculations instead of user-investments currentValue
-  const { data: investmentPerformance } = useQuery({
-    queryKey: ["/api/investment-performance", { timeframe: "1Y" }],
-    queryFn: () => api.getInvestmentPerformance({ timeframe: "1Y" }),
-    refetchInterval: 5000, // Refresh every 5 seconds
-  });
-
-  // Calculate totals using consistent midpoint IRR methodology
   const totalInvested = userInvestments?.reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0) || 0;
-  const totalCurrentValue = investmentPerformance ? parseFloat(investmentPerformance.currentValue) : 0;
-  const totalReturn = investmentPerformance ? parseFloat(investmentPerformance.totalReturn) : 0;
-  const totalReturnPercent = investmentPerformance ? parseFloat(investmentPerformance.totalReturnPercent) : 0;
+  const totalCurrentValue = userInvestments?.reduce((sum: number, inv: any) => sum + parseFloat(inv.currentValue), 0) || 0;
+  const totalReturn = totalCurrentValue - totalInvested;
+  const totalReturnPercent = totalInvested > 0 ? (totalReturn / totalInvested) * 100 : 0;
 
   // Currency selection and conversion logic
   const selectedWallet = wallets?.find(w => w.currency === selectedCurrency);
@@ -352,20 +334,96 @@ export default function Investments() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Investment Performance</h1>
-          <p className="text-gray-600">Track your investment portfolio performance and detailed breakdowns</p>
+          <h1 className="text-2xl font-bold">Investment Products</h1>
+          <p className="text-gray-600">Explore and invest in structured wealth management products</p>
         </div>
       </div>
 
-      {/* Performance by Period Chart */}
+      {/* Portfolio Overview */}
       {userInvestments && userInvestments.length > 0 && (
-        <InvestmentPerformanceChart />
-      )}
-
-      {/* Detailed Product Breakdown */}
-      {userInvestments && userInvestments.length > 0 && (
-        <div className="mt-6">
-          <InvestmentBreakdownDetail />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <Card className="flex flex-col h-32">
+            <CardContent className="p-4 flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-medium text-gray-500">Total Invested</h3>
+                <DollarSign className="w-3 h-3 text-primary" />
+              </div>
+              <div className="flex flex-col justify-end h-16">
+                <div className="flex items-end h-6">
+                  <p className="text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis w-full leading-none">${totalInvested.toLocaleString()}</p>
+                </div>
+                <div className="h-4"></div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="flex flex-col h-32">
+            <CardContent className="p-4 flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-medium text-gray-500">Current Value</h3>
+                <TrendingUp className="w-3 h-3 text-green-600" />
+              </div>
+              <div className="flex flex-col justify-end h-16">
+                <div className="flex items-end h-6">
+                  <p className="text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis w-full leading-none">${totalCurrentValue.toLocaleString()}</p>
+                </div>
+                <div className="h-4"></div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="flex flex-col h-32">
+            <CardContent className="p-4 flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <h3 className="text-xs font-medium text-gray-500">Total Return</h3>
+                  <span className={`text-xs ${totalReturnPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {totalReturnPercent >= 0 ? '+' : ''}{totalReturnPercent.toFixed(2)}%
+                  </span>
+                </div>
+                <TrendingUp className="w-3 h-3 text-secondary" />
+              </div>
+              <div className="flex flex-col justify-end h-16">
+                <div className="flex items-end h-6">
+                  <p className={`text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis w-full leading-none ${totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    ${totalReturn.toLocaleString()}
+                  </p>
+                </div>
+                <div className="h-4"></div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="flex flex-col h-32">
+            <CardContent className="p-4 flex flex-col justify-between h-full">
+              <div className="flex items-center space-x-2">
+                <h3 className="text-xs font-medium text-gray-500">Available Capital</h3>
+                <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+                  <SelectTrigger className="w-auto min-w-12 h-5 text-xs border border-green-200 rounded px-1 py-0 focus:ring-1 focus:ring-green-500 bg-green-50 hover:bg-green-100 transition-colors font-semibold text-green-700">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCurrencies.map((currency) => (
+                      <SelectItem key={currency.currency} value={currency.currency}>
+                        <span className="font-medium">{currency.currency}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col justify-end h-16">
+                <div className="flex items-end h-6">
+                  <p className="text-lg font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis w-full leading-none">
+                    {currencySymbols[selectedCurrency] || selectedCurrency}{availableBalance.toLocaleString()}
+                  </p>
+                </div>
+                <div className="h-4 flex items-center">
+                  {selectedCurrency !== 'USD' && (
+                    <span className="text-xs text-gray-600">
+                      US${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
