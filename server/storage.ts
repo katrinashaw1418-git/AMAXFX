@@ -1,12 +1,13 @@
 import { 
-  users, wallets, portfolios, transactions, fxRates, aiRecommendations, investmentProducts, userInvestments,
+  users, wallets, portfolios, transactions, fxRates, aiRecommendations, investmentProducts, userInvestments, portfolioSnapshots,
   type User, type InsertUser, type Wallet, type InsertWallet, 
   type Portfolio, type InsertPortfolio, type Transaction, type InsertTransaction,
   type FxRate, type InsertFxRate, type AiRecommendation, type InsertAiRecommendation,
-  type InvestmentProduct, type InsertInvestmentProduct, type UserInvestment, type InsertUserInvestment
+  type InvestmentProduct, type InsertInvestmentProduct, type UserInvestment, type InsertUserInvestment,
+  type PortfolioSnapshot, type InsertPortfolioSnapshot
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -50,6 +51,10 @@ export interface IStorage {
   getUserInvestments(userId: number): Promise<UserInvestment[]>;
   createUserInvestment(investment: InsertUserInvestment): Promise<UserInvestment>;
   updateUserInvestment(id: number, investment: Partial<InsertUserInvestment>): Promise<UserInvestment | undefined>;
+
+  // Portfolio Snapshots
+  getPortfolioSnapshots(userId: number, startDate?: Date, endDate?: Date): Promise<PortfolioSnapshot[]>;
+  createPortfolioSnapshot(snapshot: InsertPortfolioSnapshot): Promise<PortfolioSnapshot>;
 }
 
 export class MemStorage implements IStorage {
@@ -3208,6 +3213,100 @@ export class MemStorage implements IStorage {
     }
     return undefined;
   }
+
+  // Portfolio Snapshots - in memory, we'll calculate from transactions
+  async getPortfolioSnapshots(userId: number, startDate?: Date, endDate?: Date): Promise<PortfolioSnapshot[]> {
+    // For MemStorage, generate historical data based on actual transactions
+    const transactions = this.transactions.get(userId) || [];
+    const snapshots: PortfolioSnapshot[] = [];
+    
+    // Create snapshots based on transaction dates
+    const transactionDates = transactions
+      .map(t => new Date(t.createdAt!))
+      .sort((a, b) => a.getTime() - b.getTime());
+    
+    if (transactionDates.length === 0) {
+      return [];
+    }
+    
+    // Calculate portfolio values at different points in time
+    let cumulativeValue = 0;
+    let id = 1;
+    
+    for (const date of transactionDates) {
+      // Skip if outside date range
+      if (startDate && date < startDate) continue;
+      if (endDate && date > endDate) continue;
+      
+      // Find all transactions up to this date
+      const transactionsUpToDate = transactions.filter(t => 
+        new Date(t.createdAt!) <= date
+      );
+      
+      // Calculate cumulative portfolio value
+      let fiatValue = 0;
+      let cryptoValue = 0;
+      let stablecoinValue = 0;
+      let investmentValue = 0;
+      
+      // Sum up deposits and subtract withdrawals
+      for (const transaction of transactionsUpToDate) {
+        if (transaction.status !== 'completed') continue;
+        
+        const amount = parseFloat(transaction.amount);
+        
+        if (transaction.type === 'deposit') {
+          if (transaction.toCurrency === 'USD' || transaction.toCurrency === 'CAD' || 
+              transaction.toCurrency === 'EUR' || transaction.toCurrency === 'GBP') {
+            fiatValue += amount;
+          } else if (transaction.toCurrency === 'USDT' || transaction.toCurrency === 'USDC') {
+            stablecoinValue += amount;
+          } else if (transaction.toCurrency === 'BTC' || transaction.toCurrency === 'ETH') {
+            // Convert crypto to USD at time of snapshot
+            const rate = await this.getFxRate(transaction.toCurrency!, 'USD');
+            if (rate) {
+              cryptoValue += amount * parseFloat(rate.rate);
+            }
+          }
+        }
+        // For exchanges, adjust values accordingly
+        else if (transaction.type === 'exchange') {
+          // This is handled by the individual currency calculations above
+        }
+      }
+      
+      const totalValue = fiatValue + cryptoValue + stablecoinValue + investmentValue;
+      
+      snapshots.push({
+        id: id++,
+        userId,
+        totalValue: totalValue.toFixed(2),
+        cryptoValue: cryptoValue.toFixed(2),
+        stablecoinValue: stablecoinValue.toFixed(2),
+        fiatValue: fiatValue.toFixed(2),
+        investmentValue: investmentValue.toFixed(2),
+        snapshotDate: date,
+        createdAt: date,
+      });
+    }
+    
+    return snapshots;
+  }
+
+  async createPortfolioSnapshot(insertSnapshot: InsertPortfolioSnapshot): Promise<PortfolioSnapshot> {
+    // For MemStorage, we don't actually store snapshots since they're calculated from transactions
+    return {
+      id: Date.now(), // Simple ID generation
+      userId: insertSnapshot.userId,
+      totalValue: insertSnapshot.totalValue,
+      cryptoValue: insertSnapshot.cryptoValue,
+      stablecoinValue: insertSnapshot.stablecoinValue,
+      fiatValue: insertSnapshot.fiatValue,
+      investmentValue: insertSnapshot.investmentValue,
+      snapshotDate: insertSnapshot.snapshotDate,
+      createdAt: new Date(),
+    };
+  }
 }
 
 // Database Storage Implementation - prevents data loss on server restart
@@ -3369,6 +3468,25 @@ export class DatabaseStorage implements IStorage {
   async updateUserInvestment(id: number, updateInvestment: Partial<InsertUserInvestment>): Promise<UserInvestment | undefined> {
     const [investment] = await db.update(userInvestments).set(updateInvestment).where(eq(userInvestments.id, id)).returning();
     return investment || undefined;
+  }
+
+  async getPortfolioSnapshots(userId: number, startDate?: Date, endDate?: Date): Promise<PortfolioSnapshot[]> {
+    let query = db.select().from(portfolioSnapshots).where(eq(portfolioSnapshots.userId, userId));
+    
+    // Add date filters if provided
+    if (startDate && endDate) {
+      query = query.where(
+        // Using SQL expression to filter by date range
+        sql`${portfolioSnapshots.snapshotDate} >= ${startDate} AND ${portfolioSnapshots.snapshotDate} <= ${endDate}`
+      );
+    }
+    
+    return await query.orderBy(portfolioSnapshots.snapshotDate);
+  }
+
+  async createPortfolioSnapshot(insertSnapshot: InsertPortfolioSnapshot): Promise<PortfolioSnapshot> {
+    const [snapshot] = await db.insert(portfolioSnapshots).values(insertSnapshot).returning();
+    return snapshot;
   }
 }
 
