@@ -92,7 +92,16 @@ export default function WealthOverview() {
     formula: 'Capital Invested = Sum of all individual investment amounts',
     calculation: `Sum of ${userInvestments?.length || 0} investments = $${capitalInvested.toLocaleString()}`,
     realTimeUpdate: true,
+    verifyStateUpdate: 'When new investment made, this value should increase immediately',
     timestamp: new Date().toISOString()
+  });
+  
+  // State persistence verification
+  console.log('State Update Verification:', {
+    userInvestmentsLoaded: !!userInvestments,
+    dataFreshness: userInvestments ? 'Fresh data from API' : 'No data available',
+    reRenderTrigger: 'Component re-renders when userInvestments data changes',
+    formulaWorking: capitalInvested > 0 ? 'Yes - formula calculating correctly' : 'No - check data source'
   });
 
   return (

@@ -81,13 +81,37 @@ export default function Investments() {
   });
 
   const investMutation = useMutation({
-    mutationFn: (data: { productId: number; amount: number; sourceCurrency?: string; sourceAmount?: number }) => 
-      api.createInvestment(data),
+    mutationFn: (data: { productId: number; amount: number; sourceCurrency?: string; sourceAmount?: number }) => {
+      console.log('Investment Amount Input:', {
+        productId: data.productId,
+        investmentAmount: data.amount,
+        sourceCurrency: data.sourceCurrency,
+        sourceAmount: data.sourceAmount,
+        action: 'Starting investment creation process',
+        timestamp: new Date().toISOString()
+      });
+      return api.createInvestment(data);
+    },
     onSuccess: (response) => {
       const newInvestmentAmount = response?.investment?.investedAmount || response?.investedAmount || 0;
+      
+      // Get current Capital Invested before new investment
+      const currentCapitalInvested = userInvestments ? userInvestments.reduce((sum, inv) => sum + parseFloat(inv.investedAmount), 0) : 0;
+      const expectedNewCapitalInvested = currentCapitalInvested + parseFloat(newInvestmentAmount);
+      
+      console.log('Capital Invested State Update Verification:', {
+        investmentAmount: newInvestmentAmount,
+        currentCapitalInvested: currentCapitalInvested,
+        expectedNewCapitalInvested: expectedNewCapitalInvested,
+        formula: 'Capital Invested = Existing Capital + New Investment Input',
+        calculation: `$${currentCapitalInvested.toLocaleString()} + $${parseFloat(newInvestmentAmount).toLocaleString()} = $${expectedNewCapitalInvested.toLocaleString()}`,
+        action: 'Investment successfully created - triggering state updates',
+        timestamp: new Date().toISOString()
+      });
+      
       toast({
         title: "Investment Created", 
-        description: `Successfully invested $${parseFloat(newInvestmentAmount).toLocaleString()}. Capital Invested will update automatically using the formula: Existing Capital + New Investment.`,
+        description: `Successfully invested $${parseFloat(newInvestmentAmount).toLocaleString()}. Capital Invested will update from $${currentCapitalInvested.toLocaleString()} to $${expectedNewCapitalInvested.toLocaleString()}.`,
       });
       
       // Invalidate ALL queries to trigger Capital Invested formula recalculation
@@ -104,13 +128,6 @@ export default function Investments() {
       // Force immediate refresh for real-time Capital Invested updates
       queryClient.refetchQueries();
       
-      console.log('Capital Invested Formula Triggered:', {
-        newInvestment: newInvestmentAmount,
-        formula: 'Capital Invested = Existing Capital + New Investment Amount',
-        action: 'Investment created - triggering automatic recalculation',
-        timestamp: new Date().toISOString()
-      });
-      
       // Ultra-aggressive immediate refresh for Capital Invested display
       queryClient.invalidateQueries();
       queryClient.refetchQueries();
@@ -118,7 +135,7 @@ export default function Investments() {
       setTimeout(() => {
         queryClient.invalidateQueries();
         queryClient.refetchQueries();
-        console.log('URGENT: Capital Invested should update now - check if amount increased!');
+        console.log('URGENT: Capital Invested should now show $' + expectedNewCapitalInvested.toLocaleString() + ' - verify the update!');
       }, 50);
       
       setTimeout(() => {
