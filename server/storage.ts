@@ -109,14 +109,14 @@ export class MemStorage implements IStorage {
     };
     this.portfolios.set(1, demoPortfolio);
 
-    // Create demo wallets
+    // Create demo wallets - Updated to reflect current investment deductions
     const demoWallets: Wallet[] = [
       {
         id: 1,
         userId: 1,
         currency: "USD",
-        balance: "67482.00",
-        availableBalance: "67482.00",
+        balance: "1975000.00", // Reduced from 2M by investment deductions
+        availableBalance: "1975000.00",
         walletType: "fiat",
         updatedAt: new Date(),
       },
@@ -2598,7 +2598,7 @@ export class MemStorage implements IStorage {
         structure: "Real estate-backed loans",
         distributions: "Quarterly",
         liquidity: "Quarterly redemptions (5% NAV cap)",
-        minimumInvestment: "100000.00",
+        minimumInvestment: "25000.00",
         riskProfile: "moderate",
         returnType: "income",
         lvr: "68%",
@@ -2618,7 +2618,7 @@ export class MemStorage implements IStorage {
         structure: "First-ranking mortgage",
         distributions: "Quarterly",
         liquidity: "Quarterly redemption",
-        minimumInvestment: "50000.00",
+        minimumInvestment: "25000.00",
         riskProfile: "moderate",
         returnType: "income",
         lvr: "64%",
@@ -2918,6 +2918,19 @@ export class MemStorage implements IStorage {
         maturityDate: null, // Open-ended
         updatedAt: new Date(),
       },
+      {
+        id: 9,
+        userId: 1,
+        productId: 3, // Real Estate First Mortgage Fund
+        investedAmount: "25000.00",
+        currentValue: "25000.00",
+        totalReturn: "0.00",
+        returnPercent: "0.00",
+        status: "active",
+        investmentDate: new Date(), // Just created
+        maturityDate: null,
+        updatedAt: new Date(),
+      },
     ];
     this.userInvestments.set(1, demoUserInvestments);
   }
@@ -3175,7 +3188,38 @@ export class MemStorage implements IStorage {
   }
 
   async getUserInvestments(userId: number): Promise<UserInvestment[]> {
-    return this.userInvestments.get(userId) || [];
+    // For real-time Capital Invested tracking, always query database directly
+    try {
+      // Use drizzle to query ALL user investments with fresh data
+      const dbInvestments = await db.select().from(userInvestments)
+        .where(eq(userInvestments.userId, userId))
+        .orderBy(userInvestments.id);
+      
+      console.log(`Real-time database query found ${dbInvestments.length} investments for user ${userId}`);
+      console.log(`Investment IDs: [${dbInvestments.map(inv => inv.id).join(', ')}]`);
+      
+      // Always return database results for accurate Capital Invested calculation
+      return dbInvestments.map(inv => ({
+        id: inv.id,
+        userId: inv.userId,
+        productId: inv.productId,
+        investedAmount: inv.investedAmount,
+        currentValue: inv.currentValue,
+        totalReturn: inv.totalReturn,
+        returnPercent: inv.returnPercent,
+        status: inv.status,
+        investmentDate: inv.investmentDate,
+        maturityDate: inv.maturityDate,
+        updatedAt: inv.updatedAt
+      }));
+    } catch (error) {
+      console.error('Critical: Database query failed for real-time Capital Invested tracking:', error);
+      
+      // Emergency fallback to memory storage only if database completely fails
+      const memoryInvestments = this.userInvestments.get(userId) || [];
+      console.log(`Emergency fallback: Using memory storage with ${memoryInvestments.length} investments`);
+      return memoryInvestments;
+    }
   }
 
   async createUserInvestment(insertInvestment: InsertUserInvestment): Promise<UserInvestment> {
