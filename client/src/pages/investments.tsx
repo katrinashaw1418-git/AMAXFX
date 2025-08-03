@@ -68,8 +68,7 @@ export default function Investments() {
   const { data: userInvestments, isLoading: investmentsLoading } = useQuery({
     queryKey: ["/api/user-investments"],
     queryFn: () => api.getUserInvestments(),
-    refetchInterval: 1000, // Refresh every 1 second for immediate Capital Invested updates
-    staleTime: 0, // Always consider data stale to force fresh requests
+    refetchInterval: 5000, // Refresh every 5 seconds to track investment changes
   });
 
   const { data: wallets } = useWallets();
@@ -82,39 +81,15 @@ export default function Investments() {
 
   const investMutation = useMutation({
     mutationFn: (data: { productId: number; amount: number; sourceCurrency?: string; sourceAmount?: number }) => {
-      console.log('Investment Amount Input:', {
-        productId: data.productId,
-        investmentAmount: data.amount,
-        sourceCurrency: data.sourceCurrency,
-        sourceAmount: data.sourceAmount,
-        action: 'Starting investment creation process',
-        timestamp: new Date().toISOString()
-      });
       return api.createInvestment(data);
     },
     onSuccess: (response) => {
       const newInvestmentAmount = response?.investment?.investedAmount || response?.investedAmount || 0;
-      
-      // Get current Capital Invested before new investment
-      const currentCapitalInvested = userInvestments ? userInvestments.reduce((sum, inv) => sum + parseFloat(inv.investedAmount), 0) : 0;
-      const expectedNewCapitalInvested = currentCapitalInvested + parseFloat(newInvestmentAmount);
-      
-      console.log('Capital Invested State Update Verification:', {
-        investmentAmount: newInvestmentAmount,
-        currentCapitalInvested: currentCapitalInvested,
-        expectedNewCapitalInvested: expectedNewCapitalInvested,
-        formula: 'Capital Invested = Existing Capital + New Investment Input',
-        calculation: `$${currentCapitalInvested.toLocaleString()} + $${parseFloat(newInvestmentAmount).toLocaleString()} = $${expectedNewCapitalInvested.toLocaleString()}`,
-        action: 'Investment successfully created - triggering state updates',
-        timestamp: new Date().toISOString()
-      });
-      
       toast({
-        title: "Investment Created", 
-        description: `Successfully invested $${parseFloat(newInvestmentAmount).toLocaleString()}. Capital Invested will update from $${currentCapitalInvested.toLocaleString()} to $${expectedNewCapitalInvested.toLocaleString()}.`,
+        title: "Investment Created",
+        description: `Successfully invested $${parseFloat(newInvestmentAmount).toLocaleString()}. New wallet balance: $${parseFloat(response.newBalance).toLocaleString()}`,
       });
-      
-      // Invalidate ALL queries to trigger Capital Invested formula recalculation
+      // Invalidate ALL queries to ensure complete UI refresh
       queryClient.invalidateQueries({ queryKey: ["/api/user-investments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
@@ -124,29 +99,6 @@ export default function Investments() {
       queryClient.invalidateQueries({ queryKey: ["/api/investment-performance"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/investment-products"] });
-      
-      // Force immediate refresh for real-time Capital Invested updates
-      queryClient.refetchQueries();
-      
-      // Ultra-aggressive immediate refresh for Capital Invested display
-      queryClient.invalidateQueries();
-      queryClient.refetchQueries();
-      
-      setTimeout(() => {
-        queryClient.invalidateQueries();
-        queryClient.refetchQueries();
-        console.log('URGENT: Capital Invested should now show $' + expectedNewCapitalInvested.toLocaleString() + ' - verify the update!');
-      }, 100);
-      
-      setTimeout(() => {
-        queryClient.invalidateQueries();
-        queryClient.refetchQueries();
-      }, 200);
-      
-      setTimeout(() => {
-        queryClient.invalidateQueries();
-        queryClient.refetchQueries();
-      }, 500);
       
       setInvestModalOpen(false);
       setInvestmentAmount("");
@@ -221,7 +173,7 @@ export default function Investments() {
       return;
     }
 
-    // Create investment with automated Capital Invested formula update
+    // Create investment with source currency info for proper wallet deduction
     investMutation.mutate({
       productId: selectedProduct.id,
       amount: usdAmount, // USD equivalent for investment
