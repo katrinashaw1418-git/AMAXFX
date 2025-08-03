@@ -2,6 +2,160 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 
+// IRR mapping - Using midpoint IRR for all investments (as requested)
+function getAnnualReturn(category: string, productName?: string): number {
+  const rates = {
+    'real_estate': 0.11,      // 11% midpoint
+    'corporate_credit': 0.11, // 11% midpoint (10-12% range)
+    'venture_capital': 0.18,  // 18% midpoint (16-20% range)
+    'digital_assets': (productName && typeof productName === 'string' && productName.includes('Bitcoin')) ? 0.15 : 0.0575, // Bitcoin 15% midpoint IRR, Ethereum 5.75%
+    'default': 0.11
+  };
+  return rates[category as keyof typeof rates] || rates.default;
+}
+
+// Unified investment performance calculation using consistent midpoint IRR methodology with term expiry capping
+function calculateInvestmentPerformance(
+  product: any,
+  investedAmount: number,
+  investmentDate: Date,
+  currentDate: Date = new Date()
+): { currentValue: number; returnAmount: number; returnPercentage: number; daysHeld: number; timeInYears: number; targetIRR: number; growthFactor: number; effectiveTime: number; termYears: number } {
+  // Safety check for product data
+  if (!product) {
+    console.error('Product is null/undefined in calculateInvestmentPerformance');
+    return { 
+      currentValue: investedAmount, 
+      returnAmount: 0, 
+      returnPercentage: 0, 
+      daysHeld: 0, 
+      timeInYears: 0, 
+      targetIRR: 0, 
+      growthFactor: 1,
+      effectiveTime: 0,
+      termYears: 0 
+    };
+  }
+  
+  // Calculate exact time elapsed in years with high precision
+  const timeElapsedMs = currentDate.getTime() - investmentDate.getTime();
+  const timeInYears = Math.max(0, timeElapsedMs / (1000 * 60 * 60 * 24 * 365.25)); // High precision calculation
+  const daysHeld = Math.max(0, Math.floor(timeElapsedMs / (1000 * 60 * 60 * 24)));
+  
+  // Get exact midpoint IRR and term years based on specific product ID
+  let targetIRR = 0.08; // Default 8% annual return
+  let termYears = 5; // Default 5 year term
+  
+  // Use exact IRR values and terms from actual database product descriptions
+  switch (product.id) {
+    case 1: // Real Estate Equity Fund - target_net_irr: 8.5%, term: 24 months
+      targetIRR = 0.085; // Exactly 8.5% from database
+      termYears = 2.0; // 24 months = 2.0 years
+      break;
+    case 2: // Bitcoin Tracker Fund - "Market-based (historical 60%+ annualized)"
+      targetIRR = 0.60; // 60% based on historical Bitcoin returns
+      termYears = 1.0; // 12 months = 1.0 year
+      break;
+    case 3: // Corporate Credit Fund - "midpoint IRR targeting 11% annual returns"
+      targetIRR = 0.11; // Exactly 11% from investment_strategy description
+      termYears = 1.5; // 18 months = 1.5 years
+      break;
+    case 4: // Web3 Innovation Fund - "midpoint IRR targeting 18% annual returns"
+      targetIRR = 0.18; // Exactly 18% from investment_strategy description
+      termYears = 4.0; // Midpoint: (3 + 5) / 2 = 4.0 years
+      break;
+    case 5: // Ethereum Staking Fund - "midpoint IRR targeting 5.75% annual returns"
+      targetIRR = 0.0575; // Exactly 5.75% from investment_strategy description
+      termYears = 2.0; // 2 years for open-ended product
+      break;
+    case 6: // VC / Growth Equity Fund - Target IRR: 16–20%
+      targetIRR = 0.18; // Midpoint: (16 + 20) / 2 = 18%
+      termYears = 6; // 6 year term
+      break;
+    case 7: // Hybrid Capital Fund - Target IRR: 12–16%
+      targetIRR = 0.14; // Midpoint: (12 + 16) / 2 = 14%
+      termYears = 4; // 4 year term
+      break;
+    case 8: // Real Estate Credit Fund - Target IRR: ~11%
+      targetIRR = 0.11; // Exactly 11%
+      termYears = 0.85; // 0.85 year term (10.2 months)
+      break;
+    case 9: // Real Estate First Mortgage Fund - Target IRR: ~9%
+      targetIRR = 0.09; // Exactly 9%
+      termYears = 0.78; // 0.78 year term (9.4 months)
+      break;
+    case 10: // Diversified Crypto Fund - Target IRR: 25–35%
+      targetIRR = 0.30; // Midpoint: (25 + 35) / 2 = 30%
+      termYears = 4; // 4 year term
+      break;
+    case 11: // Security-Backed Corporate Credit Fund - Target IRR: 12–15%
+      targetIRR = 0.135; // Midpoint: (12 + 15) / 2 = 13.5%
+      termYears = 2.875; // 2.875 year term (2 years 10.5 months)
+      break;
+    case 12: // High-Yield Savings Account - Target IRR: 4.5–5.5%
+      targetIRR = 0.05; // Midpoint: (4.5 + 5.5) / 2 = 5%
+      termYears = 1; // 1 year term
+      break;
+    case 13: // Money Market Sweep Fund - Target IRR: 3.8–4.8%
+      targetIRR = 0.043; // Midpoint: (3.8 + 4.8) / 2 = 4.3%
+      termYears = 1; // 1 year term
+      break;
+    case 14: // Premium Treasury Deposit - Target IRR: 2.5–3.5%
+      targetIRR = 0.03; // Midpoint: (2.5 + 3.5) / 2 = 3%
+      termYears = 0.5; // 6 month term
+      break;
+    default:
+      // Fallback to category-based logic for any new products
+      switch (product.category) {
+        case 'real_estate':
+          targetIRR = 0.104; // Default to Real Estate Equity midpoint
+          termYears = 4.25;
+          break;
+        case 'corporate_credit':
+          targetIRR = 0.11; // Default to Cash Flow-Based Corporate Credit midpoint
+          termYears = 2.5;
+          break;
+        case 'venture_capital':
+          targetIRR = 0.18; // Default to VC/Growth Equity midpoint
+          termYears = 6;
+          break;
+        case 'digital_assets':
+          targetIRR = 0.15; // Default to Bitcoin conservative midpoint
+          termYears = 3;
+          break;
+        case 'cash_deposit':
+          targetIRR = 0.05; // Default to High-Yield Savings midpoint
+          termYears = 1;
+          break;
+        default:
+          targetIRR = 0.08; // 8% for unspecified
+          termYears = 5;
+      }
+  }
+  
+  // Cap time at product term (no growth beyond maturity) - THIS IS THE KEY FIX
+  const effectiveTime = Math.min(timeInYears, termYears);
+  
+  // Calculate current value using compound interest formula with term-capped time
+  // Current Value = Principal × (1 + Rate)^(Effective Time)
+  const growthFactor = Math.pow(1 + targetIRR, effectiveTime);
+  const currentValue = Math.floor(investedAmount * growthFactor);
+  const returnAmount = Math.floor(currentValue - investedAmount);
+  const returnPercentage = investedAmount > 0 ? (returnAmount / investedAmount) * 100 : 0;
+  
+  return {
+    currentValue,
+    returnAmount,
+    returnPercentage,
+    daysHeld,
+    timeInYears,
+    targetIRR,
+    growthFactor,
+    effectiveTime,
+    termYears
+  };
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
@@ -53,62 +207,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Calculate investment value with real-time performance
+      // Calculate investment value using unified midpoint IRR calculation function
       let investmentValue = 0;
+      const evaluationDate = new Date();
+      
       for (const investment of investments) {
         const product = await storage.getInvestmentProduct(investment.productId);
         if (product) {
           const investmentDate = new Date(investment.investmentDate);
-          const daysSinceInvestment = Math.floor((new Date().getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24));
           const investedAmount = parseFloat(investment.investedAmount);
-          let performanceFactor = 1;
-          
-          // Apply performance calculation based on fund category
-          switch (product.category) {
-            case 'digital_assets':
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.15;
-                const volatility = 0.4;
-                const timeProgress = daysSinceInvestment / 365;
-                const baseReturn = annualReturn * timeProgress;
-                const volatilityAdjustment = (Math.sin(daysSinceInvestment * 0.1) * volatility * 0.1);
-                performanceFactor = 1 + baseReturn + volatilityAdjustment;
-              }
-              break;
-            case 'real_estate':
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.08;
-                const timeProgress = daysSinceInvestment / 365;
-                performanceFactor = 1 + (annualReturn * timeProgress);
-              }
-              break;
-            case 'corporate_credit':
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.05;
-                const timeProgress = daysSinceInvestment / 365;
-                performanceFactor = 1 + (annualReturn * timeProgress);
-              }
-              break;
-            case 'venture_capital':
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.20;
-                const volatility = 0.3;
-                const timeProgress = daysSinceInvestment / 365;
-                const baseReturn = annualReturn * timeProgress;
-                const volatilityAdjustment = (Math.random() - 0.5) * volatility * 0.1;
-                performanceFactor = 1 + baseReturn + volatilityAdjustment;
-              }
-              break;
-            default:
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.03;
-                const timeProgress = daysSinceInvestment / 365;
-                performanceFactor = 1 + (annualReturn * timeProgress);
-              }
-          }
-          
-          performanceFactor = Math.max(0.5, performanceFactor);
-          investmentValue += investedAmount * performanceFactor;
+          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, evaluationDate);
+          investmentValue += performance.currentValue;
         }
       }
       
@@ -203,52 +312,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const investedAmount = parseFloat(investment.investedAmount);
           let performanceFactor = 1;
           
-          // Apply same performance calculation as historical data
-          switch (product.category) {
-            case 'digital_assets':
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.15;
-                const volatility = 0.4;
-                const timeProgress = daysSinceInvestment / 365;
-                const baseReturn = annualReturn * timeProgress;
-                const volatilityAdjustment = (Math.sin(daysSinceInvestment * 0.1) * volatility * 0.1);
-                performanceFactor = 1 + baseReturn + volatilityAdjustment;
-              }
-              break;
-            case 'real_estate':
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.08;
-                const timeProgress = daysSinceInvestment / 365;
-                performanceFactor = 1 + (annualReturn * timeProgress);
-              }
-              break;
-            case 'corporate_credit':
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.05;
-                const timeProgress = daysSinceInvestment / 365;
-                performanceFactor = 1 + (annualReturn * timeProgress);
-              }
-              break;
-            case 'venture_capital':
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.20;
-                const volatility = 0.3;
-                const timeProgress = daysSinceInvestment / 365;
-                const baseReturn = annualReturn * timeProgress;
-                const volatilityAdjustment = (Math.random() - 0.5) * volatility * 0.1;
-                performanceFactor = 1 + baseReturn + volatilityAdjustment;
-              }
-              break;
-            default:
-              if (daysSinceInvestment > 0) {
-                const annualReturn = 0.03;
-                const timeProgress = daysSinceInvestment / 365;
-                performanceFactor = 1 + (annualReturn * timeProgress);
-              }
-          }
-          
-          performanceFactor = Math.max(0.5, performanceFactor);
-          currentInvestmentValue += investedAmount * performanceFactor;
+          // Use unified midpoint IRR calculation function
+          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, endDate);
+          currentInvestmentValue += performance.currentValue;
         }
       }
       const currentTotalValue = currentFiatValue + currentCryptoValue + currentStablecoinValue + currentInvestmentValue;
@@ -497,9 +563,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Calculate investment value
-      investmentValue = investments
-        .reduce((sum, inv) => sum + parseFloat(inv.currentValue), 0);
+      // Calculate investment value using unified calculation function
+      const evaluationDate = new Date();
+      for (const investment of investments) {
+        const product = await storage.getInvestmentProduct(investment.productId);
+        if (product) {
+          const investmentDate = new Date(investment.investmentDate);
+          const investedAmount = parseFloat(investment.investedAmount);
+          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, evaluationDate);
+          investmentValue += performance.currentValue;
+        }
+      }
       
       const totalValue = fiatValue + cryptoValue + stablecoinValue + investmentValue;
       
@@ -620,9 +694,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Calculate investment value
-      investmentValue = investments
-        .reduce((sum, inv) => sum + parseFloat(inv.currentValue), 0);
+      // Calculate investment value using unified calculation function
+      const evaluationDate = new Date();
+      for (const investment of investments) {
+        const product = await storage.getInvestmentProduct(investment.productId);
+        if (product) {
+          const investmentDate = new Date(investment.investmentDate);
+          const investedAmount = parseFloat(investment.investedAmount);
+          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, evaluationDate);
+          investmentValue += performance.currentValue;
+        }
+      }
       
       const totalValue = fiatValue + cryptoValue + stablecoinValue + investmentValue;
       
@@ -1228,13 +1310,294 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user investments
+
+
+  // Get user investments with real-time Filter Products calculation
   app.get("/api/user-investments", async (req, res) => {
     try {
-      const investments = await storage.getUserInvestments(1); // Hardcoded user ID for demo
-      res.json(investments);
+      const userId = 1; // Hardcoded user ID for demo
+      const investments = await storage.getUserInvestments(userId);
+      const allProducts = await storage.getInvestmentProducts();
+      const currentDate = new Date();
+      
+      // Real-time Filter Products calculation methodology
+      const investmentsWithPerformance = investments.map(investment => {
+        const product = allProducts.find(p => p.id === investment.productId);
+        if (!product) return investment;
+        
+        // Extract real-time IRR from strategy description (authoritative source)
+        let realTimeIRR = 0.08; // Default fallback
+        const strategy = product.investmentStrategy ? product.investmentStrategy.toLowerCase() : '';
+        
+        // Debug log to see what strategy we're processing
+        console.log(`Processing product ${product.id}: ${product.name}, strategy: "${strategy}"`);
+        
+        // Use direct product ID mapping based on database query results
+        switch (product.id) {
+          case 1: // Real Estate Equity Fund
+            realTimeIRR = 0.085; // 8.5%
+            console.log(`Applied 8.5% IRR for Product 1: Real Estate Equity Fund`);
+            break;
+          case 2: // Bitcoin Tracker Fund
+            realTimeIRR = 0.60; // 60%
+            console.log(`Applied 60% IRR for Product 2: Bitcoin Tracker Fund`);
+            break;
+          case 3: // Corporate Credit Fund
+            realTimeIRR = 0.11; // 11%
+            console.log(`Applied 11% IRR for Product 3: Corporate Credit Fund`);
+            break;
+          case 4: // Web3 Innovation Fund
+            realTimeIRR = 0.18; // 18%
+            console.log(`Applied 18% IRR for Product 4: Web3 Innovation Fund`);
+            break;
+          case 5: // Ethereum Staking Fund
+            realTimeIRR = 0.0575; // 5.75%
+            console.log(`Applied 5.75% IRR for Product 5: Ethereum Staking Fund`);
+            break;
+          default:
+            console.log(`Using fallback 8% IRR for product ${product.id}: ${product.name}`);
+            break;
+        }
+        
+        // Real-time period calculation with high precision
+        const investmentDate = new Date(investment.investmentDate);
+        const timeElapsedMs = currentDate.getTime() - investmentDate.getTime();
+        const timeElapsed = Math.max(0, timeElapsedMs / (1000 * 60 * 60 * 24 * 365.25));
+        
+        // Real-time compound interest calculation
+        const principal = parseFloat(investment.investedAmount);
+        const growthFactor = Math.pow(1 + realTimeIRR, timeElapsed);
+        const currentValue = Math.round((principal * growthFactor) * 100) / 100;
+        const totalReturn = Math.round((currentValue - principal) * 100) / 100;
+        const returnPercent = (totalReturn / principal) * 100;
+        
+        return {
+          ...investment,
+          currentValue: currentValue.toFixed(2),
+          totalReturn: totalReturn.toFixed(2),
+          returnPercent: returnPercent.toFixed(2),
+          realTimeIRR,
+          timeElapsed: timeElapsed.toFixed(4),
+          updatedAt: currentDate
+        };
+      });
+      
+      res.json(investmentsWithPerformance);
     } catch (error) {
       res.status(500).json({ error: "Failed to get user investments" });
+    }
+  });
+
+  // Get investment performance by period with predictions
+  app.get("/api/investment-performance", async (req, res) => {
+    try {
+      const { timeframe = "1Y" } = req.query;
+      const userId = 1;
+      
+      // Get all user investments
+      const investments = await storage.getUserInvestments(userId);
+      const allProducts = await storage.getInvestmentProducts();
+      
+      // Calculate date range
+      const endDate = new Date();
+      const startDate = new Date();
+      
+      switch (timeframe) {
+        case "1M":
+          startDate.setMonth(startDate.getMonth() - 1);
+          break;
+        case "3M":
+          startDate.setMonth(startDate.getMonth() - 3);
+          break;
+        case "1Y":
+          startDate.setFullYear(startDate.getFullYear() - 1);
+          break;
+        default:
+          startDate.setFullYear(startDate.getFullYear() - 1);
+      }
+      
+      // Generate data points at 3-month intervals for the timeframe
+      const dataPoints = [];
+      const intervalDate = new Date(startDate);
+      
+      while (intervalDate <= endDate) {
+        let totalInvestmentValue = 0;
+        let weightedReturn = 0;
+        let totalInvestedAmount = 0;
+        
+        // Calculate cumulative investment performance over time periods
+        for (const investment of investments) {
+          const product = allProducts.find(p => p.id === investment.productId);
+          if (product) {
+            const investmentDate = new Date(investment.investmentDate);
+            // Only include investments that existed at this point in time
+            if (investmentDate <= intervalDate) {
+              const investedAmount = parseFloat(investment.investedAmount);
+              
+              // Use same real-time calculation as User Investments API for consistency
+              let realTimeIRR = 0.08; // Default fallback
+              switch (product.id) {
+                case 1: realTimeIRR = 0.085; break; // Real Estate Equity Fund
+                case 2: realTimeIRR = 0.60; break;  // Bitcoin Tracker Fund
+                case 3: realTimeIRR = 0.11; break;  // Corporate Credit Fund
+                case 4: realTimeIRR = 0.18; break;  // Web3 Innovation Fund
+                case 5: realTimeIRR = 0.0575; break; // Ethereum Staking Fund
+              }
+              
+              const timeElapsedMs = intervalDate.getTime() - investmentDate.getTime();
+              const timeElapsed = Math.max(0, timeElapsedMs / (1000 * 60 * 60 * 24 * 365.25));
+              const growthFactor = Math.pow(1 + realTimeIRR, timeElapsed);
+              const currentValue = Math.round((investedAmount * growthFactor) * 100) / 100;
+              const returnAmount = Math.round((currentValue - investedAmount) * 100) / 100;
+              const returnPercentage = (returnAmount / investedAmount) * 100;
+              
+              const performance = {
+                currentValue,
+                returnAmount,
+                returnPercentage
+              };
+              
+              totalInvestmentValue += performance.currentValue;
+              totalInvestedAmount += investedAmount;
+              
+              // Weight the return by the investment amount for period-based returns
+              weightedReturn += (performance.returnPercentage * investedAmount);
+            }
+          }
+        }
+        
+        // Calculate weighted average return
+        const avgReturn = totalInvestedAmount > 0 ? weightedReturn / totalInvestedAmount : 0;
+        
+        dataPoints.push({
+          date: intervalDate.toISOString().split('T')[0],
+          value: Math.round(totalInvestmentValue),
+          investedAmount: Math.round(totalInvestedAmount),
+          weightedReturn: Number(avgReturn.toFixed(2)),
+          timestamp: intervalDate.getTime()
+        });
+        
+        // Move to next 3-month interval
+        intervalDate.setMonth(intervalDate.getMonth() + 3);
+      }
+      
+      // Calculate term expiry projections using individual product terms and expiry dates
+      const currentCalculationDate = new Date();
+      const predictions = [];
+      
+      // Find the latest expiry date among all investments to determine prediction end
+      let latestExpiryDate = new Date(currentCalculationDate);
+      const productTermMapping: Record<number, number> = {
+        1: 4.25,  // Real Estate Equity Fund - 4.25 years
+        2: 0.85,  // Real Estate Credit Fund - 0.85 years (10.2 months)  
+        3: 0.78,  // Real Estate First Mortgage Fund - 0.78 years (9.3 months)
+        4: 2.5,   // Cash Flow-Based Corporate Credit Fund - 2.5 years
+        5: 2.875, // Security-Backed Corporate Credit Fund - 2.875 years (34.5 months)
+        6: 6,     // VC / Growth Equity Fund - 6 years
+      };
+      
+      // Calculate actual expiry dates for each investment
+      for (const investment of investments) {
+        const investmentDate = new Date(investment.investmentDate);
+        const termYears = productTermMapping[investment.productId] || 5;
+        const expiryDate = new Date(investmentDate.getTime() + (termYears * 365.25 * 24 * 60 * 60 * 1000));
+        if (expiryDate > latestExpiryDate) {
+          latestExpiryDate = expiryDate;
+        }
+      }
+      
+      // Generate predictions from current date to latest expiry in 3-month intervals
+      const predictionDate = new Date(endDate);
+      predictionDate.setMonth(predictionDate.getMonth() + 3); // Start predictions from next quarter
+      
+      // Extended projection to 2030 to cover full term expiry lifecycle
+      const maxProjectionDate = new Date('2030-12-31');
+      
+      while (predictionDate <= maxProjectionDate) {
+        let totalPredictedValue = 0;
+        let totalInvestedAmount = 0;
+        
+        // Calculate predicted value for each investment at this future date
+        for (const investment of investments) {
+          const product = allProducts.find(p => p.id === investment.productId);
+          if (product) {
+            const investedAmount = parseFloat(investment.investedAmount);
+            const investmentDate = new Date(investment.investmentDate);
+            
+            // Calculate performance at this prediction date using term expiry capping
+            const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, predictionDate);
+            
+            totalPredictedValue += performance.currentValue;
+            totalInvestedAmount += investedAmount;
+          }
+        }
+        
+        const totalReturn = totalPredictedValue - totalInvestedAmount;
+        const totalReturnPercent = totalInvestedAmount > 0 ? (totalReturn / totalInvestedAmount) * 100 : 0;
+        
+        predictions.push({
+          date: predictionDate.toISOString().split('T')[0],
+          value: Math.round(totalPredictedValue),
+          totalReturn: Math.round(totalReturn),
+          weightedReturn: Number(totalReturnPercent.toFixed(2)),
+          currentInvestment: Math.round(totalInvestedAmount),
+          isPrediction: true,
+          timestamp: predictionDate.getTime()
+        });
+        
+        // Move to next 3-month interval  
+        predictionDate.setMonth(predictionDate.getMonth() + 3);
+      }
+      
+      // Calculate cumulative performance using same method as User Investments API
+      let totalInvestedNow = 0;
+      let totalCurrentValueNow = 0;
+      let cumulativeTotalReturn = 0;
+      
+      // Calculate cumulative returns using identical calculation methodology
+      const calculationDate = new Date();
+      for (const investment of investments) {
+        const product = allProducts.find(p => p.id === investment.productId);
+        if (product) {
+          const investmentDate = new Date(investment.investmentDate);
+          const investedAmount = parseFloat(investment.investedAmount);
+          
+          // Use identical IRR mapping and calculation as User Investments API
+          let realTimeIRR = 0.08; // Default fallback
+          switch (product.id) {
+            case 1: realTimeIRR = 0.085; break; // Real Estate Equity Fund
+            case 2: realTimeIRR = 0.60; break;  // Bitcoin Tracker Fund
+            case 3: realTimeIRR = 0.11; break;  // Corporate Credit Fund
+            case 4: realTimeIRR = 0.18; break;  // Web3 Innovation Fund
+            case 5: realTimeIRR = 0.0575; break; // Ethereum Staking Fund
+          }
+          
+          const timeElapsedMs = calculationDate.getTime() - investmentDate.getTime();
+          const timeElapsed = Math.max(0, timeElapsedMs / (1000 * 60 * 60 * 24 * 365.25));
+          const growthFactor = Math.pow(1 + realTimeIRR, timeElapsed);
+          const currentValue = Math.round((investedAmount * growthFactor) * 100) / 100;
+          const returnAmount = Math.round((currentValue - investedAmount) * 100) / 100;
+          
+          totalInvestedNow += investedAmount;
+          totalCurrentValueNow += currentValue;
+          cumulativeTotalReturn += returnAmount;
+        }
+      }
+      
+      // Performance by Period shows cumulative returns over investment periods
+      const cumulativeTotalReturnPercent = totalInvestedNow > 0 ? (cumulativeTotalReturn / totalInvestedNow) * 100 : 0;
+      
+      res.json({
+        timeframe,
+        data: dataPoints,
+        predictions,
+        currentValue: Number(totalCurrentValueNow.toFixed(2)), // Current portfolio value
+        totalReturn: Number(cumulativeTotalReturn.toFixed(2)), // Cumulative returns over investment periods
+        totalReturnPercent: Number(cumulativeTotalReturnPercent.toFixed(2)) // Cumulative return percentage
+      });
+    } catch (error) {
+      console.error("Investment performance error:", error);
+      res.status(500).json({ error: "Failed to get investment performance" });
     }
   });
 
@@ -1332,10 +1695,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newBalance = (parseFloat(sourceWallet.balance) - deductionAmount).toFixed(2);
       const newAvailableBalance = (parseFloat(sourceWallet.availableBalance) - deductionAmount).toFixed(2);
       
-      await storage.updateWallet(sourceWallet.id, {
+      // Force wallet update in both database and memory storage
+      const updatedWallet = await storage.updateWallet(sourceWallet.id, {
         balance: newBalance,
         availableBalance: newAvailableBalance,
       });
+      
+      console.log(`Updated wallet ${sourceWallet.id}: ${currency} balance from ${sourceWallet.balance} to ${newBalance}`);
 
       // Create transaction record
       const transaction = await storage.createTransaction({
@@ -1350,17 +1716,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: `Investment in ${product.name}${currency !== "USD" ? ` (converted from ${currency})` : ""}`,
       });
 
+      // Calculate initial performance for new investment (using midpoint IRR)
+      const currentDate = new Date();
+      const initialPerformance = calculateInvestmentPerformance(product, investmentAmount, currentDate, currentDate);
+      
       // Create investment record (always in USD equivalent)
       const investment = await storage.createUserInvestment({
         userId,
         productId,
         investedAmount: investmentAmount.toString(), // USD equivalent
-        currentValue: investmentAmount.toString(), // Initially same as invested amount
+        currentValue: initialPerformance.currentValue.toString(), // Use calculated performance
         totalReturn: "0.00",
         returnPercent: "0.00",
         status: "active",
         maturityDate: null, // Can be calculated based on product term
       });
+
+      // Calculate updated Capital Invested automatically
+      const allUserInvestments = await storage.getUserInvestments(userId);
+      const newCapitalInvested = allUserInvestments.reduce((sum, inv) => sum + parseFloat(inv.investedAmount), 0);
+      
+      console.log(`Capital Invested Updated: $${newCapitalInvested.toLocaleString()} (added $${investmentAmount.toLocaleString()})`);
 
       res.json({
         investment,
