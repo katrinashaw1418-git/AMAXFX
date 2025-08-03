@@ -38,8 +38,7 @@ export function useUserInvestments() {
   return useQuery({
     queryKey: ["/api/user-investments"],
     queryFn: api.getUserInvestments,
-    refetchInterval: 1000, // Refresh every 1 second for real-time Capital Invested updates
-    staleTime: 0, // Always consider data stale to force fresh requests
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 }
 
