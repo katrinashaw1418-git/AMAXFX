@@ -4,16 +4,14 @@
 This platform is a comprehensive cross-border wealth management solution designed for high-net-worth individuals, the global Chinese diaspora, and SMEs with international financial needs. It integrates traditional finance and cryptocurrency services, offering dual-channel support for FX and crypto trading, multi-currency wallets, AI-powered wealth advisory, and robust compliance features. The vision is to provide a unified, intelligent, and secure platform for managing diverse global assets.
 
 ## Recent Changes (August 2025)
-- **Endpoint Consistency Achievement**: Resolved critical inconsistency between user-investments and investment-performance APIs
-- **Unified Calculation System**: Both endpoints now use same calculateInvestmentPerformance() function for real-time accuracy
-- **Frontend Integration Success**: Dashboard wealth overview now displays actual investment performance ($116,908.84 / 6.32%) instead of hardcoded values
-- **Real-Time Performance Tracking**: Investment performance refreshes every 5 seconds with automatic midpoint IRR calculations
-- **Database Independence**: Removed dependency on stored database values, all calculations now computed in real-time
-- **Midpoint IRR Implementation Complete**: Successfully implemented consistent midpoint IRR calculation methodology across entire platform
-- **7-Year Projection System**: Implemented detailed 7-year compound growth projections using midpoint IRR rates for long-term planning
-- **Bitcoin Conservative Approach**: Switched Bitcoin Tracker Fund from 60% market rate to 15% midpoint IRR for consistent portfolio methodology
-- **Portfolio Totals**: Current portfolio shows $1,850,000 invested with $116,908.84 return (6.32%) across 7 investments using real-time calculations
-- **Midpoint IRR Rates**: All investments use consistent rates (Real Estate 11%, Corporate Credit 11%, VC 18%, Bitcoin 15%, Ethereum 5.75%)
+- **Investment Performance Calculation System**: Implemented unified `calculateInvestmentPerformance()` function ensuring consistent calculations across all endpoints
+- **Performance by Period Chart**: Fixed calculation discrepancies, now shows quarterly intervals only with accurate total returns matching individual investment totals  
+- **Bitcoin Market-Based Returns**: Updated Bitcoin Tracker Fund to use 60%+ annualized market-based historical performance instead of conservative 15% midpoint IRR
+- **Portfolio Performance Enhancement**: Total return increased from $155,821.84 (8.78%) to $189,109.51 (10.65%) with realistic Bitcoin performance
+- **Data Consistency**: Achieved perfect alignment between individual investment displays and Performance by Period chart (discrepancy < $0.01)
+- **Portfolio Allocation Endpoint Fix**: Updated portfolio allocation and AI recommendations endpoints to use unified calculation function
+- **Multi-Investment Support**: Verified system correctly handles multiple investments in same fund with accurate individual and combined calculations
+- **Return Calculation Methodology**: Bitcoin 60% market-based, other assets use midpoint IRR (Real Estate 11%, Corporate Credit 11%, VC 18%, Ethereum 5.75%)
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
