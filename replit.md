@@ -12,6 +12,9 @@ This platform is a comprehensive cross-border wealth management solution designe
 - **Portfolio Allocation Endpoint Fix**: Updated portfolio allocation and AI recommendations endpoints to use unified calculation function
 - **Multi-Investment Support**: Verified system correctly handles multiple investments in same fund with accurate individual and combined calculations
 - **Return Calculation Methodology**: Bitcoin 60% market-based, other assets use midpoint IRR (Real Estate 11%, Corporate Credit 11%, VC 18%, Ethereum 5.75%)
+- **Real-Time Investment Tracking**: Added 5-second refresh intervals to Investment Products and Performance by Period charts to track fund investment changes
+- **Version 3.0 Components**: Created portfolio-v3-bitcoin-market-rates.tsx and investments-v3-real-time-tracking.tsx with live updates and dilution effect calculations
+- **Portfolio Dilution Handling**: System correctly shows percentage decrease when new investments are added (mathematical dilution effect) while maintaining accurate dollar amounts
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
