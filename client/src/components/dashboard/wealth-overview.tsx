@@ -19,7 +19,11 @@ export default function WealthOverview() {
   const { data: userInvestments } = useQuery({
     queryKey: ["/api/user-investments"],
     queryFn: () => api.getUserInvestments(),
-    refetchInterval: 1000, // Refresh every 1 second
+    refetchInterval: 500, // Ultra-fast refresh every 500ms 
+    staleTime: 0, // Always consider data stale
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   if (isLoading) {

@@ -3188,36 +3188,38 @@ export class MemStorage implements IStorage {
   }
 
   async getUserInvestments(userId: number): Promise<UserInvestment[]> {
-    // For real-time tracking, always try database first using Drizzle ORM
+    // For real-time Capital Invested tracking, always query database directly
     try {
-      // Use drizzle to query user investments directly
-      const dbInvestments = await db.select().from(userInvestments).where(eq(userInvestments.userId, userId));
+      // Use drizzle to query ALL user investments with fresh data
+      const dbInvestments = await db.select().from(userInvestments)
+        .where(eq(userInvestments.userId, userId))
+        .orderBy(userInvestments.id);
       
-      if (dbInvestments && dbInvestments.length > 0) {
-        console.log(`Found ${dbInvestments.length} investments in database for user ${userId}`);
-        return dbInvestments.map(inv => ({
-          id: inv.id,
-          userId: inv.userId,
-          productId: inv.productId,
-          investedAmount: inv.investedAmount,
-          currentValue: inv.currentValue,
-          totalReturn: inv.totalReturn,
-          returnPercent: inv.returnPercent,
-          status: inv.status,
-          investmentDate: inv.investmentDate,
-          maturityDate: inv.maturityDate,
-          updatedAt: inv.updatedAt
-        }));
-      }
+      console.log(`Real-time database query found ${dbInvestments.length} investments for user ${userId}`);
+      console.log(`Investment IDs: [${dbInvestments.map(inv => inv.id).join(', ')}]`);
+      
+      // Always return database results for accurate Capital Invested calculation
+      return dbInvestments.map(inv => ({
+        id: inv.id,
+        userId: inv.userId,
+        productId: inv.productId,
+        investedAmount: inv.investedAmount,
+        currentValue: inv.currentValue,
+        totalReturn: inv.totalReturn,
+        returnPercent: inv.returnPercent,
+        status: inv.status,
+        investmentDate: inv.investmentDate,
+        maturityDate: inv.maturityDate,
+        updatedAt: inv.updatedAt
+      }));
     } catch (error) {
-      console.log('Database query failed:', error);
-      console.log('Using memory storage as fallback');
+      console.error('Critical: Database query failed for real-time Capital Invested tracking:', error);
+      
+      // Emergency fallback to memory storage only if database completely fails
+      const memoryInvestments = this.userInvestments.get(userId) || [];
+      console.log(`Emergency fallback: Using memory storage with ${memoryInvestments.length} investments`);
+      return memoryInvestments;
     }
-    
-    // Fallback to memory storage only if database fails
-    const memoryInvestments = this.userInvestments.get(userId) || [];
-    console.log(`Using memory storage: ${memoryInvestments.length} investments`);
-    return memoryInvestments;
   }
 
   async createUserInvestment(insertInvestment: InsertUserInvestment): Promise<UserInvestment> {

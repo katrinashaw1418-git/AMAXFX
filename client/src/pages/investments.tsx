@@ -111,10 +111,21 @@ export default function Investments() {
         timestamp: new Date().toISOString()
       });
       
-      // Additional immediate refresh for Capital Invested display
+      // Multiple aggressive refreshes to ensure display updates
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ["/api/user-investments"] });
+        queryClient.refetchQueries({ queryKey: ["/api/user-investments"] });
       }, 100);
+      
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/user-investments"] });
+        queryClient.refetchQueries({ queryKey: ["/api/user-investments"] });
+      }, 500);
+      
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/user-investments"] });
+        queryClient.refetchQueries({ queryKey: ["/api/user-investments"] });
+      }, 1000);
       
       setInvestModalOpen(false);
       setInvestmentAmount("");
