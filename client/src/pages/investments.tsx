@@ -650,7 +650,7 @@ export default function Investments() {
                   </div>
                   <div className="flex justify-between">
                     <span>Risk Profile:</span>
-                    <Badge className={riskProfileColors[selectedProduct.riskProfile as keyof typeof riskProfileColors]} size="sm">
+                    <Badge className={riskProfileColors[selectedProduct.riskProfile as keyof typeof riskProfileColors]}>
                       {selectedProduct.riskProfile}
                     </Badge>
                   </div>
