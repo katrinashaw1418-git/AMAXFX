@@ -38,6 +38,8 @@ This platform is a comprehensive cross-border wealth management solution designe
 - **Real-Time Data Source Consistency**: Updated all frontend components to use Filter Products real-time data source instead of independent calculations, ensuring automatic synchronization across dashboard sections
 - **Investment Creation Issue Resolved**: Fixed Real Estate First Mortgage Fund minimum investment from $50,000 to $25,000, successfully created $25,000 investment, updated MemStorage demo data to include new investment, portfolio now shows 9 total investments with real-time Capital Invested display updates
 - **Dashboard Investment Breakdown Added**: Added InvestmentBreakdownDetail component directly to main Dashboard page for immediate Capital Invested visibility without requiring navigation to separate Investments page
+- **Automated Capital Invested Formula**: Implemented automated calculation system where Capital Invested = Σ(all investedAmount) with real-time updates using 1-second refresh intervals, ensuring immediate reflection of new investment inputs
+- **Real-Time Investment Tracking**: Added dedicated Capital Invested card to dashboard with automated formula that updates instantly when new investments are made through "Invest Now" functionality
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

@@ -270,7 +270,7 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
 
   const sortedGroups = Object.values(productGroups).sort((a: any, b: any) => b.returnPercent - a.returnPercent);
 
-  // Calculate totals from user investments (current values)
+  // Calculate totals using automated formula: Capital Invested = Σ(all investedAmount)
   const actualTotalInvested = userInvestments.reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0);
   const actualTotalCurrentValue = userInvestments.reduce((sum: number, inv: any) => sum + parseFloat(inv.currentValue), 0);
   const actualTotalReturn = actualTotalCurrentValue - actualTotalInvested;

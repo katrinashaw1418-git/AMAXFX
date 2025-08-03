@@ -80,13 +80,16 @@ export default function Investments() {
   });
 
   const investMutation = useMutation({
-    mutationFn: (data: { productId: number; amount: number }) => api.createInvestment(data),
+    mutationFn: (data: { productId: number; amount: number; sourceCurrency?: string; sourceAmount?: number }) => 
+      api.createInvestment(data),
     onSuccess: (response) => {
+      const newInvestmentAmount = response?.investment?.investedAmount || response?.investedAmount || 0;
       toast({
-        title: "Investment Created",
-        description: `Successfully invested $${parseFloat(response.investment.investedAmount).toLocaleString()}. New wallet balance: $${parseFloat(response.newBalance).toLocaleString()}`,
+        title: "Investment Created", 
+        description: `Successfully invested $${parseFloat(newInvestmentAmount).toLocaleString()}. Capital Invested will update automatically using the formula: Existing Capital + New Investment.`,
       });
-      // Invalidate ALL queries to ensure complete UI refresh
+      
+      // Invalidate ALL queries to trigger Capital Invested formula recalculation
       queryClient.invalidateQueries({ queryKey: ["/api/user-investments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
@@ -96,8 +99,16 @@ export default function Investments() {
       queryClient.invalidateQueries({ queryKey: ["/api/investment-performance"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/investment-products"] });
-      // Force complete cache refresh to ensure all dashboard sections update
+      
+      // Force immediate refresh for real-time Capital Invested updates
       queryClient.refetchQueries();
+      
+      console.log('Capital Invested Formula Triggered:', {
+        newInvestment: newInvestmentAmount,
+        formula: 'Capital Invested = Σ(all investedAmount)',
+        timestamp: new Date().toISOString()
+      });
+      
       setInvestModalOpen(false);
       setInvestmentAmount("");
       setSelectedProduct(null);
@@ -171,7 +182,7 @@ export default function Investments() {
       return;
     }
 
-    // Create investment with source currency info for proper wallet deduction
+    // Create investment with automated Capital Invested formula update
     investMutation.mutate({
       productId: selectedProduct.id,
       amount: usdAmount, // USD equivalent for investment

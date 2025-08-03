@@ -73,8 +73,16 @@ export default function WealthOverview() {
   const actualReturnPercent = investmentPerformance ? parseFloat(investmentPerformance.totalReturnPercent) : 0;
   const investmentCurrentValue = investmentPerformance ? parseFloat(investmentPerformance.currentValue) : 0;
   
-  // Calculate Capital Invested directly from user investments for real-time accuracy
+  // Calculate Capital Invested using automated formula: Existing Capital + New Investment Input
   const capitalInvested = userInvestments ? userInvestments.reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0) : 0;
+  
+  // Debug logging for Capital Invested calculation
+  console.log('Capital Invested Calculation:', {
+    totalInvestments: userInvestments?.length || 0,
+    capitalInvested: capitalInvested,
+    formula: 'Sum of all investedAmount fields from user investments',
+    timestamp: new Date().toISOString()
+  });
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">

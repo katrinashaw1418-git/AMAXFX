@@ -1732,6 +1732,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         maturityDate: null, // Can be calculated based on product term
       });
 
+      // Calculate updated Capital Invested automatically
+      const allUserInvestments = await storage.getUserInvestments(userId);
+      const newCapitalInvested = allUserInvestments.reduce((sum, inv) => sum + parseFloat(inv.investedAmount), 0);
+      
+      console.log(`Capital Invested Updated: $${newCapitalInvested.toLocaleString()} (added $${investmentAmount.toLocaleString()})`);
+
       res.json({
         investment,
         transaction,
