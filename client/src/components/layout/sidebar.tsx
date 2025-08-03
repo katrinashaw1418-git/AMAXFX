@@ -29,6 +29,7 @@ const navigation = [
   { name: "Crypto Trading", href: "/crypto-trading", icon: TrendingUp },
   { name: "Portfolio", href: "/portfolio", icon: PieChart },
   { name: "Investments", href: "/investments", icon: Building2 },
+  { name: "Fund Investments", href: "/fund-investments", icon: TrendingUp },
   { name: "AI Advisory", href: "/ai-advisory", icon: Bot },
   { name: "Transactions", href: "/transactions", icon: History },
   { name: "Compliance", href: "/compliance", icon: Shield },
