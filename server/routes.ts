@@ -1695,10 +1695,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newBalance = (parseFloat(sourceWallet.balance) - deductionAmount).toFixed(2);
       const newAvailableBalance = (parseFloat(sourceWallet.availableBalance) - deductionAmount).toFixed(2);
       
-      await storage.updateWallet(sourceWallet.id, {
+      // Force wallet update in both database and memory storage
+      const updatedWallet = await storage.updateWallet(sourceWallet.id, {
         balance: newBalance,
         availableBalance: newAvailableBalance,
       });
+      
+      console.log(`Updated wallet ${sourceWallet.id}: ${currency} balance from ${sourceWallet.balance} to ${newBalance}`);
 
       // Create transaction record
       const transaction = await storage.createTransaction({

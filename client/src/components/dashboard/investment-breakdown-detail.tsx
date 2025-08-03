@@ -40,7 +40,7 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
   const { data: userInvestments } = useQuery({
     queryKey: ["/api/user-investments"],
     queryFn: () => api.getUserInvestments(),
-    refetchInterval: 5000,
+    refetchInterval: 1000, // More frequent updates
   });
 
   const { data: products } = useQuery({
@@ -51,7 +51,7 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
   const { data: wallets } = useQuery({
     queryKey: ["/api/wallets"],
     queryFn: () => api.getWallets(),
-    refetchInterval: 5000,
+    refetchInterval: 1000, // More frequent updates for wallet balances
   });
 
   const { data: fxRates } = useQuery({
@@ -88,12 +88,15 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
           </CardHeader>
         )}
         <CardContent>
-          <div className="text-yellow-600 bg-yellow-50 p-4 rounded-lg">
+          <div className="text-blue-600 bg-blue-50 p-4 rounded-lg">
             <p className="font-medium">Loading investment data...</p>
             <p className="text-sm mt-1">
               Performance: {investmentPerformance ? '✓' : '⏳'} | 
               Investments: {userInvestments ? `✓ (${userInvestments.length})` : '⏳'} | 
               Products: {products ? '✓' : '⏳'}
+            </p>
+            <p className="text-xs mt-1 opacity-75">
+              Last refresh: {new Date().toLocaleTimeString()}
             </p>
           </div>
         </CardContent>
@@ -279,7 +282,9 @@ export function InvestmentBreakdownDetail({ showTitle = true, compact = false }:
     totalInvested: actualTotalInvested,
     productGroups: Object.keys(productGroups).length,
     hasProduct3: !!productGroups[3],
-    product3Total: productGroups[3]?.totalInvested
+    product3Total: productGroups[3]?.totalInvested,
+    product3Investments: productGroups[3]?.investments?.length,
+    timestamp: new Date().toISOString()
   });
   
   // Calculate term expiry totals

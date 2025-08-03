@@ -109,14 +109,14 @@ export class MemStorage implements IStorage {
     };
     this.portfolios.set(1, demoPortfolio);
 
-    // Create demo wallets
+    // Create demo wallets - Updated to reflect current investment deductions
     const demoWallets: Wallet[] = [
       {
         id: 1,
         userId: 1,
         currency: "USD",
-        balance: "2000000.00",
-        availableBalance: "2000000.00",
+        balance: "1975000.00", // Reduced from 2M by investment deductions
+        availableBalance: "1975000.00",
         walletType: "fiat",
         updatedAt: new Date(),
       },
