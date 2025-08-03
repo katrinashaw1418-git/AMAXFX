@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,11 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp, Shield, Calendar, DollarSign, AlertTriangle, Phone, MessageSquare, Building2, Coins, TrendingDown, Zap, Wallet as WalletIcon } from 'lucide-react';
+import { TrendingUp, Shield, Calendar, DollarSign, Building2, Coins, Zap, Wallet as WalletIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import * as api from '@/lib/api';
 
 interface FilterProduct {
   id: number;
@@ -45,27 +44,25 @@ interface FXRate {
 }
 
 export default function FundInvestments() {
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedProduct, setSelectedProduct] = useState<FilterProduct | null>(null);
   const [investmentAmount, setInvestmentAmount] = useState('');
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
-  const [advisorModalOpen, setAdvisorModalOpen] = useState(false);
-  const [advisorMessage, setAdvisorMessage] = useState('');
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch filter products
+  // Fetch data
   const { data: filterProducts, isLoading: productsLoading } = useQuery({
     queryKey: ['/api/filter-products'],
+    queryFn: () => api.getFilterProducts(),
   });
 
-  // Fetch wallets for currency selection
   const { data: wallets } = useQuery({
     queryKey: ['/api/wallets'],
+    queryFn: () => api.getWallets(),
   });
 
-  // Fetch FX rates for currency conversion
   const { data: fxRates } = useQuery({
     queryKey: ['/api/fx-rates'],
   });
@@ -96,7 +93,7 @@ export default function FundInvestments() {
   });
 
   // Currency and conversion logic
-  const selectedWallet = wallets?.find((w: any) => w.currency === selectedCurrency);
+  const selectedWallet = (wallets || []).find((w: any) => w.currency === selectedCurrency);
   const availableBalance = selectedWallet?.availableBalance ? parseFloat(selectedWallet.availableBalance) : 0;
   
   const currencySymbols: { [key: string]: string } = {
@@ -235,7 +232,7 @@ export default function FundInvestments() {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Investment Funds</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Fund Investments</h1>
         <p className="text-gray-600">
           Explore and invest in our curated selection of investment products across multiple asset classes.
         </p>
@@ -251,7 +248,7 @@ export default function FundInvestments() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {wallets?.filter((wallet: any) => parseFloat(wallet.availableBalance || '0') > 0).map((wallet: any) => (
+            {(wallets || []).filter((wallet: any) => parseFloat(wallet.availableBalance || '0') > 0).map((wallet: any) => (
               <div key={wallet.currency} className="bg-gray-50 p-4 rounded-lg">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-600">{wallet.displayName || wallet.currency}</span>
@@ -266,7 +263,7 @@ export default function FundInvestments() {
                   </p>
                 )}
               </div>
-            )) || []}
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -330,190 +327,95 @@ export default function FundInvestments() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    <DollarSign className="h-4 w-4 text-orange-600" />
+                    <DollarSign className="h-4 w-4 text-purple-600" />
                     <div>
                       <div className="text-xs text-gray-500">Min. Investment</div>
                       <div className="font-semibold">${minInvestment.toLocaleString()}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Shield className="h-4 w-4 text-purple-600" />
+                    <Shield className="h-4 w-4 text-orange-600" />
                     <div>
                       <div className="text-xs text-gray-500">Structure</div>
                       <div className="font-semibold text-xs">{product.structure}</div>
                     </div>
                   </div>
                 </div>
-                
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button 
-                      className="w-full" 
-                      onClick={() => setSelectedProduct(product)}
-                    >
-                      Invest Now
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Investment Details</DialogTitle>
-                      <DialogDescription>
-                        {selectedProduct?.name} - Minimum investment: ${parseFloat(selectedProduct?.minimumInvestment || '0').toLocaleString()}
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="currency-select">Select Currency</Label>
-                        <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableCurrencies.map((currency: any) => (
-                              <SelectItem key={currency.currency} value={currency.currency}>
-                                {currency.symbol} {currency.displayName} - Balance: {currency.symbol}{currency.balance.toLocaleString()}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="investment-amount">Investment Amount</Label>
-                        <Input
-                          id="investment-amount"
-                          type="number"
-                          placeholder="Enter amount"
-                          value={investmentAmount}
-                          onChange={(e) => setInvestmentAmount(e.target.value)}
-                        />
-                      </div>
-
-                      {availableBalance > 0 && (
-                        <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                          <p className="text-xs font-medium text-green-600">
-                            Available to Invest: {currencySymbols[selectedCurrency] || selectedCurrency}{availableBalance.toLocaleString()}
-                            {selectedCurrency !== 'USD' && ` (≈ US$${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()})`}
-                          </p>
-
-                          {selectedCurrency !== 'USD' && investmentAmount && (
-                            <p className="text-xs text-orange-600">
-                              Will convert {currencySymbols[selectedCurrency] || selectedCurrency}{parseFloat(investmentAmount).toLocaleString()} → US$${getUsdEquivalent(parseFloat(investmentAmount), selectedCurrency).toLocaleString()} at current exchange rate
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    
-                    {selectedProduct && (
-                      <div className="p-4 bg-gray-50 rounded-lg">
-                        <h4 className="font-semibold mb-2">Investment Summary</h4>
-                        <div className="space-y-1 text-sm">
-                          <div className="flex justify-between">
-                            <span>Target IRR:</span>
-                            <span className="font-semibold text-green-600">{selectedProduct.targetNetIrr}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Term:</span>
-                            <span className="font-medium">{selectedProduct.term}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Risk Profile:</span>
-                            <Badge className={riskProfileColors[selectedProduct.riskProfile as keyof typeof riskProfileColors]}>
-                              {selectedProduct.riskProfile}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <Button 
-                      onClick={handleInvest} 
-                      disabled={investMutation.isPending}
-                      className="w-full"
-                    >
-                      {investMutation.isPending ? "Processing..." : "Confirm Investment"}
-                    </Button>
-                  </DialogContent>
-                </Dialog>
+                <Button 
+                  onClick={() => setSelectedProduct(product)}
+                  className="w-full"
+                  variant="default"
+                >
+                  Invest Now
+                </Button>
               </CardContent>
             </Card>
           );
         })}
       </div>
 
-      {filteredProducts.length === 0 && (
-        <div className="text-center py-12">
-          <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No products available</h3>
-          <p className="text-gray-600">No investment products match your current filter criteria.</p>
-        </div>
-      )}
-
-      {/* Advisor Contact Modal */}
-      <Dialog open={advisorModalOpen} onOpenChange={setAdvisorModalOpen}>
+      {/* Investment Modal */}
+      <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Contact Wealth Advisory Team</DialogTitle>
+            <DialogTitle>Invest in {selectedProduct?.name}</DialogTitle>
             <DialogDescription>
-              Send a message to our wealth advisory team. We'll respond within 24 hours.
+              Complete your investment in this product.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-700">
-                <strong>Phone:</strong> +61 3 9654 1000
+            <div>
+              <Label htmlFor="currency">Currency</Label>
+              <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableCurrencies.map((currency) => (
+                    <SelectItem key={currency.currency} value={currency.currency}>
+                      {currency.symbol} {currency.displayName} - Balance: {currency.balance.toLocaleString()}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="amount">Investment Amount</Label>
+              <Input
+                id="amount"
+                type="number"
+                placeholder="Enter amount"
+                value={investmentAmount}
+                onChange={(e) => setInvestmentAmount(e.target.value)}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Available: {currencySymbols[selectedCurrency] || selectedCurrency}{availableBalance.toLocaleString()}
               </p>
             </div>
+
+            {selectedProduct && (
+              <div className="bg-blue-50 p-3 rounded-lg space-y-1">
+                <p className="text-sm"><strong>Minimum Investment:</strong> ${parseFloat(selectedProduct.minimumInvestment).toLocaleString()}</p>
+                <p className="text-sm"><strong>Target IRR:</strong> {selectedProduct.targetNetIrr}</p>
+                <p className="text-sm"><strong>Term:</strong> {selectedProduct.term}</p>
+              </div>
+            )}
             
-            <div className="space-y-2">
-              <Label htmlFor="advisor-message">Your Message</Label>
-              <Textarea
-                id="advisor-message"
-                placeholder="How can our wealth advisory team help you?"
-                value={advisorMessage}
-                onChange={(e) => setAdvisorMessage(e.target.value)}
-                rows={4}
-              />
-            </div>
-            
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => setAdvisorModalOpen(false)} 
-                variant="outline" 
-                className="flex-1"
-              >
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setSelectedProduct(null)}>
                 Cancel
               </Button>
               <Button 
-                onClick={() => {
-                  toast({
-                    title: 'Message Sent',
-                    description: 'Your message has been sent to our wealth advisory team.',
-                  });
-                  setAdvisorMessage('');
-                  setAdvisorModalOpen(false);
-                }}
-                className="flex-1"
-                disabled={!advisorMessage.trim()}
+                onClick={handleInvest}
+                disabled={investMutation.isPending}
               >
-                Send Message
+                {investMutation.isPending ? 'Creating...' : 'Create Investment'}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Floating Contact Advisor Button */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <Button
-          onClick={() => setAdvisorModalOpen(true)}
-          className="rounded-full h-14 w-14 bg-blue-600 hover:bg-blue-700 shadow-lg"
-          size="sm"
-        >
-          <MessageSquare className="h-6 w-6" />
-        </Button>
-      </div>
     </div>
   );
 }
