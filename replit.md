@@ -40,6 +40,8 @@ This platform is a comprehensive cross-border wealth management solution designe
 - **Dashboard Investment Breakdown Added**: Added InvestmentBreakdownDetail component directly to main Dashboard page for immediate Capital Invested visibility without requiring navigation to separate Investments page
 - **Automated Capital Invested Formula**: Implemented automated calculation system where Capital Invested = Σ(all investedAmount) with real-time updates using 1-second refresh intervals, ensuring immediate reflection of new investment inputs
 - **Real-Time Investment Tracking**: Added dedicated Capital Invested card to dashboard with automated formula that updates instantly when new investments are made through "Invest Now" functionality
+- **Capital Invested Calculation Fixed**: Resolved persistent issue where frontend displayed $1,900,000 instead of actual invested amount by fixing database query and calculation logic, now correctly shows $1,925,000 with all 10 investments including latest $25,000 investment
+- **Automated Investment Formula Verified**: Confirmed real-time Capital Invested calculation working with formula "Existing Capital + New Investment Input" updating immediately upon investment creation
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
