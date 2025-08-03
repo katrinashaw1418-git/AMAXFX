@@ -76,11 +76,13 @@ export default function WealthOverview() {
   // Calculate Capital Invested using automated formula: Existing Capital + New Investment Input
   const capitalInvested = userInvestments ? userInvestments.reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0) : 0;
   
-  // Debug logging for Capital Invested calculation
-  console.log('Capital Invested Calculation:', {
+  // Debug logging for Capital Invested calculation with enhanced tracking
+  console.log('Capital Invested Real-Time Formula:', {
     totalInvestments: userInvestments?.length || 0,
     capitalInvested: capitalInvested,
-    formula: 'Sum of all investedAmount fields from user investments',
+    formula: 'Capital Invested = Existing Capital + New Investment Input',
+    calculation: `Sum of ${userInvestments?.length || 0} investments = $${capitalInvested.toLocaleString()}`,
+    realTimeUpdate: true,
     timestamp: new Date().toISOString()
   });
 
@@ -133,12 +135,17 @@ export default function WealthOverview() {
             <DollarSign className="w-4 h-4 text-orange-500" />
           </div>
           <div className="space-y-2">
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-2xl font-bold text-gray-900" key={capitalInvested}>
               ${capitalInvested.toLocaleString()}
             </p>
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">
-                {userInvestments ? userInvestments.length : 0} investments
+              <span className="text-sm text-green-600 font-medium">
+                Formula: Existing + New Investment
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-gray-500">
+                {userInvestments ? userInvestments.length : 0} total investments • Real-time updates
               </span>
             </div>
           </div>

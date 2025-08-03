@@ -68,7 +68,8 @@ export default function Investments() {
   const { data: userInvestments, isLoading: investmentsLoading } = useQuery({
     queryKey: ["/api/user-investments"],
     queryFn: () => api.getUserInvestments(),
-    refetchInterval: 5000, // Refresh every 5 seconds to track investment changes
+    refetchInterval: 1000, // Refresh every 1 second for immediate Capital Invested updates
+    staleTime: 0, // Always consider data stale to force fresh requests
   });
 
   const { data: wallets } = useWallets();
@@ -105,9 +106,15 @@ export default function Investments() {
       
       console.log('Capital Invested Formula Triggered:', {
         newInvestment: newInvestmentAmount,
-        formula: 'Capital Invested = Σ(all investedAmount)',
+        formula: 'Capital Invested = Existing Capital + New Investment Amount',
+        action: 'Investment created - triggering automatic recalculation',
         timestamp: new Date().toISOString()
       });
+      
+      // Additional immediate refresh for Capital Invested display
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/user-investments"] });
+      }, 100);
       
       setInvestModalOpen(false);
       setInvestmentAmount("");
