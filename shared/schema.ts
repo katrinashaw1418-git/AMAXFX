@@ -27,18 +27,6 @@ export const portfolios = pgTable("portfolios", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const portfolioSnapshots = pgTable("portfolio_snapshots", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  totalValue: decimal("total_value", { precision: 15, scale: 2 }).notNull(),
-  cryptoValue: decimal("crypto_value", { precision: 15, scale: 2 }).notNull(),
-  stablecoinValue: decimal("stablecoin_value", { precision: 15, scale: 2 }).notNull(),
-  fiatValue: decimal("fiat_value", { precision: 15, scale: 2 }).notNull(),
-  investmentValue: decimal("investment_value", { precision: 15, scale: 2 }).notNull(),
-  snapshotDate: timestamp("snapshot_date").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
 export const wallets = pgTable("wallets", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
@@ -162,11 +150,6 @@ export const insertUserInvestmentSchema = createInsertSchema(userInvestments).om
   updatedAt: true,
 });
 
-export const insertPortfolioSnapshotSchema = createInsertSchema(portfolioSnapshots).omit({
-  id: true,
-  createdAt: true,
-});
-
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -184,5 +167,3 @@ export type InvestmentProduct = typeof investmentProducts.$inferSelect;
 export type InsertInvestmentProduct = z.infer<typeof insertInvestmentProductSchema>;
 export type UserInvestment = typeof userInvestments.$inferSelect;
 export type InsertUserInvestment = z.infer<typeof insertUserInvestmentSchema>;
-export type PortfolioSnapshot = typeof portfolioSnapshots.$inferSelect;
-export type InsertPortfolioSnapshot = z.infer<typeof insertPortfolioSnapshotSchema>;
