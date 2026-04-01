@@ -87,10 +87,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all investments to calculate investment value
       const investments = await storage.getUserInvestments(userId);
       
-      // Calculate fiat value (excluding crypto)
-      const fiatValue = wallets
-        .filter(w => w.walletType === 'fiat')
-        .reduce((sum, w) => sum + parseFloat(w.balance), 0);
+      // Calculate fiat value in USD equivalent by converting each currency
+      // Try direct X/USD rate first; fall back to inverse of USD/X rate
+      let fiatValue = 0;
+      for (const wallet of wallets.filter(w => w.walletType === 'fiat')) {
+        const balance = parseFloat(wallet.balance);
+        if (wallet.currency === 'USD') {
+          fiatValue += balance;
+        } else {
+          const directRate = await storage.getFxRate(wallet.currency, 'USD');
+          if (directRate) {
+            fiatValue += balance * parseFloat(directRate.rate);
+          } else {
+            const inverseRate = await storage.getFxRate('USD', wallet.currency);
+            if (inverseRate) {
+              fiatValue += balance / parseFloat(inverseRate.rate);
+            }
+          }
+        }
+      }
       
       // Calculate crypto and stablecoin values separately using actual exchange rates
       let cryptoValue = 0;
@@ -188,7 +203,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const wallet of wallets) {
         const balance = parseFloat(wallet.balance);
         if (wallet.walletType === 'fiat') {
-          currentFiatValue += balance;
+          // Convert each fiat currency to USD equivalent
+          if (wallet.currency === 'USD') {
+            currentFiatValue += balance;
+          } else {
+            const directRate = await storage.getFxRate(wallet.currency, 'USD');
+            if (directRate) {
+              currentFiatValue += balance * parseFloat(directRate.rate);
+            } else {
+              const inverseRate = await storage.getFxRate('USD', wallet.currency);
+              if (inverseRate) {
+                currentFiatValue += balance / parseFloat(inverseRate.rate);
+              }
+            }
+          }
         } else if (wallet.currency === "USDT" || wallet.currency === "USDC") {
           currentStablecoinValue += balance;
         } else {

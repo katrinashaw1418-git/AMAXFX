@@ -98,7 +98,7 @@ export default function WealthOverview() {
           </div>
           <div className="space-y-2">
             <p className="text-2xl font-bold text-gray-900">
-              $8,888,888
+              ${fiatValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </p>
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">Multi-currency</span>
