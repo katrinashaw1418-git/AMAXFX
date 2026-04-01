@@ -135,79 +135,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate total portfolio value including stablecoins
       const totalValue = fiatValue + cryptoValue + stablecoinValue + investmentValue;
       
-      // Blended monthly rate (used for seeding historical snapshots)
-      const fiatMonthlyRate       = 0.003;
-      const stablecoinMonthlyRate = 0.004;
-      const cryptoMonthlyRate     = 0.030;
-      const investmentMonthlyRate = 0.010;
-      const blendedMonthlyRate = totalValue > 0
-        ? (fiatValue / totalValue) * fiatMonthlyRate
-        + (stablecoinValue / totalValue) * stablecoinMonthlyRate
-        + (cryptoValue / totalValue) * cryptoMonthlyRate
-        + (investmentValue / totalValue) * investmentMonthlyRate
-        : 0;
-
       // --- Snapshot management ---
-      // Seed 365 daily snapshots on first run; save today's snapshot on subsequent runs.
-      const todayStr = new Date().toISOString().split('T')[0];
+      // Only save today's real snapshot — no fake historical seeding.
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStr = today.toISOString().split('T')[0];
+
       let allSnapshots = await storage.getPortfolioSnapshots(userId);
 
-      if (allSnapshots.length === 0) {
-        // First run: seed a full year of daily snapshots using backward projection.
-        // The values are frozen at seed time, so they don't shift with future calculations.
-        const dailyRate = Math.pow(1 + blendedMonthlyRate, 1 / 30) - 1;
-        for (let daysBack = 365; daysBack >= 0; daysBack--) {
-          const snapshotDate = new Date();
-          snapshotDate.setDate(snapshotDate.getDate() - daysBack);
-          snapshotDate.setHours(0, 0, 0, 0);
-          const factor = Math.pow(1 + dailyRate, daysBack);
-          await storage.createPortfolioSnapshot({
-            userId,
-            totalValue: (totalValue / factor).toFixed(2),
-            fiatValue: (fiatValue / factor).toFixed(2),
-            cryptoValue: (cryptoValue / factor).toFixed(2),
-            stablecoinValue: (stablecoinValue / factor).toFixed(2),
-            investmentValue: (investmentValue / factor).toFixed(2),
-            snapshotDate,
-          });
-        }
+      const hasToday = allSnapshots.some(
+        s => s.snapshotDate.toISOString().split('T')[0] === todayStr
+      );
+      if (!hasToday) {
+        await storage.createPortfolioSnapshot({
+          userId,
+          totalValue: totalValue.toFixed(2),
+          fiatValue: fiatValue.toFixed(2),
+          cryptoValue: cryptoValue.toFixed(2),
+          stablecoinValue: stablecoinValue.toFixed(2),
+          investmentValue: investmentValue.toFixed(2),
+          snapshotDate: new Date(),
+        });
         allSnapshots = await storage.getPortfolioSnapshots(userId);
-      } else {
-        // Save today's snapshot if we haven't yet today
-        const hasToday = allSnapshots.some(
-          s => s.snapshotDate.toISOString().split('T')[0] === todayStr
-        );
-        if (!hasToday) {
-          await storage.createPortfolioSnapshot({
-            userId,
-            totalValue: totalValue.toFixed(2),
-            fiatValue: fiatValue.toFixed(2),
-            cryptoValue: cryptoValue.toFixed(2),
-            stablecoinValue: stablecoinValue.toFixed(2),
-            investmentValue: investmentValue.toFixed(2),
-            snapshotDate: new Date(),
-          });
-          allSnapshots = await storage.getPortfolioSnapshots(userId);
-        }
       }
 
-      // Monthly P&L: compare today vs the stored snapshot closest to 30 days ago
+      // Monthly P&L: compare today vs the stored snapshot closest to 30 days ago.
+      // Returns 0 with source "insufficient_history" when no prior snapshot exists.
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const priorSnapshot = allSnapshots
         .filter(s => s.snapshotDate <= thirtyDaysAgo)
         .sort((a, b) => b.snapshotDate.getTime() - a.snapshotDate.getTime())[0];
 
-      let monthlyPnl: number;
-      let monthlyPnlPercent: number;
+      let monthlyPnl = 0;
+      let monthlyPnlPercent = 0;
+      let monthlyPnlSource = 'insufficient_history';
+
       if (priorSnapshot) {
         const priorValue = parseFloat(priorSnapshot.totalValue);
         monthlyPnl = totalValue - priorValue;
         monthlyPnlPercent = priorValue > 0 ? (monthlyPnl / priorValue) * 100 : 0;
-      } else {
-        const previousMonthValue = totalValue / (1 + blendedMonthlyRate);
-        monthlyPnl = totalValue - previousMonthValue;
-        monthlyPnlPercent = previousMonthValue > 0 ? (monthlyPnl / previousMonthValue) * 100 : 0;
+        monthlyPnlSource = 'snapshots';
       }
 
       const portfolio = {
@@ -220,6 +188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         investmentValue: investmentValue.toFixed(2),
         monthlyPnl: monthlyPnl.toFixed(2),
         monthlyPnlPercent: monthlyPnlPercent.toFixed(2),
+        monthlyPnlSource,
         updatedAt: new Date(),
       };
       
@@ -311,6 +280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let dataPoints: Array<{ date: string; value: number; timestamp: number }>;
 
+      // Only use real stored snapshots — no backward projection fallback.
       if (storedSnapshots.length >= 2) {
         // Thin out to ~22 evenly-spaced points so charts aren't overloaded
         const maxPoints = 22;
@@ -326,36 +296,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timestamp: s.snapshotDate.getTime(),
         }));
       } else {
-        // Fall back to backward projection (labeled "Simulated estimate" on the client)
-        const fiatMonthlyRate = 0.003;
-        const stablecoinMonthlyRate = 0.004;
-        const cryptoMonthlyRate = 0.030;
-        const investmentMonthlyRate = 0.010;
-        const totalPortfolio = currentTotalValue;
-        const blendedMonthlyRate =
-          (currentFiatValue / totalPortfolio) * fiatMonthlyRate +
-          (currentStablecoinValue / totalPortfolio) * stablecoinMonthlyRate +
-          (currentCryptoValue / totalPortfolio) * cryptoMonthlyRate +
-          (currentInvestmentValue / totalPortfolio) * investmentMonthlyRate;
-        const dailyRate = Math.pow(1 + blendedMonthlyRate, 1 / 30) - 1;
-        const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-        const numPoints = timeframe === "1M" ? 22 : 13;
-        const step = Math.max(1, Math.floor(totalDays / (numPoints - 1)));
-        const dates: Date[] = [];
-        for (let i = 0; i < numPoints - 1; i++) {
-          const d = new Date(startDate);
-          d.setDate(d.getDate() + i * step);
-          if (d <= endDate) dates.push(d);
-        }
-        dates.push(new Date(endDate));
-        dataPoints = dates.map(date => {
-          const daysFromEnd = Math.ceil((endDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-          return {
-            date: date.toISOString().split('T')[0],
-            value: Math.round(currentTotalValue / Math.pow(1 + dailyRate, daysFromEnd)),
-            timestamp: date.getTime(),
-          };
-        });
+        // Only 0 or 1 snapshot — return whatever real data exists, no projection
+        dataPoints = storedSnapshots.map(s => ({
+          date: s.snapshotDate.toISOString().split('T')[0],
+          value: Math.round(parseFloat(s.totalValue)),
+          timestamp: s.snapshotDate.getTime(),
+        }));
       }
 
       // Calculate performance metrics
@@ -372,7 +318,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalReturnPercent: totalReturnPercent.toFixed(2),
         startValue: startValue.toFixed(2),
         endValue: endValue.toFixed(2),
-        source: storedSnapshots.length >= 2 ? 'snapshots' : 'projected',
+        source: 'snapshots',
+        hasSufficientHistory: dataPoints.length >= 2,
       });
     } catch (error) {
       console.error("Portfolio history error:", error);

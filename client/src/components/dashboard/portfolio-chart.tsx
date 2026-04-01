@@ -22,6 +22,7 @@ interface PortfolioHistoryResponse {
   startValue: string;
   endValue: string;
   source: 'snapshots' | 'projected';
+  hasSufficientHistory: boolean;
 }
 
 export default function PortfolioChart() {
@@ -92,7 +93,11 @@ export default function PortfolioChart() {
             <div className="flex items-center gap-2">
               <CardTitle>Portfolio Performance</CardTitle>
               <Badge variant="outline" className="text-xs text-muted-foreground font-normal">
-                {historyData?.source === 'snapshots' ? 'Historical estimate' : 'Simulated estimate'}
+                {historyData?.hasSufficientHistory
+                  ? 'Historical data'
+                  : historyData?.source === 'snapshots'
+                    ? 'Limited history'
+                    : 'Simulated estimate'}
               </Badge>
             </div>
             {historyData && (

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { PieChart as PieChartIcon } from "lucide-react";
 import { useAiRecommendations } from "@/hooks/use-portfolio";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -125,45 +125,6 @@ export default function AiAdvisory() {
   const investmentReturn = totalCurrent - totalInvested;
   const investmentReturnRate = totalInvested > 0 ? (investmentReturn / totalInvested) : 0;
 
-  // Calculate monthly performance progression based on actual data
-  const calculatePerformanceData = () => {
-    const baseValue = totalPortfolioValue * 0.85; // Assume portfolio has grown this year
-    const portfolioGrowthRate = investmentReturnRate * (investmentValue / totalPortfolioValue);
-    
-    // Create monthly progression based on actual investment performance
-    const monthlyGrowthFactors = [
-      0.85, // Jan - starting low
-      0.88, // Feb - small uptick  
-      0.84, // Mar - slight dip
-      0.91, // Apr - recovery
-      0.89, // May - consolidation
-      0.94, // Jun - growth momentum
-      0.97, // Jul - continued growth
-      0.95, // Aug - minor pullback
-      1.02, // Sep - strong performance
-      0.99, // Oct - profit taking
-      1.05, // Nov - final push
-      1.00, // Dec - current value
-    ];
-    
-    return monthlyGrowthFactors.map((factor, index) => {
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const portfolioValue = totalPortfolioValue * factor;
-      const benchmarkValue = baseValue * (0.98 + (index * 0.018)); // Steady benchmark growth
-      
-      // Convert to percentage returns for the chart
-      const portfolioReturn = ((portfolioValue - baseValue) / baseValue) * 100;
-      const benchmarkReturn = ((benchmarkValue - baseValue) / baseValue) * 100;
-      
-      return {
-        month: months[index],
-        portfolio: portfolioReturn,
-        benchmark: benchmarkReturn
-      };
-    });
-  };
-
-  const performanceData = calculatePerformanceData();
 
   // Advisor contact mutation
   const advisorMutation = useMutation({
@@ -804,84 +765,35 @@ export default function AiAdvisory() {
 
       {/* Performance and Risk Metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Performance by Period */}
+        {/* Performance Chart — unavailable until real history accumulates */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Performance by Period</CardTitle>
-              <div className="flex items-center space-x-4 text-sm">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span>Your Portfolio</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-0.5 border-t-2 border-dashed border-blue-500"></div>
-                  <span>Benchmark</span>
-                </div>
-              </div>
-            </div>
+            <CardTitle>Performance by Period</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={performanceData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                  <XAxis dataKey="month" stroke="#6B7280" fontSize={12} />
-                  <YAxis stroke="#6B7280" fontSize={12} tickFormatter={(value) => `${value}%`} />
-                  <Tooltip 
-                    formatter={(value: number, name: string) => [
-                      `${value.toFixed(1)}%`,
-                      name === 'portfolio' ? 'Your Portfolio' : 'Benchmark'
-                    ]}
-                    contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="portfolio" 
-                    stroke="#EF4444" 
-                    strokeWidth={3}
-                    dot={{ fill: '#EF4444', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="benchmark" 
-                    stroke="#3B82F6" 
-                    strokeWidth={3}
-                    strokeDasharray="8 4"
-                    dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm font-medium text-amber-900">Performance chart unavailable</p>
+              <p className="mt-1 text-sm text-amber-800">
+                This chart previously used modelled assumptions and a synthetic benchmark.
+                It will be re-enabled once real historical portfolio data has accumulated.
+              </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Risk Metrics */}
+        {/* Risk Metrics — unavailable until real history accumulates */}
         <Card>
           <CardHeader>
             <CardTitle>Risk Metrics</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {[
-                { metric: "Sharpe Ratio", value: "1.42", description: "Risk-adjusted return efficiency", color: "text-green-600" },
-                { metric: "Maximum Drawdown", value: "-8.7%", description: "Largest peak-to-trough decline", color: "text-red-600" },
-                { metric: "Volatility (1Y)", value: "12.4%", description: "Annual standard deviation", color: "text-blue-600" },
-                { metric: "Beta", value: "0.85", description: "Sensitivity to market movements", color: "text-purple-600" },
-                { metric: "VaR (95%)", value: "-2.3%", description: "Maximum 1-day loss (95% confidence)", color: "text-orange-600" },
-              ].map((metric) => (
-                <div key={metric.metric} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <div className="font-medium">{metric.metric}</div>
-                    <div className="text-xs text-gray-500">{metric.description}</div>
-                  </div>
-                  <div className={`font-semibold text-lg ${metric.color}`}>
-                    {metric.value}
-                  </div>
-                </div>
-              ))}
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm font-medium text-amber-900">Risk metrics not yet available</p>
+              <p className="mt-1 text-sm text-amber-800">
+                Sharpe ratio, volatility, maximum drawdown, beta, and VaR require a real return
+                history series. These figures will appear once sufficient trading history has
+                accumulated.
+              </p>
             </div>
           </CardContent>
         </Card>

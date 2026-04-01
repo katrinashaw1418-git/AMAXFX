@@ -365,7 +365,9 @@ export default function Portfolio() {
               {monthlyPnl >= 0 ? '+' : ''}${Math.round(monthlyPnl).toLocaleString()}
             </p>
             <p className="text-xs text-gray-600 mt-1">
-              {monthlyReturn >= 0 ? '+' : ''}{monthlyReturn.toFixed(1)}% this month
+              {portfolio?.monthlyPnlSource === 'snapshots'
+                ? `${monthlyReturn >= 0 ? '+' : ''}${monthlyReturn.toFixed(1)}% last 30 days`
+                : 'Insufficient history'}
             </p>
           </CardContent>
         </Card>

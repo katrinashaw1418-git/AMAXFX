@@ -1,0 +1,180 @@
+🔧 COMPLETE PATCHES — AMAX-V1 (FINAL)
+1) server/routes.ts — REMOVE FAKE SNAPSHOT SEEDING
+🔴 DELETE this entire block
+// --- Snapshot management ---
+// Seed 365 daily snapshots on first run; save today's snapshot on subsequent runs.
+const todayStr = new Date().toISOString().split('T')[0];
+let allSnapshots = await storage.getPortfolioSnapshots(userId);
+
+if (allSnapshots.length === 0) {
+  // First run: seed a full year of daily snapshots using backward projection.
+  const days = 365;
+  const dailyRate = blendedMonthlyRate / 30;
+
+  for (let i = days; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+
+    const factor = Math.pow(1 + dailyRate, i);
+    const simulatedValue = totalValue / factor;
+
+    await storage.createPortfolioSnapshot({
+      userId,
+      totalValue: simulatedValue.toFixed(2),
+      fiatValue: fiatValue.toFixed(2),
+      cryptoValue: cryptoValue.toFixed(2),
+      stablecoinValue: stablecoinValue.toFixed(2),
+      investmentValue: investmentValue.toFixed(2),
+      snapshotDate: date,
+    });
+  }
+
+  allSnapshots = await storage.getPortfolioSnapshots(userId);
+} else {
+  ...
+}
+✅ REPLACE WITH THIS
+// --- Snapshot management ---
+// Only save today's real snapshot (no fake historical data)
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+let allSnapshots = await storage.getPortfolioSnapshots(userId);
+
+const hasToday = allSnapshots.some(
+  s => s.snapshotDate.toISOString().split("T")[0] === today.toISOString().split("T")[0]
+);
+
+if (!hasToday) {
+  await storage.createPortfolioSnapshot({
+    userId,
+    totalValue: totalValue.toFixed(2),
+    fiatValue: fiatValue.toFixed(2),
+    cryptoValue: cryptoValue.toFixed(2),
+    stablecoinValue: stablecoinValue.toFixed(2),
+    investmentValue: investmentValue.toFixed(2),
+    snapshotDate: new Date(),
+  });
+
+  allSnapshots = await storage.getPortfolioSnapshots(userId);
+}
+2) server/routes.ts — FIX MONTHLY P&L (NO MODEL)
+🔴 DELETE
+const previousMonthValue = totalValue / (1 + blendedMonthlyRate);
+const monthlyPnl = totalValue - previousMonthValue;
+const monthlyPnlPercent = previousMonthValue > 0 ? (monthlyPnl / previousMonthValue) * 100 : 0;
+✅ REPLACE WITH
+const thirtyDaysAgo = new Date();
+thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+const priorSnapshot = allSnapshots
+  .filter(s => s.snapshotDate <= thirtyDaysAgo)
+  .sort((a, b) => b.snapshotDate.getTime() - a.snapshotDate.getTime())[0];
+
+let monthlyPnl = 0;
+let monthlyPnlPercent = 0;
+let monthlyPnlSource = "insufficient_history";
+
+if (priorSnapshot) {
+  const priorValue = parseFloat(priorSnapshot.totalValue);
+  monthlyPnl = totalValue - priorValue;
+  monthlyPnlPercent = priorValue > 0 ? (monthlyPnl / priorValue) * 100 : 0;
+  monthlyPnlSource = "snapshots";
+}
+ADD to response:
+monthlyPnlSource,
+3) server/routes.ts — FIX HISTORY API (NO PROJECTION)
+🔴 DELETE fallback block
+else {
+  // backward projection logic with Math.pow and assumptions
+}
+✅ REPLACE WITH
+if (storedSnapshots.length >= 2) {
+  const maxPoints = 22;
+  const step = Math.max(1, Math.floor(storedSnapshots.length / (maxPoints - 1)));
+
+  const thinned = [];
+  for (let i = 0; i < storedSnapshots.length - 1; i += step) {
+    thinned.push(storedSnapshots[i]);
+  }
+  thinned.push(storedSnapshots[storedSnapshots.length - 1]);
+
+  dataPoints = thinned.map((s) => ({
+    date: s.snapshotDate.toISOString().split("T")[0],
+    value: Math.round(parseFloat(s.totalValue)),
+    timestamp: s.snapshotDate.getTime(),
+  }));
+} else {
+  dataPoints = storedSnapshots.map((s) => ({
+    date: s.snapshotDate.toISOString().split("T")[0],
+    value: Math.round(parseFloat(s.totalValue)),
+    timestamp: s.snapshotDate.getTime(),
+  }));
+}
+UPDATE RESPONSE OBJECT
+res.json({
+  timeframe,
+  data: dataPoints,
+  currentValue: currentTotalValue,
+  totalReturn: totalReturn.toFixed(2),
+  totalReturnPercent: totalReturnPercent.toFixed(2),
+  source: "snapshots",
+  hasSufficientHistory: dataPoints.length >= 2,
+});
+4) server/storage.ts
+🔴 FIND
+export const storage = new MemStorage();
+✅ REPLACE
+export const storage = new DatabaseStorage();
+5) portfolio-chart.tsx
+🔴 FIND
+{historyData?.source === 'snapshots' ? 'Historical estimate' : 'Simulated estimate'}
+✅ REPLACE
+{historyData?.source === 'snapshots'
+  ? (historyData?.hasSufficientHistory ? 'Historical data' : 'Limited history')
+  : 'Simulated estimate'}
+6) portfolio.tsx — FIX WORDING
+🔴 FIND
+{monthlyReturn.toFixed(1)}% this month
+✅ REPLACE
+{monthlyReturn.toFixed(1)}% last 30 days
+
+OR better:
+
+{monthlyReturn.toFixed(1)}%
+{portfolio?.monthlyPnlSource === "snapshots"
+  ? " last 30 days"
+  : " insufficient history"}
+7) wealth-overview.tsx
+🔴 FIND
+<span>return</span>
+✅ REPLACE
+<span>
+  {portfolio.monthlyPnlSource === "snapshots"
+    ? "last 30 days"
+    : "insufficient history"}
+</span>
+8) ai-advisory.tsx — REMOVE FAKE PERFORMANCE
+🔴 DELETE ENTIRE BLOCK
+const calculatePerformanceData = () => {
+  ...
+};
+const performanceData = calculatePerformanceData();
+✅ REPLACE WITH
+const performanceData = [];
+🔴 REPLACE CHART JSX WITH
+<div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+  <p className="text-sm font-medium text-amber-900">Performance unavailable</p>
+  <p className="mt-1 text-sm text-amber-800">
+    This chart previously used modeled assumptions.
+    Re-enable only when connected to real historical data.
+  </p>
+</div>
+✅ FINAL RESULT AFTER PATCH
+Area	Status
+Fake historical data	❌ Removed
+Fake monthly P&L	❌ Removed
+Synthetic fallback logic	❌ Removed
+Misleading labels	❌ Fixed
+Snapshot-based logic	✅ Implemented
+Graph credibility	✅ Real (once snapshots accumulate)

@@ -1,0 +1,60 @@
+I cross-checked the updated AMAX-V1 (2).zip. The major earlier bugs are improved, but there are still a few real issues.
+
+Remaining errors table
+#	File / Area	Verified issue	Why it is still an issue	Fix
+1	server/routes.ts /api/portfolio/history	History still falls back to backward projection when there are fewer than 2 snapshots	This is still modeled history, not true history	Remove the projected fallback and return only stored snapshots, or clearly keep it as simulated
+2	server/routes.ts /api/portfolio	Monthly P&L can still fall back to modeled math if no prior snapshot exists	If no snapshot exists 30 days back, it uses blended assumed rates	Use month-start / prior-period snapshots only; otherwise return null or “insufficient history”
+3	server/storage.ts	App still uses MemStorage	Snapshot history is lost on restart, so “historical” charts are not durable	Switch to DatabaseStorage once DB is ready
+4	server/routes.ts snapshot seeding	First run seeds 365 historical points by backward projection	Those are fabricated snapshots, then treated like stored history later	Do not seed synthetic snapshots; start collecting real snapshots from today forward
+5	client/src/pages/portfolio.tsx	Monthly return wording overstates precision (this month)	The number may still be derived from modeled fallback logic	Change wording to estimated this month unless snapshot-only logic is enforced
+6	client/src/components/dashboard/wealth-overview.tsx	Monthly P&L label is too generic (return)	It does not tell user whether this is actual or estimated	Change label to estimated return until snapshot-only logic is used
+7	client/src/components/dashboard/portfolio-chart.tsx	Badge text is slightly wrong for snapshot data	It says Historical estimate when source is snapshots; if snapshots are real, that wording is misleading	Change to Historical data for snapshots and Simulated estimate for projected
+8	client/src/pages/portfolio.tsx	Period return chart depends on the history API basis	If history API is projected, period returns are also projected	Once history API is snapshot-only, keep this; otherwise label as simulated
+9	client/src/pages/ai-advisory.tsx	Still contains synthetic benchmark / analytics logic	It still uses modeled benchmark growth and hardcoded Sharpe text	Remove or label as simulated if this page is user-facing
+What is fixed
+Area	Status
+Compound growth in investment valuation	Fixed
+Sine-wave removed from core valuation function	Fixed
+Available Cash formula	Fixed
+FX conversion for wallets	Fixed
+Investment breakdown uses current value	Fixed
+Hardcoded +12.5% / +8.2% in wealth overview	Fixed
+Portfolio history decorative sine-wave noise	Fixed
+Portfolio page grid layout	Fixed
+Risk Metrics card in portfolio.tsx	Hidden/replaced appropriately
+Bottom line
+
+The remaining issues are not major math bugs. They are mostly about data basis and presentation accuracy:
+
+some history is still projected
+snapshots are still in-memory
+some labels should still say estimated / simulated
+Highest priority fixes
+Priority	Fix
+High	Stop seeding fake historical snapshots
+High	Switch from MemStorage to DatabaseStorage
+High	Remove projected fallback from /api/portfolio/history
+Medium	Remove modeled fallback for monthly P&L
+Medium	Tighten chart / P&L labels to say estimated only when appropriate
+
+If you want, I can turn this into a “safe to present vs not safe to present” table for this latest ZIP.
+
+write the code to fix the issues
+Thought for 40s
+
+I verified the latest ZIP. These are the code changes still needed.
+
+Remaining issues and fixes
+#	File	Verified issue	Fix
+1	server/routes.ts	/api/portfolio/history still falls back to projected history when snapshots are missing	Remove projected fallback and return snapshot data only
+2	server/routes.ts	/api/portfolio still falls back to modeled monthly P&L when no prior snapshot exists	Return null / 0 with a source flag, or only calculate from real snapshots
+3	server/routes.ts	First run seeds 365 fake historical snapshots	Stop seeding backward-projected snapshots
+4	server/storage.ts	App still uses MemStorage	Switch to DatabaseStorage if your DB is ready
+5	client/src/components/dashboard/portfolio-chart.tsx	Snapshot badge says Historical estimate	Change to Historical data
+6	client/src/pages/portfolio.tsx	this month label overstates precision	Change to last 30 days or estimated this month
+7	client/src/components/dashboard/wealth-overview.tsx	return label is too vague	Change to last 30 days or estimated return
+8	client/src/pages/ai-advisory.tsx	Still uses synthetic benchmark and hardcoded analytics	Replace with disclosure text or remove those calculations
+Code patches
+1) server/routes.ts — stop creating fake historical snapshots
+
+Find the block inside /api/portfolio that does this:

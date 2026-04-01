@@ -70,7 +70,9 @@ export default function WealthOverview() {
               <span className={`text-sm ${monthlyPnlPercent >= 0 ? 'text-secondary' : 'text-destructive'}`}>
                 {monthlyPnlPercent >= 0 ? '+' : ''}{monthlyPnlPercent.toFixed(2)}%
               </span>
-              <span className="text-xs text-gray-500">vs 30 days ago</span>
+              <span className="text-xs text-gray-500">
+                {(portfolio as any).monthlyPnlSource === 'snapshots' ? 'vs 30 days ago' : 'insufficient history'}
+              </span>
             </div>
           </div>
         </CardContent>
