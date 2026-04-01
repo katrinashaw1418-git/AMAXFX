@@ -1,0 +1,259 @@
+I cross-checked the **current AMAX-V1 (5)** logic against your requirement: the portfolio performance graph should be driven by the investment dataset, with returns flowing consistently from the investment page through shared formulas into all pages.
+
+The biggest remaining problem is this:
+
+**the “Actual” portfolio performance line is not actually based on true opening-date holdings.**
+
+That is why the graph can look wrong or even negative.
+
+Earlier reviews already identified the same broader model risk: multiple pages/endpoints using different valuation bases, synthetic history, and the need for one shared valuation engine.  
+
+## Final verified findings
+
+| Priority     | Area                                                  | Error                                                                                               | Why it is wrong                                                                                                                                                                                                  | Fix                                                                                                                                 |
+| ------------ | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Critical** | `server/routes.ts` `/api/portfolio/performance-chart` | **Opening portfolio value is wrong**                                                                | It calculates the Jan 1, 2026 “opening” using **current wallet balances**, not wallet balances as of Jan 1, 2026. So the graph anchor is not historical.                                                         | Replace opening-value logic with the earliest real snapshot on or after the anchor date, or reconstruct balances from transactions. |
+| **Critical** | `server/routes.ts` `/api/portfolio/performance-chart` | **Future investments are included in opening investment value**                                     | For investments entered after Jan 1, 2026, the code still adds them into `openingInvest` by valuing them at their own investment date. That means the opening point includes investments that did not exist yet. | Only include investments where `investmentDate <= ANCHOR`.                                                                          |
+| **High**     | `server/routes.ts` `/api/portfolio/performance-chart` | “Actual” history is monthly snapshot totals, but opening point is model-built                       | So the first point and later points are not on the same basis.                                                                                                                                                   | Use one consistent basis: all historical points from snapshots.                                                                     |
+| **High**     | `server/routes.ts` `/api/portfolio/performance-chart` | Historical line can look negative even if investments are positive                                  | Because the anchor is overstated by using current balances / future investments, later real snapshots can look lower relative to a bad starting point.                                                           | Fix the anchor and recompute chart.                                                                                                 |
+| **High**     | `server/routes.ts` `/api/investment-performance`      | Prediction logic still uses fallback category return, not always product-specific configured return | Current value uses product annual return correctly, but prediction allocation uses fallback mapping.                                                                                                             | Use product `annualReturn` first, fallback only when missing.                                                                       |
+| **Medium**   | `server/routes.ts` `backfillPortfolioHistory()`       | Historical estimates for prior days use today’s wallet balances translated to prior dates           | This is acceptable only as an estimate, but it is not true historical wallet position tracking.                                                                                                                  | Keep label as `historical_estimate`, or rebuild from wallet transaction history.                                                    |
+| **Medium**   | `server/routes.ts` `calculatePortfolioTotalsAtDate()` | Wallet totals are not truly date-aware                                                              | It values all current wallets for any requested date; only investment dates are date-aware.                                                                                                                      | If you want true history, wallet balances must also come from dated transactions or snapshots.                                      |
+| **Medium**   | `client/src/components/dashboard/portfolio-chart.tsx` | The chart legend says “Actual (real snapshots)”                                                     | That is too strong if some visible points come from `historical_estimate` snapshots.                                                                                                                             | Change to `Historical` or make label source-aware.                                                                                  |
+| **Medium**   | `client/src/pages/portfolio.tsx`                      | Period-return cards depend on history basis                                                         | If history contains estimated snapshots, those returns are not purely actual.                                                                                                                                    | Show `historical data` vs `historical estimate` clearly in card labels.                                                             |
+| **Low**      | Overall model                                         | “Actual” and “Estimated” are blended in a way that can confuse users                                | The formulas themselves are mostly improved, but the data basis is not always explicit.                                                                                                                          | Separate labels: `actual`, `historical estimate`, `forecast`.                                                                       |
+
+---
+
+## The root cause of the negative “Actual” performance
+
+The current performance-chart route is doing this conceptually:
+
+### It sets an anchor date:
+
+* **Jan 1, 2026**
+
+### Then it calculates opening value using:
+
+* **today’s fiat wallet balances**
+* **today’s crypto wallet balances**
+* **today’s stablecoin balances**
+* **all investment records**, including ones created after Jan 1, 2026
+
+That means the first point is **not a true historical opening value**.
+
+So even if your investments are up, the graph can still show “Actual” performance as negative because the starting line is inflated or mis-timed.
+
+---
+
+## What is correct now
+
+These parts are materially better:
+
+* investment valuation uses **compound growth**
+* `returnPercentage` bug in investment performance is fixed
+* the investment page is linked to stored investment records
+* `calculateInvestmentPerformance()` is now a shared formula
+* `investment-breakdown` uses current value
+* portfolio history is based on stored snapshots/backfilled estimates rather than sine-wave fake noise
+
+That matches the earlier improvements already identified in the review trail.
+
+---
+
+# The exact fixes you need
+
+## 1) Fix opening investment value in `/api/portfolio/performance-chart`
+
+Replace this block:
+
+```ts
+for (const inv of investments) {
+  const product = await storage.getInvestmentProduct(inv.productId);
+  if (!product) continue;
+  const invDate = new Date(inv.investmentDate);
+  const perf = calculateInvestmentPerformance(
+    product,
+    parseFloat(inv.investedAmount),
+    invDate,
+    invDate <= ANCHOR ? ANCHOR : invDate
+  );
+  openingInvest += perf.currentValue;
+}
+```
+
+with this:
+
+```ts
+for (const inv of investments) {
+  const product = await storage.getInvestmentProduct(inv.productId);
+  if (!product) continue;
+
+  const invDate = new Date(inv.investmentDate);
+  if (invDate > ANCHOR) continue; // do not include investments that did not exist yet
+
+  const perf = calculateInvestmentPerformance(
+    product,
+    parseFloat(inv.investedAmount),
+    invDate,
+    ANCHOR
+  );
+
+  openingInvest += perf.currentValue;
+}
+```
+
+---
+
+## 2) Stop using current wallet balances for opening historical value
+
+Replace the wallet-based opening calculation with snapshot-based opening logic.
+
+Use this instead:
+
+```ts
+const openingSnapshots = await storage.getPortfolioSnapshots(userId, ANCHOR, today);
+const sortedOpeningSnapshots = [...openingSnapshots].sort(
+  (a: any, b: any) => new Date(a.snapshotDate).getTime() - new Date(b.snapshotDate).getTime()
+);
+
+const openingSnapshot = sortedOpeningSnapshots.length > 0 ? sortedOpeningSnapshots[0] : null;
+
+const openingValue = openingSnapshot
+  ? Math.round(parseFloat(openingSnapshot.totalValue))
+  : 0;
+```
+
+Then **delete** the entire manual `openingFiat/openingCrypto/openingStable/openingInvest` block.
+
+That is the single most important fix.
+
+---
+
+## 3) Make the historical line use the same source as the opening point
+
+Right now:
+
+* opening point = manually reconstructed
+* later points = snapshots
+
+That is inconsistent.
+
+Use this instead:
+
+```ts
+const snapshots = await storage.getPortfolioSnapshots(userId, ANCHOR, today);
+const sortedSnapshots = [...snapshots].sort(
+  (a: any, b: any) => new Date(a.snapshotDate).getTime() - new Date(b.snapshotDate).getTime()
+);
+
+const historyByMonth = new Map<string, { value: number; source: string }>();
+
+for (const s of sortedSnapshots) {
+  const d = new Date(s.snapshotDate);
+  const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  historyByMonth.set(key, {
+    value: Math.round(parseFloat(s.totalValue)),
+    source: (s as any).source ?? "actual",
+  });
+}
+
+const openingValue =
+  sortedSnapshots.length > 0 ? Math.round(parseFloat(sortedSnapshots[0].totalValue)) : 0;
+```
+
+Then use `openingValue` from snapshots only.
+
+---
+
+## 4) Fix prediction return basis in `/api/investment-performance`
+
+Replace this:
+
+```ts
+const predictedReturn = getAnnualReturnFallback(product.category, product.name);
+currentPortfolioAllocation[product.category].annualReturn = predictedReturn;
+```
+
+with this:
+
+```ts
+const predictedReturn =
+  product.annualReturn != null
+    ? parseFloat(product.annualReturn)
+    : getAnnualReturnFallback(product.category, product.name);
+
+currentPortfolioAllocation[product.category].annualReturn = predictedReturn;
+```
+
+This keeps prediction logic aligned with actual product setup from the investment page.
+
+---
+
+## 5) Make chart labeling honest
+
+In `client/src/components/dashboard/portfolio-chart.tsx`, replace:
+
+```tsx
+value === 'historical'
+  ? 'Actual (real snapshots)'
+  : `Estimated (${data?.projectionRate ?? '10% p.a.'})`
+```
+
+with:
+
+```tsx
+value === 'historical'
+  ? (data?.chartSource === 'historical_plus_forecast'
+      ? 'Historical data'
+      : 'Historical estimate')
+  : `Forecast (${data?.projectionRate ?? '10% p.a.'})`
+```
+
+And replace the tooltip label text:
+
+```tsx
+name === 'historical' ? 'Actual' : `Estimated (${data?.projectionRate ?? '10% p.a.'})`
+```
+
+with:
+
+```tsx
+name === 'historical'
+  ? (data?.chartSource === 'historical_plus_forecast' ? 'Historical' : 'Historical estimate')
+  : `Forecast (${data?.projectionRate ?? '10% p.a.'})`
+```
+
+---
+
+# Bottom line
+
+## The main bug is not the investment formula now.
+
+The bigger bug is the **historical anchor basis**.
+
+Your current model is:
+
+* investment page records are linked
+* return formulas are mostly corrected
+* investment performance endpoint is no longer broken
+
+But the **portfolio performance graph** is still wrong because:
+
+1. it builds the opening point from **current wallet balances**
+2. it includes **future investments** in the opening investment value
+3. it mixes **manual opening reconstruction** with **snapshot-based later history**
+
+That is why “Actual” can appear negative even when the investment book itself is positive.
+
+## The correct model should be:
+
+* **Investment page** creates/updates investment records
+* **Shared valuation engine** calculates product-level returns
+* **Snapshots** provide historical portfolio points
+* **Performance chart** uses snapshots for all historical points
+* **Forecast** starts from the last historical point
+
+That is also consistent with the earlier identified requirement for one shared valuation basis across all pages.
+
+If you want, I can give you one **single copy-paste replacement for `/api/portfolio/performance-chart`** so you can drop it in directly.

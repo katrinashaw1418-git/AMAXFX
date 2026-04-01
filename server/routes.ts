@@ -434,106 +434,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { timeframe = "1Y" } = req.query;
       const userId = 1;
-      const ANCHOR = new Date("2026-01-01T00:00:00.000Z");
       const today = new Date();
 
-      // Determine how many months to project
-      const totalMonths =
-        timeframe === "7Y" ? 84 :
-        timeframe === "3Y" ? 36 :
-        12; // 1Y default
+      // Anchor = Jan 1 of current year
+      const anchor = new Date(today.getFullYear(), 0, 1);
+      anchor.setHours(0, 0, 0, 0);
 
-      // --- Compute opening portfolio value at Jan 1, 2026 ---
-      const wallets = await storage.getWallets(userId);
-      const investments = await storage.getUserInvestments(userId);
+      // Ensure backfilled history exists for the full anchor-to-today range
+      await backfillPortfolioHistory(userId, anchor, today);
 
-      let openingFiat = 0, openingCrypto = 0, openingStable = 0, openingInvest = 0;
+      // All historical points come from snapshots only — no wallet balance reconstruction
+      const snapshots = await storage.getPortfolioSnapshots(userId, anchor, today);
+      const sortedSnapshots = [...snapshots].sort(
+        (a: any, b: any) =>
+          new Date(a.snapshotDate).getTime() - new Date(b.snapshotDate).getTime()
+      );
 
-      for (const wallet of wallets) {
-        const balance = parseFloat(wallet.balance);
-        if (wallet.walletType === 'fiat') {
-          if (wallet.currency === 'USD') {
-            openingFiat += balance;
-          } else {
-            const rate = await storage.getFxRate(wallet.currency, 'USD') ||
-                         await storage.getFxRate('USD', wallet.currency);
-            if (rate) openingFiat += wallet.currency !== 'USD'
-              ? balance * parseFloat(rate.rate)
-              : balance / parseFloat(rate.rate);
-          }
-        } else if (wallet.currency === 'USDT' || wallet.currency === 'USDC') {
-          openingStable += balance;
-        } else {
-          const rate = await storage.getFxRate(wallet.currency, 'USD');
-          if (rate) openingCrypto += balance * parseFloat(rate.rate);
-        }
-      }
-
-      for (const inv of investments) {
-        const product = await storage.getInvestmentProduct(inv.productId);
-        if (!product) continue;
-        const invDate = new Date(inv.investmentDate);
-        const perf = calculateInvestmentPerformance(
-          product,
-          parseFloat(inv.investedAmount),
-          invDate,
-          invDate <= ANCHOR ? ANCHOR : invDate
-        );
-        openingInvest += perf.currentValue;
-      }
-
-      const openingValue = openingFiat + openingCrypto + openingStable + openingInvest;
-
-      // --- Historical line: real snapshots from Jan 1, 2026 to today ---
-      const snapshots = await storage.getPortfolioSnapshots(userId, ANCHOR, today);
-      // Monthly bucket: latest snapshot per calendar month
-      const historyByMonth = new Map<string, number>();
-      for (const s of snapshots) {
+      // Group by month — keep the latest snapshot in each calendar month
+      const historyByMonth = new Map<string, { value: number; source: string }>();
+      for (const s of sortedSnapshots) {
         const d = new Date(s.snapshotDate);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        historyByMonth.set(key, Math.round(parseFloat(s.totalValue)));
+        historyByMonth.set(key, {
+          value: Math.round(parseFloat(s.totalValue)),
+          source: (s as any).source ?? "actual",
+        });
       }
 
-      // --- Build merged monthly series ---
-      // Annual projection rate: 10% p.a. (blended market benchmark)
-      const annualProjectionRate = 0.10;
-      const monthlyRate = Math.pow(1 + annualProjectionRate, 1 / 12) - 1;
+      // Opening value = earliest real snapshot (not reconstructed from current wallets)
+      const openingValue =
+        sortedSnapshots.length > 0
+          ? Math.round(parseFloat(sortedSnapshots[0].totalValue))
+          : 0;
 
+      // Forecast baseline = latest historical value
+      const latestHistoricalValue =
+        sortedSnapshots.length > 0
+          ? Math.round(parseFloat(sortedSnapshots[sortedSnapshots.length - 1].totalValue))
+          : openingValue;
+
+      const annualProjectionRate = 0.10;
+      const forecastMonths =
+        timeframe === "7Y" ? 84 :
+        timeframe === "3Y" ? 36 :
+        12;
+
+      // --- Build historical monthly rows (anchor → today) ---
       const chartRows: Array<{
         month: string;
         historical: number | null;
-        projected: number;
+        projected: number | null;
       }> = [];
 
-      for (let m = 0; m <= totalMonths; m++) {
-        const d = new Date(ANCHOR);
-        d.setMonth(d.getMonth() + m);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-        const projected = Math.round(openingValue * Math.pow(1 + monthlyRate, m));
-
-        let historical: number | null = null;
-        if (d <= today) {
-          if (m === 0) {
-            historical = Math.round(openingValue);
-          } else if (historyByMonth.has(key)) {
-            historical = historyByMonth.get(key)!;
-          }
-          // months between opening and today with no snapshot: leave null (gap in line)
-        }
-
-        chartRows.push({ month: label, historical, projected });
+      const cursor = new Date(anchor);
+      while (cursor <= today) {
+        const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
+        const label = cursor.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        const entry = historyByMonth.get(key);
+        chartRows.push({
+          month: label,
+          historical: entry ? entry.value : null,
+          projected: null,
+        });
+        cursor.setMonth(cursor.getMonth() + 1);
       }
 
-      const hasEstimated = chartRows.some(r => r.historical !== null);
+      // If no Jan entry exists (snapshot is later in Jan), back-fill anchor row
+      const anchorKey = `${anchor.getFullYear()}-${String(anchor.getMonth() + 1).padStart(2, '0')}`;
+      if (!historyByMonth.has(anchorKey) && chartRows.length > 0) {
+        chartRows[0].historical = openingValue;
+      }
+
+      // --- Append forecast rows ---
+      for (let i = 1; i <= forecastMonths; i++) {
+        const forecastDate = new Date(today);
+        forecastDate.setMonth(forecastDate.getMonth() + i);
+        const label = forecastDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        const projected =
+          latestHistoricalValue > 0
+            ? Math.round(latestHistoricalValue * Math.pow(1 + annualProjectionRate, i / 12))
+            : 0;
+        chartRows.push({ month: label, historical: null, projected });
+      }
+
+      const chartSource = snapshots.some((s: any) => s.source === 'historical_estimate')
+        ? 'historical_estimate_plus_forecast'
+        : 'historical_plus_forecast';
+
       res.json({
         timeframe,
-        anchorDate: '2026-01-01',
-        openingValue: Math.round(openingValue),
+        anchorDate: anchor.toISOString().split('T')[0],
+        openingValue,
         projectionRate: `${(annualProjectionRate * 100).toFixed(0)}% p.a.`,
-        chartSource: snapshots.some((s: any) => s.source === 'historical_estimate')
-          ? 'historical_estimate_plus_forecast'
-          : 'historical_plus_forecast',
+        chartSource,
         data: chartRows,
       });
     } catch (e) {
@@ -1487,8 +1480,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           currentPortfolioAllocation[product.category].value += currentValue;
           
-          // Set expected annual returns for predictions based on actual calculation methodology
-          const predictedReturn = getAnnualReturnFallback(product.category, product.name);
+          // Use product-level rate first, fallback to category mapping only when missing
+          const predictedReturn =
+            product.annualReturn != null
+              ? parseFloat(product.annualReturn.toString())
+              : getAnnualReturnFallback(product.category, product.name);
           currentPortfolioAllocation[product.category].annualReturn = predictedReturn;
         }
       }

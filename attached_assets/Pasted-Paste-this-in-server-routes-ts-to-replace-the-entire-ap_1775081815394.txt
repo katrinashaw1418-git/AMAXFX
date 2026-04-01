@@ -1,0 +1,167 @@
+Paste this in **`server/routes.ts`** to replace the entire **`/api/portfolio/performance-chart`** route.
+
+This fixes the main graph problem by making the **historical line use snapshots for all historical points**, so the opening point is no longer built from current wallet balances or future investments. That is the right direction because earlier reviews of this codebase identified synthetic history, inconsistent valuation bases, and the need to derive charts from stored snapshots and shared valuation logic.
+
+```ts
+app.get("/api/portfolio/performance-chart", async (req, res) => {
+  try {
+    const userId = 1;
+    const today = new Date();
+
+    // Anchor = start of current year
+    const anchor = new Date(today.getFullYear(), 0, 1);
+    anchor.setHours(0, 0, 0, 0);
+
+    // Make sure there is enough backfilled history so the chart is not empty.
+    // This assumes you already have backfillPortfolioHistory(...) available.
+    await backfillPortfolioHistory(userId, anchor, today);
+
+    // Pull only snapshot-based history for the historical line.
+    const snapshots = await storage.getPortfolioSnapshots(userId, anchor, today);
+    const sortedSnapshots = [...snapshots].sort(
+      (a: any, b: any) =>
+        new Date(a.snapshotDate).getTime() - new Date(b.snapshotDate).getTime()
+    );
+
+    // Group by month and keep the latest snapshot in each month.
+    const monthMap = new Map<
+      string,
+      {
+        date: string;
+        timestamp: number;
+        historical: number | null;
+        projected: number | null;
+        source: string;
+      }
+    >();
+
+    for (const s of sortedSnapshots) {
+      const d = new Date(s.snapshotDate);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+
+      monthMap.set(key, {
+        date: d.toISOString().split("T")[0],
+        timestamp: d.getTime(),
+        historical: Math.round(parseFloat(s.totalValue)),
+        projected: null,
+        source: (s as any).source || "historical_estimate",
+      });
+    }
+
+    let historicalData = Array.from(monthMap.values()).sort(
+      (a, b) => a.timestamp - b.timestamp
+    );
+
+    // If there is no exact opening point on Jan 1, add a baseline from the earliest available snapshot.
+    if (historicalData.length > 0) {
+      const firstPoint = historicalData[0];
+      const firstDate = new Date(firstPoint.date);
+      const firstIsAnchorDay =
+        firstDate.getFullYear() === anchor.getFullYear() &&
+        firstDate.getMonth() === anchor.getMonth() &&
+        firstDate.getDate() === anchor.getDate();
+
+      if (!firstIsAnchorDay) {
+        historicalData.unshift({
+          date: anchor.toISOString().split("T")[0],
+          timestamp: anchor.getTime(),
+          historical: firstPoint.historical,
+          projected: null,
+          source: firstPoint.source,
+        });
+      }
+    }
+
+    const openingValue =
+      historicalData.length > 0 && historicalData[0].historical != null
+        ? historicalData[0].historical
+        : 0;
+
+    const latestHistoricalValue =
+      historicalData.length > 0
+        ? historicalData[historicalData.length - 1].historical || 0
+        : 0;
+
+    // Forecast starts from the last historical point, not from a separate manually-built opening value.
+    const projectionRate = "10% p.a.";
+    const annualForecastRate = 0.10;
+    const forecastMonths = 12;
+
+    const projectedData: Array<{
+      date: string;
+      timestamp: number;
+      historical: number | null;
+      projected: number | null;
+      source: string;
+    }> = [];
+
+    for (let i = 1; i <= forecastMonths; i++) {
+      const forecastDate = new Date(today);
+      forecastDate.setMonth(forecastDate.getMonth() + i);
+
+      const yearsForward = i / 12;
+      const projectedValue =
+        latestHistoricalValue > 0
+          ? Math.round(
+              latestHistoricalValue * Math.pow(1 + annualForecastRate, yearsForward)
+            )
+          : 0;
+
+      projectedData.push({
+        date: forecastDate.toISOString().split("T")[0],
+        timestamp: forecastDate.getTime(),
+        historical: null,
+        projected: projectedValue,
+        source: "forecast",
+      });
+    }
+
+    const chartSource =
+      historicalData.some((p) => p.source === "historical_estimate")
+        ? "historical_estimate_plus_forecast"
+        : "historical_plus_forecast";
+
+    res.json({
+      openingValue,
+      currentValue: latestHistoricalValue,
+      projectionRate,
+      chartSource,
+      data: [...historicalData, ...projectedData],
+    });
+  } catch (error) {
+    console.error("Performance chart error:", error);
+    res.status(500).json({ error: "Failed to get performance chart" });
+  }
+});
+```
+
+Also update the chart label in **`client/src/components/dashboard/portfolio-chart.tsx`** so it does not overstate “actual” when estimated snapshots are visible:
+
+```tsx
+{value === "historical"
+  ? (data?.chartSource === "historical_plus_forecast"
+      ? "Historical data"
+      : "Historical estimate")
+  : `Forecast (${data?.projectionRate ?? "10% p.a."})`}
+```
+
+And in the tooltip:
+
+```tsx
+name === "historical"
+  ? (data?.chartSource === "historical_plus_forecast"
+      ? "Historical"
+      : "Historical estimate")
+  : `Forecast (${data?.projectionRate ?? "10% p.a."})`
+```
+
+Why this patch is the right one:
+
+* it removes the bad historical anchor basis
+* it stops mixing “manual opening reconstruction” with snapshot history
+* it makes the graph consistent with the investment/snapshot model you want across pages
+* it keeps forecast separate from history
+
+The remaining limitation is this: if your backfilled snapshots are themselves `historical_estimate`, the graph is still an estimate, not fully actual history. That is still much better than using current balances as a fake opening point, and it matches the broader recommendation to base charts on stored snapshots and clearly label estimated history.
+
+After pasting this, the next thing to check is whether `saveActualPortfolioSnapshot()` is called whenever a new investment is created or edited, so the investment page keeps feeding the graph basis consistently.

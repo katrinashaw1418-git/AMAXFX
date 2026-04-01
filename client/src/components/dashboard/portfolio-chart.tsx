@@ -13,7 +13,7 @@ type Timeframe = '1Y' | '3Y' | '7Y';
 interface ChartRow {
   month: string;
   historical: number | null;
-  projected: number;
+  projected: number | null;
 }
 
 interface PerfChartResponse {
@@ -144,7 +144,11 @@ export default function PortfolioChart() {
                 <Tooltip
                   formatter={(value: number, name: string) => [
                     `$${value.toLocaleString()}`,
-                    name === 'historical' ? 'Actual' : `Estimated (${data?.projectionRate ?? '10% p.a.'})`,
+                    name === 'historical'
+                      ? (data?.chartSource === 'historical_plus_forecast'
+                          ? 'Historical'
+                          : 'Historical estimate')
+                      : `Forecast (${data?.projectionRate ?? '10% p.a.'})`,
                   ]}
                   labelFormatter={(label) => `${label}`}
                   contentStyle={{
@@ -156,8 +160,10 @@ export default function PortfolioChart() {
                 <Legend
                   formatter={(value) =>
                     value === 'historical'
-                      ? 'Actual (real snapshots)'
-                      : `Estimated (${data?.projectionRate ?? '10% p.a.'})`
+                      ? (data?.chartSource === 'historical_plus_forecast'
+                          ? 'Historical data'
+                          : 'Historical estimate')
+                      : `Forecast (${data?.projectionRate ?? '10% p.a.'})`
                   }
                   wrapperStyle={{ paddingTop: 8 }}
                 />
