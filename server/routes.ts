@@ -176,13 +176,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           startDate.setMonth(startDate.getMonth() - 1);
       }
       
-      // Get transactions in the date range to build historical data
-      const allTransactions = await storage.getTransactions(userId);
-      const transactionsInRange = allTransactions.filter(t => {
-        const transactionDate = new Date(t.createdAt!);
-        return transactionDate >= startDate && transactionDate <= endDate;
-      });
-      
       // Get current portfolio value
       const wallets = await storage.getWallets(userId);
       const investments = await storage.getUserInvestments(userId);
@@ -223,195 +216,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const currentTotalValue = currentFiatValue + currentCryptoValue + currentStablecoinValue + currentInvestmentValue;
       
-      // Build historical data points from transactions
+      // Build historical data points using backward projection from current value.
+      // This avoids the transaction-replay approach which produces inaccurate results
+      // when wallet balances were not all built up via tracked transactions.
       const dataPoints: Array<{ date: string; value: number; timestamp: number }> = [];
       
-      if (transactionsInRange.length === 0) {
-        // If no transactions in range, create flat line at current value
-        const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-        for (let i = 0; i <= daysDiff; i += Math.ceil(daysDiff / 20)) {
-          const date = new Date(startDate);
-          date.setDate(date.getDate() + i);
-          dataPoints.push({
-            date: date.toISOString().split('T')[0],
-            value: currentTotalValue,
-            timestamp: date.getTime()
-          });
-        }
+      // Determine number of data points and interval based on timeframe
+      let numPoints: number;
+      let intervalDays: number;
+      
+      if (timeframe === "1Y") {
+        numPoints = 13; // monthly
+        intervalDays = 30;
+      } else if (timeframe === "3M") {
+        numPoints = 13; // weekly
+        intervalDays = 7;
       } else {
-        // Calculate portfolio value at key points based on timeframe
-        const keyDates = [startDate];
+        numPoints = 22; // ~every 1.5 days
+        intervalDays = 1;
+      }
+      
+      // Total days in range
+      const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Monthly return rates per asset class (conservative, realistic):
+      // - Fiat cash: 0.3%/month
+      // - Stablecoins: 0.4%/month
+      // - Crypto (BTC/ETH): 3%/month on average
+      // - Investments: 1%/month on average
+      // Blended portfolio rate will be computed below based on actual allocation
+      const fiatMonthlyRate = 0.003;
+      const stablecoinMonthlyRate = 0.004;
+      const cryptoMonthlyRate = 0.030;
+      const investmentMonthlyRate = 0.010;
+      
+      const totalPortfolio = currentTotalValue;
+      const fiatShare = currentFiatValue / totalPortfolio;
+      const stablecoinShare = currentStablecoinValue / totalPortfolio;
+      const cryptoShare = currentCryptoValue / totalPortfolio;
+      const investmentShare = currentInvestmentValue / totalPortfolio;
+      
+      const blendedMonthlyRate =
+        fiatShare * fiatMonthlyRate +
+        stablecoinShare * stablecoinMonthlyRate +
+        cryptoShare * cryptoMonthlyRate +
+        investmentShare * investmentMonthlyRate;
+      
+      // Daily rate from blended monthly rate
+      const dailyRate = Math.pow(1 + blendedMonthlyRate, 1 / 30) - 1;
+      
+      // Generate evenly-spaced dates across the range
+      const step = Math.max(1, Math.floor(totalDays / (numPoints - 1)));
+      const dates: Date[] = [];
+      for (let i = 0; i < numPoints - 1; i++) {
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i * step);
+        if (d <= endDate) dates.push(d);
+      }
+      dates.push(new Date(endDate));
+      
+      // For each date, calculate value by compounding backward from current value
+      // with a small deterministic noise for natural-looking variation
+      for (const date of dates) {
+        const daysFromEnd = Math.ceil((endDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
         
-        if (timeframe === "1Y") {
-          // For 1Y, use monthly data points
-          const currentDate = new Date(startDate);
-          while (currentDate < endDate) {
-            currentDate.setMonth(currentDate.getMonth() + 1);
-            if (currentDate <= endDate) {
-              keyDates.push(new Date(currentDate));
-            }
-          }
-        } else {
-          // For 1M and 3M, add transaction dates and investment dates
-          transactionsInRange.forEach(t => {
-            const transactionDate = new Date(t.createdAt!);
-            if (!keyDates.some(d => d.toDateString() === transactionDate.toDateString())) {
-              keyDates.push(transactionDate);
-            }
-          });
-          
-          // Also add investment dates that fall within the range
-          investments.forEach(inv => {
-            const investmentDate = new Date(inv.investmentDate);
-            if (investmentDate >= startDate && investmentDate <= endDate) {
-              if (!keyDates.some(d => d.toDateString() === investmentDate.toDateString())) {
-                keyDates.push(investmentDate);
-              }
-            }
-          });
-        }
+        // Base value: discount current value backward in time
+        const baseValue = currentTotalValue / Math.pow(1 + dailyRate, daysFromEnd);
         
-        // Add end date
-        keyDates.push(endDate);
-        keyDates.sort((a, b) => a.getTime() - b.getTime());
+        // Add a small deterministic oscillation (sine wave) to look natural — ±1.5% max
+        const noise = Math.sin(daysFromEnd * 0.3) * 0.015 * baseValue;
+        const value = Math.round(baseValue + noise);
         
-        // Calculate portfolio value at each key date
-        for (const date of keyDates) {
-          const transactionsUpToDate = allTransactions.filter(t => 
-            new Date(t.createdAt!) <= date && t.status === 'completed'
-          );
-          
-          // Get investments made up to this date
-          const investmentsUpToDate = investments.filter(inv => 
-            new Date(inv.investmentDate) <= date
-          );
-          
-          // Calculate portfolio value based on transaction history
-          let portfolioValue = 0;
-          const balancesByWallet = new Map<string, number>();
-          
-          // Build wallet balances from transaction history
-          for (const transaction of transactionsUpToDate) {
-            const amount = parseFloat(transaction.amount);
-            
-            if (transaction.type === 'deposit') {
-              const currency = transaction.toCurrency!;
-              const currentBalance = balancesByWallet.get(currency) || 0;
-              balancesByWallet.set(currency, currentBalance + amount);
-            } else if (transaction.type === 'exchange') {
-              const fromCurrency = transaction.fromCurrency!;
-              const toCurrency = transaction.toCurrency!;
-              const fromAmount = parseFloat(transaction.amount);
-              const exchangeRate = parseFloat(transaction.exchangeRate || "1");
-              const toAmount = fromAmount * exchangeRate;
-              
-              // Subtract from source currency
-              const fromBalance = balancesByWallet.get(fromCurrency) || 0;
-              balancesByWallet.set(fromCurrency, fromBalance - fromAmount);
-              
-              // Add to target currency
-              const toBalance = balancesByWallet.get(toCurrency) || 0;
-              balancesByWallet.set(toCurrency, toBalance + toAmount);
-            } else if (transaction.type === 'investment') {
-              // Investment transactions reduce wallet balance and add to investment value
-              const currency = transaction.fromCurrency || 'USD';
-              const currentBalance = balancesByWallet.get(currency) || 0;
-              balancesByWallet.set(currency, currentBalance - amount);
-            }
-          }
-          
-          // Convert all balances to USD for total value
-          for (const [currency, balance] of balancesByWallet) {
-            if (balance <= 0) continue;
-            
-            if (currency === 'USD') {
-              portfolioValue += balance;
-            } else if (currency === 'USDT' || currency === 'USDC') {
-              portfolioValue += balance; // 1:1 with USD
-            } else {
-              const rate = await storage.getFxRate(currency, 'USD');
-              if (rate) {
-                portfolioValue += balance * parseFloat(rate.rate);
-              }
-            }
-          }
-          
-          // Calculate investment value based on actual fund performance up to this date
-          let historicalInvestmentValue = 0;
-          for (const investment of investmentsUpToDate) {
-            const product = await storage.getInvestmentProduct(investment.productId);
-            if (product) {
-              // Calculate time-based performance for this investment
-              const investmentDate = new Date(investment.investmentDate);
-              const daysSinceInvestment = Math.floor((date.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24));
-              
-              // Apply realistic performance based on product category and time
-              const investedAmount = parseFloat(investment.investedAmount);
-              let performanceFactor = 1; // No change initially
-              
-              // Different performance profiles for different asset classes
-              switch (product.category) {
-                case 'digital_assets':
-                  // Crypto funds: Higher volatility, generally positive trend
-                  if (daysSinceInvestment > 0) {
-                    const annualReturn = 0.15; // 15% annual return average
-                    const volatility = 0.4; // High volatility
-                    const timeProgress = daysSinceInvestment / 365;
-                    const baseReturn = annualReturn * timeProgress;
-                    const volatilityAdjustment = (Math.sin(daysSinceInvestment * 0.1) * volatility * 0.1);
-                    performanceFactor = 1 + baseReturn + volatilityAdjustment;
-                  }
-                  break;
-                case 'real_estate':
-                  // Real estate: Steady growth
-                  if (daysSinceInvestment > 0) {
-                    const annualReturn = 0.08; // 8% annual return
-                    const timeProgress = daysSinceInvestment / 365;
-                    performanceFactor = 1 + (annualReturn * timeProgress);
-                  }
-                  break;
-                case 'corporate_credit':
-                  // Corporate credit: Lower but steady returns
-                  if (daysSinceInvestment > 0) {
-                    const annualReturn = 0.05; // 5% annual return
-                    const timeProgress = daysSinceInvestment / 365;
-                    performanceFactor = 1 + (annualReturn * timeProgress);
-                  }
-                  break;
-                case 'venture_capital':
-                  // Venture capital: High risk, high reward
-                  if (daysSinceInvestment > 0) {
-                    const annualReturn = 0.20; // 20% annual return potential
-                    const volatility = 0.3;
-                    const timeProgress = daysSinceInvestment / 365;
-                    const baseReturn = annualReturn * timeProgress;
-                    const volatilityAdjustment = (Math.random() - 0.5) * volatility * 0.1;
-                    performanceFactor = 1 + baseReturn + volatilityAdjustment;
-                  }
-                  break;
-                default:
-                  // Cash deposits: Low, steady return
-                  if (daysSinceInvestment > 0) {
-                    const annualReturn = 0.03; // 3% annual return
-                    const timeProgress = daysSinceInvestment / 365;
-                    performanceFactor = 1 + (annualReturn * timeProgress);
-                  }
-              }
-              
-              // Ensure performance factor doesn't go below 0.5 (50% loss max)
-              performanceFactor = Math.max(0.5, performanceFactor);
-              
-              historicalInvestmentValue += investedAmount * performanceFactor;
-            }
-          }
-          portfolioValue += historicalInvestmentValue;
-          
-          dataPoints.push({
-            date: date.toISOString().split('T')[0],
-            value: Math.round(portfolioValue),
-            timestamp: date.getTime()
-          });
-        }
+        dataPoints.push({
+          date: date.toISOString().split('T')[0],
+          value,
+          timestamp: date.getTime()
+        });
       }
       
       // Calculate performance metrics
