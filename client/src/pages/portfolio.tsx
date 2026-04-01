@@ -375,11 +375,9 @@ export default function Portfolio() {
               {monthlyPnl >= 0 ? '+' : ''}${Math.round(monthlyPnl).toLocaleString()}
             </p>
             <p className="text-xs text-gray-600 mt-1">
-              {portfolio?.monthlyPnlSource === 'snapshots'
-                ? `${monthlyReturn >= 0 ? '+' : ''}${monthlyReturn.toFixed(1)}% last 30 days`
-                : portfolio?.monthlyPnlSource === 'estimated'
-                  ? `${monthlyReturn >= 0 ? '+' : ''}${monthlyReturn.toFixed(1)}% est. from IRR`
-                  : 'Insufficient history'}
+              {portfolio?.monthlyPnlSource === 'snapshot'
+                ? `${monthlyReturn >= 0 ? '+' : ''}${monthlyReturn.toFixed(1)}% vs 30 days ago`
+                : `${monthlyReturn >= 0 ? '+' : ''}${monthlyReturn.toFixed(1)}% estimated from historical basis`}
             </p>
           </CardContent>
         </Card>

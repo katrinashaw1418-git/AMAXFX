@@ -71,7 +71,9 @@ export default function WealthOverview() {
                 {monthlyPnlPercent >= 0 ? '+' : ''}{monthlyPnlPercent.toFixed(2)}%
               </span>
               <span className="text-xs text-gray-500">
-                {(portfolio as any).monthlyPnlSource === 'snapshots' ? 'vs 30 days ago' : (portfolio as any).monthlyPnlSource === 'estimated' ? 'est. from IRR' : 'insufficient history'}
+                {(portfolio as any).monthlyPnlSource === 'snapshot'
+                  ? 'vs 30 days ago'
+                  : 'estimated from historical basis'}
               </span>
             </div>
           </div>

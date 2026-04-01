@@ -190,16 +190,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .filter(s => s.snapshotDate <= thirtyDaysAgo)
         .sort((a, b) => b.snapshotDate.getTime() - a.snapshotDate.getTime())[0];
 
-      let monthlyPnl = 0;
-      let monthlyPnlPercent = 0;
-      let monthlyPnlSource = 'snapshots';
+      let monthlyPnl: number | null = null;
+      let monthlyPnlPercent: number | null = null;
+      let monthlyPnlSource: 'snapshot' | 'historically_estimated' = 'snapshot';
+      let monthlyPnlMethod: 'actual_30_day_comparison' | 'historical_inference' = 'actual_30_day_comparison';
 
       if (priorSnapshot) {
+        // Direct measurement: diff between today and the real stored 30-day-prior snapshot
         const priorValue = parseFloat(priorSnapshot.totalValue);
         monthlyPnl = totalValue - priorValue;
         monthlyPnlPercent = priorValue > 0 ? (monthlyPnl / priorValue) * 100 : 0;
+        monthlyPnlSource = 'snapshot';
+        monthlyPnlMethod = 'actual_30_day_comparison';
       } else {
-        // No 30-day snapshot yet — estimate from investment IRR + assume liquid assets unchanged
+        // No 30-day snapshot exists yet — infer from historical investment IRR + unchanged liquid assets
         let priorInvestmentValue = 0;
         for (const inv of investments) {
           const product = await storage.getInvestmentProduct(inv.productId);
@@ -212,7 +216,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const priorValue = fiatValue + cryptoValue + stablecoinValue + priorInvestmentValue;
         monthlyPnl = totalValue - priorValue;
         monthlyPnlPercent = priorValue > 0 ? (monthlyPnl / priorValue) * 100 : 0;
-        monthlyPnlSource = 'estimated';
+        monthlyPnlSource = 'historically_estimated';
+        monthlyPnlMethod = 'historical_inference';
       }
 
       const portfolio = {
@@ -223,9 +228,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stablecoinValue: stablecoinValue.toFixed(2),
         fiatValue: fiatValue.toFixed(2),
         investmentValue: investmentValue.toFixed(2),
-        monthlyPnl: monthlyPnl.toFixed(2),
-        monthlyPnlPercent: monthlyPnlPercent.toFixed(2),
+        monthlyPnl: monthlyPnl !== null ? monthlyPnl.toFixed(2) : null,
+        monthlyPnlPercent: monthlyPnlPercent !== null ? monthlyPnlPercent.toFixed(2) : null,
         monthlyPnlSource,
+        monthlyPnlMethod,
         updatedAt: new Date(),
       };
       
