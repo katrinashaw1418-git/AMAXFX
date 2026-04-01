@@ -1,0 +1,403 @@
+Yes. These are the **exact code areas still needing changes** to resolve the remaining issues in the updated **AMAX-V1**.
+
+## 1) `server/routes.ts` — replace modeled monthly P&L with snapshot-based monthly P&L
+
+### Current problem
+
+You still have:
+
+```ts
+const fiatMonthlyRate       = 0.003;
+const stablecoinMonthlyRate = 0.004;
+const cryptoMonthlyRate     = 0.030;
+const investmentMonthlyRate = 0.010;
+
+const blendedMonthlyRate = totalValue > 0
+  ? (fiatValue / totalValue) * fiatMonthlyRate
+  + (stablecoinValue / totalValue) * stablecoinMonthlyRate
+  + (cryptoValue / totalValue) * cryptoMonthlyRate
+  + (investmentValue / totalValue) * investmentMonthlyRate
+  : 0;
+
+const previousMonthValue = totalValue / (1 + blendedMonthlyRate);
+const monthlyPnl = totalValue - previousMonthValue;
+const monthlyPnlPercent = previousMonthValue > 0 ? (monthlyPnl / previousMonthValue) * 100 : 0;
+```
+
+### Replace with
+
+```ts
+const now = new Date();
+const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+const monthSnapshots = await storage.getPortfolioSnapshots(userId, startOfMonth, now);
+
+const previousMonthValue =
+  monthSnapshots.length > 0
+    ? parseFloat(monthSnapshots[0].totalValue)
+    : totalValue;
+
+const monthlyPnl = totalValue - previousMonthValue;
+const monthlyPnlPercent =
+  previousMonthValue > 0 ? (monthlyPnl / previousMonthValue) * 100 : 0;
+```
+
+---
+
+## 2) `server/routes.ts` — replace synthetic `/api/portfolio/history` with snapshot history
+
+### Current problem
+
+The route still builds history by backward projection from current value.
+
+### Replace the whole route body with
+
+```ts
+app.get("/api/portfolio/history", async (req, res) => {
+  try {
+    const { timeframe = "1M" } = req.query;
+    const userId = 1;
+
+    const endDate = new Date();
+    const startDate = new Date();
+
+    switch (timeframe) {
+      case "1M":
+        startDate.setMonth(startDate.getMonth() - 1);
+        break;
+      case "3M":
+        startDate.setMonth(startDate.getMonth() - 3);
+        break;
+      case "1Y":
+        startDate.setFullYear(startDate.getFullYear() - 1);
+        break;
+      default:
+        startDate.setMonth(startDate.getMonth() - 1);
+    }
+
+    const snapshots = await storage.getPortfolioSnapshots(userId, startDate, endDate);
+
+    const data = snapshots.map((snapshot) => ({
+      date: new Date(snapshot.snapshotDate).toISOString().split("T")[0],
+      value: parseFloat(snapshot.totalValue),
+      timestamp: new Date(snapshot.snapshotDate).getTime(),
+    }));
+
+    if (data.length === 0) {
+      return res.json({
+        timeframe,
+        data: [],
+        currentValue: 0,
+        totalReturn: "0.00",
+        totalReturnPercent: "0.00",
+        startValue: "0.00",
+        endValue: "0.00",
+        historySource: "snapshots",
+      });
+    }
+
+    const startValue = data[0].value;
+    const endValue = data[data.length - 1].value;
+    const totalReturn = endValue - startValue;
+    const totalReturnPercent = startValue > 0 ? (totalReturn / startValue) * 100 : 0;
+
+    res.json({
+      timeframe,
+      data,
+      currentValue: endValue,
+      totalReturn: totalReturn.toFixed(2),
+      totalReturnPercent: totalReturnPercent.toFixed(2),
+      startValue: startValue.toFixed(2),
+      endValue: endValue.toFixed(2),
+      historySource: "snapshots",
+    });
+  } catch (error) {
+    console.error("Portfolio history error:", error);
+    res.status(500).json({ error: "Failed to get portfolio history" });
+  }
+});
+```
+
+---
+
+## 3) `server/routes.ts` — add a reusable snapshot creator
+
+Add this helper near your portfolio calculation helpers:
+
+```ts
+async function createPortfolioSnapshot(userId: number, snapshotDate: Date = new Date()) {
+  const wallets = await storage.getWallets(userId);
+  const investments = await storage.getUserInvestments(userId);
+
+  let fiatValue = 0;
+  let cryptoValue = 0;
+  let stablecoinValue = 0;
+  let investmentValue = 0;
+
+  for (const wallet of wallets) {
+    const balance = parseFloat(wallet.balance);
+
+    if (wallet.walletType === "fiat") {
+      if (wallet.currency === "USD") {
+        fiatValue += balance;
+      } else {
+        const directRate = await storage.getFxRate(wallet.currency, "USD");
+        if (directRate) {
+          fiatValue += balance * parseFloat(directRate.rate);
+        } else {
+          const inverseRate = await storage.getFxRate("USD", wallet.currency);
+          if (inverseRate) {
+            fiatValue += balance / parseFloat(inverseRate.rate);
+          }
+        }
+      }
+    } else if (wallet.currency === "USDT" || wallet.currency === "USDC") {
+      stablecoinValue += balance;
+    } else {
+      const rate = await storage.getFxRate(wallet.currency, "USD");
+      if (rate) {
+        cryptoValue += balance * parseFloat(rate.rate);
+      }
+    }
+  }
+
+  for (const investment of investments) {
+    const product = await storage.getInvestmentProduct(investment.productId);
+    if (!product) continue;
+
+    const investmentDate = new Date(investment.investmentDate);
+    const investedAmount = parseFloat(investment.investedAmount);
+    const performance = calculateInvestmentPerformance(
+      product,
+      investedAmount,
+      investmentDate,
+      snapshotDate
+    );
+    investmentValue += performance.currentValue;
+  }
+
+  const totalValue = fiatValue + cryptoValue + stablecoinValue + investmentValue;
+
+  await storage.createPortfolioSnapshot({
+    userId,
+    snapshotDate,
+    totalValue: totalValue.toFixed(2),
+    fiatValue: fiatValue.toFixed(2),
+    cryptoValue: cryptoValue.toFixed(2),
+    stablecoinValue: stablecoinValue.toFixed(2),
+    investmentValue: investmentValue.toFixed(2),
+  });
+}
+```
+
+---
+
+## 4) `server/routes.ts` — actually create snapshots
+
+If you do not create snapshots, the history route above will stay empty.
+
+### Minimum version
+
+Call it inside `/api/portfolio` before returning:
+
+```ts
+await createPortfolioSnapshot(userId, new Date());
+```
+
+Put it just before:
+
+```ts
+res.json(portfolio);
+```
+
+### Better version
+
+Create snapshots on a schedule instead of every request.
+
+---
+
+## 5) `server/storage.ts` — important: you are still exporting `MemStorage`
+
+### Current line
+
+```ts
+export const storage = new MemStorage();
+```
+
+### Why this matters
+
+Your `DatabaseStorage` has real `portfolio_snapshots` table support, but the app is not using it.
+
+### Fix
+
+If your DB is ready, change to:
+
+```ts
+export const storage = new DatabaseStorage();
+```
+
+### If your DB is not ready
+
+Keep `MemStorage`, but understand that “real historical performance” still will not be durable across restarts.
+
+---
+
+## 6) `client/src/pages/portfolio.tsx` — calculate period returns from actual history points, not current monthly return
+
+### Current problem
+
+You still have:
+
+```ts
+const periodPerformanceData = [
+  { period: '1W',  portfolioReturn: monthlyReturn / 4.33, benchmarkReturn: benchmarkMonthlyReturn / 4.33 },
+  { period: '1M',  portfolioReturn: monthlyReturn, benchmarkReturn: benchmarkMonthlyReturn },
+  { period: '3M',  portfolioReturn: compoundReturn(3, monthlyReturn), benchmarkReturn: compoundReturn(3, benchmarkMonthlyReturn) },
+  { period: '6M',  portfolioReturn: compoundReturn(6, monthlyReturn), benchmarkReturn: compoundReturn(6, benchmarkMonthlyReturn) },
+  { period: 'YTD', portfolioReturn: compoundReturn(Math.max(1, monthsYTD), monthlyReturn), benchmarkReturn: compoundReturn(Math.max(1, monthsYTD), benchmarkMonthlyReturn) },
+];
+```
+
+### Replace with
+
+```ts
+const periodConfig = [
+  { period: "1W", days: 7 },
+  { period: "1M", days: 30 },
+  { period: "3M", days: 90 },
+  { period: "6M", days: 180 },
+  {
+    period: "YTD",
+    days: Math.max(
+      1,
+      Math.floor(
+        (Date.now() - new Date(new Date().getFullYear(), 0, 1).getTime()) /
+          (1000 * 60 * 60 * 24)
+      )
+    ),
+  },
+];
+
+const getReturnFromHistory = (days: number) => {
+  if (!historyPoints.length) return 0;
+
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  const eligible = historyPoints.filter((p: any) => p.timestamp <= cutoff);
+  const startPoint = eligible.length ? eligible[eligible.length - 1] : historyPoints[0];
+  const endPoint = historyPoints[historyPoints.length - 1];
+
+  if (!startPoint || !endPoint || startPoint.value <= 0) return 0;
+  return ((endPoint.value - startPoint.value) / startPoint.value) * 100;
+};
+
+const periodPerformanceData = periodConfig.map(({ period, days }) => ({
+  period,
+  portfolioReturn: getReturnFromHistory(days),
+}));
+```
+
+---
+
+## 7) `client/src/pages/portfolio.tsx` — remove benchmark if you do not have a real benchmark feed
+
+### Current problem
+
+The benchmark line is still a model.
+
+### Safe fix
+
+Remove the benchmark line and legend entirely until you have real benchmark history.
+
+#### Delete:
+
+```tsx
+<Line dataKey="benchmark" ... />
+```
+
+#### Delete benchmark legend block:
+
+```tsx
+<div className="flex items-center space-x-2">
+  <div className="w-6 h-0.5 border-t-2 border-dashed border-blue-500"></div>
+  <span>Benchmark</span>
+</div>
+```
+
+#### Change title:
+
+```tsx
+<CardTitle>Portfolio History</CardTitle>
+```
+
+---
+
+## 8) `client/src/pages/portfolio.tsx` — hide or replace synthetic Risk Metrics
+
+### Current problem
+
+You still have formulas like:
+
+```ts
+(12.4 + (cryptoValue / totalPortfolioValue) * 15 + (investmentValue / totalPortfolioValue) * 8)
+(1.85 + (monthlyReturn / 100) * 0.3)
+```
+
+### Best fix
+
+Replace the card body with:
+
+```tsx
+<CardContent>
+  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+    <p className="text-sm font-medium text-amber-900">Risk metrics hidden</p>
+    <p className="mt-1 text-sm text-amber-800">
+      Volatility, Sharpe ratio, drawdown, and beta should be shown only after they are
+      calculated from a real return history series.
+    </p>
+  </div>
+</CardContent>
+```
+
+---
+
+## 9) `client/src/components/dashboard/wealth-overview.tsx` — fix wording
+
+### Current line
+
+```tsx
+<span className="text-xs text-gray-500">vs last month</span>
+```
+
+### Replace with
+
+```tsx
+<span className="text-xs text-gray-500">estimated monthly return</span>
+```
+
+Or, if you implement real snapshots:
+
+```tsx
+<span className="text-xs text-gray-500">vs month start</span>
+```
+
+---
+
+## 10) Small but important: keep the “Simulated estimate” badge until snapshots are real
+
+Do **not** remove those badges yet unless:
+
+* `/api/portfolio/history` is snapshot-based
+* snapshots are actually being written
+* monthly P&L is based on real prior values
+
+## Best order to do this
+
+1. `server/storage.ts` → switch to `DatabaseStorage` if ready
+2. `server/routes.ts` → add `createPortfolioSnapshot()`
+3. `server/routes.ts` → replace `/api/portfolio/history`
+4. `server/routes.ts` → replace monthly P&L logic
+5. `client/src/pages/portfolio.tsx` → period returns from history
+6. `client/src/pages/portfolio.tsx` → remove benchmark and hide risk metrics
+7. `wealth-overview.tsx` → wording fix
+
+If you want, I can turn this into a single unified patch file next.

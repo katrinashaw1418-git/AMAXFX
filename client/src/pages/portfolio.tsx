@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -164,44 +163,57 @@ export default function Portfolio() {
     );
   }
 
-  // Monthly P&L and return % come directly from the server — blended asset-class rates, no hardcoded values
+  // Monthly P&L and return % come directly from the server — snapshot-based, no hardcoded values
   const monthlyPnl = parseFloat(portfolio?.monthlyPnl || '0');
   const monthlyReturn = parseFloat(portfolio?.monthlyPnlPercent || '0');
 
-  // S&P 500 approximate annual benchmark = 10% → monthly ≈ 0.797%
-  const benchmarkMonthlyReturn = (Math.pow(1.10, 1 / 12) - 1) * 100;
-
-  // --- Performance vs Benchmark chart (uses real 1Y history API data) ---
+  // --- Portfolio History chart (real snapshot data, no modeled benchmark) ---
   const buildHistoricalData = () => {
     if (!yearHistory?.data?.length) return [];
-    // Group data points by calendar month, keeping the last value in each month
     const monthMap = new Map<string, number>();
     for (const point of yearHistory.data) {
       const d = new Date(point.date);
       const key = d.toLocaleString('default', { month: 'short' });
       monthMap.set(key, point.value);
     }
-    const startValue = yearHistory.data[0]?.value || totalPortfolioValue;
-    const monthlyBenchmarkRate = benchmarkMonthlyReturn / 100;
-    return Array.from(monthMap.entries()).map(([month, value], index) => ({
+    return Array.from(monthMap.entries()).map(([month, value]) => ({
       month,
       portfolio: value,
-      benchmark: Math.round(startValue * Math.pow(1 + monthlyBenchmarkRate, index)),
     }));
   };
   const historicalData = buildHistoricalData();
 
-  // --- Performance by Period chart (compounded from server monthly return) ---
-  const compoundReturn = (months: number, monthlyRatePercent: number) =>
-    (Math.pow(1 + monthlyRatePercent / 100, months) - 1) * 100;
-  const monthsYTD = new Date().getMonth(); // Jan = 0, so this is months elapsed
-  const periodPerformanceData = [
-    { period: '1W',  portfolioReturn: monthlyReturn / 4.33,                              benchmarkReturn: benchmarkMonthlyReturn / 4.33 },
-    { period: '1M',  portfolioReturn: monthlyReturn,                                     benchmarkReturn: benchmarkMonthlyReturn },
-    { period: '3M',  portfolioReturn: compoundReturn(3, monthlyReturn),                  benchmarkReturn: compoundReturn(3, benchmarkMonthlyReturn) },
-    { period: '6M',  portfolioReturn: compoundReturn(6, monthlyReturn),                  benchmarkReturn: compoundReturn(6, benchmarkMonthlyReturn) },
-    { period: 'YTD', portfolioReturn: compoundReturn(Math.max(1, monthsYTD), monthlyReturn), benchmarkReturn: compoundReturn(Math.max(1, monthsYTD), benchmarkMonthlyReturn) },
+  // --- Performance by Period chart (returns computed from real snapshot history) ---
+  const historyPoints = yearHistory?.data || [];
+  const periodConfig = [
+    { period: '1W',  days: 7 },
+    { period: '1M',  days: 30 },
+    { period: '3M',  days: 90 },
+    { period: '6M',  days: 180 },
+    {
+      period: 'YTD',
+      days: Math.max(
+        1,
+        Math.floor(
+          (Date.now() - new Date(new Date().getFullYear(), 0, 1).getTime()) /
+            (1000 * 60 * 60 * 24)
+        )
+      ),
+    },
   ];
+  const getReturnFromHistory = (days: number) => {
+    if (!historyPoints.length) return 0;
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    const eligible = historyPoints.filter((p: any) => p.timestamp <= cutoff);
+    const startPoint = eligible.length ? eligible[eligible.length - 1] : historyPoints[0];
+    const endPoint = historyPoints[historyPoints.length - 1];
+    if (!startPoint || !endPoint || startPoint.value <= 0) return 0;
+    return ((endPoint.value - startPoint.value) / startPoint.value) * 100;
+  };
+  const periodPerformanceData = periodConfig.map(({ period, days }) => ({
+    period,
+    portfolioReturn: getReturnFromHistory(days),
+  }));
 
   return (
     <div className="p-6 space-y-6">
@@ -499,22 +511,18 @@ export default function Portfolio() {
         </Card>
       </div>
 
-      {/* Performance vs Benchmark */}
+      {/* Portfolio History */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <CardTitle>Performance vs Benchmark</CardTitle>
-              <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">Simulated estimate</span>
+              <CardTitle>Portfolio History</CardTitle>
+              <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">Historical estimate</span>
             </div>
             <div className="flex items-center space-x-4 text-sm">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                 <span>Your Portfolio</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-6 h-0.5 border-t-2 border-dashed border-blue-500"></div>
-                <span>Benchmark</span>
               </div>
             </div>
           </div>
@@ -529,7 +537,7 @@ export default function Portfolio() {
                 <Tooltip 
                   formatter={(value: number, name: string) => [
                     `$${value.toLocaleString()}`,
-                    name === 'portfolio' ? 'Your Portfolio' : 'Benchmark'
+                    'Your Portfolio'
                   ]}
                   contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
                 />
@@ -540,15 +548,6 @@ export default function Portfolio() {
                   strokeWidth={3}
                   dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
                   activeDot={{ r: 6, fill: "#ef4444" }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="benchmark" 
-                  stroke="#3b82f6" 
-                  strokeWidth={3} 
-                  strokeDasharray="5 5"
-                  dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, fill: "#3b82f6" }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -564,16 +563,12 @@ export default function Portfolio() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CardTitle>Performance by Period</CardTitle>
-                <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">Simulated estimate</span>
+                <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">Historical estimate</span>
               </div>
               <div className="flex items-center space-x-4 text-sm">
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                   <span>Your Portfolio</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-0.5 border-t-2 border-dashed border-blue-500"></div>
-                  <span>Benchmark</span>
                 </div>
               </div>
             </div>
@@ -586,9 +581,9 @@ export default function Portfolio() {
                   <XAxis dataKey="period" stroke="#6B7280" fontSize={12} />
                   <YAxis stroke="#6B7280" fontSize={12} tickFormatter={(value) => `${value.toFixed(1)}%`} />
                   <Tooltip 
-                    formatter={(value: number, name: string) => [
+                    formatter={(value: number) => [
                       `${value.toFixed(2)}%`,
-                      name === 'portfolioReturn' ? 'Your Portfolio Return' : 'Benchmark Return'
+                      'Your Portfolio Return'
                     ]}
                     contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
                   />
@@ -600,29 +595,17 @@ export default function Portfolio() {
                     dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
                     activeDot={{ r: 6, fill: "#ef4444" }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="benchmarkReturn" 
-                    stroke="#3b82f6" 
-                    strokeWidth={3} 
-                    strokeDasharray="5 5"
-                    dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, fill: "#3b82f6" }}
-                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
             
             {/* Performance Summary Table */}
-            <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {periodPerformanceData.map((item) => (
                 <div key={item.period} className="text-center p-3 bg-gray-50 rounded-lg">
                   <p className="text-xs text-gray-600 mb-1">{item.period}</p>
                   <p className={`text-sm font-bold ${item.portfolioReturn > 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {item.portfolioReturn > 0 ? '+' : ''}{item.portfolioReturn.toFixed(1)}%
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    vs {item.benchmarkReturn > 0 ? '+' : ''}{item.benchmarkReturn.toFixed(1)}%
                   </p>
                 </div>
               ))}
@@ -633,41 +616,16 @@ export default function Portfolio() {
         {/* Risk Metrics */}
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-2">
-              <CardTitle>Risk Metrics</CardTitle>
-              <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">Simulated estimate</span>
-            </div>
+            <CardTitle>Risk Metrics</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium">Portfolio Volatility</span>
-                  <span className="text-sm text-gray-600">{(12.4 + (cryptoValue / totalPortfolioValue) * 15 + (investmentValue / totalPortfolioValue) * 8).toFixed(1)}%</span>
-                </div>
-                <Progress value={(12.4 + (cryptoValue / totalPortfolioValue) * 15 + (investmentValue / totalPortfolioValue) * 8) * 2} className="h-2" />
-              </div>
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium">Sharpe Ratio</span>
-                  <span className="text-sm text-gray-600">{(1.85 + (monthlyReturn / 100) * 0.3).toFixed(2)}</span>
-                </div>
-                <Progress value={(1.85 + (monthlyReturn / 100) * 0.3) * 30} className="h-2" />
-              </div>
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium">Maximum Drawdown</span>
-                  <span className="text-sm text-gray-600">-{(8.2 + (cryptoValue / totalPortfolioValue) * 12 - (investmentValue / totalPortfolioValue) * 3).toFixed(1)}%</span>
-                </div>
-                <Progress value={8.2 + (cryptoValue / totalPortfolioValue) * 12 - (investmentValue / totalPortfolioValue) * 3} className="h-2" />
-              </div>
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium">Beta (vs Market)</span>
-                  <span className="text-sm text-gray-600">{(0.92 + (investmentValue / totalPortfolioValue) * 0.2 + (cryptoValue / totalPortfolioValue) * 0.8).toFixed(2)}</span>
-                </div>
-                <Progress value={(0.92 + (investmentValue / totalPortfolioValue) * 0.2 + (cryptoValue / totalPortfolioValue) * 0.8) * 100} className="h-2" />
-              </div>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm font-medium text-amber-900">Risk metrics not yet available</p>
+              <p className="mt-1 text-sm text-amber-800">
+                Volatility, Sharpe ratio, maximum drawdown, and beta are shown only after they are
+                calculated from a real return history series. These figures will appear once sufficient
+                trading history has accumulated.
+              </p>
             </div>
           </CardContent>
         </Card>
