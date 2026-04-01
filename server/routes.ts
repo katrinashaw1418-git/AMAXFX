@@ -36,16 +36,8 @@ function calculateInvestmentPerformance(
   
   if (daysSinceInvestment > 0) {
     const timeProgress = daysSinceInvestment / 365;
-    performanceFactor = 1 + (annualReturn * timeProgress);
-    
-    // Add controlled volatility for specific fund types
-    if (product.category === 'digital_assets' && product.name && typeof product.name === 'string' && product.name.includes('Bitcoin')) {
-      const volatilityAdjustment = Math.sin(daysSinceInvestment * 0.1) * 0.4 * 0.1;
-      performanceFactor += volatilityAdjustment;
-    } else if (product.category === 'venture_capital') {
-      const volatilityAdjustment = (Math.sin(daysSinceInvestment * 0.05) * 0.3 * 0.1);
-      performanceFactor += volatilityAdjustment;
-    }
+    // Compound growth: (1 + r)^t — consistent with how IRR/CAGR is defined
+    performanceFactor = Math.pow(1 + annualReturn, timeProgress);
   }
   
   performanceFactor = Math.max(0.5, performanceFactor);
@@ -345,15 +337,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let stablecoinValue = 0;
       let investmentValue = 0;
       
-      // Calculate fiat value
-      fiatValue = wallets
-        .filter(w => w.walletType === 'fiat')
-        .reduce((sum, w) => sum + parseFloat(w.balance), 0);
+      // Calculate fiat value in USD equivalent (FX-converted, same logic as /api/portfolio)
+      for (const wallet of wallets.filter(w => w.walletType === 'fiat')) {
+        const balance = parseFloat(wallet.balance);
+        if (wallet.currency === 'USD') {
+          fiatValue += balance;
+        } else {
+          const directRate = await storage.getFxRate(wallet.currency, 'USD');
+          if (directRate) {
+            fiatValue += balance * parseFloat(directRate.rate);
+          } else {
+            const inverseRate = await storage.getFxRate('USD', wallet.currency);
+            if (inverseRate) {
+              fiatValue += balance / parseFloat(inverseRate.rate);
+            }
+          }
+        }
+      }
       
       // Calculate crypto and stablecoin values
       for (const wallet of wallets.filter(w => w.walletType === 'crypto')) {
         const balance = parseFloat(wallet.balance);
-        
         if (wallet.currency === "USDT" || wallet.currency === "USDC") {
           stablecoinValue += balance;
         } else {
@@ -364,12 +368,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Calculate investment value using unified calculation function
+      // Calculate investment value with correct argument order
       const evaluationDate = new Date();
       for (const investment of investments) {
         const product = await storage.getInvestmentProduct(investment.productId);
         if (product) {
-          const performance = calculateInvestmentPerformance(investment, product, evaluationDate);
+          const investedAmount = parseFloat(investment.investedAmount);
+          const investmentDate = new Date(investment.investmentDate);
+          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, evaluationDate);
           investmentValue += performance.currentValue;
         }
       }
@@ -474,15 +480,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let stablecoinValue = 0;
       let investmentValue = 0;
       
-      // Calculate fiat value
-      fiatValue = wallets
-        .filter(w => w.walletType === 'fiat')
-        .reduce((sum, w) => sum + parseFloat(w.balance), 0);
+      // Calculate fiat value in USD equivalent (FX-converted, same logic as /api/portfolio)
+      for (const wallet of wallets.filter(w => w.walletType === 'fiat')) {
+        const balance = parseFloat(wallet.balance);
+        if (wallet.currency === 'USD') {
+          fiatValue += balance;
+        } else {
+          const directRate = await storage.getFxRate(wallet.currency, 'USD');
+          if (directRate) {
+            fiatValue += balance * parseFloat(directRate.rate);
+          } else {
+            const inverseRate = await storage.getFxRate('USD', wallet.currency);
+            if (inverseRate) {
+              fiatValue += balance / parseFloat(inverseRate.rate);
+            }
+          }
+        }
+      }
       
       // Calculate crypto and stablecoin values
       for (const wallet of wallets.filter(w => w.walletType === 'crypto')) {
         const balance = parseFloat(wallet.balance);
-        
         if (wallet.currency === "USDT" || wallet.currency === "USDC") {
           stablecoinValue += balance;
         } else {
@@ -493,12 +511,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Calculate investment value using unified calculation function
+      // Calculate investment value with correct argument order
       const evaluationDate = new Date();
       for (const investment of investments) {
         const product = await storage.getInvestmentProduct(investment.productId);
         if (product) {
-          const performance = calculateInvestmentPerformance(investment, product, evaluationDate);
+          const investedAmount = parseFloat(investment.investedAmount);
+          const investmentDate = new Date(investment.investmentDate);
+          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, evaluationDate);
           investmentValue += performance.currentValue;
         }
       }
@@ -1318,19 +1338,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "cash_deposit": { value: 0, products: [], displayName: "Cash Deposits" }
       };
       
-      let totalInvested = 0;
+      let totalCurrentValue = 0;
+      const currentDate = new Date();
       
       for (const investment of investments) {
         const product = products.find(p => p.id === investment.productId);
         if (product) {
-          const value = parseFloat(investment.investedAmount); // Use invested amount, not current value
-          totalInvested += value;
+          const investedAmount = parseFloat(investment.investedAmount);
+          const investmentDate = new Date(investment.investmentDate);
+          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, currentDate);
+          const currentValue = performance.currentValue;
+          totalCurrentValue += currentValue;
           
           if (categoryBreakdown[product.category]) {
-            categoryBreakdown[product.category].value += value;
+            categoryBreakdown[product.category].value += currentValue;
             categoryBreakdown[product.category].products.push({
               name: product.name,
-              value: value,
+              value: currentValue,
               percentage: 0 // Will be calculated below
             });
           }
@@ -1341,15 +1365,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const categoryData = Object.entries(categoryBreakdown).map(([key, data]) => ({
         name: data.displayName,
         value: data.value,
-        percentage: totalInvested > 0 ? (data.value / totalInvested * 100) : 0,
+        percentage: totalCurrentValue > 0 ? (data.value / totalCurrentValue * 100) : 0,
         products: data.products.map(p => ({
           ...p,
-          percentage: totalInvested > 0 ? (p.value / totalInvested * 100) : 0
+          percentage: totalCurrentValue > 0 ? (p.value / totalCurrentValue * 100) : 0
         }))
       })).filter(cat => cat.value > 0);
       
       res.json({
-        totalInvested,
+        totalCurrentValue,
         categories: categoryData
       });
     } catch (error) {
