@@ -35,6 +35,21 @@ import {
   X
 } from "lucide-react";
 
+function AdvisoryMetricUnavailable({
+  title,
+  description = "Not yet calculated from live portfolio history and current holdings.",
+}: {
+  title: string;
+  description?: string;
+}) {
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+      <p className="text-sm font-medium text-amber-900">{title}</p>
+      <p className="mt-1 text-sm text-amber-800">{description}</p>
+    </div>
+  );
+}
+
 // Category-specific colors consistent with Portfolio page
 const getCategoryColor = (categoryName: string) => {
   const colorMap: { [key: string]: string } = {
@@ -532,8 +547,10 @@ export default function AiAdvisory() {
               <h3 className="text-sm font-medium text-gray-500">Portfolio Health</h3>
               <BarChart3 className="w-4 h-4 text-secondary" />
             </div>
-            <p className="text-2xl font-bold text-secondary">85%</p>
-            <p className="text-sm text-gray-600 mt-1">Well diversified</p>
+            <AdvisoryMetricUnavailable
+              title="Portfolio health score unavailable"
+              description="Calculated once sufficient return history has accumulated."
+            />
           </CardContent>
         </Card>
 
@@ -543,8 +560,10 @@ export default function AiAdvisory() {
               <h3 className="text-sm font-medium text-gray-500">Optimization Potential</h3>
               <Zap className="w-4 h-4 text-purple-500" />
             </div>
-            <p className="text-2xl font-bold text-purple-600">+2.4%</p>
-            <p className="text-sm text-gray-600 mt-1">Annual return boost</p>
+            <AdvisoryMetricUnavailable
+              title="Optimization score unavailable"
+              description="Projected uplift requires live portfolio analytics."
+            />
           </CardContent>
         </Card>
       </div>
@@ -729,17 +748,11 @@ export default function AiAdvisory() {
                   </div>
                 ))}
               </div>
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                <div className="flex items-start space-x-3">
-                  <Target className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-blue-900 mb-1">Rebalancing Impact</h4>
-                    <p className="text-sm text-blue-700">
-                      This allocation could improve your risk-adjusted returns by 2.4% annually while 
-                      reducing portfolio volatility by 1.8%. The changes align with your moderate risk profile.
-                    </p>
-                  </div>
-                </div>
+              <div className="mt-6">
+                <AdvisoryMetricUnavailable
+                  title="Rebalancing impact unavailable"
+                  description="Projected return improvement and volatility reduction will be calculated once sufficient portfolio history has accumulated. The suggested allocation above is based on your selected risk profile and investment horizon."
+                />
               </div>
               <Button 
                 className="w-full mt-4"
@@ -964,20 +977,10 @@ export default function AiAdvisory() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 border rounded-lg">
                   <h4 className="font-semibold mb-2">Impact Analysis</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Expected Return Improvement:</span>
-                      <span className="font-semibold text-green-600">+1.8%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Risk Reduction:</span>
-                      <span className="font-semibold text-blue-600">-2.4%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Implementation Time:</span>
-                      <span className="font-medium">2-3 business days</span>
-                    </div>
-                  </div>
+                  <AdvisoryMetricUnavailable
+                    title="Impact figures unavailable"
+                    description="Expected return improvement and risk reduction will appear once real portfolio history is available for calculation."
+                  />
                 </div>
                 
                 <div className="p-4 border rounded-lg">

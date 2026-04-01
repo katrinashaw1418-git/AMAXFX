@@ -166,32 +166,75 @@ async function saveActualSnapshot(userId: number): Promise<void> {
 
 type SnapshotSource = "actual" | "historical_estimate";
 
-// Backfill historical snapshots for every day in a date range that has no snapshot yet
+// Create a single snapshot for one day — skips if one already exists for that day
+async function createSnapshotForDay(
+  userId: number,
+  snapshotDate: Date,
+  source: SnapshotSource
+): Promise<void> {
+  const dayStart = new Date(snapshotDate);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(snapshotDate);
+  dayEnd.setHours(23, 59, 59, 999);
+  const existingForDay = await storage.getPortfolioSnapshots(userId, dayStart, dayEnd);
+  if (existingForDay.length > 0) return; // already have one for this day
+  const totals = await calculatePortfolioTotalsAtDate(userId, snapshotDate);
+  await storage.createPortfolioSnapshot({
+    userId,
+    snapshotDate,
+    totalValue: totals.totalValue.toFixed(2),
+    fiatValue: totals.fiatValue.toFixed(2),
+    cryptoValue: totals.cryptoValue.toFixed(2),
+    stablecoinValue: totals.stablecoinValue.toFixed(2),
+    investmentValue: totals.investmentValue.toFixed(2),
+    source,
+  });
+}
+
+// Incremental backfill — only fills genuinely missing days instead of re-scanning the whole range
 async function backfillPortfolioHistory(userId: number, startDate: Date, endDate: Date) {
-  const existing = await storage.getPortfolioSnapshots(userId, startDate, endDate);
-  const existingDays = new Set(
-    existing.map((s: any) => new Date(s.snapshotDate).toISOString().split("T")[0])
-  );
-  const cursor = new Date(startDate);
-  cursor.setHours(0, 0, 0, 0);
-  const end = new Date(endDate);
-  end.setHours(0, 0, 0, 0);
-  while (cursor <= end) {
-    const dayKey = cursor.toISOString().split("T")[0];
-    if (!existingDays.has(dayKey)) {
-      const totals = await calculatePortfolioTotalsAtDate(userId, new Date(cursor));
-      await storage.createPortfolioSnapshot({
-        userId,
-        snapshotDate: new Date(cursor),
-        totalValue: totals.totalValue.toFixed(2),
-        fiatValue: totals.fiatValue.toFixed(2),
-        cryptoValue: totals.cryptoValue.toFixed(2),
-        stablecoinValue: totals.stablecoinValue.toFixed(2),
-        investmentValue: totals.investmentValue.toFixed(2),
-        source: "historical_estimate" as SnapshotSource,
-      });
+  const normalizedStart = new Date(startDate);
+  normalizedStart.setHours(0, 0, 0, 0);
+  const normalizedEnd = new Date(endDate);
+  normalizedEnd.setHours(0, 0, 0, 0);
+
+  const existing = await storage.getPortfolioSnapshots(userId, normalizedStart, normalizedEnd);
+
+  if (existing.length === 0) {
+    // No history yet — fill the full range
+    const cursor = new Date(normalizedStart);
+    while (cursor <= normalizedEnd) {
+      const isToday = cursor.toDateString() === normalizedEnd.toDateString();
+      await createSnapshotForDay(userId, new Date(cursor), isToday ? "actual" : "historical_estimate");
+      cursor.setDate(cursor.getDate() + 1);
     }
-    cursor.setDate(cursor.getDate() + 1);
+    return;
+  }
+
+  const sorted = [...existing].sort(
+    (a: any, b: any) => new Date(a.snapshotDate).getTime() - new Date(b.snapshotDate).getTime()
+  );
+
+  // Fill any gap before the earliest existing snapshot
+  const earliestDate = new Date(sorted[0].snapshotDate);
+  earliestDate.setHours(0, 0, 0, 0);
+  if (normalizedStart < earliestDate) {
+    const earlyCursor = new Date(normalizedStart);
+    while (earlyCursor < earliestDate) {
+      await createSnapshotForDay(userId, new Date(earlyCursor), "historical_estimate");
+      earlyCursor.setDate(earlyCursor.getDate() + 1);
+    }
+  }
+
+  // Fill any gap after the latest existing snapshot up to today
+  const latestDate = new Date(sorted[sorted.length - 1].snapshotDate);
+  latestDate.setHours(0, 0, 0, 0);
+  const lateCursor = new Date(latestDate);
+  lateCursor.setDate(lateCursor.getDate() + 1);
+  while (lateCursor <= normalizedEnd) {
+    const isToday = lateCursor.toDateString() === normalizedEnd.toDateString();
+    await createSnapshotForDay(userId, new Date(lateCursor), isToday ? "actual" : "historical_estimate");
+    lateCursor.setDate(lateCursor.getDate() + 1);
   }
 }
 

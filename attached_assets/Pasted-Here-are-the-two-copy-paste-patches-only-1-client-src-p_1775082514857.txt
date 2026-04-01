@@ -1,0 +1,232 @@
+Here are the **two copy-paste patches only**.
+
+---
+
+## 1) `client/src/pages/ai-advisory.tsx`
+
+Replace the hardcoded performance/optimization number blocks with this reusable disclosure card. The earlier review trail already flagged the advisory page as still containing hardcoded figures rather than portfolio-derived analytics. 
+
+```tsx
+function AdvisoryMetricUnavailable({
+  title,
+  description = "Not yet calculated from live portfolio history and current holdings."
+}: {
+  title: string;
+  description?: string;
+}) {
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+      <p className="text-sm font-medium text-amber-900">{title}</p>
+      <p className="mt-1 text-sm text-amber-800">{description}</p>
+    </div>
+  );
+}
+```
+
+Then replace any hardcoded cards/blocks showing values like:
+
+```tsx
+85%
++2.4%
+1.8%
++1.8%
+-2.4%
+```
+
+with:
+
+```tsx
+<AdvisoryMetricUnavailable title="Optimization score unavailable" />
+<AdvisoryMetricUnavailable title="Projected uplift unavailable" />
+<AdvisoryMetricUnavailable title="Risk reduction unavailable" />
+```
+
+If you have a section with multiple stat cards, replace the whole block with this:
+
+```tsx
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <AdvisoryMetricUnavailable title="Optimization score unavailable" />
+  <AdvisoryMetricUnavailable title="Projected uplift unavailable" />
+  <AdvisoryMetricUnavailable title="Risk reduction unavailable" />
+</div>
+```
+
+If you want a single combined message instead, use:
+
+```tsx
+<div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+  <p className="text-sm font-medium text-amber-900">Advisory metrics unavailable</p>
+  <p className="mt-1 text-sm text-amber-800">
+    Optimization, uplift, and benchmark figures are not yet calculated from live portfolio history,
+    holdings, and investment return data.
+  </p>
+</div>
+```
+
+---
+
+## 2) `server/routes.ts`
+
+Replace your current `backfillPortfolioHistory()` with this **incremental** version. This addresses the remaining issue that backfill can keep trying to fill every missing day across the full range instead of only filling what is newly needed.
+
+```ts
+async function backfillPortfolioHistory(
+  userId: number,
+  startDate: Date,
+  endDate: Date
+) {
+  const normalizedStart = new Date(startDate);
+  normalizedStart.setHours(0, 0, 0, 0);
+
+  const normalizedEnd = new Date(endDate);
+  normalizedEnd.setHours(0, 0, 0, 0);
+
+  const existing = await storage.getPortfolioSnapshots(userId, normalizedStart, normalizedEnd);
+
+  if (existing.length === 0) {
+    const cursor = new Date(normalizedStart);
+
+    while (cursor <= normalizedEnd) {
+      await createPortfolioSnapshotForDate(
+        userId,
+        new Date(cursor),
+        cursor.toDateString() === normalizedEnd.toDateString()
+          ? "actual"
+          : "historical_estimate"
+      );
+
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return;
+  }
+
+  const sortedExisting = [...existing].sort(
+    (a: any, b: any) =>
+      new Date(a.snapshotDate).getTime() - new Date(b.snapshotDate).getTime()
+  );
+
+  const latestExistingDate = new Date(sortedExisting[sortedExisting.length - 1].snapshotDate);
+  latestExistingDate.setHours(0, 0, 0, 0);
+
+  const cursor = new Date(latestExistingDate);
+  cursor.setDate(cursor.getDate() + 1);
+
+  while (cursor <= normalizedEnd) {
+    await createPortfolioSnapshotForDate(
+      userId,
+      new Date(cursor),
+      cursor.toDateString() === normalizedEnd.toDateString()
+        ? "actual"
+        : "historical_estimate"
+    );
+
+    cursor.setDate(cursor.getDate() + 1);
+  }
+}
+```
+
+If you want it to also fill an **earlier gap** when the requested start date is before the earliest stored snapshot, use this slightly stronger version instead:
+
+```ts
+async function backfillPortfolioHistory(
+  userId: number,
+  startDate: Date,
+  endDate: Date
+) {
+  const normalizedStart = new Date(startDate);
+  normalizedStart.setHours(0, 0, 0, 0);
+
+  const normalizedEnd = new Date(endDate);
+  normalizedEnd.setHours(0, 0, 0, 0);
+
+  const existing = await storage.getPortfolioSnapshots(userId, normalizedStart, normalizedEnd);
+
+  if (existing.length === 0) {
+    const cursor = new Date(normalizedStart);
+
+    while (cursor <= normalizedEnd) {
+      await createPortfolioSnapshotForDate(
+        userId,
+        new Date(cursor),
+        cursor.toDateString() === normalizedEnd.toDateString()
+          ? "actual"
+          : "historical_estimate"
+      );
+
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return;
+  }
+
+  const sortedExisting = [...existing].sort(
+    (a: any, b: any) =>
+      new Date(a.snapshotDate).getTime() - new Date(b.snapshotDate).getTime()
+  );
+
+  const earliestExistingDate = new Date(sortedExisting[0].snapshotDate);
+  earliestExistingDate.setHours(0, 0, 0, 0);
+
+  const latestExistingDate = new Date(sortedExisting[sortedExisting.length - 1].snapshotDate);
+  latestExistingDate.setHours(0, 0, 0, 0);
+
+  if (normalizedStart < earliestExistingDate) {
+    const earlyCursor = new Date(normalizedStart);
+
+    while (earlyCursor < earliestExistingDate) {
+      await createPortfolioSnapshotForDate(
+        userId,
+        new Date(earlyCursor),
+        "historical_estimate"
+      );
+
+      earlyCursor.setDate(earlyCursor.getDate() + 1);
+    }
+  }
+
+  const lateCursor = new Date(latestExistingDate);
+  lateCursor.setDate(lateCursor.getDate() + 1);
+
+  while (lateCursor <= normalizedEnd) {
+    await createPortfolioSnapshotForDate(
+      userId,
+      new Date(lateCursor),
+      lateCursor.toDateString() === normalizedEnd.toDateString()
+        ? "actual"
+        : "historical_estimate"
+    );
+
+    lateCursor.setDate(lateCursor.getDate() + 1);
+  }
+}
+```
+
+---
+
+## Small optional safety guard
+
+Inside `createPortfolioSnapshotForDate(...)`, add this at the top so you never duplicate the same day:
+
+```ts
+const dayStart = new Date(snapshotDate);
+dayStart.setHours(0, 0, 0, 0);
+
+const dayEnd = new Date(snapshotDate);
+dayEnd.setHours(23, 59, 59, 999);
+
+const existingForDay = await storage.getPortfolioSnapshots(userId, dayStart, dayEnd);
+
+if (existingForDay.length > 0) {
+  return;
+}
+```
+
+---
+
+## What these two patches do
+
+* remove fake-looking advisory percentages and replace them with honest placeholders
+* make history backfill incremental instead of repeatedly refilling the whole range
+
+The next highest-impact fix after this is still **wallet history by date**, because that is the remaining gap between “investment returns are correct” and “portfolio history is truly correct.”

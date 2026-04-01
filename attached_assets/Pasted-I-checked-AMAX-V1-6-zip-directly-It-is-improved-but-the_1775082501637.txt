@@ -1,0 +1,122 @@
+I checked **AMAX-V1 (6).zip** directly. It is improved, but there are still some real errors and consistency issues.
+
+## Main verdict
+
+The core model is much better now:
+
+* investment valuation is centralized
+* product-level `annualReturn` is used before fallback
+* investment entries are linked into shared portfolio totals
+* snapshots/backfill exist
+* the performance chart route is now much closer to the right design
+
+But there are still **5 important issues** to fix.
+
+## Error and solution table
+
+| Priority | File / Area                                                                            | Verified issue                                                                                                                                                | Why it matters                                                                                                                                                     | Fix                                                                                                                                                              |
+| -------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| High     | `server/routes.ts` → `calculatePortfolioTotalsAtDate()` / `backfillPortfolioHistory()` | **Wallet history is still not truly historical**. For any past date, the code uses **current wallet balances** and only changes investment valuation by date. | Historical portfolio lines can still be wrong even if investment returns are correct. This especially affects “historical” portfolio graphs and monthly P&L basis. | If you want true historical portfolio performance, wallets must come from **dated wallet transactions / snapshots**, not current balances reused for past dates. |
+| High     | `server/routes.ts` → `/api/portfolio/performance-chart`                                | Historical line is based on snapshots, but those snapshots can still be `historical_estimate` generated from current wallet balances.                         | The chart is better, but it is still not fully “actual historical” unless wallet history is real.                                                                  | Keep label as **Historical estimate + forecast** whenever any backfilled point is estimated.                                                                     |
+| Medium   | `server/routes.ts` → `calculateInvestmentPerformance()`                                | `manual_nav` and `market_price` both return `investedAmount` unchanged.                                                                                       | If a product uses these return methods, current value will be flat even when it should move.                                                                       | Either support real NAV / market price input, or block those methods until real price/NAV data exists.                                                           |
+| Medium   | `client/src/pages/ai-advisory.tsx`                                                     | **Hardcoded advisory numbers still remain**: `85%`, `+2.4%`, `1.8%`, `+1.8%`, `-2.4%`.                                                                        | These are still synthetic and not driven by portfolio data.                                                                                                        | Replace them with calculated values or a disclosure block.                                                                                                       |
+| Medium   | `server/routes.ts` → `backfillPortfolioHistory()`                                      | Backfill creates one snapshot for **every missing day** every time the route is called.                                                                       | This can become heavy and may create unnecessary database load.                                                                                                    | Add a guard so backfill only runs once per range, or only up to the latest existing snapshot.                                                                    |
+
+## What is fixed
+
+These parts now look correct:
+
+* `calculateInvestmentPerformance()` uses **compound growth** by default
+* product-level `annualReturn` takes precedence over fallback
+* future-dated investments are excluded from historical totals
+* `/api/investment-performance` now uses `returnPercentage` correctly
+* `/api/portfolio/performance-chart` no longer builds the opening point from current balances manually
+* `portfolio-chart.tsx` and `portfolio.tsx` now show **historical data / historical estimate + forecast** wording
+* `wealth-overview.tsx` monthly P&L wording is source-aware
+
+Those fixes are aligned with the earlier issues you were addressing around synthetic history, source-aware labels, and shared valuation logic.
+
+## Biggest remaining issue
+
+The biggest remaining model problem is:
+
+**investment history is date-aware, but wallet history is not.**
+
+So if the portfolio graph still looks wrong, that is probably why.
+
+Right now:
+
+* investments are valued as of the requested date
+* wallets are mostly valued using today’s balances
+
+That means the total portfolio history is still only partly historical.
+
+## Concrete example of the issue
+
+This function is the problem area:
+
+```ts
+async function calculatePortfolioTotalsAtDate(userId: number, asOfDate: Date = new Date()) {
+  const wallets = await storage.getWallets(userId);
+  ...
+}
+```
+
+It fetches current wallets, not wallet balances as of `asOfDate`.
+
+So even if `asOfDate` is one year ago, it still uses today’s wallet balances.
+
+## What to fix next
+
+### 1. If you want real historical portfolio performance
+
+You need one of these:
+
+* `wallet_snapshots`
+* or `wallet_transactions` + reconstruction by date
+
+### 2. If you want to keep estimates
+
+That is fine, but then all portfolio-history visuals must stay labeled as:
+
+* `Historical estimate`
+* or `Historical estimate + forecast`
+
+### 3. Remove AI advisory hardcoded figures
+
+These are still the most obvious remaining fake numbers.
+
+## Short final judgment
+
+### Good now
+
+* investment linkage
+* investment return formulas
+* chart route structure
+* label clarity
+* shared valuation model
+
+### Still not fully correct
+
+* total portfolio historical basis
+* wallet date-awareness
+* AI advisory numbers
+* unsupported `manual_nav` / `market_price` methods
+* backfill efficiency
+
+## Most important next fix
+
+If you only fix one thing next, fix this:
+
+**make wallet balances historical by date**
+
+Because that is the missing piece between:
+
+* “investment returns are calculated correctly”
+  and
+* “portfolio performance graph is truly correct”
+
+If you want, I can now give you one **single copy-paste patch** for:
+
+1. removing the hardcoded AI advisory numbers, and
+2. making backfill incremental instead of rechecking the whole range every time.
