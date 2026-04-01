@@ -1449,7 +1449,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               totalInvestedAmount += investedAmount;
               
               // Weight the return by the investment amount
-              weightedReturn += (performance.returnPercent * investedAmount);
+              weightedReturn += (performance.returnPercentage * investedAmount);
             }
           }
         }
@@ -1488,7 +1488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currentPortfolioAllocation[product.category].value += currentValue;
           
           // Set expected annual returns for predictions based on actual calculation methodology
-          const predictedReturn = getAnnualReturn(product.category, product.name);
+          const predictedReturn = getAnnualReturnFallback(product.category, product.name);
           currentPortfolioAllocation[product.category].annualReturn = predictedReturn;
         }
       }
