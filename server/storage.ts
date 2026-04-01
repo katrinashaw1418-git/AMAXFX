@@ -55,6 +55,7 @@ export interface IStorage {
   // Portfolio Snapshots
   getPortfolioSnapshots(userId: number, startDate?: Date, endDate?: Date): Promise<PortfolioSnapshot[]>;
   createPortfolioSnapshot(snapshot: InsertPortfolioSnapshot): Promise<PortfolioSnapshot>;
+  deletePortfolioSnapshotsForDay(userId: number, day: string): Promise<void>; // day = "YYYY-MM-DD"
 }
 
 export class MemStorage implements IStorage {
@@ -3215,6 +3216,14 @@ export class MemStorage implements IStorage {
     this.portfolioSnapshotsStore.set(insertSnapshot.userId, existing);
     return snapshot;
   }
+
+  async deletePortfolioSnapshotsForDay(userId: number, day: string): Promise<void> {
+    const existing = this.portfolioSnapshotsStore.get(userId) || [];
+    const filtered = existing.filter(
+      s => s.snapshotDate.toISOString().split('T')[0] !== day
+    );
+    this.portfolioSnapshotsStore.set(userId, filtered);
+  }
 }
 
 // Database Storage Implementation - prevents data loss on server restart
@@ -3394,6 +3403,14 @@ export class DatabaseStorage implements IStorage {
   async createPortfolioSnapshot(insertSnapshot: InsertPortfolioSnapshot): Promise<PortfolioSnapshot> {
     const [snapshot] = await db.insert(portfolioSnapshots).values(insertSnapshot).returning();
     return snapshot;
+  }
+
+  async deletePortfolioSnapshotsForDay(userId: number, day: string): Promise<void> {
+    // Delete all snapshots for this user whose date (truncated to day) matches
+    await db.delete(portfolioSnapshots).where(
+      sql`${portfolioSnapshots.userId} = ${userId}
+          AND DATE(${portfolioSnapshots.snapshotDate}) = ${day}::date`
+    );
   }
 }
 

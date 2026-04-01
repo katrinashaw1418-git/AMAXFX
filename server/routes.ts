@@ -282,27 +282,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totals = await calculatePortfolioTotalsAtDate(userId, now);
       const { fiatValue, cryptoValue, stablecoinValue, investmentValue, totalValue } = totals;
 
-      // Save today's "actual" snapshot if we haven't yet
+      // Always upsert today's "actual" snapshot with the current live value.
+      // Delete any stale snapshot from earlier today (could be from a previous session
+      // when wallet/investment balances were different) then recreate fresh.
       const today = new Date(now);
       today.setHours(0, 0, 0, 0);
       const todayStr = today.toISOString().split('T')[0];
+      await storage.deletePortfolioSnapshotsForDay(userId, todayStr);
+      await storage.createPortfolioSnapshot({
+        userId,
+        totalValue: totalValue.toFixed(2),
+        fiatValue: fiatValue.toFixed(2),
+        cryptoValue: cryptoValue.toFixed(2),
+        stablecoinValue: stablecoinValue.toFixed(2),
+        investmentValue: investmentValue.toFixed(2),
+        snapshotDate: now,
+        source: "actual" as SnapshotSource,
+      });
       let allSnapshots = await storage.getPortfolioSnapshots(userId);
-      const hasToday = allSnapshots.some(
-        s => new Date(s.snapshotDate).toISOString().split('T')[0] === todayStr
-      );
-      if (!hasToday) {
-        await storage.createPortfolioSnapshot({
-          userId,
-          totalValue: totalValue.toFixed(2),
-          fiatValue: fiatValue.toFixed(2),
-          cryptoValue: cryptoValue.toFixed(2),
-          stablecoinValue: stablecoinValue.toFixed(2),
-          investmentValue: investmentValue.toFixed(2),
-          snapshotDate: now,
-          source: "actual" as SnapshotSource,
-        });
-        allSnapshots = await storage.getPortfolioSnapshots(userId);
-      }
 
       // Monthly P&L: compare current value against snapshot closest to 30 days ago
       const thirtyDaysAgo = new Date(now);
@@ -367,96 +364,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
           startDate.setMonth(startDate.getMonth() - 1);
       }
       
-      // Get current portfolio value
-      const wallets = await storage.getWallets(userId);
-      const investments = await storage.getUserInvestments(userId);
-      
-      // Calculate current total value
-      let currentFiatValue = 0;
-      let currentCryptoValue = 0;
-      let currentStablecoinValue = 0;
-      
-      for (const wallet of wallets) {
-        const balance = parseFloat(wallet.balance);
-        if (wallet.walletType === 'fiat') {
-          // Convert each fiat currency to USD equivalent
-          if (wallet.currency === 'USD') {
-            currentFiatValue += balance;
-          } else {
-            const directRate = await storage.getFxRate(wallet.currency, 'USD');
-            if (directRate) {
-              currentFiatValue += balance * parseFloat(directRate.rate);
-            } else {
-              const inverseRate = await storage.getFxRate('USD', wallet.currency);
-              if (inverseRate) {
-                currentFiatValue += balance / parseFloat(inverseRate.rate);
-              }
-            }
-          }
-        } else if (wallet.currency === "USDT" || wallet.currency === "USDC") {
-          currentStablecoinValue += balance;
-        } else {
-          const rate = await storage.getFxRate(wallet.currency, "USD");
-          if (rate) {
-            currentCryptoValue += (balance * parseFloat(rate.rate));
-          }
-        }
-      }
-      
-      // Calculate current investment value with real-time performance
-      let currentInvestmentValue = 0;
-      for (const investment of investments) {
-        const product = await storage.getInvestmentProduct(investment.productId);
-        if (product) {
-          const investmentDate = new Date(investment.investmentDate);
-          const daysSinceInvestment = Math.floor((endDate.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24));
-          const investedAmount = parseFloat(investment.investedAmount);
-          let performanceFactor = 1;
-          
-          // Use unified midpoint IRR calculation function
-          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, endDate);
-          currentInvestmentValue += performance.currentValue;
-        }
-      }
-      const currentTotalValue = currentFiatValue + currentCryptoValue + currentStablecoinValue + currentInvestmentValue;
+      // Current live value — use the shared engine (same as /api/portfolio)
+      const { totalValue: currentTotalValue } = await calculatePortfolioTotalsAtDate(userId, endDate);
 
-      // --- Use stored snapshots as the primary data source ---
+      // --- Build data points from stored snapshots ---
       const storedSnapshots = await storage.getPortfolioSnapshots(userId, startDate, endDate);
+      const todayStr = endDate.toISOString().split('T')[0];
 
-      let dataPoints: Array<{ date: string; value: number; timestamp: number }>;
-
-      // Only use real stored snapshots — no backward projection fallback.
+      // Thin stored snapshots to ~22 evenly-spaced points
+      let thinned: typeof storedSnapshots = [];
       if (storedSnapshots.length >= 2) {
-        // Thin out to ~22 evenly-spaced points so charts aren't overloaded
         const maxPoints = 22;
         const step = Math.max(1, Math.floor(storedSnapshots.length / (maxPoints - 1)));
-        const thinned: typeof storedSnapshots = [];
         for (let i = 0; i < storedSnapshots.length - 1; i += step) {
           thinned.push(storedSnapshots[i]);
         }
-        thinned.push(storedSnapshots[storedSnapshots.length - 1]); // always include last
-        dataPoints = thinned.map(s => ({
-          date: s.snapshotDate.toISOString().split('T')[0],
-          value: Math.round(parseFloat(s.totalValue)),
-          timestamp: s.snapshotDate.getTime(),
-          source: (s as any).source ?? 'actual',
-        }));
+        thinned.push(storedSnapshots[storedSnapshots.length - 1]);
       } else {
-        // Only 0 or 1 snapshot — return whatever real data exists, no projection
-        dataPoints = storedSnapshots.map(s => ({
-          date: s.snapshotDate.toISOString().split('T')[0],
-          value: Math.round(parseFloat(s.totalValue)),
-          timestamp: s.snapshotDate.getTime(),
-          source: (s as any).source ?? 'actual',
-        }));
+        thinned = [...storedSnapshots];
       }
 
-      // Calculate performance metrics
-      const startValue = dataPoints[0]?.value || currentTotalValue;
-      const endValue = dataPoints[dataPoints.length - 1]?.value || currentTotalValue;
+      // Map to data points, stripping any today-dated entries (we'll inject the live value instead)
+      let dataPoints: Array<{ date: string; value: number; timestamp: number; source: string }> = thinned
+        .filter(s => s.snapshotDate.toISOString().split('T')[0] !== todayStr)
+        .map(s => ({
+          date: s.snapshotDate.toISOString().split('T')[0],
+          value: Math.round(parseFloat(s.totalValue)),
+          timestamp: s.snapshotDate.getTime(),
+          source: (s as any).source ?? 'actual',
+        }));
+
+      // Always append the live current value as today's final point.
+      // This ensures period return calculations use accurate current data,
+      // not a stale snapshot saved during a previous session.
+      dataPoints.push({
+        date: todayStr,
+        value: Math.round(currentTotalValue),
+        timestamp: endDate.getTime(),
+        source: 'actual',
+      });
+
+      // Performance metrics — start from the oldest data point, end at today's live value
+      const startValue = dataPoints[0]?.value ?? currentTotalValue;
+      const endValue = Math.round(currentTotalValue); // always the live value
       const totalReturn = endValue - startValue;
       const totalReturnPercent = startValue > 0 ? (totalReturn / startValue) * 100 : 0;
-      const historySource = (dataPoints as any[]).some(d => d.source === 'historical_estimate')
+      const historySource = dataPoints.some(d => d.source === 'historical_estimate')
         ? 'historical_estimate' : 'actual';
 
       res.json({
