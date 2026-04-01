@@ -7,7 +7,7 @@ import {
   type PortfolioSnapshot, type InsertPortfolioSnapshot
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -3309,8 +3309,7 @@ export class DatabaseStorage implements IStorage {
 
   async getFxRate(baseCurrency: string, targetCurrency: string): Promise<FxRate | undefined> {
     const [rate] = await db.select().from(fxRates)
-      .where(eq(fxRates.baseCurrency, baseCurrency))
-      .where(eq(fxRates.targetCurrency, targetCurrency));
+      .where(and(eq(fxRates.baseCurrency, baseCurrency), eq(fxRates.targetCurrency, targetCurrency)));
     return rate || undefined;
   }
 

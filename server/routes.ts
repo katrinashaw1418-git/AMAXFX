@@ -55,6 +55,29 @@ function calculateInvestmentPerformance(
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
+  // Ensure crypto + GBP FX rates exist (seed missing rows, reset sequence first)
+  {
+    const { db } = await import('./db');
+    const { sql: rawSql } = await import('drizzle-orm');
+    // Reset the serial sequence to MAX(id) so inserts don't collide with existing rows
+    await db.execute(rawSql`SELECT setval(pg_get_serial_sequence('fx_rates', 'id'), COALESCE((SELECT MAX(id) FROM fx_rates), 0))`);
+    const missingRates = [
+      { baseCurrency: 'BTC', targetCurrency: 'USD', rate: '95000.00', spread: '0.0050' },
+      { baseCurrency: 'ETH', targetCurrency: 'USD', rate: '3500.00',  spread: '0.0050' },
+      { baseCurrency: 'GBP', targetCurrency: 'USD', rate: '1.27000',  spread: '0.0050' },
+      { baseCurrency: 'USD', targetCurrency: 'GBP', rate: '0.78740',  spread: '0.0050' },
+    ];
+    for (const { baseCurrency, targetCurrency, rate, spread } of missingRates) {
+      const existing = await storage.getFxRate(baseCurrency, targetCurrency);
+      if (!existing) {
+        await db.execute(rawSql`
+          INSERT INTO fx_rates (base_currency, target_currency, rate, spread, updated_at)
+          VALUES (${baseCurrency}, ${targetCurrency}, ${rate}, ${spread}, NOW())
+        `);
+      }
+    }
+  }
+
   // Get current user (hardcoded for demo)
   app.get("/api/user", async (req, res) => {
     try {
@@ -160,7 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Monthly P&L: compare today vs the stored snapshot closest to 30 days ago.
-      // Returns 0 with source "insufficient_history" when no prior snapshot exists.
+      // Falls back to IRR-based estimate when no prior snapshot exists yet.
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const priorSnapshot = allSnapshots
@@ -169,13 +192,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let monthlyPnl = 0;
       let monthlyPnlPercent = 0;
-      let monthlyPnlSource = 'insufficient_history';
+      let monthlyPnlSource = 'snapshots';
 
       if (priorSnapshot) {
         const priorValue = parseFloat(priorSnapshot.totalValue);
         monthlyPnl = totalValue - priorValue;
         monthlyPnlPercent = priorValue > 0 ? (monthlyPnl / priorValue) * 100 : 0;
-        monthlyPnlSource = 'snapshots';
+      } else {
+        // No 30-day snapshot yet — estimate from investment IRR + assume liquid assets unchanged
+        let priorInvestmentValue = 0;
+        for (const inv of investments) {
+          const product = await storage.getInvestmentProduct(inv.productId);
+          if (!product) continue;
+          const invDate = new Date(inv.investmentDate);
+          const evalDate = invDate > thirtyDaysAgo ? invDate : thirtyDaysAgo;
+          const perf = calculateInvestmentPerformance(product, parseFloat(inv.investedAmount), invDate, evalDate);
+          priorInvestmentValue += perf.currentValue;
+        }
+        const priorValue = fiatValue + cryptoValue + stablecoinValue + priorInvestmentValue;
+        monthlyPnl = totalValue - priorValue;
+        monthlyPnlPercent = priorValue > 0 ? (monthlyPnl / priorValue) * 100 : 0;
+        monthlyPnlSource = 'estimated';
       }
 
       const portfolio = {

@@ -377,7 +377,9 @@ export default function Portfolio() {
             <p className="text-xs text-gray-600 mt-1">
               {portfolio?.monthlyPnlSource === 'snapshots'
                 ? `${monthlyReturn >= 0 ? '+' : ''}${monthlyReturn.toFixed(1)}% last 30 days`
-                : 'Insufficient history'}
+                : portfolio?.monthlyPnlSource === 'estimated'
+                  ? `${monthlyReturn >= 0 ? '+' : ''}${monthlyReturn.toFixed(1)}% est. from IRR`
+                  : 'Insufficient history'}
             </p>
           </CardContent>
         </Card>
