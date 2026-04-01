@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -87,7 +88,12 @@ export default function PortfolioChart() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Portfolio Performance</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle>Portfolio Performance</CardTitle>
+              <Badge variant="outline" className="text-xs text-muted-foreground font-normal">
+                Simulated estimate
+              </Badge>
+            </div>
             {historyData && (
               <div className="flex items-center gap-4 mt-2">
                 <span className={`text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>

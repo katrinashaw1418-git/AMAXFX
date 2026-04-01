@@ -94,7 +94,7 @@ export default function FxExchange() {
   const exchangeRate = fxRate ? parseFloat(fxRate.rate) : 1;
   const spread = fxRate ? parseFloat(fxRate.spread) : 0.005;
   const grossConverted = parseFloat(amount || "0") * exchangeRate;
-  const fee = grossConverted * 0.005; // 0.5% fee on converted amount like the backend
+  const fee = grossConverted * spread; // Use live spread from API (not hardcoded)
   const convertedAmount = grossConverted - fee;
   
   // Get wallet balances for display

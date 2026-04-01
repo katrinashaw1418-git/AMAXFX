@@ -135,8 +135,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate total portfolio value including stablecoins
       const totalValue = fiatValue + cryptoValue + stablecoinValue + investmentValue;
       
-      // Calculate monthly P&L with more realistic performance tracking
-      const previousMonthValue = totalValue * 0.985; // Assume 1.5% growth from previous month
+      // Monthly P&L: derive "previous month" value using the same blended asset-class
+      // return rates used in the portfolio history chart — consistent across endpoints.
+      const fiatMonthlyRate       = 0.003;  // 0.3%/month  — cash/fiat savings
+      const stablecoinMonthlyRate = 0.004;  // 0.4%/month  — stablecoin yield
+      const cryptoMonthlyRate     = 0.030;  // 3.0%/month  — crypto assets
+      const investmentMonthlyRate = 0.010;  // 1.0%/month  — structured investments
+      const blendedMonthlyRate = totalValue > 0
+        ? (fiatValue / totalValue) * fiatMonthlyRate
+        + (stablecoinValue / totalValue) * stablecoinMonthlyRate
+        + (cryptoValue / totalValue) * cryptoMonthlyRate
+        + (investmentValue / totalValue) * investmentMonthlyRate
+        : 0;
+      // Back out the prior-month value: currentValue = prevValue * (1 + rate)
+      const previousMonthValue = totalValue / (1 + blendedMonthlyRate);
       const monthlyPnl = totalValue - previousMonthValue;
       const monthlyPnlPercent = previousMonthValue > 0 ? (monthlyPnl / previousMonthValue) * 100 : 0;
       

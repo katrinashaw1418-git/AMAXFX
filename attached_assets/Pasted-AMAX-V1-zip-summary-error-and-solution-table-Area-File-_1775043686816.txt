@@ -1,0 +1,42 @@
+AMAX-V1.zip — summary error and solution table
+#	Area / File	Error	Why it is wrong	Fix
+1	server/routes.ts	Wrong argument order in calculateInvestmentPerformance(...)	Can produce wrong investment values or NaN in allocation/performance logic	Change calls to calculateInvestmentPerformance(product, investedAmount, investmentDate, evaluationDate)
+2	server/routes.ts	Fiat balances are summed raw across currencies	USD, AUD, EUR, GBP, HKD, SGD, CAD are being added as if they are the same currency	Convert all fiat balances into one base currency before summing
+3	server/routes.ts	Return logic is linear but presented like annual return / IRR	1 + annualReturn * timeProgress is simple prorating, not compounding	Use Math.pow(1 + annualReturn, timeProgress) or relabel it as simple annual return assumption
+4	server/routes.ts	Synthetic sine-wave volatility added to values	Makes valuations look dynamic/market-based when they are artificial	Remove the Math.sin(...) adjustments or clearly label outputs as simulated
+5	server/routes.ts	Monthly P&L is manufactured	Prior month value is set using a fixed factor, not real data	Use real month-start snapshots or actual prior-period portfolio values
+6	server/routes.ts	Portfolio history graph is simulated	History is back-filled from today using assumed growth, not actual historical records	Build history from stored snapshots / transaction data or label it as simulated
+7	server/routes.ts	Investment breakdown uses invested cost, not current value	Wrong if the chart is meant to show current allocation	Use current value from calculateInvestmentPerformance(...) or relabel as invested capital
+8	client/src/components/dashboard/wealth-overview.tsx	Hardcoded performance numbers like +12.5% and +8.2%	These figures never update from real portfolio data	Replace with calculated values or remove
+9	client/src/components/dashboard/fx-exchange-tool.tsx	“You’ll receive” does not deduct fee	User sees gross converted amount, not net	Calculate gross converted amount, deduct fee, and show net amount received
+10	client/src/pages/fx-exchange.tsx	Spread is fetched but ignored	UI reads spread data but still hardcodes fee logic	Use spread consistently in the fee calculation, or remove it entirely
+11	client/src/pages/portfolio.tsx	6 summary cards in a 5-column grid	Causes awkward wrapping / broken layout	Change to md:grid-cols-6 or reduce to 5 cards
+12	Legacy wallets page	Hardcoded AUD→crypto deposit rates	Rates go stale immediately and are not market-based	Replace with live rate logic or remove the conversion display
+What is not an active error in AMAX-V1
+Area	Status
+Available Cash formula	Okay in this ZIP
+Active sidebar links	Okay in this ZIP
+Crypto Trading nav link	Not an active issue in this ZIP
+Wallet transfer async currency bug	Not verified as active in this ZIP
+Priority order for AMAX-V1
+Priority	Fix first
+Critical	Wrong valuation function arguments
+Critical	Raw fiat summation without FX conversion
+High	Manufactured monthly P&L
+High	Simulated history graph
+High	Hardcoded dashboard performance figures
+High	Synthetic sine-wave valuation logic
+Medium	FX receive amount mismatch
+Medium	Spread ignored
+Medium	Cost vs current value in breakdown
+Low	Grid layout
+Low	Legacy hardcoded crypto deposit rates
+Bottom line
+
+For AMAX-V1, the biggest things to fix are:
+
+Wrong calculateInvestmentPerformance(...) arguments
+Multi-currency fiat summed without conversion
+Fake monthly P&L and simulated history
+Hardcoded dashboard returns
+FX quote not showing true net receive amount
