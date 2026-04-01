@@ -436,67 +436,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Investment value YTD — monthly points anchored from 2026-01-01
+  // Investment value — full year from Jan 1 2026, month-by-month, historical + projected
   app.get("/api/investments/history-ytd", async (req, res) => {
     try {
       const userId = 1;
-      const startDate = new Date("2026-01-01T00:00:00.000Z");
-      const endDate = new Date();
+      const ANCHOR = new Date("2026-01-01T00:00:00.000Z");
+      const today = new Date();
+      const TOTAL_MONTHS = 12; // Jan through Jan (13 points)
 
-      // Fetch all snapshots in the YTD window
-      const snapshots = await storage.getPortfolioSnapshots(userId, startDate, endDate);
+      const investments = await storage.getUserInvestments(userId);
 
       // Compute the opening investment value as of Jan 1, 2026
-      const investments = await storage.getUserInvestments(userId);
       let openingInvestmentValue = 0;
-      for (const investment of investments) {
-        const product = await storage.getInvestmentProduct(investment.productId);
+      for (const inv of investments) {
+        const product = await storage.getInvestmentProduct(inv.productId);
         if (!product) continue;
-        const investedAmount = parseFloat(investment.investedAmount);
-        const investmentDate = new Date(investment.investmentDate);
-        if (investmentDate <= startDate) {
-          const perf = calculateInvestmentPerformance(product, investedAmount, investmentDate, startDate);
-          openingInvestmentValue += perf.currentValue;
-        }
+        const investedAmount = parseFloat(inv.investedAmount);
+        const investmentDate = new Date(inv.investmentDate);
+        const asOf = investmentDate <= ANCHOR ? ANCHOR : investmentDate;
+        const perf = calculateInvestmentPerformance(product, investedAmount, investmentDate, asOf);
+        openingInvestmentValue += perf.currentValue;
       }
 
-      // Build monthly map: latest snapshot per calendar month (key = "YYYY-MM")
-      const monthMap = new Map<string, { date: string; value: number; timestamp: number }>();
+      // Projected line: use actual investment IRR — compute investment value at each month
+      const getProjectedValueAt = async (targetDate: Date): Promise<number> => {
+        let total = 0;
+        for (const inv of investments) {
+          const product = await storage.getInvestmentProduct(inv.productId);
+          if (!product) continue;
+          const investedAmount = parseFloat(inv.investedAmount);
+          const investmentDate = new Date(inv.investmentDate);
+          const asOf = targetDate < investmentDate ? investmentDate : targetDate;
+          const perf = calculateInvestmentPerformance(product, investedAmount, investmentDate, asOf);
+          total += perf.currentValue;
+        }
+        return Math.round(total);
+      };
+
+      // Historical line: real snapshot investment values, bucketed by month
+      const snapshots = await storage.getPortfolioSnapshots(userId, ANCHOR, today);
+      const historyByMonth = new Map<string, number>();
       for (const s of snapshots) {
         const d = new Date(s.snapshotDate);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        monthMap.set(key, {
-          date: d.toISOString().split('T')[0],
-          value: Math.round(parseFloat(s.investmentValue)),
-          timestamp: d.getTime(),
-        });
+        historyByMonth.set(key, Math.round(parseFloat(s.investmentValue)));
       }
 
-      // Sort monthly points chronologically
-      let data = Array.from(monthMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+      // Build merged monthly series
+      const chartRows: Array<{ month: string; historical: number | null; projected: number }> = [];
+      for (let m = 0; m <= TOTAL_MONTHS; m++) {
+        const d = new Date(ANCHOR);
+        d.setMonth(d.getMonth() + m);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        const projected = await getProjectedValueAt(d);
 
-      // Prepend the Jan 1 opening baseline
-      data.unshift({
-        date: '2026-01-01',
-        value: Math.round(openingInvestmentValue),
-        timestamp: startDate.getTime(),
-      });
+        let historical: number | null = null;
+        if (d <= today) {
+          if (m === 0) {
+            historical = Math.round(openingInvestmentValue);
+          } else if (historyByMonth.has(key)) {
+            historical = historyByMonth.get(key)!;
+          }
+        }
 
-      const startValue = data.length ? data[0].value : 0;
-      const endValue = data.length ? data[data.length - 1].value : 0;
-      const totalReturn = endValue - startValue;
-      const totalReturnPercent = startValue > 0 ? (totalReturn / startValue) * 100 : 0;
+        chartRows.push({ month: label, historical, projected });
+      }
+
+      const lastHistorical = chartRows.reduce<number | null>(
+        (acc, r) => (r.historical !== null ? r.historical : acc), null
+      );
+      const totalReturnPercent = lastHistorical && openingInvestmentValue > 0
+        ? ((lastHistorical - openingInvestmentValue) / openingInvestmentValue * 100).toFixed(2)
+        : '0.00';
 
       res.json({
-        startDate: '2026-01-01',
-        frequency: 'monthly',
-        source: 'snapshots',
-        hasSufficientHistory: data.length >= 2,
-        data,
-        startValue: startValue.toFixed(2),
-        endValue: endValue.toFixed(2),
-        totalReturn: totalReturn.toFixed(2),
-        totalReturnPercent: totalReturnPercent.toFixed(2),
+        anchorDate: '2026-01-01',
+        openingValue: Math.round(openingInvestmentValue),
+        projectionRate: 'actual IRR',
+        data: chartRows,
+        totalReturnPercent,
       });
     } catch (e) {
       console.error("Investment YTD history error:", e);

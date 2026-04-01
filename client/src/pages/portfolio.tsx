@@ -222,11 +222,8 @@ export default function Portfolio() {
   }));
   const hasAnyPeriodReturn = periodPerformanceData.some(d => d.portfolioReturn !== null);
 
-  // --- Investment YTD chart data transform ---
-  const investmentMonthlyData = (investmentYtdHistory?.data || []).map((p: any) => ({
-    month: new Date(p.date).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
-    value: p.value,
-  }));
+  // Investment chart data — new format already has { month, historical, projected }
+  const investmentChartData = investmentYtdHistory?.data ?? [];
 
   return (
     <div className="p-6 space-y-6">
@@ -618,6 +615,9 @@ export default function Portfolio() {
               </LineChart>
             </ResponsiveContainer>
           </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Tracks your total net worth across all asset classes — fiat currencies, crypto, stablecoins, and investment products. The red line shows confirmed portfolio values from real account snapshots; the blue dashed line projects forward at a blended 10% annual market rate to illustrate potential growth through year-end.
+          </p>
         </CardContent>
       </Card>
 
@@ -718,54 +718,98 @@ export default function Portfolio() {
       {/* Investment Value Since 1 Jan 2026 */}
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <CardTitle>Investment Value Since 1 Jan 2026</CardTitle>
-            <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">
-              {investmentYtdHistory?.hasSufficientHistory ? 'Historical data' : 'Limited history'}
-            </span>
-          </div>
-          {investmentYtdHistory?.hasSufficientHistory && (
-            <p className="text-sm text-muted-foreground mt-1">
-              YTD return:{' '}
-              <span className={parseFloat(investmentYtdHistory.totalReturnPercent) >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
-                {parseFloat(investmentYtdHistory.totalReturnPercent) >= 0 ? '+' : ''}
-                {parseFloat(investmentYtdHistory.totalReturnPercent).toFixed(2)}%
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <CardTitle>Investment Value Since 1 Jan 2026</CardTitle>
+              <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">
+                Month-by-month from 1 Jan 2026
               </span>
-            </p>
+            </div>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-0.5 bg-red-500 rounded"></div>
+                <span>Actual</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-0.5 bg-blue-500 rounded" style={{ borderTop: '2px dashed #3b82f6', background: 'none' }}></div>
+                <span>Estimated (actual IRR)</span>
+              </div>
+            </div>
+          </div>
+          {investmentYtdHistory?.openingValue && (
+            <div className="flex items-center gap-4 mt-2 text-sm flex-wrap">
+              <span className="text-muted-foreground">
+                Opening (Jan 1): <span className="font-medium text-foreground">${investmentYtdHistory.openingValue.toLocaleString()}</span>
+              </span>
+              {(() => {
+                const ret = parseFloat(investmentYtdHistory.totalReturnPercent ?? '0');
+                if (investmentYtdHistory.totalReturnPercent) {
+                  return (
+                    <span className={ret >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                      YTD actual: {ret >= 0 ? '+' : ''}{ret.toFixed(2)}%
+                    </span>
+                  );
+                }
+                return null;
+              })()}
+            </div>
           )}
         </CardHeader>
         <CardContent>
-          {investmentYtdHistory?.hasSufficientHistory ? (
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={investmentMonthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                  <XAxis dataKey="month" stroke="#6B7280" fontSize={12} />
-                  <YAxis stroke="#6B7280" fontSize={12} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip
-                    formatter={(value: number) => [`$${value.toLocaleString()}`, 'Investment Value']}
-                    contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#ef4444"
-                    strokeWidth={3}
-                    dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, fill: '#ef4444' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <p className="text-sm font-medium text-amber-900">Accumulating history</p>
-              <p className="mt-1 text-sm text-amber-800">
-                The investment chart is anchored from 1 Jan 2026 and shows one point per month.
-                It will display as real monthly snapshots accumulate from today forward.
-              </p>
-            </div>
-          )}
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={investmentChartData}
+                margin={{ top: 5, right: 20, left: 20, bottom: 55 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                <XAxis
+                  dataKey="month"
+                  stroke="#6B7280"
+                  fontSize={11}
+                  interval={0}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis
+                  stroke="#6B7280"
+                  fontSize={12}
+                  tickFormatter={(v) => `$${(v / 1_000_000).toFixed(2)}M`}
+                  width={72}
+                />
+                <Tooltip
+                  formatter={(value: number, name: string) => [
+                    `$${value.toLocaleString()}`,
+                    name === 'historical' ? 'Actual' : 'Estimated (actual IRR)',
+                  ]}
+                  contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="projected"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  strokeDasharray="6 3"
+                  dot={false}
+                  activeDot={{ r: 4, fill: '#3b82f6' }}
+                  connectNulls
+                />
+                <Line
+                  type="monotone"
+                  dataKey="historical"
+                  stroke="#ef4444"
+                  strokeWidth={3}
+                  dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, fill: '#ef4444' }}
+                  connectNulls={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Isolates the performance of your structured investment products — real estate, corporate credit, venture capital, and digital asset allocations. The red line reflects confirmed investment values from real snapshots; the blue dashed line projects each product's growth forward using its actual contracted IRR, giving a fund-level view of your investment portfolio separate from liquid assets.
+          </p>
         </CardContent>
       </Card>
 
