@@ -548,7 +548,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         chartRows[0].historical = openingValue;
       }
 
-      // --- Append forecast rows ---
+      // Bridge: give the last historical row a projected value equal to today's portfolio value
+      // so the forecast line starts exactly where the historical line ends (no gap).
+      if (chartRows.length > 0 && latestHistoricalValue > 0) {
+        chartRows[chartRows.length - 1].projected = latestHistoricalValue;
+      }
+
+      // --- Append forecast rows (i=1 = one month out, grows from the bridge point) ---
       for (let i = 1; i <= forecastMonths; i++) {
         const forecastDate = new Date(today);
         forecastDate.setMonth(forecastDate.getMonth() + i);
