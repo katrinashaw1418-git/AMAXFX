@@ -13,7 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { CurrencyConfig, SupportedCurrencies, CurrencyRegions, type WalletBalance } from '@/lib/types';
-import { TrendingUp, TrendingDown, Plus, Minus, ArrowRightLeft, ArrowUpDown, Send, Repeat, Info, DollarSign, AlertCircle, Volume2, Settings, ExternalLink } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Minus, ArrowUpDown, Send, Repeat, Info, DollarSign, AlertCircle, Volume2, Settings, ExternalLink } from 'lucide-react';
 import { Link } from 'wouter';
 import { useFxRate } from '@/hooks/use-fx-rates';
 import { useWallets } from '@/hooks/use-portfolio';
@@ -21,17 +21,6 @@ import { useVoiceNarration } from '@/hooks/use-voice-narration';
 import VoiceSettings from '@/components/voice/voice-settings';
 import VirgoCXIntegration from '@/components/wallet/virgocx-integration';
 import VirgoCXDepositDetector from '@/components/wallet/virgocx-deposit-detector';
-
-// Helper functions for exchange rate display
-const useExchangeRateDisplay = (fromCurrency: string, toCurrency: string) => {
-  const { data: fxRate } = useFxRate(fromCurrency, toCurrency);
-  if (!fxRate) return "Loading...";
-  
-  const rate = parseFloat(fxRate.rate);
-  const displayRate = rate > 1 ? rate.toFixed(2) : rate.toFixed(6);
-  
-  return `1 ${fromCurrency} = ${displayRate} ${toCurrency}`;
-};
 
 // Exchange Rate Display Component for Transfer Modal
 function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrency: string; toCurrency: string; amount: string }) {
@@ -152,7 +141,6 @@ function WalletValueDisplay({ wallet, displayCurrency }: { wallet: any, displayC
 
 export default function Wallets() {
   const { data: wallets = [], isLoading } = useWallets();
-  const [fromCurrency, setFromCurrency] = useState('');
   const [toCurrency, setToCurrency] = useState('');
   const [amount, setAmount] = useState('');
   const [displayCurrency, setDisplayCurrency] = useState('USD'); // New state for balance display currency
@@ -194,28 +182,6 @@ export default function Wallets() {
     }
   }, [wallets, voiceSettings.autoNarrate, narrateNavigation, narrateBalance]);
   
-  // Exchange rate display helpers
-  const exchangeRateText = useExchangeRateDisplay(fromCurrency, toCurrency);
-
-  // Get exchange rate for transfer calculation
-  const { data: transferFxRate } = useFxRate(fromCurrency, toCurrency);
-  
-  // Calculate transfer amount with fee
-  const calculateTransferAmount = (amount: string, fromCurrency: string, toCurrency: string) => {
-    if (!amount || !fromCurrency || !toCurrency) return '0.00';
-    
-    const amountNum = parseFloat(amount);
-    if (isNaN(amountNum) || amountNum <= 0) return '0.00';
-    
-    if (!transferFxRate) return 'Loading...';
-    
-    const rate = parseFloat(transferFxRate.rate);
-    const grossConverted = amountNum * rate;
-    const transactionFee = grossConverted * 0.005; // 0.5% fee
-    const netConverted = grossConverted - transactionFee;
-    
-    return `${netConverted.toFixed(2)} ${toCurrency}`;
-  };
 
   const transferMutation = useMutation({
     mutationFn: async (data: { fromCurrency: string; toCurrency: string; amount: number }) => {
@@ -235,7 +201,7 @@ export default function Wallets() {
     },
     onSuccess: (data) => {
       console.log("Transfer mutation onSuccess called with data:", data);
-      const successMessage = `Converted ${amount} ${fromCurrency} to ${data.convertedAmount.toFixed(2)} ${toCurrency}`;
+      const successMessage = `Converted ${amount} ${selectedWallet?.currency || ''} to ${data.convertedAmount.toFixed(2)} ${toCurrency}`;
       
       toast({
         title: "✅ Transfer Successful",
@@ -251,7 +217,6 @@ export default function Wallets() {
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       setTransferModalOpen(false);
       setAmount('');
-      setFromCurrency('');
       setToCurrency('');
     },
     onError: (error: any) => {
@@ -425,7 +390,7 @@ export default function Wallets() {
 
   const handleTransfer = () => {
     const sourceWallet = selectedWallet;
-    const sourceCurrency = sourceWallet?.currency || fromCurrency;
+    const sourceCurrency = sourceWallet?.currency;
     
     console.log("handleTransfer called with:", {
       fromCurrency: sourceCurrency,
@@ -490,9 +455,6 @@ export default function Wallets() {
       // For non-crypto currencies, sort alphabetically
       return a.currency.localeCompare(b.currency);
     });
-
-  const { data: exchangeRate } = useFxRate(fromCurrency, 'USD');
-  const estimatedValue = fromCurrency && amount ? (parseFloat(amount) * (exchangeRate?.rate || 1)) : 0;
 
   if (isLoading) {
     return (
@@ -637,306 +599,6 @@ export default function Wallets() {
         </CardContent>
       </Card>
 
-
-
-      {/* Section 2: Transfer or Convert */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ArrowRightLeft className="w-5 h-5" />
-              Transfer or Convert
-            </div>
-            <div className="flex gap-2">
-              <Badge variant="outline" className="text-xs">
-                <Info className="w-3 h-3 mr-1" />
-                Real-time rates
-              </Badge>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Plus className="w-3 h-3 mr-1" />
-                    Manage Currencies
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Manage Currencies</DialogTitle>
-                    <DialogDescription>
-                      Add or remove currencies from your wallet
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="text-sm text-muted-foreground">
-                      <p>Most-used currencies are pinned to the top of your transfer dropdown for easy access.</p>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-medium">Available Currencies</h4>
-                      <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
-                        {SupportedCurrencies.filter(curr => !walletsWithRegions.find(w => w.currency === curr)).map(currency => {
-                          const config = CurrencyConfig[currency as keyof typeof CurrencyConfig];
-                          return (
-                            <Button
-                              key={currency}
-                              variant="outline"
-                              size="sm"
-                              className="justify-start"
-                              onClick={() => {
-                                // Create new wallet for this currency
-                                alert(`Adding ${currency} wallet - This will create a new ${config?.name} balance`);
-                              }}
-                            >
-                              <span className="mr-2">{config?.flag}</span>
-                              {currency}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Additional Features Banner */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border">
-              <h4 className="font-medium text-sm">Local Account Details</h4>
-              <p className="text-xs text-muted-foreground">Get IBAN, BSB, Sort Code for 10+ currencies</p>
-            </div>
-            <div className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border">
-              <h4 className="font-medium text-sm">Push Notifications</h4>
-              <p className="text-xs text-muted-foreground">Alerts for large transactions & rate changes</p>
-            </div>
-            <div className="p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border">
-              <h4 className="font-medium text-sm">Instant Transfers</h4>
-              <p className="text-xs text-muted-foreground">Send to Wise users & bank accounts instantly</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* From Currency */}
-            <div className="space-y-2">
-              <Label htmlFor="from-currency">From</Label>
-              <Select value={fromCurrency} onValueChange={setFromCurrency}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select currency to convert from" />
-                </SelectTrigger>
-                <SelectContent>
-                  {walletsWithRegions.map((wallet) => (
-                    <SelectItem key={wallet.currency} value={wallet.currency}>
-                      <div className="flex items-center gap-2">
-                        <span>{wallet.config?.flag}</span>
-                        <span className="font-medium">{wallet.currency}</span>
-                        <span className="text-muted-foreground">- {wallet.config?.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Arrow */}
-            <div className="flex items-center justify-center pt-6">
-              <ArrowRightLeft className="w-6 h-6 text-muted-foreground" />
-            </div>
-
-            {/* To Currency */}
-            <div className="space-y-2">
-              <Label htmlFor="to-currency">To</Label>
-              <Select value={toCurrency} onValueChange={setToCurrency}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select currency to convert to" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {/* Most-used currencies pinned to top */}
-                  <div className="px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50">⭐ Most Used</div>
-                  <SelectItem value="EUR">🇪🇺 EUR – Euro</SelectItem>
-                  <SelectItem value="GBP">🇬🇧 GBP – British Pound</SelectItem>
-                  <SelectItem value="JPY">🇯🇵 JPY – Japanese Yen</SelectItem>
-                  <SelectItem value="AUD">🇦🇺 AUD – Australian Dollar</SelectItem>
-
-                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Americas</div>
-                  <SelectItem value="USD">🇺🇸 USD – US Dollar</SelectItem>
-                  <SelectItem value="CAD">🇨🇦 CAD – Canadian Dollar</SelectItem>
-                  <SelectItem value="BRL">🇧🇷 BRL – Brazilian Real</SelectItem>
-                  <SelectItem value="MXN">🇲🇽 MXN – Mexican Peso</SelectItem>
-                  
-                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Europe</div>
-                  <SelectItem value="CHF">🇨🇭 CHF – Swiss Franc</SelectItem>
-                  <SelectItem value="SEK">🇸🇪 SEK – Swedish Krona</SelectItem>
-                  <SelectItem value="NOK">🇳🇴 NOK – Norwegian Krone</SelectItem>
-                  <SelectItem value="DKK">🇩🇰 DKK – Danish Krone</SelectItem>
-                  <SelectItem value="PLN">🇵🇱 PLN – Polish Zloty</SelectItem>
-                  <SelectItem value="CZK">🇨🇿 CZK – Czech Koruna</SelectItem>
-                  <SelectItem value="HUF">🇭🇺 HUF – Hungarian Forint</SelectItem>
-                  <SelectItem value="TRY" disabled>🇹🇷 TRY – Turkish Lira (Temporarily unavailable)</SelectItem>
-                  
-                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Asia</div>
-                  <SelectItem value="HKD">🇭🇰 HKD – Hong Kong Dollar</SelectItem>
-                  <SelectItem value="SGD">🇸🇬 SGD – Singapore Dollar</SelectItem>
-                  <SelectItem value="INR">🇮🇳 INR – Indian Rupee</SelectItem>
-                  <SelectItem value="CNY">🇨🇳 CNY – Chinese Yuan</SelectItem>
-                  <SelectItem value="KRW">🇰🇷 KRW – South Korean Won</SelectItem>
-                  <SelectItem value="TWD">🇹🇼 TWD – Taiwan Dollar</SelectItem>
-                  <SelectItem value="THB">🇹🇭 THB – Thai Baht</SelectItem>
-                  <SelectItem value="MYR">🇲🇾 MYR – Malaysian Ringgit</SelectItem>
-                  <SelectItem value="IDR">🇮🇩 IDR – Indonesian Rupiah</SelectItem>
-                  <SelectItem value="PHP">🇵🇭 PHP – Philippine Peso</SelectItem>
-                  <SelectItem value="VND">🇻🇳 VND – Vietnamese Dong</SelectItem>
-                  
-                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Oceania</div>
-                  <SelectItem value="NZD">🇳🇿 NZD – New Zealand Dollar</SelectItem>
-                  
-                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Middle East & Africa</div>
-                  <SelectItem value="AED">🇦🇪 AED – UAE Dirham</SelectItem>
-                  <SelectItem value="SAR">🇸🇦 SAR – Saudi Riyal</SelectItem>
-                  <SelectItem value="ILS">🇮🇱 ILS – Israeli Shekel</SelectItem>
-                  <SelectItem value="EGP">🇪🇬 EGP – Egyptian Pound</SelectItem>
-                  <SelectItem value="NGN">🇳🇬 NGN – Nigerian Naira</SelectItem>
-                  <SelectItem value="ZAR">🇿🇦 ZAR – South African Rand</SelectItem>
-                  
-                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Crypto & Stablecoins</div>
-                  <SelectItem value="BTC">₿ BTC – Bitcoin</SelectItem>
-                  <SelectItem value="ETH">Ξ ETH – Ethereum</SelectItem>
-                  <SelectItem value="USDT">🟢 USDT – Tether USD</SelectItem>
-                  <SelectItem value="USDC">🔵 USDC – USD Coin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Amount Input */}
-          <div className="space-y-2">
-            <Label htmlFor="amount">Amount</Label>
-            <Input
-              id="amount"
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter amount to convert"
-              className="text-lg"
-            />
-            {fromCurrency && (
-              <p className="text-sm text-muted-foreground">
-                Available: {walletsWithRegions.find(w => w.currency === fromCurrency)?.availableBalance || 0} {fromCurrency}
-              </p>
-            )}
-          </div>
-
-          {/* Exchange Rate Preview */}
-          {fromCurrency && toCurrency && amount && (
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Mid-market Rate:</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono">{exchangeRateText}</span>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="w-3 h-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Real-time mid-market exchange rate</p>
-                        <p>Updated every 30 seconds</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">Transfer Fee:</span>
-                <span className="text-sm">$0.45 (0.5%)</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">Processing Time:</span>
-                <span className="text-sm text-green-600">Instant</span>
-              </div>
-              <Separator />
-              <div className="flex justify-between items-center bg-white rounded p-2">
-                <span className="font-medium text-gray-800">You'll receive:</span>
-                <span className="font-bold text-lg text-green-600">
-                  {calculateTransferAmount(amount, fromCurrency, toCurrency)}
-                </span>
-              </div>
-              <div className="text-xs text-muted-foreground text-center">
-                All transfers are protected by bank-level security and regulatory compliance
-              </div>
-            </div>
-          )}
-
-          {/* Currency Watchlist Alert */}
-          {fromCurrency && toCurrency && (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-yellow-600" />
-                <span className="text-sm font-medium">Rate Alert</span>
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                Set up notifications when {fromCurrency}/{toCurrency} reaches your target rate
-              </p>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="mt-2">
-                    Create Alert
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Currency Rate Alert</DialogTitle>
-                    <DialogDescription>
-                      Get notified when {fromCurrency}/{toCurrency} reaches your target rate
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Current Rate</Label>
-                      <div className="p-2 bg-gray-50 rounded text-sm">
-                        1 {fromCurrency} = 1.23 {toCurrency}
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Target Rate</Label>
-                      <Input
-                        type="number"
-                        step="0.0001"
-                        placeholder="e.g., 1.25"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Alert Type</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose alert type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="above">Rate goes above target</SelectItem>
-                          <SelectItem value="below">Rate goes below target</SelectItem>
-                          <SelectItem value="reaches">Rate reaches target exactly</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button className="w-full">
-                      Create Rate Alert
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          )}
-
-          {/* Convert Button */}
-          <Button 
-            onClick={handleTransfer}
-            disabled={!fromCurrency || !toCurrency || !amount || transferMutation.isPending}
-            className="w-full text-lg py-6"
-            size="lg"
-          >
-            {transferMutation.isPending ? "Converting..." : "Convert Now"}
-          </Button>
-        </CardContent>
-      </Card>
 
       {/* Deposit Modal */}
       <Dialog open={depositModalOpen} onOpenChange={setDepositModalOpen}>
