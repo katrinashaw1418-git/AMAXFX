@@ -249,20 +249,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // when wallet balances were not all built up via tracked transactions.
       const dataPoints: Array<{ date: string; value: number; timestamp: number }> = [];
       
-      // Determine number of data points and interval based on timeframe
-      let numPoints: number;
-      let intervalDays: number;
-      
-      if (timeframe === "1Y") {
-        numPoints = 13; // monthly
-        intervalDays = 30;
-      } else if (timeframe === "3M") {
-        numPoints = 13; // weekly
-        intervalDays = 7;
-      } else {
-        numPoints = 22; // ~every 1.5 days
-        intervalDays = 1;
-      }
+      // Determine number of data points based on timeframe
+      // 1Y → 13 monthly points, 3M → 13 weekly points, 1M → 22 points (~every 1.5 days)
+      const numPoints = timeframe === "1M" ? 22 : 13;
       
       // Total days in range
       const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
