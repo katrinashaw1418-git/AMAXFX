@@ -50,7 +50,17 @@ export default function Portfolio() {
     refetchInterval: 5000, // Refresh every 5 seconds to track investment changes
   });
 
-  // 1-year portfolio history — used for the Portfolio History and Performance by Period charts
+  // Portfolio history chart — monthly points from Jan 1, 2026 (historical + projected)
+  const { data: perfChart } = useQuery({
+    queryKey: ["/api/portfolio/performance-chart", "1Y"],
+    queryFn: async () => {
+      const res = await fetch("/api/portfolio/performance-chart?timeframe=1Y");
+      if (!res.ok) throw new Error("Failed to fetch performance chart");
+      return res.json();
+    },
+  });
+
+  // 1-year portfolio history — still used for Performance by Period period calculations
   const { data: yearHistory } = useQuery({
     queryKey: ["/api/portfolio/history", "1Y"],
     queryFn: async () => {
@@ -176,25 +186,6 @@ export default function Portfolio() {
   // Monthly P&L and return % come directly from the server — snapshot-based, no hardcoded values
   const monthlyPnl = parseFloat(portfolio?.monthlyPnl || '0');
   const monthlyReturn = parseFloat(portfolio?.monthlyPnlPercent || '0');
-
-  // --- Portfolio History chart (real snapshot data) ---
-  // Uses YYYY-MM keys to avoid collapsing Jan 2025 and Jan 2026 into the same bucket
-  const buildHistoricalData = () => {
-    if (!yearHistory?.data?.length) return [];
-    const monthMap = new Map<string, { label: string; value: number }>();
-    for (const point of yearHistory.data) {
-      const d = new Date(point.date);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const label = d.toLocaleString('default', { month: 'short', year: '2-digit' });
-      monthMap.set(key, { label, value: point.value });
-    }
-    return Array.from(monthMap.values()).map(({ label, value }) => ({
-      month: label,
-      portfolio: value,
-    }));
-  };
-  const historicalData = buildHistoricalData();
-  const hasSufficientYearHistory = yearHistory?.hasSufficientHistory === true;
 
   // --- Performance by Period chart (returns computed from real snapshot history) ---
   const historyPoints = yearHistory?.data || [];
@@ -538,42 +529,91 @@ export default function Portfolio() {
       {/* Portfolio History */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <CardTitle>Portfolio History</CardTitle>
               <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">
-                {hasSufficientYearHistory ? 'Historical data' : 'Limited history'}
+                Month-by-month from 1 Jan 2026
               </span>
             </div>
-            <div className="flex items-center space-x-4 text-sm">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span>Your Portfolio</span>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-0.5 bg-red-500 rounded"></div>
+                <span>Actual</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-0.5 bg-blue-500 rounded" style={{ borderTop: '2px dashed #3b82f6', background: 'none' }}></div>
+                <span>Estimated ({perfChart?.projectionRate ?? '10% p.a.'})</span>
               </div>
             </div>
           </div>
+          {perfChart?.openingValue && (
+            <div className="flex items-center gap-4 mt-2 text-sm flex-wrap">
+              <span className="text-muted-foreground">Opening (Jan 1): <span className="font-medium text-foreground">${perfChart.openingValue.toLocaleString()}</span></span>
+              {(() => {
+                const lastReal = perfChart.data?.reduce((acc: number | null, r: any) =>
+                  r.historical !== null ? r.historical : acc, null);
+                if (lastReal && perfChart.openingValue) {
+                  const ret = ((lastReal - perfChart.openingValue) / perfChart.openingValue * 100).toFixed(2);
+                  return (
+                    <span className={parseFloat(ret) >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                      YTD actual: {parseFloat(ret) >= 0 ? '+' : ''}{ret}%
+                    </span>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+          )}
         </CardHeader>
         <CardContent>
-          <div className="h-64">
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={historicalData}>
+              <LineChart
+                data={perfChart?.data ?? []}
+                margin={{ top: 5, right: 20, left: 20, bottom: 55 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                <XAxis dataKey="month" stroke="#6B7280" fontSize={12} />
-                <YAxis stroke="#6B7280" fontSize={12} tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`} />
-                <Tooltip 
+                <XAxis
+                  dataKey="month"
+                  stroke="#6B7280"
+                  fontSize={11}
+                  interval={0}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis
+                  stroke="#6B7280"
+                  fontSize={12}
+                  tickFormatter={(v) => `$${(v / 1_000_000).toFixed(1)}M`}
+                  width={65}
+                />
+                <Tooltip
                   formatter={(value: number, name: string) => [
                     `$${value.toLocaleString()}`,
-                    'Your Portfolio'
+                    name === 'historical' ? 'Actual' : `Estimated (${perfChart?.projectionRate ?? '10% p.a.'})`,
                   ]}
                   contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="portfolio" 
-                  stroke="#ef4444" 
+                <Line
+                  type="monotone"
+                  dataKey="projected"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  strokeDasharray="6 3"
+                  dot={false}
+                  activeDot={{ r: 4, fill: '#3b82f6' }}
+                  connectNulls
+                />
+                <Line
+                  type="monotone"
+                  dataKey="historical"
+                  stroke="#ef4444"
                   strokeWidth={3}
-                  dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, fill: "#ef4444" }}
+                  dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, fill: '#ef4444' }}
+                  connectNulls={false}
                 />
               </LineChart>
             </ResponsiveContainer>
