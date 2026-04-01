@@ -690,6 +690,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Real metrics for AI advisory — diversification score, expected return, rebalancing gap, period returns
+  app.get("/api/portfolio/real-metrics", async (req, res) => {
+    try {
+      const userId = 1;
+
+      // Reuse the shared valuation engine for allocation fractions
+      const totals = await calculatePortfolioTotalsAtDate(userId, new Date());
+      const { fiatValue, cryptoValue, stablecoinValue, investmentValue, totalValue } = totals;
+
+      const alloc = {
+        fiat:       totalValue > 0 ? fiatValue       / totalValue : 0,
+        crypto:     totalValue > 0 ? cryptoValue     / totalValue : 0,
+        stablecoin: totalValue > 0 ? stablecoinValue / totalValue : 0,
+        investment: totalValue > 0 ? investmentValue / totalValue : 0,
+      };
+
+      // Diversification score — Herfindahl-Hirschman Index (HHI) based.
+      // HHI = sum(wi²): 0.25 when all four classes are equally weighted, 1.0 when fully concentrated.
+      // Score = (1 − (HHI − 0.25) / 0.75) × 100, clamped [0, 100].
+      const hhi = alloc.fiat ** 2 + alloc.crypto ** 2 + alloc.stablecoin ** 2 + alloc.investment ** 2;
+      const diversificationScore = Math.max(0, Math.min(100, (1 - (hhi - 0.25) / 0.75) * 100));
+
+      // Expected portfolio return — weighted average of asset-class estimates.
+      // Fiat:       2.0 % p.a. (savings / money-market proxy)
+      // Crypto:    20.0 % p.a. (blended market-consensus estimate for directly-held BTC/ETH)
+      // Stablecoin: 5.0 % p.a. (DeFi yield proxy)
+      // Investment: product-level annualReturn rates from the DB (per-product compound rates)
+      const investments = await storage.getUserInvestments(userId);
+      let weightedInvReturn = 0;
+      let totalInvested = 0;
+      for (const inv of investments) {
+        const product = await storage.getInvestmentProduct(inv.productId);
+        if (product?.annualReturn) {
+          const amount = parseFloat(inv.investedAmount);
+          weightedInvReturn += parseFloat(product.annualReturn.toString()) * amount;
+          totalInvested += amount;
+        }
+      }
+      const investExpectedReturn = totalInvested > 0 ? weightedInvReturn / totalInvested : 0.10;
+
+      // IMPORTANT: Use ONE return framework — arithmetic returns throughout.
+      const expectedPortfolioReturn = (
+        alloc.fiat       * 0.02 +
+        alloc.crypto     * 0.20 +
+        alloc.stablecoin * 0.05 +
+        alloc.investment * investExpectedReturn
+      ) * 100;
+
+      // Rebalancing gap — one-sided turnover from equal-weight benchmark [0, 50%]
+      const rebalancingGap = 0.5 * (
+        Math.abs(alloc.fiat       - 0.25) +
+        Math.abs(alloc.crypto     - 0.25) +
+        Math.abs(alloc.stablecoin - 0.25) +
+        Math.abs(alloc.investment - 0.25)
+      ) * 100;
+
+      // Snapshot history for period returns
+      const now = new Date();
+      const yearStart = new Date(now.getFullYear(), 0, 1);
+      yearStart.setHours(0, 0, 0, 0);
+      const snapshots = await storage.getPortfolioSnapshots(userId, yearStart, now);
+      const sorted = [...snapshots].sort(
+        (a: any, b: any) => new Date(a.snapshotDate).getTime() - new Date(b.snapshotDate).getTime()
+      );
+      const historySource = sorted.some((s: any) => s.source === 'historical_estimate')
+        ? 'historical_estimate' : 'actual';
+
+      const latestValue = sorted.length > 0
+        ? parseFloat(sorted[sorted.length - 1].totalValue)
+        : totalValue;
+
+      const computePeriodReturn = (lookbackMonths: number): number | null => {
+        const cutoff = new Date(now);
+        cutoff.setMonth(cutoff.getMonth() - lookbackMonths);
+        const prior = sorted.filter((s: any) => new Date(s.snapshotDate) <= cutoff);
+        if (!prior.length) return null;
+        const base = parseFloat(prior[prior.length - 1].totalValue);
+        return base > 0 ? (latestValue - base) / base * 100 : null;
+      };
+
+      // CAGR guard: use simple return for very short periods (< ~5 weeks)
+      const ytdRaw = sorted.length >= 2
+        ? (latestValue - parseFloat(sorted[0].totalValue)) / parseFloat(sorted[0].totalValue) * 100
+        : null;
+
+      res.json({
+        diversificationScore: +diversificationScore.toFixed(1),
+        expectedPortfolioReturn: +expectedPortfolioReturn.toFixed(2),
+        rebalancingGap: +rebalancingGap.toFixed(1),
+        historySource,
+        hasSufficientHistory: sorted.length >= 2,
+        snapshotCount: sorted.length,
+        periodReturns: {
+          ytd:        ytdRaw !== null           ? +ytdRaw.toFixed(2)              : null,
+          oneMonth:   computePeriodReturn(1),
+          threeMonth: computePeriodReturn(3),
+        },
+        allocation: {
+          fiat:       +(alloc.fiat       * 100).toFixed(1),
+          crypto:     +(alloc.crypto     * 100).toFixed(1),
+          stablecoin: +(alloc.stablecoin * 100).toFixed(1),
+          investment: +(alloc.investment * 100).toFixed(1),
+        },
+      });
+    } catch (error) {
+      console.error("Real metrics error:", error);
+      res.status(500).json({ error: "Failed to compute real metrics" });
+    }
+  });
+
   // Get user wallets
   app.get("/api/wallets", async (req, res) => {
     try {

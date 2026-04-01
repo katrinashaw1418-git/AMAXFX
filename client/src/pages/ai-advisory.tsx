@@ -115,6 +115,15 @@ export default function AiAdvisory() {
     },
   });
 
+  const { data: realMetrics, isLoading: metricsLoading } = useQuery({
+    queryKey: ["/api/portfolio/real-metrics"],
+    queryFn: async () => {
+      const res = await fetch("/api/portfolio/real-metrics");
+      if (!res.ok) throw new Error("Failed to fetch real metrics");
+      return res.json();
+    },
+  });
+
   const currentPortfolioAllocation = portfolioAllocation ? {
     fiat: portfolioAllocation.fiat.percentage,
     crypto: portfolioAllocation.crypto.percentage,
@@ -547,23 +556,39 @@ export default function AiAdvisory() {
               <h3 className="text-sm font-medium text-gray-500">Portfolio Health</h3>
               <BarChart3 className="w-4 h-4 text-secondary" />
             </div>
-            <AdvisoryMetricUnavailable
-              title="Portfolio health score unavailable"
-              description="Calculated once sufficient return history has accumulated."
-            />
+            {metricsLoading ? (
+              <p className="text-2xl font-bold text-gray-300">—</p>
+            ) : realMetrics ? (
+              <>
+                <p className="text-2xl font-bold text-secondary">
+                  {realMetrics.diversificationScore.toFixed(0)}<span className="text-sm font-normal text-gray-500"> / 100</span>
+                </p>
+                <p className="text-sm text-gray-600 mt-1">Diversification score (HHI-based)</p>
+              </>
+            ) : (
+              <p className="text-sm text-gray-400">Unavailable</p>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Optimization Potential</h3>
+              <h3 className="text-sm font-medium text-gray-500">Expected Annual Return</h3>
               <Zap className="w-4 h-4 text-purple-500" />
             </div>
-            <AdvisoryMetricUnavailable
-              title="Optimization score unavailable"
-              description="Projected uplift requires live portfolio analytics."
-            />
+            {metricsLoading ? (
+              <p className="text-2xl font-bold text-gray-300">—</p>
+            ) : realMetrics ? (
+              <>
+                <p className="text-2xl font-bold text-purple-600">
+                  {realMetrics.expectedPortfolioReturn >= 0 ? '+' : ''}{realMetrics.expectedPortfolioReturn.toFixed(1)}%
+                </p>
+                <p className="text-sm text-gray-600 mt-1">Weighted avg (product rates + estimates)</p>
+              </>
+            ) : (
+              <p className="text-sm text-gray-400">Unavailable</p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -748,11 +773,32 @@ export default function AiAdvisory() {
                   </div>
                 ))}
               </div>
-              <div className="mt-6">
-                <AdvisoryMetricUnavailable
-                  title="Rebalancing impact unavailable"
-                  description="Projected return improvement and volatility reduction will be calculated once sufficient portfolio history has accumulated. The suggested allocation above is based on your selected risk profile and investment horizon."
-                />
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <Target className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+                  <div>
+                    <h4 className="font-medium text-blue-900 mb-1">Rebalancing Gap</h4>
+                    {metricsLoading ? (
+                      <p className="text-sm text-blue-700">Loading…</p>
+                    ) : realMetrics ? (
+                      <>
+                        <p className="text-2xl font-bold text-blue-800 mb-1">
+                          {realMetrics.rebalancingGap.toFixed(1)}%
+                        </p>
+                        <p className="text-sm text-blue-700">
+                          One-sided turnover needed to reach an equal-weight benchmark across the four asset classes.
+                          {realMetrics.rebalancingGap < 10
+                            ? ' Portfolio is well-balanced.'
+                            : realMetrics.rebalancingGap < 25
+                            ? ' Minor rebalancing recommended.'
+                            : ' Significant rebalancing may be warranted.'}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-blue-700">Unavailable</p>
+                    )}
+                  </div>
+                </div>
               </div>
               <Button 
                 className="w-full mt-4"
@@ -778,35 +824,91 @@ export default function AiAdvisory() {
 
       {/* Performance and Risk Metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Performance Chart — unavailable until real history accumulates */}
+        {/* Performance by Period — from snapshot history */}
         <Card>
           <CardHeader>
             <CardTitle>Performance by Period</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <p className="text-sm font-medium text-amber-900">Performance chart unavailable</p>
-              <p className="mt-1 text-sm text-amber-800">
-                This chart previously used modelled assumptions and a synthetic benchmark.
-                It will be re-enabled once real historical portfolio data has accumulated.
-              </p>
-            </div>
+            {metricsLoading ? (
+              <div className="grid grid-cols-3 gap-3">
+                {['YTD', '1M', '3M'].map(l => (
+                  <div key={l} className="text-center p-3 bg-gray-50 rounded-lg">
+                    <p className="text-xs text-gray-500 mb-1">{l}</p>
+                    <p className="text-sm font-bold text-gray-300">—</p>
+                  </div>
+                ))}
+              </div>
+            ) : realMetrics?.hasSufficientHistory ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: 'YTD',  value: realMetrics.periodReturns.ytd },
+                    { label: '1M',   value: realMetrics.periodReturns.oneMonth },
+                    { label: '3M',   value: realMetrics.periodReturns.threeMonth },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="text-xs text-gray-600 mb-1">{label}</p>
+                      {value !== null ? (
+                        <p className={`text-sm font-bold ${value >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {value >= 0 ? '+' : ''}{value.toFixed(2)}%
+                        </p>
+                      ) : (
+                        <p className="text-sm text-gray-400">N/A</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {realMetrics.historySource === 'historical_estimate' && (
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                    Returns based on estimated historical snapshots. Estimated history is clearly labeled where used.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm font-medium text-amber-900">Insufficient snapshot history</p>
+                <p className="mt-1 text-sm text-amber-800">
+                  At least two portfolio snapshots are needed to compute period returns.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Risk Metrics — unavailable until real history accumulates */}
+        {/* Risk Metrics */}
         <Card>
           <CardHeader>
             <CardTitle>Risk Metrics</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <p className="text-sm font-medium text-amber-900">Risk metrics not yet available</p>
-              <p className="mt-1 text-sm text-amber-800">
-                Sharpe ratio, volatility, maximum drawdown, beta, and VaR require a real return
-                history series. These figures will appear once sufficient trading history has
-                accumulated.
-              </p>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">YTD Return</p>
+                  {metricsLoading ? (
+                    <p className="text-sm font-bold text-gray-300">—</p>
+                  ) : realMetrics?.periodReturns?.ytd !== null && realMetrics !== undefined ? (
+                    <p className={`text-sm font-bold ${realMetrics.periodReturns.ytd! >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {realMetrics.periodReturns.ytd! >= 0 ? '+' : ''}{realMetrics.periodReturns.ytd!.toFixed(2)}%
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-400">—</p>
+                  )}
+                </div>
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">History</p>
+                  <p className="text-sm font-bold text-gray-700">
+                    {metricsLoading ? '—' : `${realMetrics?.snapshotCount ?? 0} snapshots`}
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <p className="text-xs font-medium text-amber-900">More history needed for full risk metrics</p>
+                <p className="text-xs text-amber-800 mt-1">
+                  Sharpe ratio, volatility, max drawdown, beta, and VaR will be computed once sufficient trading history has accumulated. No synthetic performance assumptions; estimated historical data is clearly labeled where used.
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
