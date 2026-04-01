@@ -1397,7 +1397,6 @@ export default function Wallets() {
               <Button 
                 onClick={() => {
                   if (selectedWallet?.currency && toCurrency && amount) {
-                    setFromCurrency(selectedWallet.currency);
                     handleTransfer();
                   }
                 }}

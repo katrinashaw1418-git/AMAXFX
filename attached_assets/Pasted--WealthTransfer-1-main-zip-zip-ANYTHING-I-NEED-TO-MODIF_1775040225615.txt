@@ -1,0 +1,91 @@
+
+
+WealthTransfer-1-main.zip
+zip
+
+ANYTHING I NEED TO MODIFY TO ENSURE THE LOGIC OF CALCULATION AND LINKS ARE CORRECT? DISREGARD CRYPTO TRADING PAGE.
+
+9:33 PM
+
+Ran 2 commands, viewed a file
+Ran 2 commands, viewed a file
+Claude's response was interrupted
+JUST LIST WHAT I NEED TO FIX AND ERRORS ON THE SCREEN
+
+9:34 PM
+
+Ran 13 commands
+Ran 13 commands
+Now I have a thorough picture. Here's a clear, prioritised list of everything to fix:
+
+Bugs & Logic Errors to Fix
+1. Dashboard — "Available Cash" formula is wrong (wealth-overview.tsx line 101)
+The card shows fiatValue - cryptoValue, which is nonsensical (subtracting crypto from fiat). It should be just fiatValue (or fiatValue + stablecoinValue if you want to include stablecoins as liquid).
+
+// WRONG
+${(fiatValue - cryptoValue).toLocaleString()}
+
+// CORRECT
+${fiatValue.toLocaleString()}
+2. Dashboard — Two hardcoded % figures that never update (wealth-overview.tsx lines 68 & 86)
+"Total Portfolio Value" card shows a hardcoded +12.5% instead of a dynamic value
+"Crypto Holdings" card shows a hardcoded +8.2% These should be driven by real portfolio data (or removed), not static strings.
+3. Portfolio page — 6 summary cards in a 5-column grid (portfolio.tsx line 319)
+The grid is md:grid-cols-5 but renders 6 cards (Total Value, Crypto, Stablecoins, Fiat, Investments, Monthly P&L). The 6th card overflows or wraps awkwardly. Change to md:grid-cols-6 or remove/merge one card.
+
+4. Wallets Transfer Modal — fromCurrency is set AFTER handleTransfer() is called (wallets-new.tsx lines 1399–1401)
+js
+setFromCurrency(selectedWallet.currency);  // state update is async!
+handleTransfer();                          // fromCurrency is still '' here
+setFromCurrency is a React state setter — it doesn't take effect immediately. handleTransfer then reads the old empty fromCurrency and validation fails. Fix by passing selectedWallet.currency directly as a parameter, or by deriving sourceCurrency inside the click handler before calling handleTransfer.
+
+5. Crypto Deposit — Hardcoded AUD→crypto conversion rates (wallets.tsx lines ~243–249)
+js
+if (selectedWallet.currency === 'BTC') finalAmount = depositAmount * 0.000023;
+These are fixed-rate approximations that will be wrong almost immediately. They should use the live FX rate from useFxRate instead of magic numbers.
+
+6. FX Exchange Tool — Fee is calculated incorrectly (fx-exchange-tool.tsx)
+The fee is computed as amount × spread, and the convertedAmount is amount × exchangeRate — but the fee is not deducted from the converted amount shown to the user. The display says "You'll receive X" but the fee isn't subtracted, so the quoted figure is overstated. Either deduct the fee or show the gross-vs-net clearly.
+
+7. Sidebar still includes "Crypto Trading" nav link
+You said to disregard that page, but the sidebar still shows it as a navigation item. If the page is being kept but shouldn't be discoverable, remove it from navigation in sidebar.tsx.
+
+Summary Table
+#	File	Issue	Severity
+1	wealth-overview.tsx	Available Cash = fiatValue − cryptoValue (wrong)	🔴 High
+2	wealth-overview.tsx	Hardcoded +12.5% and +8.2% never change	🟡 Medium
+3	portfolio.tsx	6 cards in 5-column grid	🟡 Medium
+4	wallets-new.tsx	fromCurrency not set before handleTransfer() fires	🔴 High
+5	wallets.tsx	Hardcoded AUD→crypto rates instead of live FX	🟡 Medium
+6	fx-exchange-tool.tsx	Fee not deducted from "You'll receive" amount	🟡 Medium
+7	sidebar.tsx	Crypto Trading still in nav	🟢 Low
+PLEASE LIST ISSUES AND FIX SOLUTIONS
+
+9:38 PM
+Let me do one final check on the FX rate hook and server routes to make sure my fixes are precise before listing.
+
+
+Ran 2 commands
+Ran 2 commands
+Good — now I have everything I need. Let me produce the complete issues list with exact fixes.
+
+
+Ran 2 commands
+Ran 2 commands
+Now I have everything. Let me produce the full issues + fixes document.
+
+
+Check skill for frontend design
+Check skill for frontend design
+
+
+7 issues total. The two Critical ones (#1 and #2) will cause visible wrong numbers and broken transactions on every use, so fix those first. The Medium ones (#3–6) affect calculation accuracy and display integrity. The Low one (#7) is cosmetic/navigational.
+
+Want me to write the corrected code files for any of these so you can drop them straight in?
+
+
+
+
+
+Claude is AI and can make mistakes. Please double-check responses.
+

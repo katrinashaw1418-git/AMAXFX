@@ -48,9 +48,11 @@ export default function WealthOverview() {
 
   const totalValue = parseFloat(portfolio.totalValue);
   const cryptoValue = parseFloat(portfolio.cryptoValue);
+  const stablecoinValue = parseFloat(portfolio.stablecoinValue || "0");
   const fiatValue = parseFloat(portfolio.fiatValue);
   const monthlyPnl = parseFloat(portfolio.monthlyPnl);
   const monthlyPnlPercent = parseFloat(portfolio.monthlyPnlPercent);
+  const cryptoPercent = totalValue > 0 ? (cryptoValue / totalValue) * 100 : 0;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -65,7 +67,9 @@ export default function WealthOverview() {
               ${totalValue.toLocaleString()}
             </p>
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-secondary">+12.5%</span>
+              <span className={`text-sm ${monthlyPnlPercent >= 0 ? 'text-secondary' : 'text-destructive'}`}>
+                {monthlyPnlPercent >= 0 ? '+' : ''}{monthlyPnlPercent.toFixed(2)}%
+              </span>
               <span className="text-xs text-gray-500">vs last month</span>
             </div>
           </div>
@@ -83,8 +87,7 @@ export default function WealthOverview() {
               ${cryptoValue.toLocaleString()}
             </p>
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-secondary">+8.2%</span>
-              <span className="text-xs text-gray-500">24h change</span>
+              <span className="text-sm text-gray-600">{cryptoPercent.toFixed(1)}% of portfolio</span>
             </div>
           </div>
         </CardContent>

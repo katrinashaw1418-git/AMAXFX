@@ -70,8 +70,10 @@ export default function FxExchangeTool() {
 
   const exchangeRate = fxRate ? parseFloat(fxRate.rate) : 1;
   const spread = fxRate ? parseFloat(fxRate.spread) : 0.005;
-  const fee = parseFloat(amount || "0") * spread;
-  const convertedAmount = parseFloat(amount || "0") * exchangeRate;
+  const inputAmount = parseFloat(amount || "0");
+  const fee = inputAmount * spread;
+  // Deduct fee from source amount before converting so "You'll receive" is the net figure
+  const convertedAmount = (inputAmount - fee) * exchangeRate;
 
   return (
     <Card>

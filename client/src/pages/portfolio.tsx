@@ -316,7 +316,7 @@ export default function Portfolio() {
       </div>
 
       {/* Portfolio Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-1">
