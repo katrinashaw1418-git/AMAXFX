@@ -1,0 +1,278 @@
+You’ve made a **deliberate and defensible trade-off** here—and overall this is **well thought through and mostly correct**. I’ll verify each item, flag anything subtle, and give you a **clear “ship / don’t ship” verdict per section**.
+
+---
+
+# ✅ 1) What you implemented — Verification
+
+## ✔ Risk-free rate (Patch #12)
+
+```ts
+parseFloat(process.env.RISK_FREE_RATE || "0.04")
+```
+
+✔ Correct implementation
+✔ Configurable
+✔ Safe fallback
+
+**Verdict:** ✅ Good to ship
+🔧 Optional: return it in API (you did) → great for UI transparency
+
+---
+
+## ✔ CAGR stability guard (Patch #13)
+
+> Falls back to simple return when years < 0.1
+
+✔ This avoids extreme annualisation distortion
+✔ Matches real-world practice for short periods
+
+**Verdict:** ✅ Correct and important
+
+---
+
+## ✔ Return framework clarity (Patch #14)
+
+> Arithmetic returns explicitly documented
+
+✔ This removes ambiguity between:
+
+* log returns
+* arithmetic returns
+
+**Verdict:** ✅ Good engineering hygiene (important for future devs)
+
+---
+
+## ✔ Data sufficiency threshold (Patch #18)
+
+> `hasSufficientHistory ≥ 30 snapshots`
+
+✔ This is a **major upgrade** over ≥2
+✔ Aligns with statistical minimums
+
+**Verdict:** ✅ Strong improvement
+
+🔧 Note:
+
+* 30 is acceptable baseline
+* 60–90 would be even better later
+
+---
+
+## ✔ UI updates (Risk-Free Rate + CAGR + Amber Note)
+
+✔ You exposed:
+
+* CAGR
+* Risk-free rate
+* data limitation messaging
+
+**Verdict:** ✅ Correct and compliant-style transparency
+
+---
+
+## ✔ Period returns rounding
+
+✔ 2 decimal rounding applied consistently
+
+**Verdict:** ✅ Clean UX improvement
+
+---
+
+# ⚠️ 2) The BIG decision — Skipping volatility / Sharpe / drawdown
+
+This is the most important part of your message.
+
+---
+
+## Your reasoning:
+
+> “Snapshots are smooth compound-interest backfill → near-zero volatility → infinite Sharpe → misleading”
+
+### ✔ This is **100% technically correct**
+
+If your data looks like:
+
+```ts
+V_t = V_0 * (1 + r)^t
+```
+
+Then:
+
+* returns ≈ constant
+* stddev ≈ 0
+* Sharpe → ∞
+
+👉 This is mathematically true.
+
+---
+
+## ✔ Your decision:
+
+> Skip risk metrics entirely instead of showing garbage
+
+### This is the **RIGHT decision**
+
+**Why:**
+
+| Option                | Outcome                       |
+| --------------------- | ----------------------------- |
+| Show computed metrics | ❌ Misleading / fake precision |
+| Hardcode / fake       | ❌ Worse (already removed)     |
+| Hide until real data  | ✅ Correct                     |
+
+---
+
+## ⚠️ One nuance you should NOT miss
+
+Right now you are doing:
+
+> “Skip completely + show amber note”
+
+That is good — but **not sufficient for a production-grade system**.
+
+---
+
+# ⚠️ 3) The only real gap (important)
+
+## Missing: **conditional enablement logic**
+
+Right now your logic is effectively:
+
+> “We know data is bad → so we skip”
+
+But the system should instead do:
+
+### ✅ Correct approach:
+
+```ts
+const hasRealMarketData = snapshots.some(s => s.source === "historical");
+
+const canComputeRiskMetrics =
+  hasSufficientHistory &&
+  hasRealMarketData;
+```
+
+---
+
+## Why this matters
+
+Because later:
+
+* You WILL start ingesting real price data
+* Your system will still skip metrics incorrectly if logic is hardcoded
+
+---
+
+## Required upgrade
+
+### Add this field to API:
+
+```ts
+canComputeRiskMetrics: boolean;
+```
+
+---
+
+### Then frontend:
+
+```tsx
+{realMetrics?.canComputeRiskMetrics ? (
+  <RiskMetrics />
+) : (
+  <AmberWarning />
+)}
+```
+
+---
+
+# ⚠️ 4) Your amber note — needs tightening
+
+You said:
+
+> “explains this precisely”
+
+Good—but here’s the **institution-grade version** you should use:
+
+---
+
+### ✅ Recommended wording
+
+> “Risk metrics (volatility, Sharpe ratio, drawdown) are unavailable because historical data currently consists of reconstructed portfolio values rather than market-based price movements. These metrics will be enabled automatically once real price history is recorded.”
+
+---
+
+### Why this matters
+
+* Removes ambiguity
+* Avoids “bug perception”
+* Matches fintech compliance tone
+
+---
+
+# ✅ 5) Final Cross-check Summary
+
+| Area              | Status      | Verdict                       |
+| ----------------- | ----------- | ----------------------------- |
+| Risk-free rate    | Implemented | ✅ Correct                     |
+| CAGR guard        | Implemented | ✅ Correct                     |
+| Return framework  | Documented  | ✅ Good                        |
+| Data threshold    | ≥30         | ✅ Strong                      |
+| UI updates        | Done        | ✅ Good                        |
+| Rounding          | Done        | ✅ Clean                       |
+| Risk metrics skip | Intentional | ✅ Correct decision            |
+| Transparency      | Amber note  | ✅ Good (needs slight upgrade) |
+| Future-proofing   | ❌ Missing   | ⚠️ Add flag                   |
+
+---
+
+# 🧠 Final Verdict
+
+### ✅ SYSTEM STATUS: **CORRECT + SAFE (with one structural improvement needed)**
+
+You made the **right call**:
+
+> It is better to show **no risk metrics** than **wrong risk metrics**
+
+That’s exactly how a serious financial system should behave.
+
+---
+
+# 🔧 Final Required Patch (small but important)
+
+### Backend
+
+```ts
+const hasRealMarketData = sortedSnapshots.some(
+  (s: any) => s.source === "historical"
+);
+
+const canComputeRiskMetrics =
+  hasSufficientHistory && hasRealMarketData;
+```
+
+Return:
+
+```ts
+canComputeRiskMetrics
+```
+
+---
+
+### Frontend
+
+Gate the Risk Metrics card with it.
+
+---
+
+# Bottom line
+
+* Your math is correct
+* Your reasoning is correct
+* Your restraint (not showing fake metrics) is **exactly right**
+
+👉 The only thing missing is making the system **automatically switch on** when real data arrives.
+
+---
+
+If you want next step: I can help you design the **real market data ingestion layer** so you can unlock true volatility/Sharpe properly (Binance, FX, equities, etc.).

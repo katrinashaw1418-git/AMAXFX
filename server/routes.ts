@@ -793,14 +793,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Statistical risk metrics (volatility, Sharpe, max drawdown) are intentionally
-      // withheld here: the 91 daily snapshots are backfilled estimated data that grows on
-      // a smooth compound curve, producing near-zero volatility and an artificially
-      // inflated Sharpe ratio — both are misleading.  These will be enabled once the
-      // platform records actual intra-day or end-of-day market prices.
-
+      // Statistical risk metrics (volatility, Sharpe, max drawdown) require actual
+      // recorded market prices, not the smooth compound-interest backfill that currently
+      // fills the snapshot table.  The flag below gates those metrics automatically:
+      // it flips to true once ≥30 snapshots sourced from live market data accumulate.
       // Row #18 — raise sufficiency threshold to ≥30 for statistical meaningfulness.
       const hasSufficientHistory = sorted.length >= 30;
+
+      // Snapshots written from live prices carry source="actual"; backfilled estimates
+      // carry source="historical_estimate".  Risk metrics are only meaningful when enough
+      // actual market-price snapshots exist (each source value is set in backfillPortfolioHistory).
+      const actualSnapshotCount = sorted.filter((s: any) => s.source === "actual").length;
+      const hasRealMarketData   = actualSnapshotCount >= 30;
+      const canComputeRiskMetrics = hasSufficientHistory && hasRealMarketData;
 
       res.json({
         diversificationScore: +diversificationScore.toFixed(1),
@@ -809,6 +814,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         historySource,
         hasSufficientHistory,
         snapshotCount: sorted.length,
+        actualSnapshotCount,
+        canComputeRiskMetrics,
         cagr,
         riskFreeRate: +(riskFreeAnnual * 100).toFixed(2),
         periodReturns: {

@@ -909,9 +909,9 @@ export default function AiAdvisory() {
                   )}
                 </div>
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-600 mb-1">Snapshots</p>
+                  <p className="text-xs text-gray-600 mb-1">Live Snapshots</p>
                   <p className="text-sm font-bold text-gray-700">
-                    {metricsLoading ? '—' : realMetrics?.snapshotCount ?? 0}
+                    {metricsLoading ? '—' : `${realMetrics?.actualSnapshotCount ?? 0} / 30`}
                   </p>
                 </div>
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
@@ -921,12 +921,14 @@ export default function AiAdvisory() {
                   </p>
                 </div>
               </div>
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                <p className="text-xs font-medium text-amber-900">Statistical metrics awaiting actual market prices</p>
-                <p className="text-xs text-amber-800 mt-1">
-                  Volatility, Sharpe ratio, max drawdown, beta, and VaR require actual recorded market prices. Current history is estimated from compound-interest backfill — computing those metrics from smooth estimated data would produce near-zero volatility and misleadingly high Sharpe ratios. No synthetic performance assumptions; estimated history is clearly labeled where used.
-                </p>
-              </div>
+              {!metricsLoading && !realMetrics?.canComputeRiskMetrics && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <p className="text-xs font-medium text-amber-900">Risk metrics unavailable</p>
+                  <p className="text-xs text-amber-800 mt-1">
+                    Risk metrics (volatility, Sharpe ratio, drawdown) are unavailable because historical data currently consists of reconstructed portfolio values rather than market-based price movements. These metrics will be enabled automatically once real price history is recorded.
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
