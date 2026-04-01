@@ -1,0 +1,597 @@
+Yes — that is the correct design.
+
+A new investment entered on the **investment page** should become the **single source event** that flows through valuation, portfolio totals, allocation, charts, breakdowns, and advisory. The earlier reviews already identified the core problem: different endpoints were using different valuation bases, which causes “same portfolio, different answer” across pages. The fix is to make every page consume one shared valuation engine built around `calculateInvestmentPerformance(...)` and shared portfolio total functions. 
+
+## What the system should do
+
+When a user adds a new investment record, the app should immediately and consistently drive:
+
+* investment current value
+* total portfolio value
+* asset allocation
+* investment breakdown
+* monthly P&L
+* history snapshots
+* performance charts
+* advisory inputs
+
+That same review also noted that `investment-breakdown` must use **current value**, not invested amount, when the page is meant to show current allocation/value.
+
+## The correct data flow
+
+Use this flow everywhere:
+
+```text
+Investment Page Entry
+→ create investment record
+→ revalue all investments with shared formula
+→ update portfolio totals
+→ create/update daily snapshot
+→ all pages read from same totals/history engine
+```
+
+## The one rule that fixes almost everything
+
+Do **not** let each page calculate investment values differently.
+
+Use one shared function for all of these:
+
+* `/api/portfolio`
+* `/api/portfolio/allocation`
+* `/api/investment-breakdown`
+* `/api/portfolio/history`
+* `/api/portfolio/performance-chart`
+* AI/advisory calculations
+
+That exact “one shared valuation engine” approach was already the recommended fix in the prior code review.
+
+---
+
+# COPY-PASTE IMPLEMENTATION PLAN
+
+Below is the cleanest version to implement.
+
+## 1) Make each investment product store its own return basis
+
+Your product record should include enough data to calculate its own performance correctly.
+
+Use fields like:
+
+```ts
+type ReturnMethod =
+  | "fixed_annual_compound"
+  | "fixed_annual_simple"
+  | "manual_nav"
+  | "market_price";
+
+interface InvestmentProduct {
+  id: number;
+  name: string;
+  category: string;
+  returnMethod: ReturnMethod;
+  annualReturn?: string;      // e.g. "0.11" for 11%
+  benchmarkCode?: string | null;
+  isActive: boolean;
+}
+```
+
+Why this matters:
+
+* different products can have different return percentages
+* different products can use different valuation methods
+* the app remains consistent and extensible
+
+The earlier review specifically highlighted the danger of mixing linear and compound logic across different parts of the app.
+
+---
+
+## 2) Keep the investment entry table clean and factual
+
+Each new investment entry should store only the transaction facts:
+
+```ts
+interface UserInvestment {
+  id: number;
+  userId: number;
+  productId: number;
+  investedAmount: string;
+  investmentDate: string;
+  units?: string | null;
+  entryPrice?: string | null;
+  notes?: string | null;
+}
+```
+
+That means:
+
+* the record stores what was actually invested
+* valuation is derived later from the product definition + date
+
+---
+
+## 3) Use one valuation function only
+
+This must be the only place where investment value is calculated.
+
+```ts
+function calculateInvestmentPerformance(
+  product: any,
+  investedAmount: number,
+  investmentDate: Date,
+  currentDate: Date = new Date()
+): {
+  currentValue: number;
+  returnAmount: number;
+  returnPercentage: number;
+} {
+  if (!product || investedAmount <= 0) {
+    return {
+      currentValue: investedAmount || 0,
+      returnAmount: 0,
+      returnPercentage: 0,
+    };
+  }
+
+  const start = new Date(investmentDate);
+  const end = new Date(currentDate);
+
+  if (start > end) {
+    return {
+      currentValue: investedAmount,
+      returnAmount: 0,
+      returnPercentage: 0,
+    };
+  }
+
+  const daysHeld = Math.floor(
+    (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  const yearsHeld = daysHeld / 365;
+
+  const annualReturn = parseFloat(product.annualReturn || "0");
+
+  let currentValue = investedAmount;
+
+  switch (product.returnMethod) {
+    case "fixed_annual_compound":
+      currentValue = investedAmount * Math.pow(1 + annualReturn, yearsHeld);
+      break;
+
+    case "fixed_annual_simple":
+      currentValue = investedAmount * (1 + annualReturn * yearsHeld);
+      break;
+
+    case "manual_nav":
+      currentValue = investedAmount;
+      break;
+
+    case "market_price":
+      currentValue = investedAmount;
+      break;
+
+    default:
+      currentValue = investedAmount * Math.pow(1 + annualReturn, yearsHeld);
+      break;
+  }
+
+  const returnAmount = currentValue - investedAmount;
+  const returnPercentage =
+    investedAmount > 0 ? (returnAmount / investedAmount) * 100 : 0;
+
+  return {
+    currentValue,
+    returnAmount,
+    returnPercentage,
+  };
+}
+```
+
+This directly addresses the earlier concern that the code had inconsistent return logic and, in older versions, mislabeled simple growth as IRR.
+
+---
+
+## 4) Use one investment totals engine
+
+Every portfolio page should call this, not re-run its own logic.
+
+```ts
+async function calculateInvestmentTotalsAtDate(
+  userId: number,
+  asOfDate: Date = new Date()
+) {
+  const investments = await storage.getUserInvestments(userId);
+  const products = await storage.getInvestmentProducts();
+
+  let totalInvested = 0;
+  let totalCurrentValue = 0;
+
+  const detailed = [];
+
+  for (const investment of investments) {
+    const product = products.find((p: any) => p.id === investment.productId);
+    if (!product) continue;
+
+    const investedAmount = parseFloat(investment.investedAmount);
+    const investmentDate = new Date(investment.investmentDate);
+
+    const performance = calculateInvestmentPerformance(
+      product,
+      investedAmount,
+      investmentDate,
+      asOfDate
+    );
+
+    totalInvested += investedAmount;
+    totalCurrentValue += performance.currentValue;
+
+    detailed.push({
+      ...investment,
+      productName: product.name,
+      category: product.category,
+      annualReturn: product.annualReturn,
+      returnMethod: product.returnMethod,
+      currentValue: performance.currentValue,
+      returnAmount: performance.returnAmount,
+      returnPercentage: performance.returnPercentage,
+    });
+  }
+
+  return {
+    totalInvested,
+    totalCurrentValue,
+    totalReturn: totalCurrentValue - totalInvested,
+    totalReturnPercent:
+      totalInvested > 0
+        ? ((totalCurrentValue - totalInvested) / totalInvested) * 100
+        : 0,
+    items: detailed,
+  };
+}
+```
+
+---
+
+## 5) Link the investment page entry directly to the valuation engine
+
+When a new record is added on the investment page, do this:
+
+```ts
+app.post("/api/investments", async (req, res) => {
+  try {
+    const userId = 1;
+
+    const createdInvestment = await storage.createUserInvestment({
+      userId,
+      productId: req.body.productId,
+      investedAmount: req.body.investedAmount,
+      investmentDate: req.body.investmentDate,
+      units: req.body.units || null,
+      entryPrice: req.body.entryPrice || null,
+      notes: req.body.notes || null,
+    });
+
+    const now = new Date();
+    const totals = await calculatePortfolioTotalsAtDate(userId, now);
+
+    await storage.createPortfolioSnapshot({
+      userId,
+      snapshotDate: now,
+      totalValue: totals.totalValue.toFixed(2),
+      fiatValue: totals.fiatValue.toFixed(2),
+      cryptoValue: totals.cryptoValue.toFixed(2),
+      stablecoinValue: totals.stablecoinValue.toFixed(2),
+      investmentValue: totals.investmentValue.toFixed(2),
+      source: "actual",
+    });
+
+    res.json({
+      success: true,
+      investment: createdInvestment,
+    });
+  } catch (error) {
+    console.error("Create investment error:", error);
+    res.status(500).json({ error: "Failed to create investment" });
+  }
+});
+```
+
+This ensures the moment a new entry is created, the rest of the app has an updated portfolio basis.
+
+---
+
+## 6) Make portfolio totals call the investment totals engine
+
+Replace duplicate logic with this pattern:
+
+```ts
+async function calculatePortfolioTotalsAtDate(
+  userId: number,
+  asOfDate: Date = new Date()
+) {
+  const wallets = await storage.getWallets(userId);
+
+  let fiatValue = 0;
+  let cryptoValue = 0;
+  let stablecoinValue = 0;
+
+  for (const wallet of wallets) {
+    const balance = parseFloat(wallet.balance);
+
+    if (wallet.walletType === "fiat") {
+      fiatValue += await convertToUsd(wallet.currency, balance);
+      continue;
+    }
+
+    if (wallet.currency === "USDT" || wallet.currency === "USDC") {
+      stablecoinValue += balance;
+      continue;
+    }
+
+    const fxRate = await storage.getFxRate(wallet.currency, "USD");
+    if (fxRate) {
+      cryptoValue += balance * parseFloat(fxRate.rate);
+    }
+  }
+
+  const investmentTotals = await calculateInvestmentTotalsAtDate(userId, asOfDate);
+
+  return {
+    fiatValue,
+    cryptoValue,
+    stablecoinValue,
+    investmentValue: investmentTotals.totalCurrentValue,
+    totalValue:
+      fiatValue +
+      cryptoValue +
+      stablecoinValue +
+      investmentTotals.totalCurrentValue,
+  };
+}
+```
+
+This is exactly the kind of shared totals function the earlier review recommended so every page uses one source of truth.
+
+---
+
+## 7) Make `/api/investment-breakdown` use the same engine
+
+Replace the route body with:
+
+```ts
+app.get("/api/investment-breakdown", async (req, res) => {
+  try {
+    const userId = 1;
+    const asOfDate = new Date();
+
+    const totals = await calculateInvestmentTotalsAtDate(userId, asOfDate);
+
+    const categoryMap: Record<string, any> = {};
+
+    for (const item of totals.items) {
+      if (!categoryMap[item.category]) {
+        categoryMap[item.category] = {
+          name: item.category,
+          value: 0,
+          products: [],
+        };
+      }
+
+      categoryMap[item.category].value += item.currentValue;
+      categoryMap[item.category].products.push({
+        name: item.productName,
+        value: item.currentValue,
+        investedAmount: parseFloat(item.investedAmount),
+        returnAmount: item.returnAmount,
+        returnPercentage: item.returnPercentage,
+      });
+    }
+
+    const categories = Object.values(categoryMap).map((cat: any) => ({
+      ...cat,
+      percentage:
+        totals.totalCurrentValue > 0
+          ? (cat.value / totals.totalCurrentValue) * 100
+          : 0,
+    }));
+
+    res.json({
+      totalInvested: totals.totalInvested,
+      totalCurrentValue: totals.totalCurrentValue,
+      totalReturn: totals.totalReturn,
+      totalReturnPercent: totals.totalReturnPercent,
+      categories,
+    });
+  } catch (error) {
+    console.error("Investment breakdown error:", error);
+    res.status(500).json({ error: "Failed to get investment breakdown" });
+  }
+});
+```
+
+That aligns with the previously identified fix that investment breakdown should use current value rather than raw invested amount when the page shows current allocation.
+
+---
+
+## 8) Make `/api/portfolio` use the same engine
+
+```ts
+app.get("/api/portfolio", async (req, res) => {
+  try {
+    const userId = 1;
+    const now = new Date();
+
+    const totals = await calculatePortfolioTotalsAtDate(userId, now);
+
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const snapshots = await storage.getPortfolioSnapshots(userId, thirtyDaysAgo, now);
+    const sortedSnapshots = [...snapshots].sort(
+      (a: any, b: any) => new Date(a.snapshotDate).getTime() - new Date(b.snapshotDate).getTime()
+    );
+
+    const priorSnapshot = sortedSnapshots.length > 0 ? sortedSnapshots[0] : null;
+
+    let monthlyPnl = 0;
+    let monthlyPnlPercent = 0;
+    let monthlyPnlSource = "historical_estimate";
+
+    if (priorSnapshot) {
+      const priorValue = parseFloat(priorSnapshot.totalValue);
+      monthlyPnl = totals.totalValue - priorValue;
+      monthlyPnlPercent = priorValue > 0 ? (monthlyPnl / priorValue) * 100 : 0;
+      monthlyPnlSource = priorSnapshot.source || "historical_estimate";
+    }
+
+    res.json({
+      userId,
+      totalValue: totals.totalValue.toFixed(2),
+      cryptoValue: totals.cryptoValue.toFixed(2),
+      stablecoinValue: totals.stablecoinValue.toFixed(2),
+      fiatValue: totals.fiatValue.toFixed(2),
+      investmentValue: totals.investmentValue.toFixed(2),
+      monthlyPnl: monthlyPnl.toFixed(2),
+      monthlyPnlPercent: monthlyPnlPercent.toFixed(2),
+      monthlyPnlSource,
+      updatedAt: now,
+    });
+  } catch (error) {
+    console.error("Portfolio error:", error);
+    res.status(500).json({ error: "Failed to get portfolio" });
+  }
+});
+```
+
+---
+
+## 9) Make history snapshots automatically flow from investment changes
+
+Any time one of these happens:
+
+* new investment created
+* investment edited
+* investment deleted
+* wallet materially changes
+
+create a fresh snapshot.
+
+Use one helper:
+
+```ts
+async function saveActualPortfolioSnapshot(userId: number) {
+  const now = new Date();
+  const totals = await calculatePortfolioTotalsAtDate(userId, now);
+
+  await storage.createPortfolioSnapshot({
+    userId,
+    snapshotDate: now,
+    totalValue: totals.totalValue.toFixed(2),
+    fiatValue: totals.fiatValue.toFixed(2),
+    cryptoValue: totals.cryptoValue.toFixed(2),
+    stablecoinValue: totals.stablecoinValue.toFixed(2),
+    investmentValue: totals.investmentValue.toFixed(2),
+    source: "actual",
+  });
+}
+```
+
+Then call that after every investment mutation.
+
+---
+
+## 10) Make the frontend pages read only from APIs, not local formulas
+
+The earlier reviews correctly warned against local hardcoded graph math and multiple truths across endpoints/pages.
+
+So the frontend should do this:
+
+* investment page → submit record
+* portfolio page → fetch `/api/portfolio`, `/api/portfolio/history`, `/api/investment-breakdown`
+* graphs → use API data only
+* advisory → use API totals only
+
+No local fake growth arrays, no hardcoded percentages, no custom page-specific valuation math.
+
+---
+
+# Formula rules to keep correct
+
+Use these rules consistently:
+
+### Compound annual return
+
+```ts
+currentValue = investedAmount * Math.pow(1 + annualReturn, yearsHeld);
+```
+
+### Simple annual return
+
+```ts
+currentValue = investedAmount * (1 + annualReturn * yearsHeld);
+```
+
+### Return amount
+
+```ts
+returnAmount = currentValue - investedAmount;
+```
+
+### Return percentage
+
+```ts
+returnPercentage = investedAmount > 0
+  ? (returnAmount / investedAmount) * 100
+  : 0;
+```
+
+### Category percentage
+
+```ts
+percentage = totalCurrentValue > 0
+  ? (categoryValue / totalCurrentValue) * 100
+  : 0;
+```
+
+### Monthly P&L
+
+```ts
+monthlyPnl = currentPortfolioValue - priorSnapshotValue;
+monthlyPnlPercent = priorSnapshotValue > 0
+  ? (monthlyPnl / priorSnapshotValue) * 100
+  : 0;
+```
+
+---
+
+# Final architecture
+
+This is the model you want:
+
+```text
+Investment product master
+   + annual return / return method
+   + category
+
+User investment entry
+   + productId
+   + investedAmount
+   + investmentDate
+
+Shared valuation engine
+   + calculateInvestmentPerformance()
+   + calculateInvestmentTotalsAtDate()
+   + calculatePortfolioTotalsAtDate()
+
+Shared outputs
+   + portfolio page
+   + allocation page
+   + investment breakdown
+   + history snapshots
+   + charts
+   + advisory
+```
+
+That is the only clean way to make sure a new investment entry with a different product and different return percentage flows correctly through all pages and remains mathematically consistent. It also directly matches the earlier finding that every endpoint should consume the same functions rather than competing valuation logic.
+
+If you want, I can next give you a **single short replace-only patch** for `server/routes.ts` so you can paste it in one shot.

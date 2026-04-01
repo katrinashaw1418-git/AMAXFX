@@ -103,6 +103,8 @@ export const investmentProducts = pgTable("investment_products", {
   riskProfile: text("risk_profile").notNull(), // conservative, moderate, high
   returnType: text("return_type").notNull(), // income, capital_gains, blended
   lvr: text("lvr"), // Loan-to-Value Ratio
+  annualReturn: decimal("annual_return", { precision: 10, scale: 4 }), // explicit rate e.g. 0.1100 = 11%
+  returnMethod: text("return_method").notNull().default("fixed_annual_compound"), // fixed_annual_compound | fixed_annual_simple
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });

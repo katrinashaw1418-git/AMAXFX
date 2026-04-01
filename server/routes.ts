@@ -2,54 +2,75 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 
-// IRR mapping - Market-based for Bitcoin, midpoint for others
-function getAnnualReturn(category: string, productName?: string): number {
+// Category-level fallback rates — only used when a product has no explicit annualReturn set
+function getAnnualReturnFallback(category: string, productName?: string): number {
   const rates = {
-    'real_estate': 0.11,      // 11% midpoint
+    'real_estate': 0.11,      // 11% midpoint (10-12% range)
     'corporate_credit': 0.11, // 11% midpoint (10-12% range)
     'venture_capital': 0.18,  // 18% midpoint (16-20% range)
-    'digital_assets': (productName && typeof productName === 'string' && productName.includes('Bitcoin')) ? 0.60 : 0.0575, // Bitcoin 60% market-based, Ethereum 5.75%
+    'digital_assets': (productName && typeof productName === 'string' && productName.includes('Bitcoin')) ? 0.60 : 0.0575,
     'default': 0.11
   };
   return rates[category as keyof typeof rates] || rates.default;
 }
 
-// Unified investment performance calculation using market-based returns
+// Unified investment performance calculation
+// Prefers product.annualReturn + product.returnMethod when set; falls back to category mapping
 function calculateInvestmentPerformance(
   product: any,
   investedAmount: number,
   investmentDate: Date,
   currentDate: Date = new Date()
 ): { currentValue: number; returnAmount: number; returnPercentage: number } {
-  // Safety check for product data
   if (!product) {
-    console.error('Product is null/undefined in calculateInvestmentPerformance');
     return { currentValue: investedAmount, returnAmount: 0, returnPercentage: 0 };
   }
-  
-  const daysSinceInvestment = Math.floor((currentDate.getTime() - investmentDate.getTime()) / (1000 * 60 * 60 * 24));
-  
-  // Use the global getAnnualReturn function
-  
-  const annualReturn = getAnnualReturn(product.category, product.name);
-  let performanceFactor = 1;
-  
-  if (daysSinceInvestment > 0) {
-    const timeProgress = daysSinceInvestment / 365;
-    // Compound growth: (1 + r)^t — consistent with how IRR/CAGR is defined
-    performanceFactor = Math.pow(1 + annualReturn, timeProgress);
+
+  if (investedAmount <= 0) {
+    return { currentValue: 0, returnAmount: 0, returnPercentage: 0 };
   }
-  
-  performanceFactor = Math.max(0.5, performanceFactor);
-  const currentValue = investedAmount * performanceFactor;
+
+  const start = new Date(investmentDate);
+  const end = new Date(currentDate);
+
+  if (start > end) {
+    return { currentValue: investedAmount, returnAmount: 0, returnPercentage: 0 };
+  }
+
+  const daysHeld = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  const yearsHeld = daysHeld / 365;
+
+  // Product-level annualReturn takes precedence over category fallback
+  const annualReturn = product.annualReturn != null
+    ? parseFloat(product.annualReturn)
+    : getAnnualReturnFallback(product.category, product.name);
+
+  const returnMethod = product.returnMethod || "fixed_annual_compound";
+
+  let currentValue = investedAmount;
+
+  switch (returnMethod) {
+    case "fixed_annual_compound":
+      currentValue = investedAmount * Math.pow(1 + annualReturn, yearsHeld);
+      break;
+    case "fixed_annual_simple":
+      currentValue = investedAmount * (1 + annualReturn * yearsHeld);
+      break;
+    case "manual_nav":
+    case "market_price":
+      currentValue = investedAmount;
+      break;
+    default:
+      currentValue = investedAmount * Math.pow(1 + annualReturn, yearsHeld);
+  }
+
+  // Floor at 50% of invested to prevent extreme downside projections
+  currentValue = Math.max(investedAmount * 0.5, currentValue);
+
   const returnAmount = currentValue - investedAmount;
   const returnPercentage = (returnAmount / investedAmount) * 100;
-  
-  return {
-    currentValue,
-    returnAmount,
-    returnPercentage
-  };
+
+  return { currentValue, returnAmount, returnPercentage };
 }
 
 // Shared FX conversion helper — tries direct rate then inverse
@@ -62,11 +83,55 @@ async function convertToUsd(currency: string, amount: number): Promise<number> {
   return 0;
 }
 
-// Portfolio valuation at any given date — uses current wallet balances + IRR projection for investments
-async function calculatePortfolioTotalsAtDate(userId: number, asOfDate: Date) {
-  const wallets = await storage.getWallets(userId);
+// One shared engine for all investment valuation — batch fetches products to avoid N+1 queries
+async function calculateInvestmentTotalsAtDate(userId: number, asOfDate: Date = new Date()) {
   const investments = await storage.getUserInvestments(userId);
-  let fiatValue = 0, cryptoValue = 0, stablecoinValue = 0, investmentValue = 0;
+  const products = await storage.getInvestmentProducts();
+
+  let totalInvested = 0;
+  let totalCurrentValue = 0;
+  const items: Array<{
+    id: number; productId: number; productName: string; category: string;
+    annualReturn: string; returnMethod: string;
+    investedAmount: number; currentValue: number; returnAmount: number; returnPercentage: number;
+  }> = [];
+
+  for (const inv of investments) {
+    const product = products.find((p: any) => p.id === inv.productId);
+    if (!product) continue;
+    const investedAmount = parseFloat(inv.investedAmount);
+    const investmentDate = new Date(inv.investmentDate);
+    if (investmentDate > asOfDate) continue; // investment didn't exist yet at asOfDate
+    const perf = calculateInvestmentPerformance(product, investedAmount, investmentDate, asOfDate);
+    totalInvested += investedAmount;
+    totalCurrentValue += perf.currentValue;
+    items.push({
+      id: inv.id,
+      productId: product.id,
+      productName: product.name,
+      category: product.category,
+      annualReturn: product.annualReturn ?? getAnnualReturnFallback(product.category, product.name).toString(),
+      returnMethod: product.returnMethod ?? "fixed_annual_compound",
+      investedAmount,
+      currentValue: perf.currentValue,
+      returnAmount: perf.returnAmount,
+      returnPercentage: perf.returnPercentage,
+    });
+  }
+
+  return {
+    totalInvested,
+    totalCurrentValue,
+    totalReturn: totalCurrentValue - totalInvested,
+    totalReturnPercent: totalInvested > 0 ? ((totalCurrentValue - totalInvested) / totalInvested) * 100 : 0,
+    items,
+  };
+}
+
+// Portfolio valuation at any given date — uses convertToUsd for fiat, FX for crypto, and the shared investment engine
+async function calculatePortfolioTotalsAtDate(userId: number, asOfDate: Date = new Date()) {
+  const wallets = await storage.getWallets(userId);
+  let fiatValue = 0, cryptoValue = 0, stablecoinValue = 0;
   for (const wallet of wallets) {
     const balance = parseFloat(wallet.balance);
     if (wallet.walletType === "fiat") {
@@ -78,18 +143,25 @@ async function calculatePortfolioTotalsAtDate(userId: number, asOfDate: Date) {
       if (rate) cryptoValue += balance * parseFloat(rate.rate);
     }
   }
-  for (const inv of investments) {
-    const product = await storage.getInvestmentProduct(inv.productId);
-    if (!product) continue;
-    const investedAmount = parseFloat(inv.investedAmount);
-    const investmentDate = new Date(inv.investmentDate);
-    if (investmentDate <= asOfDate) {
-      const perf = calculateInvestmentPerformance(product, investedAmount, investmentDate, asOfDate);
-      investmentValue += perf.currentValue;
-    }
-  }
+  const investmentTotals = await calculateInvestmentTotalsAtDate(userId, asOfDate);
+  const investmentValue = investmentTotals.totalCurrentValue;
   return { fiatValue, cryptoValue, stablecoinValue, investmentValue,
            totalValue: fiatValue + cryptoValue + stablecoinValue + investmentValue };
+}
+
+// Save a fresh "actual" snapshot immediately after any portfolio-changing event
+async function saveActualSnapshot(userId: number): Promise<void> {
+  const totals = await calculatePortfolioTotalsAtDate(userId, new Date());
+  await storage.createPortfolioSnapshot({
+    userId,
+    snapshotDate: new Date(),
+    totalValue: totals.totalValue.toFixed(2),
+    fiatValue: totals.fiatValue.toFixed(2),
+    cryptoValue: totals.cryptoValue.toFixed(2),
+    stablecoinValue: totals.stablecoinValue.toFixed(2),
+    investmentValue: totals.investmentValue.toFixed(2),
+    source: "actual" as SnapshotSource,
+  });
 }
 
 type SnapshotSource = "actual" | "historical_estimate";
@@ -149,6 +221,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
 
+  // Migrate investment_products: add annualReturn + returnMethod columns and set per-product rates
+  {
+    const { db } = await import('./db');
+    const { sql: rawSql } = await import('drizzle-orm');
+    await db.execute(rawSql`
+      ALTER TABLE investment_products
+      ADD COLUMN IF NOT EXISTS annual_return numeric(10,4),
+      ADD COLUMN IF NOT EXISTS return_method text NOT NULL DEFAULT 'fixed_annual_compound'
+    `);
+    // Seed per-product rates — matches the category fallback mapping for existing products
+    // Uses DO UPDATE so it's safe to re-run on every restart
+    await db.execute(rawSql`
+      UPDATE investment_products SET annual_return = 0.1100 WHERE id = 1 AND annual_return IS NULL;
+      UPDATE investment_products SET annual_return = 0.6000 WHERE id = 2 AND annual_return IS NULL;
+      UPDATE investment_products SET annual_return = 0.1100 WHERE id = 3 AND annual_return IS NULL;
+      UPDATE investment_products SET annual_return = 0.0575 WHERE id = 4 AND annual_return IS NULL;
+      UPDATE investment_products SET annual_return = 0.0575 WHERE id = 5 AND annual_return IS NULL;
+    `);
+  }
+
   // Migrate portfolio_snapshots to add 'source' column if missing, then backfill 90 days of history
   {
     const { db } = await import('./db');
@@ -180,83 +272,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user portfolio
+  // Get user portfolio — all values computed from the single shared valuation engine
   app.get("/api/portfolio", async (req, res) => {
     try {
       const userId = 1;
-      
-      // Get all wallets to calculate total balance
-      const wallets = await storage.getWallets(userId);
-      
-      // Get all investments to calculate investment value
-      const investments = await storage.getUserInvestments(userId);
-      
-      // Calculate fiat value in USD equivalent by converting each currency
-      // Try direct X/USD rate first; fall back to inverse of USD/X rate
-      let fiatValue = 0;
-      for (const wallet of wallets.filter(w => w.walletType === 'fiat')) {
-        const balance = parseFloat(wallet.balance);
-        if (wallet.currency === 'USD') {
-          fiatValue += balance;
-        } else {
-          const directRate = await storage.getFxRate(wallet.currency, 'USD');
-          if (directRate) {
-            fiatValue += balance * parseFloat(directRate.rate);
-          } else {
-            const inverseRate = await storage.getFxRate('USD', wallet.currency);
-            if (inverseRate) {
-              fiatValue += balance / parseFloat(inverseRate.rate);
-            }
-          }
-        }
-      }
-      
-      // Calculate crypto and stablecoin values separately using actual exchange rates
-      let cryptoValue = 0;
-      let stablecoinValue = 0;
-      
-      for (const wallet of wallets.filter(w => w.walletType === 'crypto')) {
-        const balance = parseFloat(wallet.balance);
-        
-        if (wallet.currency === "USDT" || wallet.currency === "USDC") {
-          // Stablecoins are 1:1 with USD - separate category
-          stablecoinValue += balance;
-        } else {
-          // Get actual exchange rate for crypto currencies (BTC, ETH, etc.)
-          const rate = await storage.getFxRate(wallet.currency, "USD");
-          if (rate) {
-            cryptoValue += (balance * parseFloat(rate.rate));
-          }
-        }
-      }
-      
-      // Calculate investment value using unified midpoint IRR calculation function
-      let investmentValue = 0;
-      const evaluationDate = new Date();
-      
-      for (const investment of investments) {
-        const product = await storage.getInvestmentProduct(investment.productId);
-        if (product) {
-          const investmentDate = new Date(investment.investmentDate);
-          const investedAmount = parseFloat(investment.investedAmount);
-          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, evaluationDate);
-          investmentValue += performance.currentValue;
-        }
-      }
-      
-      // Calculate total portfolio value including stablecoins
-      const totalValue = fiatValue + cryptoValue + stablecoinValue + investmentValue;
-      
-      // --- Snapshot management ---
-      // Only save today's real snapshot — no fake historical seeding.
-      const today = new Date();
+      const now = new Date();
+
+      // One call to the shared engine — no duplicated FX/investment loops
+      const totals = await calculatePortfolioTotalsAtDate(userId, now);
+      const { fiatValue, cryptoValue, stablecoinValue, investmentValue, totalValue } = totals;
+
+      // Save today's "actual" snapshot if we haven't yet
+      const today = new Date(now);
       today.setHours(0, 0, 0, 0);
       const todayStr = today.toISOString().split('T')[0];
-
       let allSnapshots = await storage.getPortfolioSnapshots(userId);
-
       const hasToday = allSnapshots.some(
-        s => s.snapshotDate.toISOString().split('T')[0] === todayStr
+        s => new Date(s.snapshotDate).toISOString().split('T')[0] === todayStr
       );
       if (!hasToday) {
         await storage.createPortfolioSnapshot({
@@ -266,16 +298,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cryptoValue: cryptoValue.toFixed(2),
           stablecoinValue: stablecoinValue.toFixed(2),
           investmentValue: investmentValue.toFixed(2),
-          snapshotDate: new Date(),
+          snapshotDate: now,
           source: "actual" as SnapshotSource,
         });
         allSnapshots = await storage.getPortfolioSnapshots(userId);
       }
 
-      // Monthly P&L: use the snapshot closest to 30 days ago.
-      // The startup backfill guarantees at least 90 days of snapshots exist.
-      // If the prior snapshot is "actual" it was a real measured point; otherwise it's a historical estimate.
-      const thirtyDaysAgo = new Date();
+      // Monthly P&L: compare current value against snapshot closest to 30 days ago
+      const thirtyDaysAgo = new Date(now);
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const priorSnapshot = allSnapshots
         .filter(s => new Date(s.snapshotDate) <= thirtyDaysAgo)
@@ -290,12 +320,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const priorValue = parseFloat(priorSnapshot.totalValue);
         monthlyPnl = totalValue - priorValue;
         monthlyPnlPercent = priorValue > 0 ? (monthlyPnl / priorValue) * 100 : 0;
-        // Source inherits from the snapshot: if that snapshot was a real user measurement, it's "actual"
         monthlyPnlSource = ((priorSnapshot as any).source === 'actual') ? 'actual' : 'historical_estimate';
         monthlyPnlMethod = ((priorSnapshot as any).source === 'actual') ? 'actual_30_day_comparison' : 'historical_inference';
       }
 
-      const portfolio = {
+      res.json({
         id: 1,
         userId,
         totalValue: totalValue.toFixed(2),
@@ -307,10 +336,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         monthlyPnlPercent: monthlyPnlPercent !== null ? monthlyPnlPercent.toFixed(2) : null,
         monthlyPnlSource,
         monthlyPnlMethod,
-        updatedAt: new Date(),
-      };
-      
-      res.json(portfolio);
+        updatedAt: now,
+      });
     } catch (error) {
       res.status(500).json({ error: "Failed to get portfolio" });
     }
@@ -649,86 +676,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get portfolio asset allocation
+  // Get portfolio asset allocation — delegates entirely to the shared valuation engine
   app.get("/api/portfolio/allocation", async (req, res) => {
     try {
       const userId = 1;
-      const wallets = await storage.getWallets(userId);
-      const investments = await storage.getUserInvestments(userId);
-      
-      // Calculate allocation categories
-      let fiatValue = 0;
-      let cryptoValue = 0;
-      let stablecoinValue = 0;
-      let investmentValue = 0;
-      
-      // Calculate fiat value in USD equivalent (FX-converted, same logic as /api/portfolio)
-      for (const wallet of wallets.filter(w => w.walletType === 'fiat')) {
-        const balance = parseFloat(wallet.balance);
-        if (wallet.currency === 'USD') {
-          fiatValue += balance;
-        } else {
-          const directRate = await storage.getFxRate(wallet.currency, 'USD');
-          if (directRate) {
-            fiatValue += balance * parseFloat(directRate.rate);
-          } else {
-            const inverseRate = await storage.getFxRate('USD', wallet.currency);
-            if (inverseRate) {
-              fiatValue += balance / parseFloat(inverseRate.rate);
-            }
-          }
-        }
-      }
-      
-      // Calculate crypto and stablecoin values
-      for (const wallet of wallets.filter(w => w.walletType === 'crypto')) {
-        const balance = parseFloat(wallet.balance);
-        if (wallet.currency === "USDT" || wallet.currency === "USDC") {
-          stablecoinValue += balance;
-        } else {
-          const rate = await storage.getFxRate(wallet.currency, "USD");
-          if (rate) {
-            cryptoValue += (balance * parseFloat(rate.rate));
-          }
-        }
-      }
-      
-      // Calculate investment value with correct argument order
-      const evaluationDate = new Date();
-      for (const investment of investments) {
-        const product = await storage.getInvestmentProduct(investment.productId);
-        if (product) {
-          const investedAmount = parseFloat(investment.investedAmount);
-          const investmentDate = new Date(investment.investmentDate);
-          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, evaluationDate);
-          investmentValue += performance.currentValue;
-        }
-      }
-      
-      const totalValue = fiatValue + cryptoValue + stablecoinValue + investmentValue;
-      
-      // Calculate percentages
-      const allocation = {
-        fiat: {
-          value: fiatValue,
-          percentage: totalValue > 0 ? (fiatValue / totalValue) * 100 : 0
-        },
-        crypto: {
-          value: cryptoValue,
-          percentage: totalValue > 0 ? (cryptoValue / totalValue) * 100 : 0
-        },
-        stablecoin: {
-          value: stablecoinValue,
-          percentage: totalValue > 0 ? (stablecoinValue / totalValue) * 100 : 0
-        },
-        investment: {
-          value: investmentValue,
-          percentage: totalValue > 0 ? (investmentValue / totalValue) * 100 : 0
-        },
-        totalValue
-      };
-      
-      res.json(allocation);
+      const totals = await calculatePortfolioTotalsAtDate(userId, new Date());
+      const { fiatValue, cryptoValue, stablecoinValue, investmentValue, totalValue } = totals;
+
+      res.json({
+        fiat:       { value: fiatValue,        percentage: totalValue > 0 ? (fiatValue        / totalValue) * 100 : 0 },
+        crypto:     { value: cryptoValue,       percentage: totalValue > 0 ? (cryptoValue      / totalValue) * 100 : 0 },
+        stablecoin: { value: stablecoinValue,   percentage: totalValue > 0 ? (stablecoinValue  / totalValue) * 100 : 0 },
+        investment: { value: investmentValue,   percentage: totalValue > 0 ? (investmentValue  / totalValue) * 100 : 0 },
+        totalValue,
+      });
     } catch (error) {
       res.status(500).json({ error: "Failed to get portfolio allocation" });
     }
@@ -1651,55 +1612,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/investment-breakdown", async (req, res) => {
     try {
       const userId = 1;
-      const investments = await storage.getUserInvestments(userId);
-      const products = await storage.getInvestmentProducts();
-      
-      // Calculate category breakdown
-      const categoryBreakdown = {
-        "real_estate": { value: 0, products: [], displayName: "Real Estate" },
-        "corporate_credit": { value: 0, products: [], displayName: "Corporate Credit" },
-        "venture_capital": { value: 0, products: [], displayName: "Venture Capital" },
-        "digital_assets": { value: 0, products: [], displayName: "Digital Assets" },
-        "cash_deposit": { value: 0, products: [], displayName: "Cash Deposits" }
+      const totals = await calculateInvestmentTotalsAtDate(userId, new Date());
+
+      const categoryDisplayNames: Record<string, string> = {
+        real_estate: "Real Estate",
+        corporate_credit: "Corporate Credit",
+        venture_capital: "Venture Capital",
+        digital_assets: "Digital Assets",
+        cash_deposit: "Cash Deposits",
       };
-      
-      let totalCurrentValue = 0;
-      const currentDate = new Date();
-      
-      for (const investment of investments) {
-        const product = products.find(p => p.id === investment.productId);
-        if (product) {
-          const investedAmount = parseFloat(investment.investedAmount);
-          const investmentDate = new Date(investment.investmentDate);
-          const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, currentDate);
-          const currentValue = performance.currentValue;
-          totalCurrentValue += currentValue;
-          
-          if (categoryBreakdown[product.category]) {
-            categoryBreakdown[product.category].value += currentValue;
-            categoryBreakdown[product.category].products.push({
-              name: product.name,
-              value: currentValue,
-              percentage: 0 // Will be calculated below
-            });
-          }
+
+      const categoryMap: Record<string, { name: string; value: number; products: any[] }> = {};
+      for (const item of totals.items) {
+        if (!categoryMap[item.category]) {
+          categoryMap[item.category] = {
+            name: categoryDisplayNames[item.category] ?? item.category,
+            value: 0,
+            products: [],
+          };
         }
+        categoryMap[item.category].value += item.currentValue;
+        categoryMap[item.category].products.push({
+          name: item.productName,
+          value: item.currentValue,
+          investedAmount: item.investedAmount,
+          returnAmount: item.returnAmount,
+          returnPercentage: item.returnPercentage,
+          percentage: 0, // filled below
+        });
       }
-      
-      // Calculate percentages
-      const categoryData = Object.entries(categoryBreakdown).map(([key, data]) => ({
-        name: data.displayName,
-        value: data.value,
-        percentage: totalCurrentValue > 0 ? (data.value / totalCurrentValue * 100) : 0,
-        products: data.products.map(p => ({
-          ...p,
-          percentage: totalCurrentValue > 0 ? (p.value / totalCurrentValue * 100) : 0
+
+      const categories = Object.values(categoryMap)
+        .map(cat => ({
+          ...cat,
+          percentage: totals.totalCurrentValue > 0 ? (cat.value / totals.totalCurrentValue) * 100 : 0,
+          products: cat.products.map(p => ({
+            ...p,
+            percentage: totals.totalCurrentValue > 0 ? (p.value / totals.totalCurrentValue) * 100 : 0,
+          })),
         }))
-      })).filter(cat => cat.value > 0);
-      
+        .filter(cat => cat.value > 0);
+
       res.json({
-        totalCurrentValue,
-        categories: categoryData
+        totalInvested: totals.totalInvested,
+        totalCurrentValue: totals.totalCurrentValue,
+        totalReturn: totals.totalReturn,
+        totalReturnPercent: totals.totalReturnPercent,
+        categories,
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch investment breakdown" });
@@ -1774,6 +1733,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "active",
         maturityDate: null, // Can be calculated based on product term
       });
+
+      // Save an "actual" portfolio snapshot so all pages reflect the new investment immediately
+      await saveActualSnapshot(userId);
 
       res.json({
         investment,
