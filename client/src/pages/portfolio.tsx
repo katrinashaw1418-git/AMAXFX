@@ -639,11 +639,16 @@ export default function Portfolio() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <CardTitle>Performance by Period</CardTitle>
                 <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">
                   {hasAnyPeriodReturn ? 'Historical data' : 'Limited history'}
                 </span>
+                {yearHistory?.historySource === "historical_estimate" && (
+                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded">
+                    Uses estimated history
+                  </span>
+                )}
               </div>
               {hasAnyPeriodReturn && (
                 <div className="flex items-center space-x-4 text-sm">
