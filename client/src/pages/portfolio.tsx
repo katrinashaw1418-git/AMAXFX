@@ -80,6 +80,15 @@ export default function Portfolio() {
     },
   });
 
+  const { data: realMetrics, isLoading: metricsLoading } = useQuery({
+    queryKey: ["/api/portfolio/real-metrics"],
+    queryFn: async () => {
+      const res = await fetch("/api/portfolio/real-metrics");
+      if (!res.ok) throw new Error("Failed to fetch real metrics");
+      return res.json();
+    },
+  });
+
   // Advisor contact mutation
   const advisorMutation = useMutation({
     mutationFn: async (data: { message: string }) => {
@@ -720,13 +729,33 @@ export default function Portfolio() {
             <CardTitle>Risk Metrics</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <p className="text-sm font-medium text-amber-900">Risk metrics not yet available</p>
-              <p className="mt-1 text-sm text-amber-800">
-                Volatility, Sharpe ratio, maximum drawdown, and beta are shown only after they are
-                calculated from a real return history series. These figures will appear once sufficient
-                trading history has accumulated.
-              </p>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">YTD Return</p>
+                  {metricsLoading ? (
+                    <p className="text-sm font-bold text-gray-300">—</p>
+                  ) : realMetrics?.periodReturns?.ytd !== null && realMetrics !== undefined ? (
+                    <p className={`text-sm font-bold ${realMetrics.periodReturns.ytd! >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {realMetrics.periodReturns.ytd! >= 0 ? '+' : ''}{realMetrics.periodReturns.ytd!.toFixed(2)}%
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-400">—</p>
+                  )}
+                </div>
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">History</p>
+                  <p className="text-sm font-bold text-gray-700">
+                    {metricsLoading ? '—' : `${realMetrics?.snapshotCount ?? 0} snapshots`}
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <p className="text-xs font-medium text-amber-900">More history needed for full risk metrics</p>
+                <p className="text-xs text-amber-800 mt-1">
+                  Sharpe ratio, volatility, max drawdown, beta, and VaR will be computed once sufficient trading history has accumulated. No synthetic performance assumptions; estimated historical data is clearly labeled where used.
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
