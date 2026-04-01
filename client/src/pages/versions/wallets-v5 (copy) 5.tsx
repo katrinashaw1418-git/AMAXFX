@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,8 @@ import {
 } from "lucide-react";
 import { useFxRate } from "@/hooks/use-fx-rates";
 import { useWallets } from "@/hooks/use-portfolio";
+import { useVoiceNarration } from "@/hooks/use-voice-narration";
+import VoiceSettings from "@/components/voice/voice-settings";
 
 // Helper functions for exchange rate display
 const useExchangeRateDisplay = (fromCurrency: string, toCurrency: string) => {
@@ -205,13 +207,24 @@ function WalletValueDisplay({
   );
 }
 
-export default function WalletsV4() {
+export default function WalletsV5() {
   const { data: wallets = [], isLoading } = useWallets();
   const [fromCurrency, setFromCurrency] = useState("");
   const [toCurrency, setToCurrency] = useState("");
   const [amount, setAmount] = useState("");
   const [displayCurrency, setDisplayCurrency] = useState("USD"); // New state for balance display currency
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
 
+  // Voice narration hook
+  const {
+    narrateTransaction,
+    narrateBalance,
+    narrateSuccess,
+    narrateError,
+    narrateNavigation,
+    isSupported: isVoiceSupported,
+    settings: voiceSettings,
+  } = useVoiceNarration();
   const [selectedWallet, setSelectedWallet] = useState<any>(null);
   const [depositModalOpen, setDepositModalOpen] = useState(false);
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
@@ -223,6 +236,22 @@ export default function WalletsV4() {
   const [payerAccountNumber, setPayerAccountNumber] = useState("");
   const [payerBsb, setPayerBsb] = useState("");
   const { toast } = useToast();
+
+  // Voice narration on page load
+  useEffect(() => {
+    if (wallets.length > 0 && voiceSettings.autoNarrate) {
+      const totalBalance = wallets.reduce((sum, wallet) => {
+        return sum + parseFloat(wallet.balance || "0");
+      }, 0);
+
+      setTimeout(() => {
+        narrateNavigation(
+          `Your wallets page with ${wallets.length} currencies`,
+        );
+        narrateBalance(`Total portfolio value: ${totalBalance.toFixed(2)} USD`);
+      }, 500);
+    }
+  }, [wallets, voiceSettings.autoNarrate, narrateNavigation, narrateBalance]);
 
   // Exchange rate display helpers
   const exchangeRateText = useExchangeRateDisplay(fromCurrency, toCurrency);
@@ -277,10 +306,16 @@ export default function WalletsV4() {
     },
     onSuccess: (data) => {
       console.log("Transfer mutation onSuccess called with data:", data);
+      const successMessage = `Converted ${amount} ${fromCurrency} to ${data.convertedAmount.toFixed(2)} ${toCurrency}`;
+
       toast({
         title: "✅ Transfer Successful",
-        description: `Converted ${amount} ${fromCurrency} to ${data.convertedAmount.toFixed(2)} ${toCurrency}`,
+        description: successMessage,
       });
+
+      // Voice narration
+      narrateSuccess(successMessage);
+
       // Immediately invalidate and refetch wallet data
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
@@ -303,6 +338,9 @@ export default function WalletsV4() {
           "Insufficient balance",
         );
       }
+
+      // Voice narration
+      narrateError(errorMessage);
 
       toast({
         title: "Transfer Failed",
@@ -335,10 +373,16 @@ export default function WalletsV4() {
     },
     onSuccess: (data) => {
       console.log("Deposit mutation onSuccess called with data:", data);
+      const successMessage = `${amount} ${selectedWallet?.currency} has been added to your wallet`;
+
       toast({
         title: "✅ Deposit Successful",
-        description: `${amount} ${selectedWallet?.currency} has been added to your wallet`,
+        description: successMessage,
       });
+
+      // Voice narration
+      narrateSuccess(successMessage);
+
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
       setDepositModalOpen(false);
@@ -347,9 +391,14 @@ export default function WalletsV4() {
     },
     onError: (error: any) => {
       console.error("Deposit mutation onError called with error:", error);
+      const errorMessage = error.message || "Please try again later.";
+
+      // Voice narration
+      narrateError(`Deposit failed: ${errorMessage}`);
+
       toast({
         title: "Deposit Failed",
-        description: error.message || "Please try again later.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -378,10 +427,16 @@ export default function WalletsV4() {
     },
     onSuccess: (data) => {
       console.log("Withdraw mutation onSuccess called with data:", data);
+      const successMessage = `${amount} ${selectedWallet?.currency} has been withdrawn from your wallet`;
+
       toast({
         title: "✅ Withdrawal Successful",
-        description: `${amount} ${selectedWallet?.currency} has been withdrawn from your wallet`,
+        description: successMessage,
       });
+
+      // Voice narration
+      narrateSuccess(successMessage);
+
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
       setWithdrawModalOpen(false);
@@ -390,9 +445,14 @@ export default function WalletsV4() {
     },
     onError: (error: any) => {
       console.error("Withdraw mutation onError called with error:", error);
+      const errorMessage = error.message || "Please try again later.";
+
+      // Voice narration
+      narrateError(`Withdrawal failed: ${errorMessage}`);
+
       toast({
         title: "Withdrawal Failed",
-        description: error.message || "Please try again later.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -415,6 +475,9 @@ export default function WalletsV4() {
       return;
     }
 
+    // Voice narration
+    narrateTransaction("deposit", amount, selectedWallet.currency);
+
     console.log("Starting deposit mutation...");
     depositMutation.mutate({
       type: "deposit",
@@ -432,6 +495,9 @@ export default function WalletsV4() {
       });
       return;
     }
+
+    // Voice narration
+    narrateTransaction("withdraw", amount, selectedWallet.currency);
 
     withdrawMutation.mutate({
       type: "withdraw",
@@ -469,6 +535,13 @@ export default function WalletsV4() {
       });
       return;
     }
+
+    // Voice narration
+    narrateTransaction(
+      "transfer",
+      amount,
+      `${sourceCurrency} to ${toCurrency}`,
+    );
 
     console.log("Starting transfer mutation...");
     transferMutation.mutate({
@@ -528,10 +601,22 @@ export default function WalletsV4() {
   return (
     <div className="container mx-auto px-4 py-6 space-y-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Your Wallets - Version 4</h1>
-        <Badge variant="secondary" className="text-sm">
-          Multi-Currency Management
-        </Badge>
+        <h1 className="text-3xl font-bold">Your Wallets - Version 5</h1>
+        <div className="flex items-center gap-2">
+          {isVoiceSupported && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowVoiceSettings(true)}
+            >
+              <Volume2 className="w-4 h-4 mr-2" />
+              Voice Settings
+            </Button>
+          )}
+          <Badge variant="secondary" className="text-sm">
+            Multi-Currency Management
+          </Badge>
+        </div>
       </div>
 
       {/* Section 1: Your Balances */}
@@ -937,6 +1022,20 @@ export default function WalletsV4() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Voice Settings Modal */}
+      <Dialog open={showVoiceSettings} onOpenChange={setShowVoiceSettings}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Voice Settings</DialogTitle>
+            <DialogDescription>
+              Configure voice narration for transaction feedback and
+              accessibility
+            </DialogDescription>
+          </DialogHeader>
+          <VoiceSettings />
         </DialogContent>
       </Dialog>
     </div>
