@@ -19,8 +19,6 @@ import { useFxRate } from '@/hooks/use-fx-rates';
 import { useWallets } from '@/hooks/use-portfolio';
 import { useVoiceNarration } from '@/hooks/use-voice-narration';
 import VoiceSettings from '@/components/voice/voice-settings';
-import VirgoCXIntegration from '@/components/wallet/virgocx-integration';
-import VirgoCXDepositDetector from '@/components/wallet/virgocx-deposit-detector';
 
 // Exchange Rate Display Component for Transfer Modal
 function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrency: string; toCurrency: string; amount: string }) {
@@ -1088,10 +1086,6 @@ export default function Wallets() {
         </DialogContent>
       </Dialog>
 
-      {/* VirgoCX Deposits Detected Section */}
-      <div className="mt-8">
-        <VirgoCXDepositDetector userId={1} />
-      </div>
     </div>
   );
 }

@@ -40,7 +40,7 @@ Preferred communication style: Simple, everyday language.
 - **User Management**: KYC tracking, multi-tier user system, role-based access control.
 - **Multi-Currency Wallet**: Supports fiat (USD, CAD, EUR, GBP, AUD, HKD, SGD, VND and 50+ other global currencies), BTC, ETH, USDT, USDC. Features balance tracking, real-time updates, and cross-border remittance.
 - **Portfolio Management**: Unified view across fiat and crypto, performance tracking, asset allocation visualization, historical charts. Performance charts include connected dot visualization, color coding (red for portfolio, blue for benchmark), and clear legends. Asset allocation colors for Investment Products (purple), Crypto Assets (red), Stablecoins (light gray), Corporate Credit (light gray), Real Estate (brown), Cash Deposits (blue).
-- **FX & Crypto Trading**: Real-time exchange rates, FX trading, integrated crypto trading (via VirgoCX), order execution tracking. Crypto trading includes 100+ cryptocurrencies, market trends dashboard, and advanced trading interface.
+- **FX & Crypto Trading**: Real-time exchange rates, FX trading, order execution tracking.
 - **AI Advisory System**: Risk profiling, portfolio rebalancing, investment opportunity alerts, personalized insights.
 - **Compliance & KYC**: Multi-step KYC, document verification, risk assessment, jurisdiction-specific flows.
 - **Transaction Management**: Comprehensive history for deposits, withdrawals, exchanges, transfers; real-time status tracking.
@@ -52,7 +52,7 @@ Preferred communication style: Simple, everyday language.
 ### System Design Choices
 - **Monorepo Structure**: Client, server, and shared code within a single repository.
 - **Scalability**: Serverless PostgreSQL, stateless Express server, CDN-ready static assets, TanStack Query caching.
-- **Branding**: AMAX Wealth Platform for the main platform, VirgoCX specifically for the crypto trading section.
+- **Branding**: AMAX Wealth Platform.
 
 ## External Dependencies
 - **Database**: Neon PostgreSQL
@@ -60,5 +60,4 @@ Preferred communication style: Simple, everyday language.
 - **UI Components**: Radix UI
 - **Charts**: Recharts
 - **Date Utilities**: date-fns
-- **Crypto Exchange Integration**: VirgoCX API
 - **Planned Integrations**: Third-party KYC/AML services, institutional custody services (Fireblocks, BitGo), traditional banking rails.

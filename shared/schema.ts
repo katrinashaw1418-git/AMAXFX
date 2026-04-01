@@ -52,7 +52,7 @@ export const wallets = pgTable("wallets", {
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
-  type: text("type").notNull(), // deposit, withdrawal, exchange, transfer, crypto_buy, crypto_sell, virgocx_deposit, virgocx_withdrawal
+  type: text("type").notNull(), // deposit, withdrawal, exchange, transfer, crypto_buy, crypto_sell
   fromCurrency: text("from_currency"),
   toCurrency: text("to_currency"),
   amount: decimal("amount", { precision: 15, scale: 8 }).notNull(),
@@ -60,7 +60,7 @@ export const transactions = pgTable("transactions", {
   exchangeRate: decimal("exchange_rate", { precision: 15, scale: 8 }),
   status: text("status").notNull(), // pending, completed, failed, cancelled
   description: text("description").notNull(),
-  sourceExchange: text("source_exchange"), // virgocx, binance, coinbase, etc.
+  sourceExchange: text("source_exchange"), // binance, coinbase, etc.
   blockchainTxHash: text("blockchain_tx_hash"), // transaction hash for blockchain transfers
   createdAt: timestamp("created_at").defaultNow(),
 });
