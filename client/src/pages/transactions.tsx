@@ -79,6 +79,10 @@ export default function Transactions() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const { data: transactions, isLoading, error } = useTransactions();
 
+  // Compute summary stats from actual transaction data
+  const totalVolume = transactions?.reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0;
+  const totalFees = transactions?.reduce((sum, t) => sum + parseFloat(t.fee || '0'), 0) || 0;
+
   const filteredTransactions = transactions?.filter(transaction => {
     const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          transaction.fromCurrency?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -156,8 +160,8 @@ export default function Transactions() {
         <Card>
           <CardContent className="p-6">
             <h3 className="text-sm font-medium text-gray-500 mb-2">Total Volume</h3>
-            <p className="text-2xl font-bold">$127,482</p>
-            <p className="text-sm text-secondary mt-1">+12.5% vs last month</p>
+            <p className="text-2xl font-bold">${totalVolume.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+            <p className="text-sm text-gray-600 mt-1">All transactions</p>
           </CardContent>
         </Card>
         
@@ -174,8 +178,8 @@ export default function Transactions() {
         <Card>
           <CardContent className="p-6">
             <h3 className="text-sm font-medium text-gray-500 mb-2">Total Fees</h3>
-            <p className="text-2xl font-bold">$125.00</p>
-            <p className="text-sm text-gray-600 mt-1">This month</p>
+            <p className="text-2xl font-bold">${totalFees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p className="text-sm text-gray-600 mt-1">All transactions</p>
           </CardContent>
         </Card>
       </div>

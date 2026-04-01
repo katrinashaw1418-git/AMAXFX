@@ -671,7 +671,10 @@ export default function Portfolio() {
         {/* Risk Metrics */}
         <Card>
           <CardHeader>
-            <CardTitle>Risk Metrics</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle>Risk Metrics</CardTitle>
+              <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">Simulated estimate</span>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
