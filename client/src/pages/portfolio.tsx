@@ -375,9 +375,11 @@ export default function Portfolio() {
               {monthlyPnl >= 0 ? '+' : ''}${Math.round(monthlyPnl).toLocaleString()}
             </p>
             <p className="text-xs text-gray-600 mt-1">
-              {portfolio?.monthlyPnlSource === 'snapshot'
+              {portfolio?.monthlyPnlSource === 'actual'
                 ? `${monthlyReturn >= 0 ? '+' : ''}${monthlyReturn.toFixed(1)}% vs 30 days ago`
-                : `${monthlyReturn >= 0 ? '+' : ''}${monthlyReturn.toFixed(1)}% estimated from historical basis`}
+                : portfolio?.monthlyPnlSource === 'historical_estimate'
+                  ? `${monthlyReturn >= 0 ? '+' : ''}${monthlyReturn.toFixed(1)}% estimated from historical basis`
+                  : 'Insufficient history'}
             </p>
           </CardContent>
         </Card>
@@ -530,7 +532,9 @@ export default function Portfolio() {
             <div className="flex items-center gap-2 flex-wrap">
               <CardTitle>Portfolio History</CardTitle>
               <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">
-                Month-by-month from 1 Jan 2026
+                {perfChart?.chartSource === 'historical_plus_forecast'
+                  ? 'Historical data + forecast'
+                  : 'Historical estimate + forecast'}
               </span>
             </div>
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -722,7 +726,7 @@ export default function Portfolio() {
             <div className="flex items-center gap-2 flex-wrap">
               <CardTitle>Investment Value Since 1 Jan 2026</CardTitle>
               <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">
-                Month-by-month from 1 Jan 2026
+                Actual IRR projection
               </span>
             </div>
             <div className="flex items-center gap-4 text-xs text-muted-foreground">

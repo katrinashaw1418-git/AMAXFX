@@ -36,6 +36,7 @@ export const portfolioSnapshots = pgTable("portfolio_snapshots", {
   fiatValue: decimal("fiat_value", { precision: 15, scale: 2 }).notNull(),
   investmentValue: decimal("investment_value", { precision: 15, scale: 2 }).notNull(),
   snapshotDate: timestamp("snapshot_date").notNull(),
+  source: text("source").notNull().default("actual"), // "actual" | "historical_estimate"
   createdAt: timestamp("created_at").defaultNow(),
 });
 

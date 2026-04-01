@@ -52,6 +52,77 @@ function calculateInvestmentPerformance(
   };
 }
 
+// Shared FX conversion helper — tries direct rate then inverse
+async function convertToUsd(currency: string, amount: number): Promise<number> {
+  if (currency === "USD") return amount;
+  const direct = await storage.getFxRate(currency, "USD");
+  if (direct) return amount * parseFloat(direct.rate);
+  const inverse = await storage.getFxRate("USD", currency);
+  if (inverse) return amount / parseFloat(inverse.rate);
+  return 0;
+}
+
+// Portfolio valuation at any given date — uses current wallet balances + IRR projection for investments
+async function calculatePortfolioTotalsAtDate(userId: number, asOfDate: Date) {
+  const wallets = await storage.getWallets(userId);
+  const investments = await storage.getUserInvestments(userId);
+  let fiatValue = 0, cryptoValue = 0, stablecoinValue = 0, investmentValue = 0;
+  for (const wallet of wallets) {
+    const balance = parseFloat(wallet.balance);
+    if (wallet.walletType === "fiat") {
+      fiatValue += await convertToUsd(wallet.currency, balance);
+    } else if (wallet.currency === "USDT" || wallet.currency === "USDC") {
+      stablecoinValue += balance;
+    } else {
+      const rate = await storage.getFxRate(wallet.currency, "USD");
+      if (rate) cryptoValue += balance * parseFloat(rate.rate);
+    }
+  }
+  for (const inv of investments) {
+    const product = await storage.getInvestmentProduct(inv.productId);
+    if (!product) continue;
+    const investedAmount = parseFloat(inv.investedAmount);
+    const investmentDate = new Date(inv.investmentDate);
+    if (investmentDate <= asOfDate) {
+      const perf = calculateInvestmentPerformance(product, investedAmount, investmentDate, asOfDate);
+      investmentValue += perf.currentValue;
+    }
+  }
+  return { fiatValue, cryptoValue, stablecoinValue, investmentValue,
+           totalValue: fiatValue + cryptoValue + stablecoinValue + investmentValue };
+}
+
+type SnapshotSource = "actual" | "historical_estimate";
+
+// Backfill historical snapshots for every day in a date range that has no snapshot yet
+async function backfillPortfolioHistory(userId: number, startDate: Date, endDate: Date) {
+  const existing = await storage.getPortfolioSnapshots(userId, startDate, endDate);
+  const existingDays = new Set(
+    existing.map((s: any) => new Date(s.snapshotDate).toISOString().split("T")[0])
+  );
+  const cursor = new Date(startDate);
+  cursor.setHours(0, 0, 0, 0);
+  const end = new Date(endDate);
+  end.setHours(0, 0, 0, 0);
+  while (cursor <= end) {
+    const dayKey = cursor.toISOString().split("T")[0];
+    if (!existingDays.has(dayKey)) {
+      const totals = await calculatePortfolioTotalsAtDate(userId, new Date(cursor));
+      await storage.createPortfolioSnapshot({
+        userId,
+        snapshotDate: new Date(cursor),
+        totalValue: totals.totalValue.toFixed(2),
+        fiatValue: totals.fiatValue.toFixed(2),
+        cryptoValue: totals.cryptoValue.toFixed(2),
+        stablecoinValue: totals.stablecoinValue.toFixed(2),
+        investmentValue: totals.investmentValue.toFixed(2),
+        source: "historical_estimate" as SnapshotSource,
+      });
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
@@ -76,6 +147,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `);
       }
     }
+  }
+
+  // Migrate portfolio_snapshots to add 'source' column if missing, then backfill 90 days of history
+  {
+    const { db } = await import('./db');
+    const { sql: rawSql } = await import('drizzle-orm');
+    // Add column if it doesn't exist — idempotent
+    await db.execute(rawSql`
+      ALTER TABLE portfolio_snapshots
+      ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'actual'
+    `);
+    // Backfill 90 days so charts and period returns always have data to draw from
+    // Only runs for days with no snapshot — safe to call repeatedly
+    const backfillEnd = new Date();
+    backfillEnd.setHours(0, 0, 0, 0);
+    const backfillStart = new Date(backfillEnd);
+    backfillStart.setDate(backfillStart.getDate() - 90);
+    await backfillPortfolioHistory(1, backfillStart, backfillEnd);
   }
 
   // Get current user (hardcoded for demo)
@@ -178,46 +267,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           stablecoinValue: stablecoinValue.toFixed(2),
           investmentValue: investmentValue.toFixed(2),
           snapshotDate: new Date(),
+          source: "actual" as SnapshotSource,
         });
         allSnapshots = await storage.getPortfolioSnapshots(userId);
       }
 
-      // Monthly P&L: compare today vs the stored snapshot closest to 30 days ago.
-      // Falls back to IRR-based estimate when no prior snapshot exists yet.
+      // Monthly P&L: use the snapshot closest to 30 days ago.
+      // The startup backfill guarantees at least 90 days of snapshots exist.
+      // If the prior snapshot is "actual" it was a real measured point; otherwise it's a historical estimate.
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const priorSnapshot = allSnapshots
-        .filter(s => s.snapshotDate <= thirtyDaysAgo)
-        .sort((a, b) => b.snapshotDate.getTime() - a.snapshotDate.getTime())[0];
+        .filter(s => new Date(s.snapshotDate) <= thirtyDaysAgo)
+        .sort((a, b) => new Date(b.snapshotDate).getTime() - new Date(a.snapshotDate).getTime())[0];
 
       let monthlyPnl: number | null = null;
       let monthlyPnlPercent: number | null = null;
-      let monthlyPnlSource: 'snapshot' | 'historically_estimated' = 'snapshot';
-      let monthlyPnlMethod: 'actual_30_day_comparison' | 'historical_inference' = 'actual_30_day_comparison';
+      let monthlyPnlSource: 'actual' | 'historical_estimate' | 'insufficient_history' = 'insufficient_history';
+      let monthlyPnlMethod: 'actual_30_day_comparison' | 'historical_inference' = 'historical_inference';
 
       if (priorSnapshot) {
-        // Direct measurement: diff between today and the real stored 30-day-prior snapshot
         const priorValue = parseFloat(priorSnapshot.totalValue);
         monthlyPnl = totalValue - priorValue;
         monthlyPnlPercent = priorValue > 0 ? (monthlyPnl / priorValue) * 100 : 0;
-        monthlyPnlSource = 'snapshot';
-        monthlyPnlMethod = 'actual_30_day_comparison';
-      } else {
-        // No 30-day snapshot exists yet — infer from historical investment IRR + unchanged liquid assets
-        let priorInvestmentValue = 0;
-        for (const inv of investments) {
-          const product = await storage.getInvestmentProduct(inv.productId);
-          if (!product) continue;
-          const invDate = new Date(inv.investmentDate);
-          const evalDate = invDate > thirtyDaysAgo ? invDate : thirtyDaysAgo;
-          const perf = calculateInvestmentPerformance(product, parseFloat(inv.investedAmount), invDate, evalDate);
-          priorInvestmentValue += perf.currentValue;
-        }
-        const priorValue = fiatValue + cryptoValue + stablecoinValue + priorInvestmentValue;
-        monthlyPnl = totalValue - priorValue;
-        monthlyPnlPercent = priorValue > 0 ? (monthlyPnl / priorValue) * 100 : 0;
-        monthlyPnlSource = 'historically_estimated';
-        monthlyPnlMethod = 'historical_inference';
+        // Source inherits from the snapshot: if that snapshot was a real user measurement, it's "actual"
+        monthlyPnlSource = ((priorSnapshot as any).source === 'actual') ? 'actual' : 'historical_estimate';
+        monthlyPnlMethod = ((priorSnapshot as any).source === 'actual') ? 'actual_30_day_comparison' : 'historical_inference';
       }
 
       const portfolio = {
@@ -337,6 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           date: s.snapshotDate.toISOString().split('T')[0],
           value: Math.round(parseFloat(s.totalValue)),
           timestamp: s.snapshotDate.getTime(),
+          source: (s as any).source ?? 'actual',
         }));
       } else {
         // Only 0 or 1 snapshot — return whatever real data exists, no projection
@@ -344,6 +420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           date: s.snapshotDate.toISOString().split('T')[0],
           value: Math.round(parseFloat(s.totalValue)),
           timestamp: s.snapshotDate.getTime(),
+          source: (s as any).source ?? 'actual',
         }));
       }
 
@@ -352,6 +429,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const endValue = dataPoints[dataPoints.length - 1]?.value || currentTotalValue;
       const totalReturn = endValue - startValue;
       const totalReturnPercent = startValue > 0 ? (totalReturn / startValue) * 100 : 0;
+      const historySource = (dataPoints as any[]).some(d => d.source === 'historical_estimate')
+        ? 'historical_estimate' : 'actual';
 
       res.json({
         timeframe,
@@ -361,7 +440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalReturnPercent: totalReturnPercent.toFixed(2),
         startValue: startValue.toFixed(2),
         endValue: endValue.toFixed(2),
-        source: 'snapshots',
+        historySource,
         hasSufficientHistory: dataPoints.length >= 2,
       });
     } catch (error) {
@@ -466,11 +545,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         chartRows.push({ month: label, historical, projected });
       }
 
+      const hasEstimated = chartRows.some(r => r.historical !== null);
       res.json({
         timeframe,
         anchorDate: '2026-01-01',
         openingValue: Math.round(openingValue),
         projectionRate: `${(annualProjectionRate * 100).toFixed(0)}% p.a.`,
+        chartSource: snapshots.some((s: any) => s.source === 'historical_estimate')
+          ? 'historical_estimate_plus_forecast'
+          : 'historical_plus_forecast',
         data: chartRows,
       });
     } catch (e) {

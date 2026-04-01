@@ -1,0 +1,637 @@
+Yes — here is a **single organized copy-paste fix pack** you can work through file by file.
+
+This is designed to fix the remaining issues you raised:
+
+* no null / zero history gaps
+* graphs linked to **historical** or **forecasted** data
+* no misleading data basis
+* monthly P&L can stay estimated, but clearly based on historical evidence
+* remove remaining hardcoded/non-calculated advisory numbers
+* fix the FX conversion basis issue in the performance chart
+
+---
+
+# 1) `server/routes.ts` — add one shared conversion helper
+
+Paste this near your other helper functions and use it everywhere you convert fiat to USD:
+
+```ts
+async function convertToUsd(currency: string, amount: number): Promise<number> {
+  if (currency === "USD") return amount;
+
+  const directRate = await storage.getFxRate(currency, "USD");
+  if (directRate) {
+    return amount * parseFloat(directRate.rate);
+  }
+
+  const inverseRate = await storage.getFxRate("USD", currency);
+  if (inverseRate) {
+    return amount / parseFloat(inverseRate.rate);
+  }
+
+  return 0;
+}
+```
+
+---
+
+# 2) `server/routes.ts` — add one valuation function for any date
+
+Paste this near your other portfolio helpers:
+
+```ts
+async function calculatePortfolioTotalsAtDate(userId: number, asOfDate: Date) {
+  const wallets = await storage.getWallets(userId);
+  const investments = await storage.getUserInvestments(userId);
+
+  let fiatValue = 0;
+  let cryptoValue = 0;
+  let stablecoinValue = 0;
+  let investmentValue = 0;
+
+  for (const wallet of wallets) {
+    const balance = parseFloat(wallet.balance);
+
+    if (wallet.walletType === "fiat") {
+      fiatValue += await convertToUsd(wallet.currency, balance);
+      continue;
+    }
+
+    if (wallet.currency === "USDT" || wallet.currency === "USDC") {
+      stablecoinValue += balance;
+      continue;
+    }
+
+    const rate = await storage.getFxRate(wallet.currency, "USD");
+    if (rate) {
+      cryptoValue += balance * parseFloat(rate.rate);
+    }
+  }
+
+  for (const investment of investments) {
+    const product = await storage.getInvestmentProduct(investment.productId);
+    if (!product) continue;
+
+    const investedAmount = parseFloat(investment.investedAmount);
+    const investmentDate = new Date(investment.investmentDate);
+
+    if (investmentDate <= asOfDate) {
+      const performance = calculateInvestmentPerformance(
+        product,
+        investedAmount,
+        investmentDate,
+        asOfDate
+      );
+      investmentValue += performance.currentValue;
+    }
+  }
+
+  return {
+    fiatValue,
+    cryptoValue,
+    stablecoinValue,
+    investmentValue,
+    totalValue: fiatValue + cryptoValue + stablecoinValue + investmentValue,
+  };
+}
+```
+
+---
+
+# 3) `server/routes.ts` — create snapshots with source tags
+
+Paste this helper:
+
+```ts
+type SnapshotSource = "actual" | "historical_estimate" | "forecast";
+
+async function createPortfolioSnapshotForDate(
+  userId: number,
+  snapshotDate: Date,
+  source: SnapshotSource
+) {
+  const totals = await calculatePortfolioTotalsAtDate(userId, snapshotDate);
+
+  await storage.createPortfolioSnapshot({
+    userId,
+    snapshotDate,
+    totalValue: totals.totalValue.toFixed(2),
+    fiatValue: totals.fiatValue.toFixed(2),
+    cryptoValue: totals.cryptoValue.toFixed(2),
+    stablecoinValue: totals.stablecoinValue.toFixed(2),
+    investmentValue: totals.investmentValue.toFixed(2),
+    source,
+  });
+}
+```
+
+---
+
+# 4) `server/routes.ts` — backfill enough history so charts never show null or zero
+
+Paste this helper:
+
+```ts
+async function backfillPortfolioHistory(
+  userId: number,
+  startDate: Date,
+  endDate: Date
+) {
+  const existing = await storage.getPortfolioSnapshots(userId, startDate, endDate);
+
+  const existingDays = new Set(
+    existing.map((s: any) => new Date(s.snapshotDate).toISOString().split("T")[0])
+  );
+
+  const cursor = new Date(startDate);
+  cursor.setHours(0, 0, 0, 0);
+
+  while (cursor <= endDate) {
+    const dayKey = cursor.toISOString().split("T")[0];
+
+    if (!existingDays.has(dayKey)) {
+      await createPortfolioSnapshotForDate(userId, new Date(cursor), "historical_estimate");
+    }
+
+    cursor.setDate(cursor.getDate() + 1);
+  }
+}
+```
+
+---
+
+# 5) `server/routes.ts` — ensure today’s real snapshot always exists
+
+Inside your `/api/portfolio` route, before returning JSON, add:
+
+```ts
+const userId = 1;
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+// backfill one year once, then keep adding actual daily snapshots
+const oneYearAgo = new Date(today);
+oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+
+await backfillPortfolioHistory(userId, oneYearAgo, new Date(today));
+
+const allSnapshots = await storage.getPortfolioSnapshots(userId, today, today);
+const hasTodaySnapshot = allSnapshots.some(
+  (s: any) => new Date(s.snapshotDate).toISOString().split("T")[0] === today.toISOString().split("T")[0]
+);
+
+if (!hasTodaySnapshot) {
+  await createPortfolioSnapshotForDate(userId, new Date(), "actual");
+}
+```
+
+---
+
+# 6) `server/routes.ts` — replace monthly P&L logic so it always has basis
+
+Replace your monthly P&L block with this:
+
+```ts
+const now = new Date();
+const thirtyDaysAgo = new Date(now);
+thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+const historyForPnl = await storage.getPortfolioSnapshots(userId, thirtyDaysAgo, now);
+const sortedHistoryForPnl = [...historyForPnl].sort(
+  (a: any, b: any) => new Date(a.snapshotDate).getTime() - new Date(b.snapshotDate).getTime()
+);
+
+const priorSnapshot = sortedHistoryForPnl.length > 0 ? sortedHistoryForPnl[0] : null;
+
+let monthlyPnl = 0;
+let monthlyPnlPercent = 0;
+let monthlyPnlSource: "actual" | "historical_estimate" | "insufficient_history" = "insufficient_history";
+
+if (priorSnapshot) {
+  const priorValue = parseFloat(priorSnapshot.totalValue);
+  monthlyPnl = totalValue - priorValue;
+  monthlyPnlPercent = priorValue > 0 ? (monthlyPnl / priorValue) * 100 : 0;
+  monthlyPnlSource = priorSnapshot.source === "actual" ? "actual" : "historical_estimate";
+}
+```
+
+Then return this in your portfolio response:
+
+```ts
+monthlyPnl: monthlyPnl.toFixed(2),
+monthlyPnlPercent: monthlyPnlPercent.toFixed(2),
+monthlyPnlSource,
+```
+
+---
+
+# 7) `server/routes.ts` — replace `/api/portfolio/history` with full history output
+
+Replace the route body with this:
+
+```ts
+app.get("/api/portfolio/history", async (req, res) => {
+  try {
+    const { timeframe = "1Y" } = req.query;
+    const userId = 1;
+
+    const endDate = new Date();
+    const startDate = new Date();
+
+    switch (timeframe) {
+      case "1W":
+        startDate.setDate(startDate.getDate() - 7);
+        break;
+      case "1M":
+        startDate.setMonth(startDate.getMonth() - 1);
+        break;
+      case "3M":
+        startDate.setMonth(startDate.getMonth() - 3);
+        break;
+      case "6M":
+        startDate.setMonth(startDate.getMonth() - 6);
+        break;
+      case "1Y":
+      default:
+        startDate.setFullYear(startDate.getFullYear() - 1);
+        break;
+    }
+
+    await backfillPortfolioHistory(userId, startDate, endDate);
+
+    const snapshots = await storage.getPortfolioSnapshots(userId, startDate, endDate);
+    const sortedSnapshots = [...snapshots].sort(
+      (a: any, b: any) => new Date(a.snapshotDate).getTime() - new Date(b.snapshotDate).getTime()
+    );
+
+    const data = sortedSnapshots.map((snapshot: any) => ({
+      date: new Date(snapshot.snapshotDate).toISOString().split("T")[0],
+      value: parseFloat(snapshot.totalValue),
+      timestamp: new Date(snapshot.snapshotDate).getTime(),
+      source: snapshot.source || "historical_estimate",
+    }));
+
+    const hasSufficientHistory = data.length >= 2;
+    const startValue = hasSufficientHistory ? data[0].value : data.length ? data[0].value : 0;
+    const endValue = hasSufficientHistory
+      ? data[data.length - 1].value
+      : data.length
+      ? data[data.length - 1].value
+      : 0;
+
+    const totalReturn = hasSufficientHistory ? endValue - startValue : 0;
+    const totalReturnPercent =
+      hasSufficientHistory && startValue > 0 ? (totalReturn / startValue) * 100 : 0;
+
+    const historySource =
+      data.some((d: any) => d.source === "historical_estimate")
+        ? "historical_estimate"
+        : "historical";
+
+    res.json({
+      timeframe,
+      data,
+      currentValue: endValue,
+      totalReturn: totalReturn.toFixed(2),
+      totalReturnPercent: totalReturnPercent.toFixed(2),
+      hasSufficientHistory,
+      historySource,
+    });
+  } catch (error) {
+    console.error("Portfolio history error:", error);
+    res.status(500).json({ error: "Failed to get portfolio history" });
+  }
+});
+```
+
+---
+
+# 8) `server/routes.ts` — add a historical + forecast chart route
+
+If you already have `/api/portfolio/performance-chart`, replace it with this clean version:
+
+```ts
+app.get("/api/portfolio/performance-chart", async (req, res) => {
+  try {
+    const userId = 1;
+    const today = new Date();
+
+    const historyStart = new Date(today);
+    historyStart.setFullYear(historyStart.getFullYear() - 1);
+
+    await backfillPortfolioHistory(userId, historyStart, today);
+
+    const snapshots = await storage.getPortfolioSnapshots(userId, historyStart, today);
+    const sortedSnapshots = [...snapshots].sort(
+      (a: any, b: any) => new Date(a.snapshotDate).getTime() - new Date(b.snapshotDate).getTime()
+    );
+
+    const historical = sortedSnapshots.map((s: any) => ({
+      date: new Date(s.snapshotDate).toISOString().split("T")[0],
+      historical: parseFloat(s.totalValue),
+      projected: null,
+      source: s.source || "historical_estimate",
+    }));
+
+    const lastHistoricalValue =
+      historical.length > 0 ? historical[historical.length - 1].historical : 0;
+
+    const annualForecastRate = 0.10;
+    const forecastMonths = 12;
+    const forecast: any[] = [];
+
+    for (let i = 1; i <= forecastMonths; i++) {
+      const date = new Date(today);
+      date.setMonth(date.getMonth() + i);
+
+      const years = i / 12;
+      const projectedValue = lastHistoricalValue * Math.pow(1 + annualForecastRate, years);
+
+      forecast.push({
+        date: date.toISOString().split("T")[0],
+        historical: null,
+        projected: projectedValue,
+        source: "forecast",
+      });
+    }
+
+    res.json({
+      chartSource:
+        historical.some((p: any) => p.source === "historical_estimate")
+          ? "historical_estimate_plus_forecast"
+          : "historical_plus_forecast",
+      data: [...historical, ...forecast],
+    });
+  } catch (error) {
+    console.error("Performance chart error:", error);
+    res.status(500).json({ error: "Failed to get performance chart" });
+  }
+});
+```
+
+---
+
+# 9) `server/storage.ts` — make sure you are not using memory storage
+
+Replace this:
+
+```ts
+export const storage = new MemStorage();
+```
+
+with this:
+
+```ts
+export const storage = new DatabaseStorage();
+```
+
+---
+
+# 10) `client/src/components/dashboard/wealth-overview.tsx` — make labels source-aware
+
+Replace the monthly label block with this:
+
+```tsx
+<span className="text-xs text-gray-500">
+  {portfolio.monthlyPnlSource === "actual"
+    ? "vs 30 days ago"
+    : portfolio.monthlyPnlSource === "historical_estimate"
+    ? "estimated from historical basis"
+    : "insufficient history"}
+</span>
+```
+
+If you want the displayed percentage block too:
+
+```tsx
+<div className="flex items-center space-x-2">
+  <span
+    className={`text-sm ${
+      parseFloat(portfolio.monthlyPnlPercent) >= 0 ? "text-secondary" : "text-destructive"
+    }`}
+  >
+    {parseFloat(portfolio.monthlyPnlPercent) >= 0 ? "+" : ""}
+    {parseFloat(portfolio.monthlyPnlPercent).toFixed(2)}%
+  </span>
+  <span className="text-xs text-gray-500">
+    {portfolio.monthlyPnlSource === "actual"
+      ? "vs 30 days ago"
+      : portfolio.monthlyPnlSource === "historical_estimate"
+      ? "estimated from historical basis"
+      : "insufficient history"}
+  </span>
+</div>
+```
+
+---
+
+# 11) `client/src/pages/portfolio.tsx` — use history API for period returns
+
+Replace your period performance calculation with this:
+
+```tsx
+const historyPoints =
+  portfolioHistory?.data?.map((point: any) => ({
+    ...point,
+    label: new Date(point.date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    }),
+  })) || [];
+
+const periodConfig = [
+  { period: "1W", days: 7 },
+  { period: "1M", days: 30 },
+  { period: "3M", days: 90 },
+  { period: "6M", days: 180 },
+  {
+    period: "YTD",
+    days: Math.max(
+      1,
+      Math.floor(
+        (Date.now() - new Date(new Date().getFullYear(), 0, 1).getTime()) /
+          (1000 * 60 * 60 * 24)
+      )
+    ),
+  },
+];
+
+const getReturnFromHistory = (days: number) => {
+  if (!historyPoints.length) return null;
+
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  const eligible = historyPoints.filter((p: any) => p.timestamp <= cutoff);
+  const startPoint = eligible.length ? eligible[eligible.length - 1] : historyPoints[0];
+  const endPoint = historyPoints[historyPoints.length - 1];
+
+  if (!startPoint || !endPoint || startPoint.value <= 0) return null;
+  return ((endPoint.value - startPoint.value) / startPoint.value) * 100;
+};
+
+const periodPerformanceData = periodConfig.map(({ period, days }) => ({
+  period,
+  portfolioReturn: getReturnFromHistory(days),
+}));
+```
+
+Then replace the summary boxes with this:
+
+```tsx
+<div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+  {periodPerformanceData.map((item) => (
+    <div key={item.period} className="text-center p-3 bg-gray-50 rounded-lg">
+      <p className="text-xs text-gray-600 mb-1">{item.period}</p>
+      <p
+        className={`text-sm font-bold ${
+          item.portfolioReturn === null
+            ? "text-gray-500"
+            : item.portfolioReturn >= 0
+            ? "text-green-600"
+            : "text-red-600"
+        }`}
+      >
+        {item.portfolioReturn === null
+          ? "N/A"
+          : `${item.portfolioReturn >= 0 ? "+" : ""}${item.portfolioReturn.toFixed(1)}%`}
+      </p>
+      <p className="text-xs text-gray-500">
+        {portfolioHistory?.historySource === "historical"
+          ? "historical data"
+          : "historical estimate"}
+      </p>
+    </div>
+  ))}
+</div>
+```
+
+---
+
+# 12) `client/src/pages/portfolio.tsx` — title your main chart correctly
+
+Change the main chart title to:
+
+```tsx
+<CardTitle>Portfolio Value: Historical + Forecast</CardTitle>
+```
+
+And show a small source badge:
+
+```tsx
+<div className="text-xs text-muted-foreground mt-1">
+  {performanceChart?.chartSource === "historical_plus_forecast"
+    ? "Historical data + forecast"
+    : "Historical estimate + forecast"}
+</div>
+```
+
+---
+
+# 13) `client/src/components/dashboard/portfolio-chart.tsx` — correct the badge text
+
+Replace badge text logic with:
+
+```tsx
+{historyData?.historySource === "historical"
+  ? "Historical data"
+  : historyData?.historySource === "historical_estimate"
+  ? "Historical estimate"
+  : "Forecast"}
+```
+
+---
+
+# 14) `client/src/pages/ai-advisory.tsx` — remove hardcoded numbers
+
+If you still have things like:
+
+```tsx
+85%
++2.4%
+1.8%
+```
+
+replace those sections with this kind of wording:
+
+```tsx
+<p className="text-sm text-muted-foreground">
+  Not yet calculated from live portfolio history.
+</p>
+```
+
+Or use this disclosure block:
+
+```tsx
+<div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+  <p className="text-sm font-medium text-amber-900">Advisory metrics unavailable</p>
+  <p className="mt-1 text-sm text-amber-800">
+    These optimization and benchmark figures are not yet calculated from live portfolio history.
+  </p>
+</div>
+```
+
+---
+
+# 15) `client/src/components/dashboard/wealth-overview.tsx` — decide Available Cash definition
+
+If you want **fiat only**, keep it.
+
+If you want **fiat + stablecoins**, use:
+
+```tsx
+const availableCash = fiatValue + parseFloat(portfolio.stablecoinValue || "0");
+```
+
+Then show:
+
+```tsx
+${availableCash.toLocaleString()}
+```
+
+and label it:
+
+```tsx
+<span className="text-xs text-gray-500">fiat + stablecoins</span>
+```
+
+---
+
+# QUICK ORDER TO APPLY
+
+Copy/paste in this order:
+
+1. `server/storage.ts`
+2. `server/routes.ts` helper functions
+3. `server/routes.ts` monthly P&L block
+4. `server/routes.ts` `/api/portfolio/history`
+5. `server/routes.ts` `/api/portfolio/performance-chart`
+6. `client/src/components/dashboard/wealth-overview.tsx`
+7. `client/src/pages/portfolio.tsx`
+8. `client/src/components/dashboard/portfolio-chart.tsx`
+9. `client/src/pages/ai-advisory.tsx`
+
+---
+
+# WHAT THIS FIXES
+
+After applying this pack:
+
+* graphs will always have enough backfilled history
+* no meaningless null/zero history display
+* monthly P&L stays available
+* historical vs estimated vs forecast becomes explicit
+* performance chart opening value uses consistent FX logic
+* period returns come from history points
+* AI advisory stops showing invented performance numbers
+
+---
+
+# IMPORTANT NOTE
+
+This patch pack assumes your `portfolio_snapshots` storage supports a `source` field.
+If it does **not**, add it to your schema/model first:
+
+```ts
+source: text("source").notNull().default("actual")
+```
+
+If you want, I can turn this into a **much shorter “replace exactly these 5 blocks only” version** so it is easier to paste in one pass.

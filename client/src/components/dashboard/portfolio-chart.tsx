@@ -21,6 +21,7 @@ interface PerfChartResponse {
   anchorDate: string;
   openingValue: number;
   projectionRate: string;
+  chartSource: 'historical_plus_forecast' | 'historical_estimate_plus_forecast';
   data: ChartRow[];
 }
 
@@ -72,7 +73,9 @@ export default function PortfolioChart() {
             <div className="flex items-center gap-2 flex-wrap">
               <CardTitle>Portfolio Performance</CardTitle>
               <Badge variant="outline" className="text-xs text-muted-foreground font-normal">
-                From 1 Jan 2026
+                {data?.chartSource === 'historical_plus_forecast'
+                  ? 'Historical data + forecast'
+                  : 'Historical estimate + forecast'}
               </Badge>
             </div>
             {data && (
