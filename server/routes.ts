@@ -327,6 +327,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Portfolio performance chart — two lines (historical + projected) from Jan 1, 2026
+  app.get("/api/portfolio/performance-chart", async (req, res) => {
+    try {
+      const { timeframe = "1Y" } = req.query;
+      const userId = 1;
+      const ANCHOR = new Date("2026-01-01T00:00:00.000Z");
+      const today = new Date();
+
+      // Determine how many months to project
+      const totalMonths =
+        timeframe === "7Y" ? 84 :
+        timeframe === "3Y" ? 36 :
+        12; // 1Y default
+
+      // --- Compute opening portfolio value at Jan 1, 2026 ---
+      const wallets = await storage.getWallets(userId);
+      const investments = await storage.getUserInvestments(userId);
+
+      let openingFiat = 0, openingCrypto = 0, openingStable = 0, openingInvest = 0;
+
+      for (const wallet of wallets) {
+        const balance = parseFloat(wallet.balance);
+        if (wallet.walletType === 'fiat') {
+          if (wallet.currency === 'USD') {
+            openingFiat += balance;
+          } else {
+            const rate = await storage.getFxRate(wallet.currency, 'USD') ||
+                         await storage.getFxRate('USD', wallet.currency);
+            if (rate) openingFiat += wallet.currency !== 'USD'
+              ? balance * parseFloat(rate.rate)
+              : balance / parseFloat(rate.rate);
+          }
+        } else if (wallet.currency === 'USDT' || wallet.currency === 'USDC') {
+          openingStable += balance;
+        } else {
+          const rate = await storage.getFxRate(wallet.currency, 'USD');
+          if (rate) openingCrypto += balance * parseFloat(rate.rate);
+        }
+      }
+
+      for (const inv of investments) {
+        const product = await storage.getInvestmentProduct(inv.productId);
+        if (!product) continue;
+        const invDate = new Date(inv.investmentDate);
+        const perf = calculateInvestmentPerformance(
+          product,
+          parseFloat(inv.investedAmount),
+          invDate,
+          invDate <= ANCHOR ? ANCHOR : invDate
+        );
+        openingInvest += perf.currentValue;
+      }
+
+      const openingValue = openingFiat + openingCrypto + openingStable + openingInvest;
+
+      // --- Historical line: real snapshots from Jan 1, 2026 to today ---
+      const snapshots = await storage.getPortfolioSnapshots(userId, ANCHOR, today);
+      // Monthly bucket: latest snapshot per calendar month
+      const historyByMonth = new Map<string, number>();
+      for (const s of snapshots) {
+        const d = new Date(s.snapshotDate);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        historyByMonth.set(key, Math.round(parseFloat(s.totalValue)));
+      }
+
+      // --- Build merged monthly series ---
+      // Annual projection rate: 10% p.a. (blended market benchmark)
+      const annualProjectionRate = 0.10;
+      const monthlyRate = Math.pow(1 + annualProjectionRate, 1 / 12) - 1;
+
+      const chartRows: Array<{
+        month: string;
+        historical: number | null;
+        projected: number;
+      }> = [];
+
+      for (let m = 0; m <= totalMonths; m++) {
+        const d = new Date(ANCHOR);
+        d.setMonth(d.getMonth() + m);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        const projected = Math.round(openingValue * Math.pow(1 + monthlyRate, m));
+
+        let historical: number | null = null;
+        if (d <= today) {
+          if (m === 0) {
+            historical = Math.round(openingValue);
+          } else if (historyByMonth.has(key)) {
+            historical = historyByMonth.get(key)!;
+          }
+          // months between opening and today with no snapshot: leave null (gap in line)
+        }
+
+        chartRows.push({ month: label, historical, projected });
+      }
+
+      res.json({
+        timeframe,
+        anchorDate: '2026-01-01',
+        openingValue: Math.round(openingValue),
+        projectionRate: `${(annualProjectionRate * 100).toFixed(0)}% p.a.`,
+        data: chartRows,
+      });
+    } catch (e) {
+      console.error("Performance chart error:", e);
+      res.status(500).json({ error: "Failed to load performance chart" });
+    }
+  });
+
   // Investment value YTD — monthly points anchored from 2026-01-01
   app.get("/api/investments/history-ytd", async (req, res) => {
     try {

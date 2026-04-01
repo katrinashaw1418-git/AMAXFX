@@ -1,181 +1,183 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Legend,
+} from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
-type Timeframe = '1M' | '3M' | '1Y';
+type Timeframe = '1Y' | '3Y' | '7Y';
 
-interface HistoricalDataPoint {
-  date: string;
-  value: number;
-  timestamp: number;
+interface ChartRow {
+  month: string;
+  historical: number | null;
+  projected: number;
 }
 
-interface PortfolioHistoryResponse {
+interface PerfChartResponse {
   timeframe: string;
-  data: HistoricalDataPoint[];
-  currentValue: number;
-  totalReturn: string;
-  totalReturnPercent: string;
-  startValue: string;
-  endValue: string;
-  source: 'snapshots' | 'projected';
-  hasSufficientHistory: boolean;
+  anchorDate: string;
+  openingValue: number;
+  projectionRate: string;
+  data: ChartRow[];
+}
+
+const TIMEFRAMES: Timeframe[] = ['1Y', '3Y', '7Y'];
+
+function formatMoney(v: number) {
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}k`;
+  return `$${v.toFixed(0)}`;
+}
+
+// For 1Y show every month, 3Y every quarter, 7Y every 6 months
+function tickInterval(tf: Timeframe) {
+  if (tf === '7Y') return 5;
+  if (tf === '3Y') return 2;
+  return 0; // every month
 }
 
 export default function PortfolioChart() {
-  const [selectedTimeframe, setSelectedTimeframe] = useState<Timeframe>('1M');
-  
-  const { data: historyData, isLoading } = useQuery<PortfolioHistoryResponse>({
-    queryKey: ['/api/portfolio/history', selectedTimeframe],
+  const [selectedTimeframe, setSelectedTimeframe] = useState<Timeframe>('1Y');
+
+  const { data, isLoading } = useQuery<PerfChartResponse>({
+    queryKey: ['/api/portfolio/performance-chart', selectedTimeframe],
     queryFn: async () => {
-      const response = await fetch(`/api/portfolio/history?timeframe=${selectedTimeframe}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch portfolio history');
-      }
-      return response.json();
+      const res = await fetch(`/api/portfolio/performance-chart?timeframe=${selectedTimeframe}`);
+      if (!res.ok) throw new Error('Failed to fetch performance chart');
+      return res.json();
     },
   });
 
-  // Format chart data for display
-  const formatChartData = (data: HistoricalDataPoint[]) => {
-    if (!data || data.length === 0) return [];
-    
-    return data.map((point, index) => {
-      const date = new Date(point.date);
-      let label = '';
-      
-      if (selectedTimeframe === '1Y') {
-        // For 1Y, show month and year (monthly intervals)
-        label = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-      } else if (selectedTimeframe === '3M') {
-        // For 3M, show month and day
-        label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      } else {
-        // For 1M, show month and day
-        label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      }
-      
-      return {
-        date: label,
-        value: point.value,
-        fullDate: point.date
-      };
-    });
-  };
+  const lastHistorical = data?.data.reduce<number | null>((acc, row) =>
+    row.historical !== null ? row.historical : acc, null) ?? null;
 
-  const chartData = historyData ? formatChartData(historyData.data) : [];
-  const totalReturnPercent = historyData ? parseFloat(historyData.totalReturnPercent) : 0;
-  const isPositive = totalReturnPercent >= 0;
-  
-  // Get color based on timeframe
-  const getChartColor = () => {
-    switch (selectedTimeframe) {
-      case '3M':
-        return '#3b82f6'; // Blue
-      case '1Y':
-        return '#8b5cf6'; // Purple
-      case '1M':
-      default:
-        return isPositive ? "#22c55e" : "#ef4444"; // Green/Red for 1M
-    }
-  };
-  
-  const chartColor = getChartColor();
+  const projectedEnd = data?.data.at(-1)?.projected ?? null;
+
+  const returnVsProjected = lastHistorical !== null && data?.openingValue
+    ? ((lastHistorical - data.openingValue) / data.openingValue * 100).toFixed(2)
+    : null;
+
+  const totalProjectedReturn = projectedEnd && data?.openingValue
+    ? ((projectedEnd - data.openingValue) / data.openingValue * 100).toFixed(1)
+    : null;
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <CardTitle>Portfolio Performance</CardTitle>
               <Badge variant="outline" className="text-xs text-muted-foreground font-normal">
-                {historyData?.hasSufficientHistory
-                  ? 'Historical data'
-                  : historyData?.source === 'snapshots'
-                    ? 'Limited history'
-                    : 'Simulated estimate'}
+                From 1 Jan 2026
               </Badge>
             </div>
-            {historyData && (
-              <div className="flex items-center gap-4 mt-2">
-                <span className={`text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                  {isPositive ? '+' : ''}${historyData.totalReturn} ({isPositive ? '+' : ''}{historyData.totalReturnPercent}%)
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {selectedTimeframe}
-                </span>
+            {data && (
+              <div className="flex items-center gap-4 mt-2 flex-wrap">
+                {returnVsProjected !== null && (
+                  <span className={`text-sm font-medium ${parseFloat(returnVsProjected) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    Actual: {parseFloat(returnVsProjected) >= 0 ? '+' : ''}{returnVsProjected}%
+                  </span>
+                )}
+                {totalProjectedReturn !== null && (
+                  <span className="text-sm text-blue-600 font-medium">
+                    Projected by end: +{totalProjectedReturn}% ({data.projectionRate})
+                  </span>
+                )}
+                {data.openingValue > 0 && (
+                  <span className="text-sm text-muted-foreground">
+                    Opening: {formatMoney(data.openingValue)}
+                  </span>
+                )}
               </div>
             )}
           </div>
           <div className="flex items-center space-x-2">
-            {(['1M', '3M', '1Y'] as const).map((timeframe) => (
-              <Button 
-                key={timeframe}
-                size="sm" 
-                variant={selectedTimeframe === timeframe ? "default" : "outline"}
-                onClick={() => setSelectedTimeframe(timeframe)}
+            {TIMEFRAMES.map((tf) => (
+              <Button
+                key={tf}
+                size="sm"
+                variant={selectedTimeframe === tf ? 'default' : 'outline'}
+                onClick={() => setSelectedTimeframe(tf)}
                 disabled={isLoading}
               >
-                {timeframe}
+                {tf}
               </Button>
             ))}
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className={selectedTimeframe === '1Y' ? "h-80" : "h-64"}>
+        <div className="h-80">
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
-              <div className="text-sm text-muted-foreground">Loading portfolio data...</div>
+              <div className="text-sm text-muted-foreground">Loading portfolio data…</div>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart 
-                data={chartData}
-                margin={{
-                  top: 5,
-                  right: 30,
-                  left: 20,
-                  bottom: selectedTimeframe === '1Y' ? 50 : 5,
-                }}
+              <LineChart
+                data={data?.data ?? []}
+                margin={{ top: 5, right: 20, left: 20, bottom: 55 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                <XAxis 
-                  dataKey="date" 
+                <XAxis
+                  dataKey="month"
+                  stroke="#6B7280"
+                  fontSize={11}
+                  interval={tickInterval(selectedTimeframe)}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis
                   stroke="#6B7280"
                   fontSize={12}
-                  interval={selectedTimeframe === '1Y' ? 0 : 'preserveStartEnd'}
-                  tick={{ fontSize: selectedTimeframe === '1Y' ? 10 : 12 }}
-                  angle={selectedTimeframe === '1Y' ? -45 : 0}
-                  textAnchor={selectedTimeframe === '1Y' ? 'end' : 'middle'}
-                  height={selectedTimeframe === '1Y' ? 60 : 40}
+                  tickFormatter={formatMoney}
+                  width={65}
                 />
-                <YAxis 
-                  stroke="#6B7280"
-                  fontSize={12}
-                  tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`}
-                />
-                <Tooltip 
-                  formatter={(value: number) => [`$${value.toLocaleString()}`, 'Portfolio Value']}
-                  labelFormatter={(label) => `Date: ${label}`}
-                  labelStyle={{ color: '#374151' }}
-                  contentStyle={{ 
-                    backgroundColor: 'white', 
+                <Tooltip
+                  formatter={(value: number, name: string) => [
+                    `$${value.toLocaleString()}`,
+                    name === 'historical' ? 'Actual' : `Estimated (${data?.projectionRate ?? '10% p.a.'})`,
+                  ]}
+                  labelFormatter={(label) => `${label}`}
+                  contentStyle={{
+                    backgroundColor: 'white',
                     border: '1px solid #E5E7EB',
-                    borderRadius: '8px'
+                    borderRadius: '8px',
                   }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke={chartColor}
+                <Legend
+                  formatter={(value) =>
+                    value === 'historical'
+                      ? 'Actual (real snapshots)'
+                      : `Estimated (${data?.projectionRate ?? '10% p.a.'})`
+                  }
+                  wrapperStyle={{ paddingTop: 8 }}
+                />
+                {/* Projected (dashed, blue) — full timeframe */}
+                <Line
+                  type="monotone"
+                  dataKey="projected"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  strokeDasharray="6 3"
+                  dot={false}
+                  activeDot={{ r: 4, fill: '#3b82f6' }}
+                  connectNulls
+                />
+                {/* Historical (solid, red) — real data only */}
+                <Line
+                  type="monotone"
+                  dataKey="historical"
+                  stroke="#ef4444"
                   strokeWidth={3}
-                  dot={{ fill: chartColor, strokeWidth: 2, r: 3 }}
-                  activeDot={{ r: 5, fill: chartColor }}
+                  dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, fill: '#ef4444' }}
+                  connectNulls={false}
                 />
               </LineChart>
             </ResponsiveContainer>
