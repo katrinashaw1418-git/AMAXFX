@@ -13,8 +13,7 @@ import {
   Building2,
   Coins,
   User,
-  ChevronRight,
-  TrendingUp
+  ChevronRight
 } from "lucide-react";
 
 interface SidebarProps {
@@ -26,7 +25,6 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
   { name: "Wallets", href: "/wallets", icon: Wallet },
   { name: "FX Exchange", href: "/fx-exchange", icon: ArrowRightLeft },
-  { name: "Crypto Trading", href: "/crypto-trading", icon: TrendingUp },
   { name: "Portfolio", href: "/portfolio", icon: PieChart },
   { name: "Investments", href: "/investments", icon: Building2 },
   { name: "AI Advisory", href: "/ai-advisory", icon: Bot },
