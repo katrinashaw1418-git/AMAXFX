@@ -897,16 +897,34 @@ export default function AiAdvisory() {
                   )}
                 </div>
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-600 mb-1">History</p>
+                  <p className="text-xs text-gray-600 mb-1">Annualised (CAGR)</p>
+                  {metricsLoading ? (
+                    <p className="text-sm font-bold text-gray-300">—</p>
+                  ) : realMetrics?.cagr !== null && realMetrics !== undefined ? (
+                    <p className={`text-sm font-bold ${realMetrics.cagr! >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {realMetrics.cagr! >= 0 ? '+' : ''}{realMetrics.cagr!.toFixed(2)}%
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-400">—</p>
+                  )}
+                </div>
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">Snapshots</p>
                   <p className="text-sm font-bold text-gray-700">
-                    {metricsLoading ? '—' : `${realMetrics?.snapshotCount ?? 0} snapshots`}
+                    {metricsLoading ? '—' : realMetrics?.snapshotCount ?? 0}
+                  </p>
+                </div>
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">Risk-Free Rate</p>
+                  <p className="text-sm font-bold text-gray-700">
+                    {metricsLoading ? '—' : `${realMetrics?.riskFreeRate ?? 4.00}%`}
                   </p>
                 </div>
               </div>
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                <p className="text-xs font-medium text-amber-900">More history needed for full risk metrics</p>
+                <p className="text-xs font-medium text-amber-900">Statistical metrics awaiting actual market prices</p>
                 <p className="text-xs text-amber-800 mt-1">
-                  Sharpe ratio, volatility, max drawdown, beta, and VaR will be computed once sufficient trading history has accumulated. No synthetic performance assumptions; estimated historical data is clearly labeled where used.
+                  Volatility, Sharpe ratio, max drawdown, beta, and VaR require actual recorded market prices. Current history is estimated from compound-interest backfill — computing those metrics from smooth estimated data would produce near-zero volatility and misleadingly high Sharpe ratios. No synthetic performance assumptions; estimated history is clearly labeled where used.
                 </p>
               </div>
             </div>

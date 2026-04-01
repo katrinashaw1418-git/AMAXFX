@@ -770,22 +770,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return base > 0 ? (latestValue - base) / base * 100 : null;
       };
 
-      // CAGR guard: use simple return for very short periods (< ~5 weeks)
+      // Patch 1 — configurable risk-free rate (annualised).  Default: 4 % p.a.
+      const riskFreeAnnual = parseFloat(process.env.RISK_FREE_RATE || "0.04");
+
+      // YTD simple return (arithmetic, consistent framework — Patch 4)
       const ytdRaw = sorted.length >= 2
         ? (latestValue - parseFloat(sorted[0].totalValue)) / parseFloat(sorted[0].totalValue) * 100
         : null;
+
+      // Patch 2 — CAGR with stability guard.
+      // For very short periods (< 0.1 years ≈ 5 weeks) annualisation is unstable;
+      // fall back to the simple cumulative return instead.
+      let cagr: number | null = null;
+      if (sorted.length >= 2) {
+        const startVal  = parseFloat(sorted[0].totalValue);
+        const startDate = new Date(sorted[0].snapshotDate);
+        const years = (now.getTime() - startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+        if (startVal > 0 && latestValue > 0) {
+          cagr = years < 0.1
+            ? +((latestValue / startVal - 1) * 100).toFixed(2)           // simple return
+            : +(( Math.pow(latestValue / startVal, 1 / years) - 1) * 100).toFixed(2); // CAGR
+        }
+      }
+
+      // Statistical risk metrics (volatility, Sharpe, max drawdown) are intentionally
+      // withheld here: the 91 daily snapshots are backfilled estimated data that grows on
+      // a smooth compound curve, producing near-zero volatility and an artificially
+      // inflated Sharpe ratio — both are misleading.  These will be enabled once the
+      // platform records actual intra-day or end-of-day market prices.
+
+      // Row #18 — raise sufficiency threshold to ≥30 for statistical meaningfulness.
+      const hasSufficientHistory = sorted.length >= 30;
 
       res.json({
         diversificationScore: +diversificationScore.toFixed(1),
         expectedPortfolioReturn: +expectedPortfolioReturn.toFixed(2),
         rebalancingGap: +rebalancingGap.toFixed(1),
         historySource,
-        hasSufficientHistory: sorted.length >= 2,
+        hasSufficientHistory,
         snapshotCount: sorted.length,
+        cagr,
+        riskFreeRate: +(riskFreeAnnual * 100).toFixed(2),
         periodReturns: {
-          ytd:        ytdRaw !== null           ? +ytdRaw.toFixed(2)              : null,
-          oneMonth:   computePeriodReturn(1),
-          threeMonth: computePeriodReturn(3),
+          ytd:        ytdRaw !== null ? +ytdRaw.toFixed(2) : null,
+          oneMonth:   computePeriodReturn(1) !== null ? +computePeriodReturn(1)!.toFixed(2) : null,
+          threeMonth: computePeriodReturn(3) !== null ? +computePeriodReturn(3)!.toFixed(2) : null,
         },
         allocation: {
           fiat:       +(alloc.fiat       * 100).toFixed(1),
