@@ -304,9 +304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Base value: discount current value backward in time
         const baseValue = currentTotalValue / Math.pow(1 + dailyRate, daysFromEnd);
         
-        // Add a small deterministic oscillation (sine wave) to look natural — ±1.5% max
-        const noise = Math.sin(daysFromEnd * 0.3) * 0.015 * baseValue;
-        const value = Math.round(baseValue + noise);
+        const value = Math.round(baseValue);
         
         dataPoints.push({
           date: date.toISOString().split('T')[0],

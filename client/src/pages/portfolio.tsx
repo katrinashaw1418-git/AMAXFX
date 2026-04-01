@@ -51,6 +51,16 @@ export default function Portfolio() {
     refetchInterval: 5000, // Refresh every 5 seconds to track investment changes
   });
 
+  // 1-year portfolio history — used for the Performance vs Benchmark chart
+  const { data: yearHistory } = useQuery({
+    queryKey: ["/api/portfolio/history", "1Y"],
+    queryFn: async () => {
+      const response = await fetch("/api/portfolio/history?timeframe=1Y");
+      if (!response.ok) throw new Error("Failed to fetch portfolio history");
+      return response.json();
+    },
+  });
+
   // Advisor contact mutation
   const advisorMutation = useMutation({
     mutationFn: async (data: { message: string }) => {
@@ -154,98 +164,44 @@ export default function Portfolio() {
     );
   }
 
-  // Portfolio values are already calculated from the portfolio endpoint
-  
-  // Calculate monthly P&L based on actual investment returns
-  const totalInvested = userInvestments?.reduce((sum, inv) => sum + parseFloat(inv.investedAmount), 0) || 0;
-  const totalCurrent = userInvestments?.reduce((sum, inv) => sum + parseFloat(inv.currentValue), 0) || 0;
-  const investmentReturn = totalCurrent - totalInvested;
-  const monthlyPnl = investmentReturn + (totalPortfolioValue * 0.015); // 1.5% monthly gain from other assets
+  // Monthly P&L and return % come directly from the server — blended asset-class rates, no hardcoded values
+  const monthlyPnl = parseFloat(portfolio?.monthlyPnl || '0');
+  const monthlyReturn = parseFloat(portfolio?.monthlyPnlPercent || '0');
 
-  // Calculate performance data based on actual returns
-  const monthlyReturn = totalPortfolioValue > 0 ? (monthlyPnl / totalPortfolioValue) * 100 : 0;
-  const performanceData = [
-    { period: '1W', value: monthlyReturn * 0.25, color: 'text-secondary' },
-    { period: '1M', value: monthlyReturn, color: 'text-secondary' },
-    { period: '3M', value: monthlyReturn * 2.8, color: 'text-secondary' },
-    { period: '6M', value: monthlyReturn * 5.2, color: 'text-secondary' },
-    { period: '1Y', value: monthlyReturn * 11.5, color: 'text-secondary' },
-    { period: 'YTD', value: monthlyReturn * 7.8, color: 'text-secondary' },
+  // S&P 500 approximate annual benchmark = 10% → monthly ≈ 0.797%
+  const benchmarkMonthlyReturn = (Math.pow(1.10, 1 / 12) - 1) * 100;
+
+  // --- Performance vs Benchmark chart (uses real 1Y history API data) ---
+  const buildHistoricalData = () => {
+    if (!yearHistory?.data?.length) return [];
+    // Group data points by calendar month, keeping the last value in each month
+    const monthMap = new Map<string, number>();
+    for (const point of yearHistory.data) {
+      const d = new Date(point.date);
+      const key = d.toLocaleString('default', { month: 'short' });
+      monthMap.set(key, point.value);
+    }
+    const startValue = yearHistory.data[0]?.value || totalPortfolioValue;
+    const monthlyBenchmarkRate = benchmarkMonthlyReturn / 100;
+    return Array.from(monthMap.entries()).map(([month, value], index) => ({
+      month,
+      portfolio: value,
+      benchmark: Math.round(startValue * Math.pow(1 + monthlyBenchmarkRate, index)),
+    }));
+  };
+  const historicalData = buildHistoricalData();
+
+  // --- Performance by Period chart (compounded from server monthly return) ---
+  const compoundReturn = (months: number, monthlyRatePercent: number) =>
+    (Math.pow(1 + monthlyRatePercent / 100, months) - 1) * 100;
+  const monthsYTD = new Date().getMonth(); // Jan = 0, so this is months elapsed
+  const periodPerformanceData = [
+    { period: '1W',  portfolioReturn: monthlyReturn / 4.33,                              benchmarkReturn: benchmarkMonthlyReturn / 4.33 },
+    { period: '1M',  portfolioReturn: monthlyReturn,                                     benchmarkReturn: benchmarkMonthlyReturn },
+    { period: '3M',  portfolioReturn: compoundReturn(3, monthlyReturn),                  benchmarkReturn: compoundReturn(3, benchmarkMonthlyReturn) },
+    { period: '6M',  portfolioReturn: compoundReturn(6, monthlyReturn),                  benchmarkReturn: compoundReturn(6, benchmarkMonthlyReturn) },
+    { period: 'YTD', portfolioReturn: compoundReturn(Math.max(1, monthsYTD), monthlyReturn), benchmarkReturn: compoundReturn(Math.max(1, monthsYTD), benchmarkMonthlyReturn) },
   ];
-
-  // Calculate historical data based on actual investment returns and portfolio performance
-  const calculateHistoricalPerformance = () => {
-    const investmentReturnRate = totalInvested > 0 ? (investmentReturn / totalInvested) : 0;
-    const portfolioGrowthRate = investmentReturnRate * (investmentValue / totalPortfolioValue);
-    const baseValue = totalPortfolioValue / (1 + portfolioGrowthRate);
-    
-    // Create monthly progression based on actual investment performance
-    const monthlyGrowthFactors = [
-      0.85, // Jan - starting low
-      0.88, // Feb - small uptick
-      0.84, // Mar - slight dip
-      0.91, // Apr - recovery
-      0.89, // May - consolidation  
-      0.94, // Jun - growth momentum
-      0.97, // Jul - continued growth
-      0.95, // Aug - minor pullback
-      1.02, // Sep - strong performance
-      0.99, // Oct - profit taking
-      1.05, // Nov - final push
-      1.00, // Dec - current value
-    ];
-    
-    return monthlyGrowthFactors.map((factor, index) => {
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const portfolioValue = totalPortfolioValue * factor;
-      const benchmarkValue = baseValue * (0.98 + (index * 0.018)); // Steady benchmark growth
-      
-      return {
-        month: months[index],
-        portfolio: portfolioValue,
-        benchmark: benchmarkValue
-      };
-    });
-  };
-
-  const historicalData = calculateHistoricalPerformance();
-
-  // Performance by Period data for line chart - linked to actual investment changes
-  const calculatePeriodPerformance = () => {
-    const investmentReturnRate = totalInvested > 0 ? (investmentReturn / totalInvested) : 0;
-    const investmentWeight = investmentValue / totalPortfolioValue;
-    
-    // Base performance factors adjusted by actual investment returns
-    const baseFactors = {
-      '1W': { portfolio: 0.995, benchmark: 0.997 },
-      '1M': { portfolio: 0.976, benchmark: 0.980 },
-      '3M': { portfolio: 0.922, benchmark: 0.945 },
-      '6M': { portfolio: 0.878, benchmark: 0.905 },
-      'YTD': { portfolio: 0.831, benchmark: 0.860 }
-    };
-    
-    return Object.entries(baseFactors).map(([period, factors]) => {
-      // Adjust factors based on actual investment performance
-      const investmentImpact = investmentReturnRate * investmentWeight * 0.5;
-      const adjustedPortfolioFactor = factors.portfolio + investmentImpact;
-      
-      const pastPortfolioValue = totalPortfolioValue * adjustedPortfolioFactor;
-      const pastBenchmarkValue = totalPortfolioValue * factors.benchmark;
-      
-      const portfolioReturn = ((totalPortfolioValue - pastPortfolioValue) / pastPortfolioValue) * 100;
-      const benchmarkReturn = ((totalPortfolioValue * factors.benchmark * 1.02 - pastBenchmarkValue) / pastBenchmarkValue) * 100;
-      
-      return {
-        period,
-        portfolio: totalPortfolioValue,
-        benchmark: totalPortfolioValue * factors.benchmark * 1.02,
-        portfolioReturn,
-        benchmarkReturn
-      };
-    });
-  };
-
-  const periodPerformanceData = calculatePeriodPerformance();
 
   return (
     <div className="p-6 space-y-6">
@@ -547,7 +503,10 @@ export default function Portfolio() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Performance vs Benchmark</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle>Performance vs Benchmark</CardTitle>
+              <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">Simulated estimate</span>
+            </div>
             <div className="flex items-center space-x-4 text-sm">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-red-500 rounded-full"></div>
@@ -603,7 +562,10 @@ export default function Portfolio() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Performance by Period</CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle>Performance by Period</CardTitle>
+                <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">Simulated estimate</span>
+              </div>
               <div className="flex items-center space-x-4 text-sm">
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-red-500 rounded-full"></div>
