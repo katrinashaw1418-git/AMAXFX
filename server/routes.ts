@@ -327,6 +327,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Investment value YTD — monthly points anchored from 2026-01-01
+  app.get("/api/investments/history-ytd", async (req, res) => {
+    try {
+      const userId = 1;
+      const startDate = new Date("2026-01-01T00:00:00.000Z");
+      const endDate = new Date();
+
+      // Fetch all snapshots in the YTD window
+      const snapshots = await storage.getPortfolioSnapshots(userId, startDate, endDate);
+
+      // Compute the opening investment value as of Jan 1, 2026
+      const investments = await storage.getUserInvestments(userId);
+      let openingInvestmentValue = 0;
+      for (const investment of investments) {
+        const product = await storage.getInvestmentProduct(investment.productId);
+        if (!product) continue;
+        const investedAmount = parseFloat(investment.investedAmount);
+        const investmentDate = new Date(investment.investmentDate);
+        if (investmentDate <= startDate) {
+          const perf = calculateInvestmentPerformance(product, investedAmount, investmentDate, startDate);
+          openingInvestmentValue += perf.currentValue;
+        }
+      }
+
+      // Build monthly map: latest snapshot per calendar month (key = "YYYY-MM")
+      const monthMap = new Map<string, { date: string; value: number; timestamp: number }>();
+      for (const s of snapshots) {
+        const d = new Date(s.snapshotDate);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        monthMap.set(key, {
+          date: d.toISOString().split('T')[0],
+          value: Math.round(parseFloat(s.investmentValue)),
+          timestamp: d.getTime(),
+        });
+      }
+
+      // Sort monthly points chronologically
+      let data = Array.from(monthMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+
+      // Prepend the Jan 1 opening baseline
+      data.unshift({
+        date: '2026-01-01',
+        value: Math.round(openingInvestmentValue),
+        timestamp: startDate.getTime(),
+      });
+
+      const startValue = data.length ? data[0].value : 0;
+      const endValue = data.length ? data[data.length - 1].value : 0;
+      const totalReturn = endValue - startValue;
+      const totalReturnPercent = startValue > 0 ? (totalReturn / startValue) * 100 : 0;
+
+      res.json({
+        startDate: '2026-01-01',
+        frequency: 'monthly',
+        source: 'snapshots',
+        hasSufficientHistory: data.length >= 2,
+        data,
+        startValue: startValue.toFixed(2),
+        endValue: endValue.toFixed(2),
+        totalReturn: totalReturn.toFixed(2),
+        totalReturnPercent: totalReturnPercent.toFixed(2),
+      });
+    } catch (e) {
+      console.error("Investment YTD history error:", e);
+      res.status(500).json({ error: "Failed to load investment history" });
+    }
+  });
+
   // Get portfolio asset allocation
   app.get("/api/portfolio/allocation", async (req, res) => {
     try {

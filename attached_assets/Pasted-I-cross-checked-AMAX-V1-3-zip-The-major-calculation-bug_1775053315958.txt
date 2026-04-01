@@ -1,0 +1,41 @@
+I cross-checked AMAX-V1 (3).zip. The major calculation bugs are fixed. The remaining issues are mostly presentation accuracy and a few data-handling edge cases.
+
+Verified remaining errors
+#	File / Area	Error	Why it is still an issue	Fix
+1	client/src/pages/portfolio.tsx	Badge text is wrong: both “Portfolio History” and “Performance by Period” still show Historical estimate	Your history API now returns source: 'snapshots', so this wording is misleading	Change the badge to Historical data when yearHistory?.source === 'snapshots', and Limited history when there are fewer than 2 points
+2	client/src/pages/portfolio.tsx	Static badge logic	The badge is hardcoded text, not tied to hasSufficientHistory	Use the same conditional logic already used in dashboard/portfolio-chart.tsx
+3	client/src/pages/portfolio.tsx	Monthly bucketing can overwrite one month with another	buildHistoricalData() uses month name only (Jan, Feb, etc.) as the key, so a 1-year range spanning the same month twice can collapse values	Use a year-month key like 2026-01, and format the display label separately
+4	client/src/pages/portfolio.tsx	History chart is no longer “estimate”, but the UI still says it is	The chart now uses stored snapshots only	Update label text to match actual data basis
+5	client/src/pages/portfolio.tsx	Performance by Period can show a return even with only one snapshot	getReturnFromHistory() falls back to the first point when no earlier cutoff point exists, which can make the number look more meaningful than it is	Gate the chart and summary values on yearHistory?.hasSufficientHistory; otherwise show N/A or Insufficient history
+6	client/src/components/dashboard/wealth-overview.tsx	Label says vs 30 days ago, but value may be zero due to insufficient history	This is not mathematically wrong, but it can confuse users because 0.00 may look like a real measured return	When monthlyPnlSource !== 'snapshots', show Insufficient history instead of a normal performance label/value
+7	server/routes.ts /api/portfolio/history	Empty-history response still reports source: 'snapshots'	That is technically true, but not very informative when there are zero points	Return hasSufficientHistory: false as you do now, and ideally also add `historyStatus: 'empty'
+8	client/src/pages/ai-advisory.tsx	Page still contains synthetic/placeholder disclosures only	Not a calculation bug, but if this page is user-facing, parts of the analytics experience are intentionally disabled	Keep as-is or hide the sections completely until real history exists
+What is fixed
+Area	Status
+Compound growth in investment valuation	Fixed
+Sine-wave removed from core valuation	Fixed
+Fake historical snapshot seeding	Fixed
+Fake projected history fallback	Fixed
+Monthly P&L modeled fallback	Fixed
+FX conversion for wallets	Fixed
+Investment breakdown uses current value	Fixed
+Database storage enabled	Fixed
+Available Cash formula	Fixed
+Hardcoded dashboard percentages	Fixed
+Bottom line
+
+There are no major remaining calculation bugs in this ZIP from what I verified in code.
+
+The remaining errors are mainly:
+
+wrong UI labels
+insufficient-history handling
+one chart bucketing issue in portfolio.tsx
+Highest-priority fixes
+Priority	Fix
+High	Fix Historical estimate badges in portfolio.tsx
+High	Fix month bucketing to use year-month keys
+Medium	Show Insufficient history instead of normal return text when there is not enough data
+Low	Add a clearer history status field from the API
+
+If you want, I can write the exact code patch for these remaining issues in one block.

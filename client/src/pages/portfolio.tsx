@@ -50,13 +50,23 @@ export default function Portfolio() {
     refetchInterval: 5000, // Refresh every 5 seconds to track investment changes
   });
 
-  // 1-year portfolio history — used for the Performance vs Benchmark chart
+  // 1-year portfolio history — used for the Portfolio History and Performance by Period charts
   const { data: yearHistory } = useQuery({
     queryKey: ["/api/portfolio/history", "1Y"],
     queryFn: async () => {
       const response = await fetch("/api/portfolio/history?timeframe=1Y");
       if (!response.ok) throw new Error("Failed to fetch portfolio history");
       return response.json();
+    },
+  });
+
+  // YTD investment history — monthly points anchored from 1 Jan 2026
+  const { data: investmentYtdHistory } = useQuery({
+    queryKey: ["/api/investments/history-ytd"],
+    queryFn: async () => {
+      const res = await fetch("/api/investments/history-ytd");
+      if (!res.ok) throw new Error("Failed to fetch investment YTD history");
+      return res.json();
     },
   });
 
@@ -167,21 +177,24 @@ export default function Portfolio() {
   const monthlyPnl = parseFloat(portfolio?.monthlyPnl || '0');
   const monthlyReturn = parseFloat(portfolio?.monthlyPnlPercent || '0');
 
-  // --- Portfolio History chart (real snapshot data, no modeled benchmark) ---
+  // --- Portfolio History chart (real snapshot data) ---
+  // Uses YYYY-MM keys to avoid collapsing Jan 2025 and Jan 2026 into the same bucket
   const buildHistoricalData = () => {
     if (!yearHistory?.data?.length) return [];
-    const monthMap = new Map<string, number>();
+    const monthMap = new Map<string, { label: string; value: number }>();
     for (const point of yearHistory.data) {
       const d = new Date(point.date);
-      const key = d.toLocaleString('default', { month: 'short' });
-      monthMap.set(key, point.value);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleString('default', { month: 'short', year: '2-digit' });
+      monthMap.set(key, { label, value: point.value });
     }
-    return Array.from(monthMap.entries()).map(([month, value]) => ({
-      month,
+    return Array.from(monthMap.values()).map(({ label, value }) => ({
+      month: label,
       portfolio: value,
     }));
   };
   const historicalData = buildHistoricalData();
+  const hasSufficientYearHistory = yearHistory?.hasSufficientHistory === true;
 
   // --- Performance by Period chart (returns computed from real snapshot history) ---
   const historyPoints = yearHistory?.data || [];
@@ -202,17 +215,26 @@ export default function Portfolio() {
     },
   ];
   const getReturnFromHistory = (days: number) => {
-    if (!historyPoints.length) return 0;
+    if (!historyPoints.length) return null;
     const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
     const eligible = historyPoints.filter((p: any) => p.timestamp <= cutoff);
-    const startPoint = eligible.length ? eligible[eligible.length - 1] : historyPoints[0];
+    // Only compute if we have a real prior point (not just falling back to the first point)
+    if (!eligible.length) return null;
+    const startPoint = eligible[eligible.length - 1];
     const endPoint = historyPoints[historyPoints.length - 1];
-    if (!startPoint || !endPoint || startPoint.value <= 0) return 0;
+    if (!startPoint || !endPoint || startPoint.value <= 0) return null;
     return ((endPoint.value - startPoint.value) / startPoint.value) * 100;
   };
   const periodPerformanceData = periodConfig.map(({ period, days }) => ({
     period,
     portfolioReturn: getReturnFromHistory(days),
+  }));
+  const hasAnyPeriodReturn = periodPerformanceData.some(d => d.portfolioReturn !== null);
+
+  // --- Investment YTD chart data transform ---
+  const investmentMonthlyData = (investmentYtdHistory?.data || []).map((p: any) => ({
+    month: new Date(p.date).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+    value: p.value,
   }));
 
   return (
@@ -519,7 +541,9 @@ export default function Portfolio() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CardTitle>Portfolio History</CardTitle>
-              <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">Historical estimate</span>
+              <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">
+                {hasSufficientYearHistory ? 'Historical data' : 'Limited history'}
+              </span>
             </div>
             <div className="flex items-center space-x-4 text-sm">
               <div className="flex items-center space-x-2">
@@ -565,53 +589,71 @@ export default function Portfolio() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CardTitle>Performance by Period</CardTitle>
-                <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">Historical estimate</span>
+                <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">
+                  {hasAnyPeriodReturn ? 'Historical data' : 'Limited history'}
+                </span>
               </div>
-              <div className="flex items-center space-x-4 text-sm">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span>Your Portfolio</span>
+              {hasAnyPeriodReturn && (
+                <div className="flex items-center space-x-4 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <span>Your Portfolio</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={periodPerformanceData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                  <XAxis dataKey="period" stroke="#6B7280" fontSize={12} />
-                  <YAxis stroke="#6B7280" fontSize={12} tickFormatter={(value) => `${value.toFixed(1)}%`} />
-                  <Tooltip 
-                    formatter={(value: number) => [
-                      `${value.toFixed(2)}%`,
-                      'Your Portfolio Return'
-                    ]}
-                    contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="portfolioReturn" 
-                    stroke="#ef4444" 
-                    strokeWidth={3}
-                    dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, fill: "#ef4444" }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-            
-            {/* Performance Summary Table */}
-            <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {periodPerformanceData.map((item) => (
-                <div key={item.period} className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-600 mb-1">{item.period}</p>
-                  <p className={`text-sm font-bold ${item.portfolioReturn > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {item.portfolioReturn > 0 ? '+' : ''}{item.portfolioReturn.toFixed(1)}%
-                  </p>
+            {hasAnyPeriodReturn ? (
+              <>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={periodPerformanceData.filter(d => d.portfolioReturn !== null)}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                      <XAxis dataKey="period" stroke="#6B7280" fontSize={12} />
+                      <YAxis stroke="#6B7280" fontSize={12} tickFormatter={(value) => `${value.toFixed(1)}%`} />
+                      <Tooltip 
+                        formatter={(value: number) => [
+                          `${value.toFixed(2)}%`,
+                          'Your Portfolio Return'
+                        ]}
+                        contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="portfolioReturn" 
+                        stroke="#ef4444" 
+                        strokeWidth={3}
+                        dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
+                        activeDot={{ r: 6, fill: "#ef4444" }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
-              ))}
-            </div>
+                <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                  {periodPerformanceData.map((item) => (
+                    <div key={item.period} className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="text-xs text-gray-600 mb-1">{item.period}</p>
+                      {item.portfolioReturn !== null ? (
+                        <p className={`text-sm font-bold ${item.portfolioReturn > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {item.portfolioReturn > 0 ? '+' : ''}{item.portfolioReturn.toFixed(1)}%
+                        </p>
+                      ) : (
+                        <p className="text-sm text-gray-400">N/A</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm font-medium text-amber-900">Insufficient history</p>
+                <p className="mt-1 text-sm text-amber-800">
+                  Period returns will appear as real daily snapshots accumulate. At least two snapshots
+                  separated by the relevant time window are needed for each period.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -632,6 +674,60 @@ export default function Portfolio() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Investment Value Since 1 Jan 2026 */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <CardTitle>Investment Value Since 1 Jan 2026</CardTitle>
+            <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">
+              {investmentYtdHistory?.hasSufficientHistory ? 'Historical data' : 'Limited history'}
+            </span>
+          </div>
+          {investmentYtdHistory?.hasSufficientHistory && (
+            <p className="text-sm text-muted-foreground mt-1">
+              YTD return:{' '}
+              <span className={parseFloat(investmentYtdHistory.totalReturnPercent) >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                {parseFloat(investmentYtdHistory.totalReturnPercent) >= 0 ? '+' : ''}
+                {parseFloat(investmentYtdHistory.totalReturnPercent).toFixed(2)}%
+              </span>
+            </p>
+          )}
+        </CardHeader>
+        <CardContent>
+          {investmentYtdHistory?.hasSufficientHistory ? (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={investmentMonthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                  <XAxis dataKey="month" stroke="#6B7280" fontSize={12} />
+                  <YAxis stroke="#6B7280" fontSize={12} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip
+                    formatter={(value: number) => [`$${value.toLocaleString()}`, 'Investment Value']}
+                    contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#ef4444"
+                    strokeWidth={3}
+                    dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: '#ef4444' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm font-medium text-amber-900">Accumulating history</p>
+              <p className="mt-1 text-sm text-amber-800">
+                The investment chart is anchored from 1 Jan 2026 and shows one point per month.
+                It will display as real monthly snapshots accumulate from today forward.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Advisor Contact Modal */}
       <Dialog open={advisorModalOpen} onOpenChange={setAdvisorModalOpen}>
