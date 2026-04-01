@@ -66,6 +66,7 @@ export class MemStorage implements IStorage {
   private aiRecommendations: Map<number, AiRecommendation[]> = new Map();
   private investmentProducts: Map<number, InvestmentProduct> = new Map();
   private userInvestments: Map<number, UserInvestment[]> = new Map();
+  private portfolioSnapshotsStore: Map<number, PortfolioSnapshot[]> = new Map();
   private currentUserId = 1;
   private currentPortfolioId = 1;
   private currentWalletId = 12;
@@ -74,6 +75,7 @@ export class MemStorage implements IStorage {
   private currentAiRecommendationId = 1;
   private currentInvestmentProductId = 1;
   private currentUserInvestmentId = 1;
+  private currentSnapshotId = 1;
 
   constructor() {
     this.initializeData();
@@ -3184,89 +3186,21 @@ export class MemStorage implements IStorage {
     return undefined;
   }
 
-  // Portfolio Snapshots - in memory, we'll calculate from transactions
+  // Portfolio Snapshots — proper in-memory storage
   async getPortfolioSnapshots(userId: number, startDate?: Date, endDate?: Date): Promise<PortfolioSnapshot[]> {
-    // For MemStorage, generate historical data based on actual transactions
-    const transactions = this.transactions.get(userId) || [];
-    const snapshots: PortfolioSnapshot[] = [];
-    
-    // Create snapshots based on transaction dates
-    const transactionDates = transactions
-      .map(t => new Date(t.createdAt!))
-      .sort((a, b) => a.getTime() - b.getTime());
-    
-    if (transactionDates.length === 0) {
-      return [];
-    }
-    
-    // Calculate portfolio values at different points in time
-    let cumulativeValue = 0;
-    let id = 1;
-    
-    for (const date of transactionDates) {
-      // Skip if outside date range
-      if (startDate && date < startDate) continue;
-      if (endDate && date > endDate) continue;
-      
-      // Find all transactions up to this date
-      const transactionsUpToDate = transactions.filter(t => 
-        new Date(t.createdAt!) <= date
-      );
-      
-      // Calculate cumulative portfolio value
-      let fiatValue = 0;
-      let cryptoValue = 0;
-      let stablecoinValue = 0;
-      let investmentValue = 0;
-      
-      // Sum up deposits and subtract withdrawals
-      for (const transaction of transactionsUpToDate) {
-        if (transaction.status !== 'completed') continue;
-        
-        const amount = parseFloat(transaction.amount);
-        
-        if (transaction.type === 'deposit') {
-          if (transaction.toCurrency === 'USD' || transaction.toCurrency === 'CAD' || 
-              transaction.toCurrency === 'EUR' || transaction.toCurrency === 'GBP') {
-            fiatValue += amount;
-          } else if (transaction.toCurrency === 'USDT' || transaction.toCurrency === 'USDC') {
-            stablecoinValue += amount;
-          } else if (transaction.toCurrency === 'BTC' || transaction.toCurrency === 'ETH') {
-            // Convert crypto to USD at time of snapshot
-            const rate = await this.getFxRate(transaction.toCurrency!, 'USD');
-            if (rate) {
-              cryptoValue += amount * parseFloat(rate.rate);
-            }
-          }
-        }
-        // For exchanges, adjust values accordingly
-        else if (transaction.type === 'exchange') {
-          // This is handled by the individual currency calculations above
-        }
-      }
-      
-      const totalValue = fiatValue + cryptoValue + stablecoinValue + investmentValue;
-      
-      snapshots.push({
-        id: id++,
-        userId,
-        totalValue: totalValue.toFixed(2),
-        cryptoValue: cryptoValue.toFixed(2),
-        stablecoinValue: stablecoinValue.toFixed(2),
-        fiatValue: fiatValue.toFixed(2),
-        investmentValue: investmentValue.toFixed(2),
-        snapshotDate: date,
-        createdAt: date,
-      });
-    }
-    
-    return snapshots;
+    const all = this.portfolioSnapshotsStore.get(userId) || [];
+    return all
+      .filter(s => {
+        if (startDate && s.snapshotDate < startDate) return false;
+        if (endDate && s.snapshotDate > endDate) return false;
+        return true;
+      })
+      .sort((a, b) => a.snapshotDate.getTime() - b.snapshotDate.getTime());
   }
 
   async createPortfolioSnapshot(insertSnapshot: InsertPortfolioSnapshot): Promise<PortfolioSnapshot> {
-    // For MemStorage, we don't actually store snapshots since they're calculated from transactions
-    return {
-      id: Date.now(), // Simple ID generation
+    const snapshot: PortfolioSnapshot = {
+      id: this.currentSnapshotId++,
       userId: insertSnapshot.userId,
       totalValue: insertSnapshot.totalValue,
       cryptoValue: insertSnapshot.cryptoValue,
@@ -3276,6 +3210,10 @@ export class MemStorage implements IStorage {
       snapshotDate: insertSnapshot.snapshotDate,
       createdAt: new Date(),
     };
+    const existing = this.portfolioSnapshotsStore.get(insertSnapshot.userId) || [];
+    existing.push(snapshot);
+    this.portfolioSnapshotsStore.set(insertSnapshot.userId, existing);
+    return snapshot;
   }
 }
 

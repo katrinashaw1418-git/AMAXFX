@@ -135,23 +135,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate total portfolio value including stablecoins
       const totalValue = fiatValue + cryptoValue + stablecoinValue + investmentValue;
       
-      // Monthly P&L: derive "previous month" value using the same blended asset-class
-      // return rates used in the portfolio history chart — consistent across endpoints.
-      const fiatMonthlyRate       = 0.003;  // 0.3%/month  — cash/fiat savings
-      const stablecoinMonthlyRate = 0.004;  // 0.4%/month  — stablecoin yield
-      const cryptoMonthlyRate     = 0.030;  // 3.0%/month  — crypto assets
-      const investmentMonthlyRate = 0.010;  // 1.0%/month  — structured investments
+      // Blended monthly rate (used for seeding historical snapshots)
+      const fiatMonthlyRate       = 0.003;
+      const stablecoinMonthlyRate = 0.004;
+      const cryptoMonthlyRate     = 0.030;
+      const investmentMonthlyRate = 0.010;
       const blendedMonthlyRate = totalValue > 0
         ? (fiatValue / totalValue) * fiatMonthlyRate
         + (stablecoinValue / totalValue) * stablecoinMonthlyRate
         + (cryptoValue / totalValue) * cryptoMonthlyRate
         + (investmentValue / totalValue) * investmentMonthlyRate
         : 0;
-      // Back out the prior-month value: currentValue = prevValue * (1 + rate)
-      const previousMonthValue = totalValue / (1 + blendedMonthlyRate);
-      const monthlyPnl = totalValue - previousMonthValue;
-      const monthlyPnlPercent = previousMonthValue > 0 ? (monthlyPnl / previousMonthValue) * 100 : 0;
-      
+
+      // --- Snapshot management ---
+      // Seed 365 daily snapshots on first run; save today's snapshot on subsequent runs.
+      const todayStr = new Date().toISOString().split('T')[0];
+      let allSnapshots = await storage.getPortfolioSnapshots(userId);
+
+      if (allSnapshots.length === 0) {
+        // First run: seed a full year of daily snapshots using backward projection.
+        // The values are frozen at seed time, so they don't shift with future calculations.
+        const dailyRate = Math.pow(1 + blendedMonthlyRate, 1 / 30) - 1;
+        for (let daysBack = 365; daysBack >= 0; daysBack--) {
+          const snapshotDate = new Date();
+          snapshotDate.setDate(snapshotDate.getDate() - daysBack);
+          snapshotDate.setHours(0, 0, 0, 0);
+          const factor = Math.pow(1 + dailyRate, daysBack);
+          await storage.createPortfolioSnapshot({
+            userId,
+            totalValue: (totalValue / factor).toFixed(2),
+            fiatValue: (fiatValue / factor).toFixed(2),
+            cryptoValue: (cryptoValue / factor).toFixed(2),
+            stablecoinValue: (stablecoinValue / factor).toFixed(2),
+            investmentValue: (investmentValue / factor).toFixed(2),
+            snapshotDate,
+          });
+        }
+        allSnapshots = await storage.getPortfolioSnapshots(userId);
+      } else {
+        // Save today's snapshot if we haven't yet today
+        const hasToday = allSnapshots.some(
+          s => s.snapshotDate.toISOString().split('T')[0] === todayStr
+        );
+        if (!hasToday) {
+          await storage.createPortfolioSnapshot({
+            userId,
+            totalValue: totalValue.toFixed(2),
+            fiatValue: fiatValue.toFixed(2),
+            cryptoValue: cryptoValue.toFixed(2),
+            stablecoinValue: stablecoinValue.toFixed(2),
+            investmentValue: investmentValue.toFixed(2),
+            snapshotDate: new Date(),
+          });
+          allSnapshots = await storage.getPortfolioSnapshots(userId);
+        }
+      }
+
+      // Monthly P&L: compare today vs the stored snapshot closest to 30 days ago
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const priorSnapshot = allSnapshots
+        .filter(s => s.snapshotDate <= thirtyDaysAgo)
+        .sort((a, b) => b.snapshotDate.getTime() - a.snapshotDate.getTime())[0];
+
+      let monthlyPnl: number;
+      let monthlyPnlPercent: number;
+      if (priorSnapshot) {
+        const priorValue = parseFloat(priorSnapshot.totalValue);
+        monthlyPnl = totalValue - priorValue;
+        monthlyPnlPercent = priorValue > 0 ? (monthlyPnl / priorValue) * 100 : 0;
+      } else {
+        const previousMonthValue = totalValue / (1 + blendedMonthlyRate);
+        monthlyPnl = totalValue - previousMonthValue;
+        monthlyPnlPercent = previousMonthValue > 0 ? (monthlyPnl / previousMonthValue) * 100 : 0;
+      }
+
       const portfolio = {
         id: 1,
         userId,
@@ -247,78 +305,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       const currentTotalValue = currentFiatValue + currentCryptoValue + currentStablecoinValue + currentInvestmentValue;
-      
-      // Build historical data points using backward projection from current value.
-      // This avoids the transaction-replay approach which produces inaccurate results
-      // when wallet balances were not all built up via tracked transactions.
-      const dataPoints: Array<{ date: string; value: number; timestamp: number }> = [];
-      
-      // Determine number of data points based on timeframe
-      // 1Y → 13 monthly points, 3M → 13 weekly points, 1M → 22 points (~every 1.5 days)
-      const numPoints = timeframe === "1M" ? 22 : 13;
-      
-      // Total days in range
-      const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-      
-      // Monthly return rates per asset class (conservative, realistic):
-      // - Fiat cash: 0.3%/month
-      // - Stablecoins: 0.4%/month
-      // - Crypto (BTC/ETH): 3%/month on average
-      // - Investments: 1%/month on average
-      // Blended portfolio rate will be computed below based on actual allocation
-      const fiatMonthlyRate = 0.003;
-      const stablecoinMonthlyRate = 0.004;
-      const cryptoMonthlyRate = 0.030;
-      const investmentMonthlyRate = 0.010;
-      
-      const totalPortfolio = currentTotalValue;
-      const fiatShare = currentFiatValue / totalPortfolio;
-      const stablecoinShare = currentStablecoinValue / totalPortfolio;
-      const cryptoShare = currentCryptoValue / totalPortfolio;
-      const investmentShare = currentInvestmentValue / totalPortfolio;
-      
-      const blendedMonthlyRate =
-        fiatShare * fiatMonthlyRate +
-        stablecoinShare * stablecoinMonthlyRate +
-        cryptoShare * cryptoMonthlyRate +
-        investmentShare * investmentMonthlyRate;
-      
-      // Daily rate from blended monthly rate
-      const dailyRate = Math.pow(1 + blendedMonthlyRate, 1 / 30) - 1;
-      
-      // Generate evenly-spaced dates across the range
-      const step = Math.max(1, Math.floor(totalDays / (numPoints - 1)));
-      const dates: Date[] = [];
-      for (let i = 0; i < numPoints - 1; i++) {
-        const d = new Date(startDate);
-        d.setDate(d.getDate() + i * step);
-        if (d <= endDate) dates.push(d);
-      }
-      dates.push(new Date(endDate));
-      
-      // For each date, calculate value by compounding backward from current value
-      // with a small deterministic noise for natural-looking variation
-      for (const date of dates) {
-        const daysFromEnd = Math.ceil((endDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-        
-        // Base value: discount current value backward in time
-        const baseValue = currentTotalValue / Math.pow(1 + dailyRate, daysFromEnd);
-        
-        const value = Math.round(baseValue);
-        
-        dataPoints.push({
-          date: date.toISOString().split('T')[0],
-          value,
-          timestamp: date.getTime()
+
+      // --- Use stored snapshots as the primary data source ---
+      const storedSnapshots = await storage.getPortfolioSnapshots(userId, startDate, endDate);
+
+      let dataPoints: Array<{ date: string; value: number; timestamp: number }>;
+
+      if (storedSnapshots.length >= 2) {
+        // Thin out to ~22 evenly-spaced points so charts aren't overloaded
+        const maxPoints = 22;
+        const step = Math.max(1, Math.floor(storedSnapshots.length / (maxPoints - 1)));
+        const thinned: typeof storedSnapshots = [];
+        for (let i = 0; i < storedSnapshots.length - 1; i += step) {
+          thinned.push(storedSnapshots[i]);
+        }
+        thinned.push(storedSnapshots[storedSnapshots.length - 1]); // always include last
+        dataPoints = thinned.map(s => ({
+          date: s.snapshotDate.toISOString().split('T')[0],
+          value: Math.round(parseFloat(s.totalValue)),
+          timestamp: s.snapshotDate.getTime(),
+        }));
+      } else {
+        // Fall back to backward projection (labeled "Simulated estimate" on the client)
+        const fiatMonthlyRate = 0.003;
+        const stablecoinMonthlyRate = 0.004;
+        const cryptoMonthlyRate = 0.030;
+        const investmentMonthlyRate = 0.010;
+        const totalPortfolio = currentTotalValue;
+        const blendedMonthlyRate =
+          (currentFiatValue / totalPortfolio) * fiatMonthlyRate +
+          (currentStablecoinValue / totalPortfolio) * stablecoinMonthlyRate +
+          (currentCryptoValue / totalPortfolio) * cryptoMonthlyRate +
+          (currentInvestmentValue / totalPortfolio) * investmentMonthlyRate;
+        const dailyRate = Math.pow(1 + blendedMonthlyRate, 1 / 30) - 1;
+        const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+        const numPoints = timeframe === "1M" ? 22 : 13;
+        const step = Math.max(1, Math.floor(totalDays / (numPoints - 1)));
+        const dates: Date[] = [];
+        for (let i = 0; i < numPoints - 1; i++) {
+          const d = new Date(startDate);
+          d.setDate(d.getDate() + i * step);
+          if (d <= endDate) dates.push(d);
+        }
+        dates.push(new Date(endDate));
+        dataPoints = dates.map(date => {
+          const daysFromEnd = Math.ceil((endDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+          return {
+            date: date.toISOString().split('T')[0],
+            value: Math.round(currentTotalValue / Math.pow(1 + dailyRate, daysFromEnd)),
+            timestamp: date.getTime(),
+          };
         });
       }
-      
+
       // Calculate performance metrics
       const startValue = dataPoints[0]?.value || currentTotalValue;
       const endValue = dataPoints[dataPoints.length - 1]?.value || currentTotalValue;
       const totalReturn = endValue - startValue;
       const totalReturnPercent = startValue > 0 ? (totalReturn / startValue) * 100 : 0;
-      
+
       res.json({
         timeframe,
         data: dataPoints,
@@ -326,7 +371,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalReturn: totalReturn.toFixed(2),
         totalReturnPercent: totalReturnPercent.toFixed(2),
         startValue: startValue.toFixed(2),
-        endValue: endValue.toFixed(2)
+        endValue: endValue.toFixed(2),
+        source: storedSnapshots.length >= 2 ? 'snapshots' : 'projected',
       });
     } catch (error) {
       console.error("Portfolio history error:", error);

@@ -21,6 +21,7 @@ interface PortfolioHistoryResponse {
   totalReturnPercent: string;
   startValue: string;
   endValue: string;
+  source: 'snapshots' | 'projected';
 }
 
 export default function PortfolioChart() {
@@ -91,7 +92,7 @@ export default function PortfolioChart() {
             <div className="flex items-center gap-2">
               <CardTitle>Portfolio Performance</CardTitle>
               <Badge variant="outline" className="text-xs text-muted-foreground font-normal">
-                Simulated estimate
+                {historyData?.source === 'snapshots' ? 'Historical estimate' : 'Simulated estimate'}
               </Badge>
             </div>
             {historyData && (

@@ -1,0 +1,37 @@
+Here is the final remaining-issues table for the updated AMAX-V1 file only.
+
+Remaining issues after your latest fixes
+#	Area / File	Remaining issue	Why it is still not fully correct	Solution
+1	server/routes.ts /api/portfolio/history	History is still synthetic	It still derives past values by projecting backward from today using assumed blended rates	Replace with real stored portfolio snapshots by date
+2	server/routes.ts monthly P&L logic	Monthly P&L is still modeled	It is based on assumed blended rates, not an actual month-start portfolio value	Calculate from real month-start snapshot versus current snapshot
+3	client/src/pages/portfolio.tsx Performance vs Benchmark	Still only partly real	Portfolio line comes from history API, but that API is synthetic; benchmark is also modeled	Keep “Simulated estimate” label, or rebuild both from real history
+4	client/src/pages/portfolio.tsx Performance by Period	Still not true period return	It compounds current monthly return instead of using actual start/end values for each period	Calculate each period from real history points: start value vs end value
+5	client/src/pages/portfolio.tsx Risk Metrics	Still synthetic / estimated	Volatility, Sharpe, drawdown, beta are not derived from actual return series	Either hide this section or compute from real historical returns
+6	client/src/components/dashboard/wealth-overview.tsx wording	Label may overstate accuracy	“vs last month” sounds historical, but the number is still modeled	Rename to “estimated monthly return” or similar
+What is already fixed
+Area	Status
+Compound growth in investment valuation	Fixed
+Sine-wave removed from core valuation	Fixed
+FX conversion for wallets	Fixed
+Investment breakdown uses current value	Fixed
+Available Cash formula	Fixed
+Hardcoded dashboard % values	Fixed
+Decorative history sine-wave noise	Fixed
+Final verdict
+
+The major calculation bugs are fixed.
+The remaining problem is not broken math, it is the basis of the graphs:
+
+they are still modeled
+not true historical records
+
+So the app is now acceptable for demo use, but not for claiming:
+
+real historical performance
+real period returns
+true risk statistics
+Highest-priority remaining fixes
+Build snapshot-based portfolio history
+Use snapshot-based monthly P&L
+Calculate 1W/1M/3M/6M/YTD from real history points
+Remove or recalculate Risk Metrics
