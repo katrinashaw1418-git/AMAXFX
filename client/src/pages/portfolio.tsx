@@ -756,9 +756,9 @@ export default function Portfolio() {
                   )}
                 </div>
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-600 mb-1">Live Snapshots</p>
-                  <p className="text-sm font-bold text-gray-700">
-                    {metricsLoading ? '—' : `${realMetrics?.actualSnapshotCount ?? 0} / 30`}
+                  <p className="text-xs text-gray-600 mb-1">Data Quality</p>
+                  <p className="text-sm font-bold text-gray-700 capitalize">
+                    {metricsLoading ? '—' : realMetrics?.riskMetricsState ?? 'limited'}
                   </p>
                 </div>
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
@@ -768,14 +768,44 @@ export default function Portfolio() {
                   </p>
                 </div>
               </div>
-              {!metricsLoading && !realMetrics?.canComputeRiskMetrics && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                  <p className="text-xs font-medium text-amber-900">Risk metrics unavailable</p>
-                  <p className="text-xs text-amber-800 mt-1">
-                    Risk metrics (volatility, Sharpe ratio, drawdown) are unavailable because historical data currently consists of reconstructed portfolio values rather than market-based price movements. These metrics will be enabled automatically once real price history is recorded.
-                  </p>
+              {realMetrics?.canComputeRiskMetrics && (
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: 'Sharpe Ratio',   value: realMetrics.sharpe,               unit: '' },
+                    { label: 'Volatility p.a.', value: realMetrics.annualizedVolatility, unit: '%' },
+                    { label: 'Max Drawdown',    value: realMetrics.maxDrawdown,          unit: '%' },
+                  ].map(({ label, value, unit }) => (
+                    <div key={label} className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="text-xs text-gray-600 mb-1">{label}</p>
+                      {value !== null && value !== undefined ? (
+                        <p className="text-sm font-bold text-gray-800">{value}{unit}</p>
+                      ) : (
+                        <p className="text-sm text-gray-400">—</p>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
+              {!metricsLoading && (() => {
+                const state = realMetrics?.riskMetricsState;
+                if (state === 'limited') return (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <p className="text-xs font-medium text-amber-900">Limited historical basis</p>
+                    <p className="text-xs text-amber-800 mt-1">
+                      More observed history is required before risk metrics become meaningful.
+                    </p>
+                  </div>
+                );
+                if (state === 'estimated') return (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <p className="text-xs font-medium text-amber-900">Based on reconstructed history</p>
+                    <p className="text-xs text-amber-800 mt-1">
+                      Metrics are calculated using partially reconstructed portfolio data. Risk metrics (volatility, Sharpe ratio, drawdown) are unavailable because historical data consists of reconstructed portfolio values rather than market-based price movements. These metrics will be enabled automatically once real price history is recorded.
+                    </p>
+                  </div>
+                );
+                return null; // state === 'historical' — no warning needed
+              })()}
             </div>
           </CardContent>
         </Card>

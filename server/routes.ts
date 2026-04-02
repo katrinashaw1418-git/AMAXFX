@@ -793,19 +793,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Statistical risk metrics (volatility, Sharpe, max drawdown) require actual
-      // recorded market prices, not the smooth compound-interest backfill that currently
-      // fills the snapshot table.  The flag below gates those metrics automatically:
-      // it flips to true once ≥30 snapshots sourced from live market data accumulate.
-      // Row #18 — raise sufficiency threshold to ≥30 for statistical meaningfulness.
-      const hasSufficientHistory = sorted.length >= 30;
+      // ── Risk metric computation (arithmetic returns, consistent framework) ──────
+      // Compute daily arithmetic returns from the portfolio value time series.
+      // All snapshots (estimated or actual) contribute; per-metric guards below
+      // decide whether each statistic is meaningful enough to surface.
+      const dailyReturns: number[] = [];
+      for (let i = 1; i < sorted.length; i++) {
+        const v0 = parseFloat(sorted[i - 1].totalValue);
+        const v1 = parseFloat(sorted[i].totalValue);
+        if (v0 > 0) dailyReturns.push((v1 - v0) / v0);
+      }
 
-      // Snapshots written from live prices carry source="actual"; backfilled estimates
-      // carry source="historical_estimate".  Risk metrics are only meaningful when enough
-      // actual market-price snapshots exist (each source value is set in backfillPortfolioHistory).
-      const actualSnapshotCount = sorted.filter((s: any) => s.source === "actual").length;
-      const hasRealMarketData   = actualSnapshotCount >= 30;
-      const canComputeRiskMetrics = hasSufficientHistory && hasRealMarketData;
+      const _mean = (arr: number[]): number =>
+        arr.length === 0 ? 0 : arr.reduce((s, v) => s + v, 0) / arr.length;
+      const _stddev = (arr: number[], mu: number): number => {
+        if (arr.length < 2) return 0;
+        return Math.sqrt(arr.reduce((s, v) => s + (v - mu) ** 2, 0) / (arr.length - 1));
+      };
+
+      const returnMean = _mean(dailyReturns);
+      const returnStd  = _stddev(dailyReturns, returnMean);
+      const riskFreeDaily = riskFreeAnnual / 365;
+
+      // Sharpe — requires enough returns AND non-trivial volatility
+      // (returnStd ≤ 0.0001 daily ≈ smooth backfill → guard fires → null)
+      const canShowSharpe =
+        dailyReturns.length >= 20 &&
+        Number.isFinite(returnStd)  &&
+        Number.isFinite(returnMean) &&
+        returnStd > 0.0001;
+      const sharpe: number | null = canShowSharpe
+        ? +(((returnMean - riskFreeDaily) / returnStd) * Math.sqrt(365)).toFixed(2)
+        : null;
+
+      // Volatility — same guard as Sharpe to avoid surfacing near-zero artefacts
+      const canShowVolatility =
+        dailyReturns.length >= 20 &&
+        Number.isFinite(returnStd)  &&
+        returnStd > 0.0001;
+      const annualizedVolatility: number | null = canShowVolatility
+        ? +(returnStd * Math.sqrt(365) * 100).toFixed(2)
+        : null;
+
+      // Max drawdown — only meaningful when a real peak→trough event exists
+      let hasDrawdownEvent = false;
+      {
+        let peak = sorted.length > 0 ? parseFloat(sorted[0].totalValue) : 0;
+        for (const s of sorted) {
+          const v = parseFloat(s.totalValue);
+          if (v < peak) { hasDrawdownEvent = true; break; }
+          if (v > peak) peak = v;
+        }
+      }
+      const canShowDrawdown = sorted.length >= 20 && hasDrawdownEvent;
+      let maxDrawdown: number | null = null;
+      if (canShowDrawdown) {
+        let peak = parseFloat(sorted[0].totalValue);
+        let maxDD = 0;
+        for (const s of sorted) {
+          const v = parseFloat(s.totalValue);
+          if (v > peak) peak = v;
+          const dd = peak > 0 ? (peak - v) / peak : 0;
+          if (dd > maxDD) maxDD = dd;
+        }
+        maxDrawdown = +(maxDD * 100).toFixed(2);
+      }
+
+      // 3-tier state — drives UI messaging
+      const hasMeaningfulHistory = sorted.length >= 30 && dailyReturns.length >= 20;
+      const canComputeRiskMetrics = hasMeaningfulHistory;
+      let riskMetricsState: "limited" | "estimated" | "historical";
+      if (!hasMeaningfulHistory) {
+        riskMetricsState = "limited";
+      } else if (historySource === "historical_estimate") {
+        riskMetricsState = "estimated";
+      } else {
+        riskMetricsState = "historical";
+      }
+
+      // Keep legacy fields for backward compatibility
+      const hasSufficientHistory = sorted.length >= 30;
+      const actualSnapshotCount  = sorted.filter((s: any) => s.source === "actual").length;
 
       res.json({
         diversificationScore: +diversificationScore.toFixed(1),
@@ -813,9 +881,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rebalancingGap: +rebalancingGap.toFixed(1),
         historySource,
         hasSufficientHistory,
+        hasMeaningfulHistory,
         snapshotCount: sorted.length,
         actualSnapshotCount,
         canComputeRiskMetrics,
+        riskMetricsState,
+        sharpe,
+        annualizedVolatility,
+        maxDrawdown,
         cagr,
         riskFreeRate: +(riskFreeAnnual * 100).toFixed(2),
         periodReturns: {
