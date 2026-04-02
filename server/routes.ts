@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { createHash } from "crypto";
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 
@@ -30,24 +31,35 @@ const moneyMovementLimiter = rateLimit({
 
 // ---------------------------------------------------------------------------
 // In-memory idempotency store for FX exchange (and future money-movement routes).
-// Key: `${userId}:${Idempotency-Key header}` → cached response + TTL.
+// Key: `${userId}:${Idempotency-Key header}` → cached response + payload hash + TTL.
+// payloadHash guards against key reuse with a different request body — standard
+// behaviour used by Stripe, Adyen, and all major payment APIs. Returns 422 on conflict.
 // 24-hour TTL covers typical client retry windows. No DB schema change required.
+// Limitation: not durable across process restarts or horizontal scaling — upgrade
+// to a DB-backed idempotency_keys table when moving to multi-instance production.
 // ---------------------------------------------------------------------------
 const IDEM_TTL_MS = 24 * 60 * 60 * 1000;
-const idempotencyCache = new Map<string, { response: unknown; expiresAt: number }>();
+const idempotencyCache = new Map<string, { response: unknown; payloadHash: string; expiresAt: number }>();
 
-function getIdempotentResponse(userId: number, key: string): unknown | null {
+function hashPayload(body: unknown): string {
+  return createHash("sha256").update(JSON.stringify(body)).digest("hex");
+}
+
+function getIdempotentEntry(
+  userId: number,
+  key: string
+): { response: unknown; payloadHash: string } | null {
   const entry = idempotencyCache.get(`${userId}:${key}`);
   if (!entry) return null;
   if (entry.expiresAt < Date.now()) {
     idempotencyCache.delete(`${userId}:${key}`);
     return null;
   }
-  return entry.response;
+  return { response: entry.response, payloadHash: entry.payloadHash };
 }
 
-function setIdempotentResponse(userId: number, key: string, response: unknown): void {
-  idempotencyCache.set(`${userId}:${key}`, { response, expiresAt: Date.now() + IDEM_TTL_MS });
+function setIdempotentResponse(userId: number, key: string, response: unknown, payloadHash: string): void {
+  idempotencyCache.set(`${userId}:${key}`, { response, payloadHash, expiresAt: Date.now() + IDEM_TTL_MS });
 }
 
 // Category-level fallback rates — only used when a product has no explicit annualReturn set
@@ -1461,13 +1473,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { fromCurrency, toCurrency, amount } = req.body;
       const userId = 1;
 
-      // Optional idempotency — if the client sends an Idempotency-Key header,
-      // return the cached result for any duplicate request within 24 hours.
+      // Optional idempotency — if the client sends an Idempotency-Key header:
+      //   • same key + same payload → return cached result (idempotent: true)
+      //   • same key + different payload → 422 (standard behaviour per Stripe / Adyen)
+      //   • no key → proceed normally
       const idemKey = req.headers["idempotency-key"] as string | undefined;
+      const currentPayloadHash = idemKey ? hashPayload(req.body) : "";
       if (idemKey) {
-        const cached = getIdempotentResponse(userId, idemKey);
+        const cached = getIdempotentEntry(userId, idemKey);
         if (cached !== null) {
-          return res.json({ ...(cached as object), idempotent: true });
+          if (cached.payloadHash !== currentPayloadHash) {
+            return res.status(422).json({
+              error: "Idempotency-Key reused with a different request payload. Use a new key for a different transaction.",
+            });
+          }
+          return res.json({ ...(cached.response as object), idempotent: true });
         }
       }
 
@@ -1550,8 +1570,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fee,
       };
 
-      // Cache the result so any retry with the same Idempotency-Key gets the same response.
-      if (idemKey) setIdempotentResponse(userId, idemKey, responseBody);
+      // Cache result + payload hash. Future retries with the same key are served from cache;
+      // retries with the same key but different payload will receive a 422.
+      if (idemKey) setIdempotentResponse(userId, idemKey, responseBody, currentPayloadHash);
 
       res.json(responseBody);
     } catch (error) {

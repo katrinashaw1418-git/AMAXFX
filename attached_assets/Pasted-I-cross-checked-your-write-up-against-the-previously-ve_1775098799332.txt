@@ -1,0 +1,96 @@
+I cross-checked your write-up against the previously verified `AMAX-V1 (10)` state and the implementation notes you attached. The reasoning is mostly sound, but there is one important boundary:
+
+**I can verify the logic of your decisions from the current described state, but I cannot independently confirm the newly claimed rate-limiting and FX idempotency code changes in a newer zip unless that updated codebase is attached.** Your write-up itself is internally consistent. 
+
+## Cross-check summary
+
+| Advice item                         | Your verdict | Cross-check | Final view                                                                                                                                         |
+| ----------------------------------- | ------------ | ----------: | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Transaction `pending -> settled`    | Deferred     |           ✅ | Reasonable. Without real async custodian callbacks/webhooks, forcing pending/settled would create operational complexity with no settlement source |
+| Custodian reconciliation            | Deferred     |           ✅ | Reasonable **if no custodian API is actually integrated yet**. Once connected, this becomes mandatory                                              |
+| Webhook verification                | Deferred     |           ✅ | Correct **if no webhooks exist**                                                                                                                   |
+| Pricing engine                      | Deferred     |           ✅ | Reasonable. This is feature work, not a small patch                                                                                                |
+| Full auth / remove `userId = 1`     | Deferred     |           ✅ | Correctly classified as architectural refactor, not a patch                                                                                        |
+| KYC / AML                           | Deferred     |           ✅ | Correct **if the current app has no integrated regulated onboarding/workflows yet**                                                                |
+| `validateTransaction()`             | Already done |          ⚠️ | Plausible, but I cannot newly confirm code presence without the updated archive                                                                    |
+| `reconcileWalletBalances()`         | Already done |          ⚠️ | Plausible, but same limitation: not independently confirmable without the updated code                                                             |
+| `saveSystemEvent()` + in-memory log | Already done |          ⚠️ | Same limitation                                                                                                                                    |
+| `hasUnpricedAssets` + UI warnings   | Already done |           ✅ | Consistent with the prior verified direction                                                                                                       |
+| `historySource` transparency in UI  | Already done |           ✅ | Consistent with prior verified state                                                                                                               |
+| Rate limiting                       | Implemented  |          ⚠️ | Good improvement, but I cannot verify actual middleware wiring without the updated code                                                            |
+| FX exchange idempotency             | Implemented  |          ⚠️ | Good design, but I cannot verify actual route wiring or cache behavior without the updated code                                                    |
+
+## What is logically correct in your latest write-up
+
+| Item                                                                      | Verdict | Why                                                                        |
+| ------------------------------------------------------------------------- | ------- | -------------------------------------------------------------------------- |
+| Deferring webhook-based settlement states                                 | Correct | No webhook source means no real “settled” event to drive state transitions |
+| Deferring custodian reconciliation until an actual custodian API exists   | Correct | Reconciliation code needs a real external balance source                   |
+| Deferring pricing engine work                                             | Correct | It is a separate integration and data pipeline                             |
+| Calling full auth removal of hardcoded user IDs an architectural refactor | Correct | That is broader than a patch                                               |
+| Adding rate limiting                                                      | Correct | Real production value, low complexity                                      |
+| Adding FX idempotency                                                     | Correct | High-value protection against duplicate money movement                     |
+
+## Where I would tighten your wording
+
+| Item                      | Better wording                                                                                             |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Custodian reconciliation  | “Deferred until external custodian API integration exists”                                                 |
+| Webhook verification      | “Deferred until webhook endpoints exist”                                                                   |
+| Transaction state machine | “Deferred because current flow is synchronous; future custodian integration should introduce async states” |
+| Rate limiting             | “Implemented, but needs updated code attachment for independent verification”                              |
+| FX idempotency            | “Implemented, but needs updated code attachment for independent verification”                              |
+
+## Important caution on the two new implemented items
+
+These are good additions, but each has limits:
+
+### 1. In-memory idempotency
+
+Good as a short-term safeguard, but not durable across:
+
+* process restarts
+* multiple app instances
+* horizontal scaling
+
+Safer future form:
+
+```ts
+idempotency_keys
+- user_id
+- route
+- key
+- response_hash / response_payload
+- created_at
+- expires_at
+```
+
+### 2. In-memory/system-event logging
+
+Helpful for development, but not durable for:
+
+* audits
+* incident investigations
+* production support
+
+That means it is a valid stopgap, not a final fintech-grade control.
+
+## Final verdict
+
+| Area                                                 | Verdict                                                                                          |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Your deferral decisions                              | Sound                                                                                            |
+| Your prioritization                                  | Sound                                                                                            |
+| Your classification of “patch” vs “feature/refactor” | Sound                                                                                            |
+| Your claimed new implementations                     | Plausible and well-designed, but not independently verified from the currently attached codebase |
+
+## Bottom line
+
+Your latest cross-check is **mostly correct and well-reasoned**.
+
+The only thing I would not overstate is this:
+
+* I can validate that the **decisions make sense**
+* but I **cannot fully verify the newly claimed rate-limiter and idempotency code changes** unless you attach the updated project archive containing them
+
+If you upload the latest zip, I can verify those two implementations line by line.
