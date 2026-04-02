@@ -21,7 +21,7 @@ function calculateInvestmentPerformance(
   investedAmount: number,
   investmentDate: Date,
   currentDate: Date = new Date()
-): { currentValue: number; returnAmount: number; returnPercentage: number; valuationStatus?: string } {
+): { currentValue: number | null; returnAmount: number; returnPercentage: number; valuationStatus?: string } {
   if (!product) {
     return { currentValue: investedAmount, returnAmount: 0, returnPercentage: 0 };
   }
@@ -47,7 +47,7 @@ function calculateInvestmentPerformance(
 
   const returnMethod = product.returnMethod || "fixed_annual_compound";
 
-  let currentValue = investedAmount;
+  let currentValue: number | null = investedAmount;
   let valuationStatus: string | undefined;
 
   switch (returnMethod) {
@@ -59,16 +59,17 @@ function calculateInvestmentPerformance(
       break;
     case "manual_nav":
     case "market_price":
-      // No live price source available — use invested amount as placeholder and flag it
-      currentValue = investedAmount;
+      // No live price source available — exclude from totals and surface via valuationStatus
+      currentValue = null;
       valuationStatus = "missing_price_source";
       break;
     default:
       currentValue = investedAmount * Math.pow(1 + annualReturn, yearsHeld);
   }
 
-  const returnAmount = currentValue - investedAmount;
-  const returnPercentage = (returnAmount / investedAmount) * 100;
+  // returnAmount and returnPercentage are 0 when currentValue is unknown
+  const returnAmount = currentValue !== null ? currentValue - investedAmount : 0;
+  const returnPercentage = currentValue !== null ? (returnAmount / investedAmount) * 100 : 0;
 
   return { currentValue, returnAmount, returnPercentage, valuationStatus };
 }
@@ -90,10 +91,12 @@ async function calculateInvestmentTotalsAtDate(userId: number, asOfDate: Date = 
 
   let totalInvested = 0;
   let totalCurrentValue = 0;
+  let hasUnpricedAssets = false;
   const items: Array<{
     id: number; productId: number; productName: string; category: string;
     annualReturn: string; returnMethod: string;
-    investedAmount: number; currentValue: number; returnAmount: number; returnPercentage: number;
+    investedAmount: number; currentValue: number | null; returnAmount: number; returnPercentage: number;
+    valuationStatus?: string;
   }> = [];
 
   for (const inv of investments) {
@@ -104,7 +107,10 @@ async function calculateInvestmentTotalsAtDate(userId: number, asOfDate: Date = 
     if (investmentDate > asOfDate) continue; // investment didn't exist yet at asOfDate
     const perf = calculateInvestmentPerformance(product, investedAmount, investmentDate, asOfDate);
     totalInvested += investedAmount;
-    totalCurrentValue += perf.currentValue;
+    // Unpriced assets (manual_nav / market_price) are excluded from the total rather than
+    // estimated with a placeholder — hasUnpricedAssets signals the gap to callers
+    totalCurrentValue += perf.currentValue ?? 0;
+    if (perf.currentValue === null) hasUnpricedAssets = true;
     items.push({
       id: inv.id,
       productId: product.id,
@@ -116,6 +122,7 @@ async function calculateInvestmentTotalsAtDate(userId: number, asOfDate: Date = 
       currentValue: perf.currentValue,
       returnAmount: perf.returnAmount,
       returnPercentage: perf.returnPercentage,
+      ...(perf.valuationStatus ? { valuationStatus: perf.valuationStatus } : {}),
     });
   }
 
@@ -124,6 +131,7 @@ async function calculateInvestmentTotalsAtDate(userId: number, asOfDate: Date = 
     totalCurrentValue,
     totalReturn: totalCurrentValue - totalInvested,
     totalReturnPercent: totalInvested > 0 ? ((totalCurrentValue - totalInvested) / totalInvested) * 100 : 0,
+    hasUnpricedAssets,
     items,
   };
 }
@@ -165,6 +173,62 @@ async function reconstructWalletBalancesAsOf(
     const historicalBalance = Math.max(0, currentBalance + totalDebits - totalCredits);
     return { currency, balance: historicalBalance, walletType: wallet.walletType };
   });
+}
+
+// Guard called before any transaction is persisted to storage.
+// Prevents bad transactions from poisoning the wallet reconstruction history.
+function validateTransaction(tx: {
+  type: string;
+  amount: number;
+  fromCurrency?: string | null;
+  toCurrency?: string | null;
+  exchangeRate?: number | null;
+}): void {
+  if (!Number.isFinite(tx.amount) || tx.amount <= 0) {
+    throw new Error("Invalid transaction amount");
+  }
+  if (!tx.type) {
+    throw new Error("Transaction type required");
+  }
+  if (tx.type === "exchange") {
+    if (!tx.fromCurrency || !tx.toCurrency) {
+      throw new Error("Exchange requires both fromCurrency and toCurrency");
+    }
+    if (!Number.isFinite(tx.exchangeRate) || (tx.exchangeRate as number) <= 0) {
+      throw new Error("Invalid exchange rate");
+    }
+  }
+  if (tx.fromCurrency && tx.toCurrency && tx.fromCurrency === tx.toCurrency) {
+    throw new Error("fromCurrency and toCurrency must differ");
+  }
+}
+
+// Compares reconstructed balances against current wallet state and logs any drift.
+// Returns the list of mismatches so callers can decide how to surface them.
+async function reconcileWalletBalances(
+  userId: number,
+  asOfDate: Date
+): Promise<Array<{ currency: string; reconstructedBalance: number; currentBalance: number; delta: number }>> {
+  const reconstructed = await reconstructWalletBalancesAsOf(userId, asOfDate);
+  const currentWallets = await storage.getWallets(userId);
+  const tolerance = 1e-6;
+
+  const byReconstructed = new Map(reconstructed.map((r: any) => [r.currency, r.balance]));
+
+  const mismatches = (currentWallets as any[])
+    .map((wallet: any) => {
+      const reconstructedBalance = byReconstructed.get(wallet.currency) ?? 0;
+      const currentBalance = parseFloat(wallet.balance ?? "0");
+      const delta = currentBalance - reconstructedBalance;
+      return { currency: wallet.currency, reconstructedBalance, currentBalance, delta };
+    })
+    .filter((x) => Math.abs(x.delta) > tolerance);
+
+  if (mismatches.length > 0) {
+    console.warn("[ledger_drift_detected]", { userId, asOfDate: asOfDate.toISOString().split("T")[0], mismatches });
+  }
+
+  return mismatches;
 }
 
 // Portfolio valuation at any given date — uses date-aware wallet balances for historical accuracy
@@ -268,6 +332,11 @@ async function backfillPortfolioHistory(userId: number, startDate: Date, endDate
   for (const date of missingDates) {
     const isToday = date.toISOString().split("T")[0] === todayKey;
     await createSnapshotForDay(userId, date, isToday ? "actual" : "historical_estimate");
+  }
+
+  // After filling any new snapshots, run reconciliation to detect ledger drift
+  if (missingDates.length > 0) {
+    await reconcileWalletBalances(userId, normalizedEnd);
   }
 }
 
@@ -558,9 +627,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const years = (today.getTime() - startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
         if (startVal > 0 && latestHistoricalValue > 0 && years >= 0.1) {
           const cagrRate = Math.pow(latestHistoricalValue / startVal, 1 / years) - 1;
-          if (Number.isFinite(cagrRate) && cagrRate >= 0) {
-            // Cap at 50% to prevent runaway projections from short noisy windows
-            annualProjectionRate = Math.min(cagrRate, 0.50);
+          if (Number.isFinite(cagrRate)) {
+            // Allow negative CAGR (declining portfolio); reject only non-finite values.
+            // Clamp: floor at -95%/yr (near-total loss), ceiling at +100%/yr (double in a year).
+            annualProjectionRate = Math.max(-0.95, Math.min(1.0, cagrRate));
             projectionMethod = "realized_cagr";
           }
         }
@@ -652,7 +722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const investmentDate = new Date(inv.investmentDate);
         const asOf = investmentDate <= ANCHOR ? ANCHOR : investmentDate;
         const perf = calculateInvestmentPerformance(product, investedAmount, investmentDate, asOf);
-        openingInvestmentValue += perf.currentValue;
+        openingInvestmentValue += perf.currentValue ?? 0;
       }
 
       // Projected line: use actual investment IRR — compute investment value at each month
@@ -665,7 +735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const investmentDate = new Date(inv.investmentDate);
           const asOf = targetDate < investmentDate ? investmentDate : targetDate;
           const perf = calculateInvestmentPerformance(product, investedAmount, investmentDate, asOf);
-          total += perf.currentValue;
+          total += perf.currentValue ?? 0;
         }
         return Math.round(total);
       };
@@ -747,6 +817,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Reuse the shared valuation engine for allocation fractions
       const totals = await calculatePortfolioTotalsAtDate(userId, new Date());
       const { fiatValue, cryptoValue, stablecoinValue, investmentValue, totalValue } = totals;
+
+      // Get investment-level detail for hasUnpricedAssets flag
+      const investmentTotals = await calculateInvestmentTotalsAtDate(userId, new Date());
+      const hasUnpricedAssets = investmentTotals.hasUnpricedAssets;
 
       const alloc = {
         fiat:       totalValue > 0 ? fiatValue       / totalValue : 0,
@@ -935,6 +1009,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         actualSnapshotCount,
         canComputeRiskMetrics,
         riskMetricsState,
+        hasUnpricedAssets,
         sharpe,
         annualizedVolatility,
         maxDrawdown,
@@ -1358,6 +1433,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Insufficient balance" });
       }
 
+      // Validate exchange parameters before any state mutation
+      validateTransaction({ type: "exchange", amount: parseFloat(amount), fromCurrency, toCurrency, exchangeRate });
+
       // Update source wallet (deduct amount + fee)
       const newFromBalance = (parseFloat(fromWallet.balance) - totalDeduction).toFixed(2);
       const newFromAvailableBalance = (parseFloat(fromWallet.availableBalance) - totalDeduction).toFixed(2);
@@ -1676,9 +1754,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         return {
           ...investment,
-          currentValue: performance.currentValue.toFixed(2),
+          currentValue: performance.currentValue != null ? performance.currentValue.toFixed(2) : null,
           totalReturn: performance.returnAmount.toFixed(2),
-          returnPercent: performance.returnPercentage.toFixed(2)
+          returnPercent: performance.returnPercentage.toFixed(2),
+          ...(performance.valuationStatus ? { valuationStatus: performance.valuationStatus } : {})
         };
       });
       
@@ -1831,7 +1910,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, endDate);
           
           totalInvestedNow += investedAmount;
-          totalCurrentValueNow += performance.currentValue;
+          totalCurrentValueNow += performance.currentValue ?? 0;
         }
       }
       

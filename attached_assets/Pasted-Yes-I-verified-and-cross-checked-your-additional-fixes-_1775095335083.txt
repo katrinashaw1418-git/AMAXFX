@@ -1,0 +1,205 @@
+Yes — I verified and cross-checked your additional-fixes list against the current state, and it is directionally right. These are not core-math fixes anymore; they are the remaining **hardening fixes**. The top three are still the most important: remove placeholder valuation for unpriced assets, add ledger reconciliation, and validate transactions before they enter the system. 
+
+## Summary table of additional fixes required
+
+| Priority | Area                          | Verified need | Why it still matters                                     | Recommended action                                                |
+| -------- | ----------------------------- | ------------- | -------------------------------------------------------- | ----------------------------------------------------------------- |
+| High     | `manual_nav` / `market_price` | Yes           | Still uses placeholder economics                         | Return `null` valuation and make totals null-safe                 |
+| High     | Ledger reconciliation         | Yes           | Reconstruction is only as good as the transaction ledger | Compare reconstructed balances to current balances and flag drift |
+| High     | Transaction validation        | Yes           | Bad transactions will poison historical reconstruction   | Validate amount, type, currencies, exchange rate before save      |
+| Medium   | Snapshot source clarity       | Yes           | Users may not know history includes estimates            | Return `historySource` / `snapshotType` in API and show in UI     |
+| Medium   | Missing price visibility      | Yes           | Unpriced assets can hide inside totals                   | Surface `valuationStatus` and `hasUnpricedAssets`                 |
+| Medium   | Forecast clamping             | Yes           | CAGR can create unrealistic projection lines             | Clamp projected annual rate to a safe range                       |
+| Medium   | Backfill batching             | Recommended   | Current sequential gap fill may become slow              | Collect missing dates and process in batch                        |
+| Medium   | Decimal-safe money math       | Recommended   | Float math can drift in FX/crypto paths                  | Use `Decimal` for exchange and balance calculations               |
+| Low      | Audit logs                    | Recommended   | Harder to debug and prove integrity later                | Log reconstruction method, snapshot creation, and drift events    |
+| Low      | Regression tests              | Recommended   | Future code changes can silently break history logic     | Add tests for deposits, withdrawals, exchanges, null valuations   |
+
+## Verified code patches
+
+### 1) Remove placeholder valuation for unpriced assets
+
+```ts
+case "manual_nav":
+case "market_price":
+  currentValue = null;
+  valuationStatus = "missing_price_source";
+  break;
+```
+
+Make totals safe:
+
+```ts
+totalCurrentValue += perf.currentValue ?? 0;
+```
+
+Optional visibility:
+
+```ts
+const hasUnpricedAssets = performances.some(
+  (p) => p.currentValue === null
+);
+```
+
+### 2) Add ledger reconciliation
+
+```ts
+async function reconcileWalletBalances(userId: number, asOfDate: Date) {
+  const reconstructed = await reconstructWalletBalancesAsOf(userId, asOfDate);
+  const currentWallets = await storage.getWallets(userId);
+
+  const tolerance = 1e-6;
+
+  const mismatches = currentWallets
+    .map((wallet) => {
+      const reconstructedBalance = reconstructed[wallet.currency] ?? 0;
+      const currentBalance = Number(wallet.balance ?? 0);
+      const delta = currentBalance - reconstructedBalance;
+
+      return {
+        currency: wallet.currency,
+        reconstructedBalance,
+        currentBalance,
+        delta,
+      };
+    })
+    .filter((x) => Math.abs(x.delta) > tolerance);
+
+  if (mismatches.length > 0) {
+    console.warn("ledger_drift_detected", { userId, asOfDate, mismatches });
+  }
+
+  return mismatches;
+}
+```
+
+### 3) Validate transactions before saving
+
+```ts
+function validateTransaction(tx: {
+  type: string;
+  amount: number;
+  fromCurrency?: string | null;
+  toCurrency?: string | null;
+  exchangeRate?: number | null;
+}) {
+  if (!Number.isFinite(tx.amount) || tx.amount <= 0) {
+    throw new Error("Invalid transaction amount");
+  }
+
+  if (!tx.type) {
+    throw new Error("Transaction type required");
+  }
+
+  if (tx.type === "exchange") {
+    if (!tx.fromCurrency || !tx.toCurrency) {
+      throw new Error("Exchange requires both currencies");
+    }
+
+    if (!Number.isFinite(tx.exchangeRate) || tx.exchangeRate! <= 0) {
+      throw new Error("Invalid exchange rate");
+    }
+  }
+
+  if (tx.fromCurrency === tx.toCurrency) {
+    throw new Error("fromCurrency and toCurrency cannot be the same");
+  }
+}
+```
+
+### 4) Show actual vs estimated history
+
+```ts
+const hasEstimated = snapshots.some(
+  (s) => s.snapshotType === "historical_estimate"
+);
+
+return res.json({
+  snapshots,
+  historySource: hasEstimated ? "mixed" : "actual",
+});
+```
+
+UI:
+
+```tsx
+{historySource !== "actual" && (
+  <p className="text-xs text-gray-500">
+    Includes reconstructed historical estimates
+  </p>
+)}
+```
+
+### 5) Clamp projection rate
+
+```ts
+if (Number.isFinite(cagr)) {
+  annualProjectionRate = Math.max(-0.95, Math.min(1.0, cagr));
+}
+```
+
+### 6) Batch backfill work
+
+```ts
+const missingDates: Date[] = [];
+
+while (cursor <= endDate) {
+  const key = cursor.toISOString().split("T")[0];
+
+  if (!existingDays.has(key)) {
+    missingDates.push(new Date(cursor));
+  }
+
+  cursor.setDate(cursor.getDate() + 1);
+}
+
+await Promise.all(
+  missingDates.map((d) =>
+    createSnapshotForDay(userId, d, "historical_estimate")
+  )
+);
+```
+
+### 7) Use decimal-safe math for FX / crypto
+
+```ts
+import Decimal from "decimal.js";
+
+const credit = new Decimal(tx.amount).mul(tx.exchangeRate ?? 1);
+
+balances[tx.toCurrency!] = new Decimal(
+  balances[tx.toCurrency!] ?? 0
+)
+  .minus(credit)
+  .toNumber();
+```
+
+### 8) Add minimum regression tests
+
+```ts
+it("reverses deposit after asOfDate", () => {});
+it("reverses withdrawal correctly", () => {});
+it("handles exchange with rate", () => {});
+it("ignores transactions before asOfDate", () => {});
+it("handles null valuations safely", () => {});
+```
+
+## Best implementation order
+
+| Order | Fix                                                         |
+| ----- | ----------------------------------------------------------- |
+| 1     | Remove placeholder valuation and make aggregation null-safe |
+| 2     | Add ledger reconciliation                                   |
+| 3     | Add transaction validation                                  |
+| 4     | Surface estimated-history and unpriced-asset warnings       |
+| 5     | Clamp forecasts                                             |
+| 6     | Add decimal-safe math                                       |
+| 7     | Add regression tests                                        |
+
+## Final verdict
+
+Your additional-fixes list is valid and non-duplicative. The remaining work is about **truthfulness, integrity, and resilience**, not repairing the core analytics engine anymore. The most valuable next fixes are:
+
+* **stop placeholder valuation for unpriced assets**
+* **add ledger drift detection**
+* **validate transactions at the boundary**. 
