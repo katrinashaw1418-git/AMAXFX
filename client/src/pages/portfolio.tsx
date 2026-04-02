@@ -192,9 +192,10 @@ export default function Portfolio() {
     );
   }
 
-  // Monthly P&L and return % come directly from the server — snapshot-based, no hardcoded values
-  const monthlyPnl = parseFloat(portfolio?.monthlyPnl || '0');
-  const monthlyReturn = parseFloat(portfolio?.monthlyPnlPercent || '0');
+  // Monthly P&L — preserve null from server; avoid fake-zero display
+  const monthlyPnl = portfolio?.monthlyPnl != null ? parseFloat(portfolio.monthlyPnl) : null;
+  const monthlyReturn = portfolio?.monthlyPnlPercent != null ? parseFloat(portfolio.monthlyPnlPercent) : null;
+  const monthlyPnlKnown = monthlyPnl !== null && monthlyReturn !== null;
 
   // --- Performance by Period chart (returns computed from real snapshot history) ---
   const historyPoints = yearHistory?.data || [];
@@ -374,21 +375,27 @@ export default function Portfolio() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-xs font-medium text-gray-500">Monthly P&L</h3>
-              {monthlyPnl >= 0 ? (
+              {!monthlyPnlKnown ? (
+                <TrendingUp className="w-3 h-3 text-gray-400" />
+              ) : monthlyPnl! >= 0 ? (
                 <TrendingUp className="w-3 h-3 text-secondary" />
               ) : (
                 <TrendingDown className="w-3 h-3 text-destructive" />
               )}
             </div>
-            <p className={`text-xs font-bold leading-tight whitespace-nowrap overflow-hidden text-ellipsis ${monthlyPnl >= 0 ? 'text-secondary' : 'text-destructive'}`}>
-              {monthlyPnl >= 0 ? '+' : ''}${Math.round(monthlyPnl).toLocaleString()}
-            </p>
+            {!monthlyPnlKnown ? (
+              <p className="text-xs font-bold text-gray-400 leading-tight">—</p>
+            ) : (
+              <p className={`text-xs font-bold leading-tight whitespace-nowrap overflow-hidden text-ellipsis ${monthlyPnl! >= 0 ? 'text-secondary' : 'text-destructive'}`}>
+                {monthlyPnl! >= 0 ? '+' : ''}${Math.round(monthlyPnl!).toLocaleString()}
+              </p>
+            )}
             <p className="text-xs text-gray-600 mt-1">
-              {portfolio?.monthlyPnlSource === 'actual'
-                ? `${monthlyReturn >= 0 ? '+' : ''}${monthlyReturn.toFixed(1)}% vs 30 days ago`
-                : portfolio?.monthlyPnlSource === 'historical_estimate'
-                  ? `${monthlyReturn >= 0 ? '+' : ''}${monthlyReturn.toFixed(1)}% estimated from historical basis`
-                  : 'Insufficient history'}
+              {!monthlyPnlKnown
+                ? 'Insufficient history'
+                : portfolio?.monthlyPnlSource === 'actual'
+                  ? `${monthlyReturn! >= 0 ? '+' : ''}${monthlyReturn!.toFixed(1)}% vs 30 days ago`
+                  : `${monthlyReturn! >= 0 ? '+' : ''}${monthlyReturn!.toFixed(1)}% estimated from historical basis`}
             </p>
           </CardContent>
         </Card>

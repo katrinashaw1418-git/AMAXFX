@@ -1,0 +1,61 @@
+Yes — I cross-checked your findings again against the attached review notes, and the core conclusions hold. The biggest verified issue is still that historical portfolio values are not fully historical because wallet balances are not date-aware. Everything else sits underneath that. 
+
+## Verified summary table — solutions and patches
+
+| Priority | Issue                                              |             Verified status | Risk if not fixed                                        | Solution                                                                     | Patch summary                                                                       |
+| -------- | -------------------------------------------------- | --------------------------: | -------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| High     | Monthly P&L shows `0` instead of `null`            |                   Confirmed | Misleading UI, fake zero returns                         | Preserve `null` from API and render “Insufficient history” / `—`             | Patch UI parsing and render conditions in `portfolio.tsx` and `wealth-overview.tsx` |
+| High     | Snapshot backfill does not fill internal date gaps |                   Confirmed | Broken charts, inconsistent return periods               | Backfill every missing day inside the requested range                        | Replace current backfill with gap-aware date iteration using `existingDays` set     |
+| High     | Historical portfolio uses current wallet balances  |         Confirmed, critical | Portfolio history, CAGR, drawdown, Sharpe all unreliable | Make wallet balances historical by date                                      | Add `getWalletSnapshotsAsOf()` or reconstruct balances from wallet transactions     |
+| Medium   | Forecast uses hardcoded `10%`                      |                   Confirmed | Unrealistic projection                                   | Use realized CAGR when enough history exists, else fallback estimate         | Replace fixed forecast with CAGR-derived rate plus safety fallback                  |
+| Medium   | Thinned chart data reused for analytics            |                   Confirmed | Wrong period returns, distorted analytics                | Separate chart data from analytics data                                      | Keep `analyticsSnapshots = full data`; only thin UI chart series                    |
+| Medium   | `manual_nav` / `market_price` returns fake value   |                   Confirmed | False valuations                                         | Return `null` valuation or raise unsupported error until price source exists | Replace invested-amount fallback with `valuationStatus: "missing_price_source"`     |
+| Low      | Sharpe guard near zero variance                    | Confirmed as good safeguard | Metric blow-ups                                          | Keep minimum observation and min-std threshold                               | Use `dailyReturns.length >= 20 && returnStd > 1e-6`                                 |
+| Low      | Formatting helpers                                 |         Confirmed as useful | Inconsistent display                                     | Centralize null-safe currency/percent formatting                             | Add helper functions for nullable values                                            |
+
+## Final patch table
+
+| Patch   | File / Area                                           | What to change                                                        | Outcome                            |
+| ------- | ----------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------- |
+| Patch 1 | `client/src/pages/portfolio.tsx`                      | Keep `monthlyPnl` and `monthlyReturn` as `null` when API returns null | Honest monthly return display      |
+| Patch 2 | `client/src/components/dashboard/wealth-overview.tsx` | Same null-safe rendering for dashboard widget                         | Stops fake zero performance        |
+| Patch 3 | `server/routes.ts` `backfillPortfolioHistory()`       | Fill all missing internal dates, not just edges                       | Continuous snapshot history        |
+| Patch 4 | `server/routes.ts` performance chart route            | Replace hardcoded 10% forecast with realized CAGR where possible      | More defensible projection         |
+| Patch 5 | `server/routes.ts` chart logic                        | Use full snapshots for analytics, thinned snapshots only for UI       | Correct period-return calculations |
+| Patch 6 | `server/routes.ts` `calculateInvestmentPerformance()` | Remove fake fallback for `manual_nav` / `market_price`                | Prevents false valuations          |
+| Patch 7 | Storage / DB layer                                    | Add historical wallet snapshots or transaction replay                 | True historical portfolio values   |
+| Patch 8 | Metrics logic                                         | Keep Sharpe safety guard for low sample size / near-zero variance     | Stable risk metrics                |
+
+## Most important implementation order
+
+| Order | Patch       | Reason                                           |
+| ----- | ----------- | ------------------------------------------------ |
+| 1     | Patch 7     | This fixes the systemic historical-truth problem |
+| 2     | Patch 3     | Ensures history is continuous                    |
+| 3     | Patch 1 + 2 | Removes misleading UI immediately                |
+| 4     | Patch 5     | Prevents analytics from using chart-thinned data |
+| 5     | Patch 4     | Improves projection quality                      |
+| 6     | Patch 6     | Stops fake valuation outputs                     |
+| 7     | Patch 8     | Final metric hardening                           |
+
+## Final verdict
+
+| Area                       | Verdict                                                          |
+| -------------------------- | ---------------------------------------------------------------- |
+| UI honesty                 | Needs small fixes                                                |
+| Snapshot continuity        | Needs fix                                                        |
+| Metric formulas            | Mostly sound after prior updates                                 |
+| Historical portfolio truth | Not fully correct yet                                            |
+| Production readiness       | Close, but not fully reliable until wallet history is date-aware |
+
+### Bottom line
+
+Your review is substantially correct. The **must-fix items** are:
+
+1. null-safe monthly P&L
+2. internal gap backfill
+3. historical wallet balances by date
+
+Without the wallet-history fix, the app is still a **partially reconstructed estimate engine**, not a fully auditable historical portfolio tracker. 
+
+I can turn this next into a **single copy-paste patch pack** grouped by file.

@@ -50,8 +50,9 @@ export default function WealthOverview() {
   const cryptoValue = parseFloat(portfolio.cryptoValue);
   const stablecoinValue = parseFloat(portfolio.stablecoinValue || "0");
   const fiatValue = parseFloat(portfolio.fiatValue);
-  const monthlyPnl = parseFloat(portfolio.monthlyPnl);
-  const monthlyPnlPercent = parseFloat(portfolio.monthlyPnlPercent);
+  const monthlyPnl = portfolio.monthlyPnl != null ? parseFloat(portfolio.monthlyPnl) : null;
+  const monthlyPnlPercent = portfolio.monthlyPnlPercent != null ? parseFloat(portfolio.monthlyPnlPercent) : null;
+  const monthlyPnlKnown = monthlyPnl !== null && monthlyPnlPercent !== null;
   const cryptoPercent = totalValue > 0 ? (cryptoValue / totalValue) * 100 : 0;
 
   return (
@@ -67,9 +68,13 @@ export default function WealthOverview() {
               ${totalValue.toLocaleString()}
             </p>
             <div className="flex items-center space-x-2">
-              <span className={`text-sm ${monthlyPnlPercent >= 0 ? 'text-secondary' : 'text-destructive'}`}>
-                {monthlyPnlPercent >= 0 ? '+' : ''}{monthlyPnlPercent.toFixed(2)}%
-              </span>
+              {monthlyPnlKnown ? (
+                <span className={`text-sm ${monthlyPnlPercent! >= 0 ? 'text-secondary' : 'text-destructive'}`}>
+                  {monthlyPnlPercent! >= 0 ? '+' : ''}{monthlyPnlPercent!.toFixed(2)}%
+                </span>
+              ) : (
+                <span className="text-sm text-gray-400">—</span>
+              )}
               <span className="text-xs text-gray-500">
                 {(portfolio as any).monthlyPnlSource === 'actual'
                   ? 'vs 30 days ago'
@@ -120,21 +125,31 @@ export default function WealthOverview() {
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-gray-500">Monthly P&L</h3>
-            {monthlyPnl >= 0 ? (
+            {!monthlyPnlKnown ? (
+              <TrendingUp className="w-4 h-4 text-gray-400" />
+            ) : monthlyPnl! >= 0 ? (
               <TrendingUp className="w-4 h-4 text-secondary" />
             ) : (
               <TrendingDown className="w-4 h-4 text-destructive" />
             )}
           </div>
           <div className="space-y-2">
-            <p className={`text-2xl font-bold ${monthlyPnl >= 0 ? 'text-secondary' : 'text-destructive'}`}>
-              {monthlyPnl >= 0 ? '+' : ''}${monthlyPnl.toLocaleString()}
-            </p>
+            {monthlyPnlKnown ? (
+              <p className={`text-2xl font-bold ${monthlyPnl! >= 0 ? 'text-secondary' : 'text-destructive'}`}>
+                {monthlyPnl! >= 0 ? '+' : ''}${monthlyPnl!.toLocaleString()}
+              </p>
+            ) : (
+              <p className="text-2xl font-bold text-gray-400">—</p>
+            )}
             <div className="flex items-center space-x-2">
-              <span className={`text-sm ${monthlyPnl >= 0 ? 'text-secondary' : 'text-destructive'}`}>
-                {monthlyPnl >= 0 ? '+' : ''}{monthlyPnlPercent}%
-              </span>
-              <span className="text-xs text-gray-500">return</span>
+              {monthlyPnlKnown ? (
+                <span className={`text-sm ${monthlyPnlPercent! >= 0 ? 'text-secondary' : 'text-destructive'}`}>
+                  {monthlyPnlPercent! >= 0 ? '+' : ''}{monthlyPnlPercent}%
+                </span>
+              ) : (
+                <span className="text-sm text-gray-400">Insufficient history</span>
+              )}
+              {monthlyPnlKnown && <span className="text-xs text-gray-500">return</span>}
             </div>
           </div>
         </CardContent>

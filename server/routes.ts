@@ -21,7 +21,7 @@ function calculateInvestmentPerformance(
   investedAmount: number,
   investmentDate: Date,
   currentDate: Date = new Date()
-): { currentValue: number; returnAmount: number; returnPercentage: number } {
+): { currentValue: number; returnAmount: number; returnPercentage: number; valuationStatus?: string } {
   if (!product) {
     return { currentValue: investedAmount, returnAmount: 0, returnPercentage: 0 };
   }
@@ -48,6 +48,7 @@ function calculateInvestmentPerformance(
   const returnMethod = product.returnMethod || "fixed_annual_compound";
 
   let currentValue = investedAmount;
+  let valuationStatus: string | undefined;
 
   switch (returnMethod) {
     case "fixed_annual_compound":
@@ -58,7 +59,9 @@ function calculateInvestmentPerformance(
       break;
     case "manual_nav":
     case "market_price":
+      // No live price source available — use invested amount as placeholder and flag it
       currentValue = investedAmount;
+      valuationStatus = "missing_price_source";
       break;
     default:
       currentValue = investedAmount * Math.pow(1 + annualReturn, yearsHeld);
@@ -70,7 +73,7 @@ function calculateInvestmentPerformance(
   const returnAmount = currentValue - investedAmount;
   const returnPercentage = (returnAmount / investedAmount) * 100;
 
-  return { currentValue, returnAmount, returnPercentage };
+  return { currentValue, returnAmount, returnPercentage, valuationStatus };
 }
 
 // Shared FX conversion helper — tries direct rate then inverse
@@ -191,7 +194,7 @@ async function createSnapshotForDay(
   });
 }
 
-// Incremental backfill — only fills genuinely missing days instead of re-scanning the whole range
+// Gap-aware backfill — fills every missing day in the range, including internal gaps
 async function backfillPortfolioHistory(userId: number, startDate: Date, endDate: Date) {
   const normalizedStart = new Date(startDate);
   normalizedStart.setHours(0, 0, 0, 0);
@@ -200,41 +203,24 @@ async function backfillPortfolioHistory(userId: number, startDate: Date, endDate
 
   const existing = await storage.getPortfolioSnapshots(userId, normalizedStart, normalizedEnd);
 
-  if (existing.length === 0) {
-    // No history yet — fill the full range
-    const cursor = new Date(normalizedStart);
-    while (cursor <= normalizedEnd) {
-      const isToday = cursor.toDateString() === normalizedEnd.toDateString();
-      await createSnapshotForDay(userId, new Date(cursor), isToday ? "actual" : "historical_estimate");
-      cursor.setDate(cursor.getDate() + 1);
-    }
-    return;
-  }
-
-  const sorted = [...existing].sort(
-    (a: any, b: any) => new Date(a.snapshotDate).getTime() - new Date(b.snapshotDate).getTime()
+  // Build a set of dates that already have snapshots (YYYY-MM-DD keys)
+  const existingDays = new Set(
+    existing.map((s: any) => new Date(s.snapshotDate).toISOString().split("T")[0])
   );
 
-  // Fill any gap before the earliest existing snapshot
-  const earliestDate = new Date(sorted[0].snapshotDate);
-  earliestDate.setHours(0, 0, 0, 0);
-  if (normalizedStart < earliestDate) {
-    const earlyCursor = new Date(normalizedStart);
-    while (earlyCursor < earliestDate) {
-      await createSnapshotForDay(userId, new Date(earlyCursor), "historical_estimate");
-      earlyCursor.setDate(earlyCursor.getDate() + 1);
-    }
+  // Collect every missing date in one pass, then write them sequentially
+  const missingDates: Date[] = [];
+  const cursor = new Date(normalizedStart);
+  while (cursor <= normalizedEnd) {
+    const key = cursor.toISOString().split("T")[0];
+    if (!existingDays.has(key)) missingDates.push(new Date(cursor));
+    cursor.setDate(cursor.getDate() + 1);
   }
 
-  // Fill any gap after the latest existing snapshot up to today
-  const latestDate = new Date(sorted[sorted.length - 1].snapshotDate);
-  latestDate.setHours(0, 0, 0, 0);
-  const lateCursor = new Date(latestDate);
-  lateCursor.setDate(lateCursor.getDate() + 1);
-  while (lateCursor <= normalizedEnd) {
-    const isToday = lateCursor.toDateString() === normalizedEnd.toDateString();
-    await createSnapshotForDay(userId, new Date(lateCursor), isToday ? "actual" : "historical_estimate");
-    lateCursor.setDate(lateCursor.getDate() + 1);
+  const todayKey = normalizedEnd.toISOString().split("T")[0];
+  for (const date of missingDates) {
+    const isToday = date.toISOString().split("T")[0] === todayKey;
+    await createSnapshotForDay(userId, date, isToday ? "actual" : "historical_estimate");
   }
 }
 
@@ -516,7 +502,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ? Math.round(parseFloat(sortedSnapshots[sortedSnapshots.length - 1].totalValue))
           : openingValue;
 
-      const annualProjectionRate = 0.10;
+      // Use realized CAGR when history is long enough; fall back to 10% otherwise
+      let annualProjectionRate = 0.10;
+      let projectionMethod = "fallback_default";
+      if (sortedSnapshots.length >= 2) {
+        const startVal  = parseFloat(sortedSnapshots[0].totalValue);
+        const startDate = new Date(sortedSnapshots[0].snapshotDate);
+        const years = (today.getTime() - startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+        if (startVal > 0 && latestHistoricalValue > 0 && years >= 0.1) {
+          const cagrRate = Math.pow(latestHistoricalValue / startVal, 1 / years) - 1;
+          if (Number.isFinite(cagrRate) && cagrRate >= 0) {
+            // Cap at 50% to prevent runaway projections from short noisy windows
+            annualProjectionRate = Math.min(cagrRate, 0.50);
+            projectionMethod = "realized_cagr";
+          }
+        }
+      }
       const forecastMonths =
         timeframe === "7Y" ? 84 :
         timeframe === "3Y" ? 36 :
@@ -574,7 +575,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timeframe,
         anchorDate: anchor.toISOString().split('T')[0],
         openingValue,
-        projectionRate: `${(annualProjectionRate * 100).toFixed(0)}% p.a.`,
+        projectionRate: `${(annualProjectionRate * 100).toFixed(2)}% p.a.`,
+        projectionMethod,
         chartSource,
         data: chartRows,
       });
