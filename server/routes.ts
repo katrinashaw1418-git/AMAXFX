@@ -67,9 +67,6 @@ function calculateInvestmentPerformance(
       currentValue = investedAmount * Math.pow(1 + annualReturn, yearsHeld);
   }
 
-  // Floor at 50% of invested to prevent extreme downside projections
-  currentValue = Math.max(investedAmount * 0.5, currentValue);
-
   const returnAmount = currentValue - investedAmount;
   const returnPercentage = (returnAmount / investedAmount) * 100;
 
@@ -131,12 +128,62 @@ async function calculateInvestmentTotalsAtDate(userId: number, asOfDate: Date = 
   };
 }
 
-// Portfolio valuation at any given date — uses convertToUsd for fiat, FX for crypto, and the shared investment engine
-async function calculatePortfolioTotalsAtDate(userId: number, asOfDate: Date = new Date()) {
+// Reconstruct wallet balances at a historical date using reverse transaction replay.
+// Formula: balance_at_date = current_balance + debits_after_date - credits_after_date
+// This accurately undoes any deposits/withdrawals/investments that occurred after asOfDate.
+async function reconstructWalletBalancesAsOf(
+  userId: number,
+  asOfDate: Date
+): Promise<Array<{ currency: string; balance: number; walletType: string }>> {
   const wallets = await storage.getWallets(userId);
+  const allTransactions = await storage.getTransactions(userId); // no limit — need complete history
+
+  return wallets.map((wallet: any) => {
+    const currency = wallet.currency;
+    const currentBalance = parseFloat(wallet.balance);
+
+    // Only consider completed transactions that occurred AFTER the requested date
+    const txAfter = allTransactions.filter(
+      (t: any) => t.status === "completed" && new Date(t.createdAt) > asOfDate
+    );
+
+    // Debits: money LEFT this wallet after asOfDate → add back to get historical balance
+    const totalDebits = txAfter
+      .filter((t: any) => t.fromCurrency === currency)
+      .reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0);
+
+    // Credits: money ENTERED this wallet after asOfDate → subtract to get historical balance
+    // For exchange transactions the received amount = amount * exchangeRate; otherwise it's the amount directly
+    const totalCredits = txAfter
+      .filter((t: any) => t.toCurrency === currency)
+      .reduce((sum: number, t: any) => {
+        const base = parseFloat(t.amount);
+        const rate = t.exchangeRate ? parseFloat(t.exchangeRate) : 1;
+        return sum + (t.type === "exchange" ? base * rate : base);
+      }, 0);
+
+    const historicalBalance = Math.max(0, currentBalance + totalDebits - totalCredits);
+    return { currency, balance: historicalBalance, walletType: wallet.walletType };
+  });
+}
+
+// Portfolio valuation at any given date — uses date-aware wallet balances for historical accuracy
+async function calculatePortfolioTotalsAtDate(userId: number, asOfDate: Date = new Date()) {
+  const now = new Date();
+  const isToday = Math.abs(asOfDate.getTime() - now.getTime()) < 12 * 60 * 60 * 1000; // within 12 hours
+
+  // Use current wallet state for today; reconstruct from transactions for historical dates
+  const walletData = isToday
+    ? (await storage.getWallets(userId)).map((w: any) => ({
+        currency: w.currency,
+        balance: parseFloat(w.balance),
+        walletType: w.walletType,
+      }))
+    : await reconstructWalletBalancesAsOf(userId, asOfDate);
+
   let fiatValue = 0, cryptoValue = 0, stablecoinValue = 0;
-  for (const wallet of wallets) {
-    const balance = parseFloat(wallet.balance);
+  for (const wallet of walletData) {
+    const balance = wallet.balance;
     if (wallet.walletType === "fiat") {
       fiatValue += await convertToUsd(wallet.currency, balance);
     } else if (wallet.currency === "USDT" || wallet.currency === "USDC") {

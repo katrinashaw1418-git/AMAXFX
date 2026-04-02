@@ -1,0 +1,130 @@
+Yes — I re-verified it, and your audit direction is correct. The main confirmed issue is still the same: **historical portfolio values are not truly historical until wallet balances are date-aware by `asOfDate`**. That is the structural fix everything else depends on. 
+
+## Final summary table of fixes and code patches
+
+| Priority | Area                      | Verified issue                                              | Fix                                          | Code patch                                                                                                                                                                                            |                        |
+| -------- | ------------------------- | ----------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| Critical | Portfolio history         | Wallet balances are not historical                          | Use wallet balances as of the requested date | `const wallets = await storage.getWalletSnapshotsAsOf(userId, asOfDate) ?? await storage.reconstructWalletBalancesAsOf(userId, asOfDate);`                                                            |                        |
+| Critical | Investment valuation      | `manual_nav` / `market_price` can return placeholder values | Return `null` instead of fake valuations     | `case "manual_nav": case "market_price": return { investedAmount, currentValue: null, gainLoss: null, gainLossPercent: null, valuationStatus: "missing_price_source" };`                              |                        |
+| Critical | Artificial downside floor | Fake loss protection can distort value                      | Remove it completely                         | Delete the hardcoded 50% floor line entirely                                                                                                                                                          |                        |
+| Critical | Return series             | Risk metrics are invalid without real returns               | Build daily returns from time series         | `if (values[i - 1] > 0) returns.push(values[i] / values[i - 1] - 1);`                                                                                                                                 |                        |
+| Critical | Sharpe ratio              | Invalid unless based on real returns                        | Compute from mean/std of returns with guards | `const sharpe = returns.length >= 20 && std > 0.0001 ? ((meanReturn - riskFreeRate / 252) / std) * Math.sqrt(252) : null;`                                                                            |                        |
+| Critical | Volatility                | Wrong if not based on return series                         | Use std of returns                           | `const volatility = returns.length >= 2 ? std * Math.sqrt(252) : null;`                                                                                                                               |                        |
+| High     | Snapshot gaps             | Missing internal dates distort charts and returns           | Backfill every missing day in range          | `if (!existingDays.has(key)) await createSnapshotForDay(userId, new Date(cursor), "historical_estimate");`                                                                                            |                        |
+| High     | Snapshot labeling         | Estimated vs actual data may be unclear                     | Tag snapshot source                          | `snapshotType: "actual"                                                                                                                                                                               | "historical_estimate"` |
+| High     | Monthly P&L UI            | `null` becomes fake zero                                    | Preserve `null` through UI                   | `const monthlyPnl = portfolio?.monthlyPnl == null ? null : Number(portfolio.monthlyPnl);`                                                                                                             |                        |
+| High     | Chart thinning            | Analytics may use thinned chart data                        | Separate analytics data from chart data      | `const analyticsSnapshots = [...storedSnapshots]; let chartSnapshots = [...storedSnapshots];`                                                                                                         |                        |
+| High     | Return edge cases         | Zero / NaN can break return series                          | Add guards before pushing returns            | `if (values[i - 1] > 0 && Number.isFinite(values[i])) returns.push(values[i] / values[i - 1] - 1);`                                                                                                   |                        |
+| Medium   | Forecasting               | Static or overconfident projections                         | Use realized CAGR with fallback              | `if (years >= 0.25 && first > 0 && last > 0) { const cagr = Math.pow(last / first, 1 / years) - 1; if (Number.isFinite(cagr)) { annualProjectionRate = cagr; projectionMethod = "realized_cagr"; } }` |                        |
+| Medium   | Time convention           | Mixed constants can create inconsistency                    | Standardize annualization                    | `const years = days / 365.25;`                                                                                                                                                                        |                        |
+| Medium   | Risk-free rate            | Hardcoded in multiple places                                | Centralize configuration                     | `const riskFreeRate = CONFIG.RISK_FREE_RATE;`                                                                                                                                                         |                        |
+| Low      | Null display              | Missing values can look numeric                             | Use null-safe formatting helpers             | `if (value == null) return "—";`                                                                                                                                                                      |                        |
+| Low      | Currency formatting       | UI formatting may vary                                      | Centralize currency formatter                | `function formatNullableCurrency(v) { if (v == null) return "—"; return \`$${Math.round(v).toLocaleString()}`; }`                                                                                     |                        |
+
+## Clean code patch pack
+
+### 1. Historical wallet fix
+
+```ts
+const wallets =
+  await storage.getWalletSnapshotsAsOf(userId, asOfDate) ??
+  await storage.reconstructWalletBalancesAsOf(userId, asOfDate);
+```
+
+### 2. Remove fake valuation
+
+```ts
+case "manual_nav":
+case "market_price":
+  return {
+    investedAmount,
+    currentValue: null,
+    gainLoss: null,
+    gainLossPercent: null,
+    valuationStatus: "missing_price_source",
+  };
+```
+
+### 3. Build proper return series
+
+```ts
+const returns: number[] = [];
+
+for (let i = 1; i < values.length; i++) {
+  if (values[i - 1] > 0 && Number.isFinite(values[i])) {
+    returns.push(values[i] / values[i - 1] - 1);
+  }
+}
+```
+
+### 4. Sharpe and volatility
+
+```ts
+const meanReturn =
+  returns.reduce((a, b) => a + b, 0) / returns.length;
+
+const std = Math.sqrt(
+  returns.reduce((sum, r) => sum + Math.pow(r - meanReturn, 2), 0) /
+    returns.length
+);
+
+const sharpe =
+  returns.length >= 20 && std > 0.0001
+    ? ((meanReturn - riskFreeRate / 252) / std) * Math.sqrt(252)
+    : null;
+
+const volatility =
+  returns.length >= 2 ? std * Math.sqrt(252) : null;
+```
+
+### 5. Fill internal snapshot gaps
+
+```ts
+if (!existingDays.has(key)) {
+  await createSnapshotForDay(userId, new Date(cursor), "historical_estimate");
+}
+```
+
+### 6. Preserve null monthly P&L
+
+```ts
+const monthlyPnl =
+  portfolio?.monthlyPnl == null ? null : Number(portfolio.monthlyPnl);
+```
+
+### 7. Separate analytics from chart data
+
+```ts
+const analyticsSnapshots = [...storedSnapshots];
+let chartSnapshots = [...storedSnapshots];
+```
+
+### 8. Replace static forecast with realized CAGR
+
+```ts
+if (years >= 0.25 && first > 0 && last > 0) {
+  const cagr = Math.pow(last / first, 1 / years) - 1;
+
+  if (Number.isFinite(cagr)) {
+    annualProjectionRate = cagr;
+    projectionMethod = "realized_cagr";
+  }
+}
+```
+
+## Final implementation order
+
+| Order | Fix                                          |
+| ----- | -------------------------------------------- |
+| 1     | Historical wallet snapshots / reconstruction |
+| 2     | Remove fake valuation paths                  |
+| 3     | Build return series                          |
+| 4     | Recompute Sharpe and volatility              |
+| 5     | Fill snapshot gaps                           |
+| 6     | Preserve null monthly P&L                    |
+| 7     | Separate analytics from thinned chart data   |
+| 8     | Replace static forecast                      |
+
+## Final verdict
+
+Your audit is substantially correct. After cross-checking, these are the verified fixes I would implement. The **wallet history patch is the blocker**. Until that is done, the system can show polished charts and metrics, but historical portfolio analytics are still partly reconstructed rather than fully auditable. 
