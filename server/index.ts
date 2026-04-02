@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+app.set("trust proxy", 1); // Trust first proxy hop (Replit's reverse proxy sets X-Forwarded-For)
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -23,27 +24,15 @@ app.use(
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
 
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
+      // Log method, path, status, and duration only.
+      // Response bodies are intentionally excluded — logging financial data
+      // (balances, transactions, portfolio values) to stdout is a data-leak risk
+      // and would fill logs with sensitive operational detail.
+      log(`${req.method} ${path} ${res.statusCode} in ${duration}ms`);
     }
   });
 
@@ -55,10 +44,17 @@ app.use((req, res, next) => {
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    // Expose the original message for 4xx client errors; hide internals for 5xx.
+    const message = status < 500 ? (err.message || "Request failed") : "Internal Server Error";
+
+    // Log 5xx errors internally before responding (never after — that causes
+    // "Cannot set headers after they are sent" crashes).
+    if (status >= 500) console.error("[server error]", err);
 
     res.status(status).json({ message });
-    throw err;
+    // Do NOT re-throw here: the response is already sent. Re-throwing causes
+    // Express to crash the request cycle and can trigger the unhandled-rejection
+    // handler, producing duplicate error logs and broken client responses.
   });
 
   // importantly only setup vite in development and after

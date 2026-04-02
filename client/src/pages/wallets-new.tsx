@@ -42,7 +42,7 @@ function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrenc
   
   if (amount && String(amount).trim() !== '') {
     const amountNumber = parseFloat(String(amount));
-    const rateNumber = parseFloat(rate);
+    const rateNumber = rate;
     
     if (!isNaN(amountNumber) && !isNaN(rateNumber) && amountNumber > 0) {
       // Simple calculation: amount × exchange rate - 0.5% fee
@@ -169,13 +169,13 @@ export default function Wallets() {
   // Voice narration on page load
   useEffect(() => {
     if (wallets.length > 0 && voiceSettings.autoNarrate) {
-      const totalBalance = wallets.reduce((sum, wallet) => {
+      const totalBalance = wallets.reduce((sum: number, wallet: any) => {
         return sum + parseFloat(wallet.balance || '0');
       }, 0);
       
       setTimeout(() => {
         narrateNavigation(`Your wallets page with ${wallets.length} currencies`);
-        narrateBalance(`Total portfolio value: ${totalBalance.toFixed(2)} USD`);
+        narrateBalance("USD", totalBalance.toFixed(2));
       }, 500);
     }
   }, [wallets, voiceSettings.autoNarrate, narrateNavigation, narrateBalance]);
@@ -429,13 +429,13 @@ export default function Wallets() {
 
   // Filter out zero-balance wallets and sort with crypto currencies at bottom
   const walletsWithRegions = wallets
-    .filter(wallet => parseFloat(wallet.balance || '0') > 0) // Hide zero-balance wallets
-    .map(wallet => ({
+    .filter((wallet: any) => parseFloat(wallet.balance || '0') > 0) // Hide zero-balance wallets
+    .map((wallet: any) => ({
       ...wallet,
       config: CurrencyConfig[wallet.currency as keyof typeof CurrencyConfig],
       region: CurrencyConfig[wallet.currency as keyof typeof CurrencyConfig]?.region || 'Other'
     }))
-    .sort((a, b) => {
+    .sort((a: any, b: any) => {
       // Define crypto currencies that should always be at bottom
       const cryptoCurrencies = ['BTC', 'ETH', 'USDT', 'USDC'];
       const aIsCrypto = cryptoCurrencies.includes(a.currency);
@@ -527,7 +527,7 @@ export default function Wallets() {
                   </tr>
                 </thead>
                 <tbody>
-                  {walletsWithRegions.map((wallet) => (
+                  {walletsWithRegions.map((wallet: any) => (
                     <tr key={wallet.id} className="border-b hover:bg-gray-50">
                       <td className="p-4">
                         <div className="flex items-center gap-3">

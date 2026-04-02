@@ -1,8 +1,40 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { createHash } from "crypto";
+import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
+
+// ---------------------------------------------------------------------------
+// Zod validation schemas for all money-movement routes.
+// These run before any storage access so bad input is rejected early.
+// ---------------------------------------------------------------------------
+const fxExchangeSchema = z.object({
+  fromCurrency: z.string().min(2).max(10),
+  toCurrency: z.string().min(2).max(10),
+  amount: z.coerce.number().positive("Amount must be positive"),
+}).refine(d => d.fromCurrency !== d.toCurrency, {
+  message: "Source and target currencies must differ",
+});
+
+const depositSchema = z.object({
+  currency: z.string().min(2).max(10),
+  amount: z.coerce.number().positive("Amount must be positive"),
+  description: z.string().max(255).optional(),
+});
+
+const withdrawSchema = z.object({
+  currency: z.string().min(2).max(10),
+  amount: z.coerce.number().positive("Amount must be positive"),
+  description: z.string().max(255).optional(),
+});
+
+const investmentSchema = z.object({
+  productId: z.number().int().positive(),
+  amount: z.coerce.number().positive("Amount must be positive"),
+  sourceCurrency: z.string().min(2).max(10).optional(),
+  sourceAmount: z.coerce.number().positive().optional(),
+});
 
 // ---------------------------------------------------------------------------
 // Lightweight in-memory system event log — persists within a server session.
@@ -163,7 +195,7 @@ async function calculateInvestmentTotalsAtDate(userId: number, asOfDate: Date = 
     const product = products.find((p: any) => p.id === inv.productId);
     if (!product) continue;
     const investedAmount = parseFloat(inv.investedAmount);
-    const investmentDate = new Date(inv.investmentDate);
+    const investmentDate = new Date(inv.investmentDate ?? Date.now());
     if (investmentDate > asOfDate) continue; // investment didn't exist yet at asOfDate
     const perf = calculateInvestmentPerformance(product, investedAmount, investmentDate, asOfDate);
     totalInvested += investedAmount;
@@ -792,7 +824,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const product = await storage.getInvestmentProduct(inv.productId);
         if (!product) continue;
         const investedAmount = parseFloat(inv.investedAmount);
-        const investmentDate = new Date(inv.investmentDate);
+        const investmentDate = new Date(inv.investmentDate ?? Date.now());
         const asOf = investmentDate <= ANCHOR ? ANCHOR : investmentDate;
         const perf = calculateInvestmentPerformance(product, investedAmount, investmentDate, asOf);
         openingInvestmentValue += perf.currentValue ?? 0;
@@ -805,7 +837,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const product = await storage.getInvestmentProduct(inv.productId);
           if (!product) continue;
           const investedAmount = parseFloat(inv.investedAmount);
-          const investmentDate = new Date(inv.investmentDate);
+          const investmentDate = new Date(inv.investmentDate ?? Date.now());
           const asOf = targetDate < investmentDate ? investmentDate : targetDate;
           const perf = calculateInvestmentPerformance(product, investedAmount, investmentDate, asOf);
           total += perf.currentValue ?? 0;
@@ -1220,9 +1252,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const product = await storage.getInvestmentProduct(investment.productId);
         if (product) {
           const investedAmount = parseFloat(investment.investedAmount);
-          const investmentDate = new Date(investment.investmentDate);
+          const investmentDate = new Date(investment.investmentDate ?? Date.now());
           const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, evaluationDate);
-          investmentValue += performance.currentValue;
+          investmentValue += performance.currentValue ?? 0;
         }
       }
       
@@ -1470,7 +1502,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create FX exchange transaction
   app.post("/api/fx-exchange", moneyMovementLimiter, async (req, res) => {
     try {
-      const { fromCurrency, toCurrency, amount } = req.body;
       const userId = 1;
 
       // Optional idempotency — if the client sends an Idempotency-Key header:
@@ -1491,9 +1522,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      if (!fromCurrency || !toCurrency || !amount) {
-        return res.status(400).json({ error: "Missing required fields" });
+      const parsed = fxExchangeSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0].message });
       }
+      const { fromCurrency, toCurrency, amount } = parsed.data;
 
       const rate = await storage.getFxRate(fromCurrency, toCurrency);
       if (!rate) {
@@ -1520,10 +1553,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const exchangeRate = parseFloat(rate.rate);
-      const convertedAmount = parseFloat(amount) * exchangeRate;
+      const convertedAmount = amount * exchangeRate;
       const fee = convertedAmount * 0.005; // 0.5% fee on converted amount
       const netConvertedAmount = convertedAmount - fee;
-      const totalDeduction = parseFloat(amount); // Only deduct the original amount from source
+      const totalDeduction = amount; // Only deduct the original amount from source
 
       // Check if sufficient balance in source wallet
       if (parseFloat(fromWallet.availableBalance) < totalDeduction) {
@@ -1531,7 +1564,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Validate exchange parameters before any state mutation
-      validateTransaction({ type: "exchange", amount: parseFloat(amount), fromCurrency, toCurrency, exchangeRate });
+      validateTransaction({ type: "exchange", amount, fromCurrency, toCurrency, exchangeRate });
 
       // Update source wallet (deduct amount + fee)
       const newFromBalance = (parseFloat(fromWallet.balance) - totalDeduction).toFixed(2);
@@ -1583,12 +1616,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create deposit transaction (legacy route)
   app.post("/api/deposit", async (req, res) => {
     try {
-      const { currency, amount, description } = req.body;
       const userId = 1;
-      
-      if (!currency || !amount) {
-        return res.status(400).json({ error: "Missing required fields" });
+      const parsedDeposit = depositSchema.safeParse(req.body);
+      if (!parsedDeposit.success) {
+        return res.status(400).json({ error: parsedDeposit.error.errors[0].message });
       }
+      const { currency, amount, description } = parsedDeposit.data;
 
       // Get current wallet
       const wallet = await storage.getWallet(userId, currency);
@@ -1597,7 +1630,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Update wallet balance
-      const depositAmount = parseFloat(amount);
+      const depositAmount = amount;
       const newBalance = (parseFloat(wallet.balance) + depositAmount).toFixed(2);
       const newAvailableBalance = (parseFloat(wallet.availableBalance) + depositAmount).toFixed(2);
       
@@ -1671,12 +1704,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create withdrawal transaction (legacy route)
   app.post("/api/withdraw", moneyMovementLimiter, async (req, res) => {
     try {
-      const { currency, amount, description } = req.body;
       const userId = 1;
-      
-      if (!currency || !amount) {
-        return res.status(400).json({ error: "Missing required fields" });
+      const parsedWithdraw = withdrawSchema.safeParse(req.body);
+      if (!parsedWithdraw.success) {
+        return res.status(400).json({ error: parsedWithdraw.error.errors[0].message });
       }
+      const { currency, amount, description } = parsedWithdraw.data;
 
       // Get current wallet
       const wallet = await storage.getWallet(userId, currency);
@@ -1684,7 +1717,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Wallet not found" });
       }
       
-      const withdrawAmount = parseFloat(amount);
+      const withdrawAmount = amount;
       const fee = 25.00;
       const totalDeduction = withdrawAmount + fee;
       
@@ -1851,7 +1884,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const product = allProducts.find(p => p.id === investment.productId);
         if (!product) return investment;
         
-        const investmentDate = new Date(investment.investmentDate);
+        const investmentDate = new Date(investment.investmentDate ?? Date.now());
         const investedAmount = parseFloat(investment.investedAmount);
         const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, currentDate);
         
@@ -1911,12 +1944,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         for (const investment of investments) {
           const product = allProducts.find(p => p.id === investment.productId);
           if (product) {
-            const investmentDate = new Date(investment.investmentDate);
+            const investmentDate = new Date(investment.investmentDate ?? Date.now());
             if (investmentDate <= currentDate) {
               const investedAmount = parseFloat(investment.investedAmount);
               const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, currentDate);
               
-              totalInvestmentValue += performance.currentValue;
+              totalInvestmentValue += performance.currentValue ?? 0;
               totalInvestedAmount += investedAmount;
               
               // Weight the return by the investment amount
@@ -1948,9 +1981,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const product = allProducts.find(p => p.id === investment.productId);
         if (product) {
           const investedAmount = parseFloat(investment.investedAmount);
-          const investmentDate = new Date(investment.investmentDate);
+          const investmentDate = new Date(investment.investmentDate ?? Date.now());
           const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, endDate);
-          const currentValue = performance.currentValue;
+          const currentValue = performance.currentValue ?? 0;
           totalCurrentInvestment += currentValue;
           
           if (!currentPortfolioAllocation[product.category]) {
@@ -2009,7 +2042,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const product = allProducts.find(p => p.id === investment.productId);
         if (product) {
           const investedAmount = parseFloat(investment.investedAmount);
-          const investmentDate = new Date(investment.investmentDate);
+          const investmentDate = new Date(investment.investmentDate ?? Date.now());
           const performance = calculateInvestmentPerformance(product, investedAmount, investmentDate, endDate);
           
           totalInvestedNow += investedAmount;
@@ -2058,7 +2091,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             products: [],
           };
         }
-        categoryMap[item.category].value += item.currentValue;
+        categoryMap[item.category].value += item.currentValue ?? 0;
         categoryMap[item.category].products.push({
           name: item.productName,
           value: item.currentValue,
@@ -2095,20 +2128,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create investment
   app.post("/api/investments", moneyMovementLimiter, async (req, res) => {
     try {
-      const { productId, amount, sourceCurrency = "USD", sourceAmount } = req.body;
       const userId = 1; // Hardcoded user ID for demo
-      
-      if (!productId || !amount) {
-        return res.status(400).json({ error: "Missing required fields" });
+      const parsedInvestment = investmentSchema.safeParse(req.body);
+      if (!parsedInvestment.success) {
+        return res.status(400).json({ error: parsedInvestment.error.errors[0].message });
       }
+      const { productId, amount, sourceCurrency = "USD", sourceAmount } = parsedInvestment.data;
 
       const product = await storage.getInvestmentProduct(productId);
       if (!product) {
         return res.status(400).json({ error: "Investment product not found" });
       }
 
-      const investmentAmount = parseFloat(amount); // USD equivalent
-      const deductionAmount = sourceAmount ? parseFloat(sourceAmount) : investmentAmount; // Original currency amount
+      const investmentAmount = amount; // USD equivalent
+      const deductionAmount = sourceAmount ?? investmentAmount; // Original currency amount
       const currency = sourceCurrency || "USD";
       const minimumInvestment = parseFloat(product.minimumInvestment);
       
@@ -2198,8 +2231,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         targetWallet = await storage.createWallet({
           userId,
           currency: toCurrency,
-          balance: 0,
-          availableBalance: 0,
+          balance: "0.00",
+          availableBalance: "0.00",
           walletType: ['BTC', 'ETH'].includes(toCurrency) ? 'crypto' : 'fiat'
         });
       }
@@ -2237,11 +2270,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         type: "currency_transfer",
         amount: amount.toString(),
-        currency: fromCurrency,
-        targetCurrency: toCurrency,
+        fromCurrency: fromCurrency,
+        toCurrency: toCurrency,
         status: "completed",
         description: `Converted ${amount} ${fromCurrency} to ${finalAmount.toFixed(2)} ${toCurrency}`,
-        fee
+        fee: fee.toFixed(8)
       });
       
       res.json({

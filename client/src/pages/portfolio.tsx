@@ -157,7 +157,7 @@ export default function Portfolio() {
   ].filter(item => item.value > 0);
 
   // Individual wallet breakdown for detailed view
-  const walletData = wallets?.map((wallet, index) => {
+  const walletData = wallets?.map((wallet: any, index: number) => {
     const balance = parseFloat(wallet.balance);
     return {
       name: wallet.currency,
@@ -166,7 +166,7 @@ export default function Portfolio() {
       color: COLORS[index % COLORS.length],
       type: wallet.walletType
     };
-  }).filter(item => item.value > 0) || [];
+  }).filter((item: any) => item.value > 0) || [];
 
 
 
@@ -314,7 +314,7 @@ export default function Portfolio() {
             <p className="text-xs font-bold leading-tight whitespace-nowrap overflow-hidden text-ellipsis">${totalPortfolioValue.toLocaleString()}</p>
             <div className="flex items-center space-x-1 mt-1">
               <TrendingUp className="w-2 h-2 text-secondary" />
-              <span className="text-xs text-secondary">+{monthlyReturn.toFixed(1)}%</span>
+              <span className="text-xs text-secondary">+{monthlyReturn?.toFixed(1) ?? '0.0'}%</span>
             </div>
           </CardContent>
         </Card>
@@ -471,7 +471,7 @@ export default function Portfolio() {
                       paddingAngle={5}
                       dataKey="value"
                     >
-                      {(investmentBreakdown?.categories || []).map((entry, index) => (
+                      {(investmentBreakdown?.categories || []).map((entry: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={getCategoryColor(entry.name)} />
                       ))}
                     </Pie>
@@ -480,7 +480,7 @@ export default function Portfolio() {
                 </ResponsiveContainer>
               </div>
               <div className="flex-1 space-y-3">
-                {(investmentBreakdown?.categories || []).map((item, index) => (
+                {(investmentBreakdown?.categories || []).map((item: any, index: number) => (
                   <div 
                     key={item.name} 
                     className="flex items-center justify-between hover:bg-gray-50 p-2 rounded-lg cursor-pointer transition-colors"
@@ -513,11 +513,11 @@ export default function Portfolio() {
                   View All Investments
                 </Button>
               </div>
-              {(investmentBreakdown?.categories || []).map((category) => (
+              {(investmentBreakdown?.categories || []).map((category: any) => (
                 <div key={category.name} className="space-y-2">
                   <h5 className="font-medium text-sm text-gray-700 uppercase tracking-wide">{category.name}</h5>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {category.products.map((product, idx) => (
+                    {category.products.map((product: any, idx: number) => (
                       <div 
                         key={idx} 
                         className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"

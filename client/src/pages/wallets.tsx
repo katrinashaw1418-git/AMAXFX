@@ -353,9 +353,9 @@ export default function Wallets() {
   const currencySymbol = currencyInfo?.symbol || selectedCurrency;
 
   // Filter wallets by category
-  const fiatWallets = wallets?.filter(w => w.walletType === 'fiat') || [];
-  const stablecoinWallets = wallets?.filter(w => ['USDT', 'USDC'].includes(w.currency)) || [];
-  const cryptoWallets = wallets?.filter(w => w.walletType === 'crypto' && !['USDT', 'USDC'].includes(w.currency)) || [];
+  const fiatWallets = wallets?.filter((w: any) => w.walletType === 'fiat') || [];
+  const stablecoinWallets = wallets?.filter((w: any) => ['USDT', 'USDC'].includes(w.currency)) || [];
+  const cryptoWallets = wallets?.filter((w: any) => w.walletType === 'crypto' && !['USDT', 'USDC'].includes(w.currency)) || [];
 
   return (
     <div className="p-6 space-y-6">
@@ -448,7 +448,7 @@ export default function Wallets() {
           Fiat Assets
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {fiatWallets.map((wallet) => {
+        {fiatWallets.map((wallet: any) => {
           const config = currencyConfig[wallet.currency as keyof typeof currencyConfig];
           const balance = parseFloat(wallet.balance);
           const availableBalance = parseFloat(wallet.availableBalance);
@@ -530,7 +530,7 @@ export default function Wallets() {
           Stablecoins
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {stablecoinWallets.map((wallet) => {
+          {stablecoinWallets.map((wallet: any) => {
             const config = currencyConfig[wallet.currency as keyof typeof currencyConfig];
             const balance = parseFloat(wallet.balance);
             const availableBalance = parseFloat(wallet.availableBalance);
@@ -612,7 +612,7 @@ export default function Wallets() {
           Crypto Assets
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {cryptoWallets.map((wallet) => {
+        {cryptoWallets.map((wallet: any) => {
           const config = currencyConfig[wallet.currency as keyof typeof currencyConfig];
           const balance = parseFloat(wallet.balance);
           const availableBalance = parseFloat(wallet.availableBalance);
@@ -855,9 +855,8 @@ export default function Wallets() {
                       const amount = selectedWallet.currency === "BTC" ? "0.1" : 
                                     selectedWallet.currency === "ETH" ? "1.0" : "1000.00";
                       depositMutation.mutate({
-                        type: "deposit",
                         currency: selectedWallet.currency,
-                        amount,
+                        amount: parseFloat(amount),
                       });
                     }} 
                     variant="outline" 

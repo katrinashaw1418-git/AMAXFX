@@ -1,0 +1,331 @@
+I re-verified it against the uploaded zip and the earlier table needs a few updates.
+
+The biggest change is this: some items we previously called “missing” are now **partially implemented**, but still **not production-safe**. The earlier deferred decisions also still stand: keep user-based rate limiting deferred, and do not fake external settlement/reconciliation or pretend fake auth is acceptable. 
+
+## Updated audit table
+
+| Area                               | Previous view          | Verified current state                                                                 | Updated verdict        | Action                           |
+| ---------------------------------- | ---------------------- | -------------------------------------------------------------------------------------- | ---------------------- | -------------------------------- |
+| TypeScript / build health          | Broken                 | Confirmed broken. `npm run check` fails across client and server                       | **Launch blocker**     | Fix now                          |
+| Hardcoded demo identity            | Hardcoded `userId = 1` | Confirmed in many routes                                                               | **Launch blocker**     | Replace before launch            |
+| Header-based interim auth          | Rejected               | Not implemented; good                                                                  | **Keep rejected**      | Do not add                       |
+| IP rate limiting                   | Missing                | Now exists in `server/index.ts` and extra money-movement limiter in `server/routes.ts` | **Partially fixed**    | Keep, but not enough alone       |
+| User-based rate limiting           | Deferred               | Still not implemented                                                                  | **Correctly deferred** | Defer until real auth exists     |
+| FX idempotency                     | Missing                | Now exists for `/api/fx-exchange` only, in-memory `Map`                                | **Partially fixed**    | Upgrade to DB-backed idempotency |
+| Deposit / withdrawal idempotency   | Missing                | Still missing                                                                          | **High risk**          | Add now                          |
+| DB transaction atomicity           | Missing                | Still missing; wallet update + transaction write are separate                          | **Launch blocker**     | Add now                          |
+| Risk engine enforcement            | Missing                | `validateTransaction()` exists, but not a real portfolio/risk gate                     | **Still missing**      | Add server-side risk checks      |
+| Audit trail                        | Missing                | In-memory event log now exists                                                         | **Partially fixed**    | Add persistent audit table       |
+| Error middleware                   | Unsafe                 | Still rethrows after responding                                                        | **Bug**                | Fix now                          |
+| Logging                            | Too chatty             | API logger captures response bodies                                                    | **Production risk**    | Sanitize before launch           |
+| Schema/storage alignment           | Suspected mismatch     | Confirmed mismatches in `storage.ts` against schema                                    | **Launch blocker**     | Fix now                          |
+| Client API typing                  | Suspected mismatch     | Confirmed `createInvestment` typing mismatch                                           | **Bug**                | Fix now                          |
+| Old version files compiled         | Suspected              | Confirmed `client/src/pages/versions/*` causes many TS errors                          | **Build blocker**      | Exclude or move                  |
+| Portfolio snapshot schema          | Suspected mismatch     | Confirmed `source` required in schema but omitted in in-memory objects                 | **Bug**                | Fix now                          |
+| Investment product schema          | Suspected mismatch     | Confirmed `annualReturn` / `returnMethod` missing on many seeded objects               | **Build blocker**      | Fix now                          |
+| Pending → settled lifecycle        | Deferred               | Still not properly supported                                                           | **Correctly deferred** | Do not fake it                   |
+| Custodian reconciliation           | Deferred               | Still absent                                                                           | **Correctly deferred** | Defer until real integration     |
+| Frontend/backend performance basis | Concern                | Improved on backend, but TS issues and snapshot consistency still undermine trust      | **Not fully resolved** | Tighten now                      |
+
+## What I verified directly
+
+I checked the uploaded codebase itself, not just the prior summary.
+
+What is now genuinely better:
+
+* IP-based rate limiting is already present.
+* FX idempotency exists and correctly checks “same key + different payload”.
+* `annualReturn` / `returnMethod` logic has been introduced in routes.
+* There is at least a session-level in-memory event log.
+* `validateTransaction()` exists and is useful as a basic input guard.
+
+What is still materially wrong:
+
+* many routes still use `const userId = 1`
+* deposits, withdrawals, exchanges, and investments are not wrapped in a DB transaction
+* idempotency is only on FX and only in memory
+* `server/index.ts` error middleware sends a response and then throws
+* the API logger still captures JSON response bodies
+* `storage.ts` no longer matches the schema in multiple places
+* TS compile failures are still extensive enough to block a clean launch
+
+## Updated priority list
+
+### Priority 0 — must fix before any real launch
+
+1. Make TypeScript pass.
+2. Remove hardcoded `userId = 1`.
+3. Wrap money movement in DB transactions.
+4. Add durable idempotency for all money-movement routes.
+5. Fix schema/storage mismatches.
+6. Sanitize error handling and logging.
+
+### Priority 1 — should do now
+
+1. Add request validation with Zod on all mutation routes.
+2. Persist audit logs.
+3. Use decimal-safe arithmetic for money.
+4. Exclude dead version/test pages from production compile.
+5. Add rollback and duplicate-submit tests.
+
+### Priority 2 — still defer
+
+1. `pending -> settled` external lifecycle.
+2. custodian reconciliation.
+3. user-based rate-limit keys until real auth exists.
+4. any fake interim auth shortcut. The earlier “defer/reject” position still holds. 
+
+## Updated code patch list
+
+### 1) Exclude dead pages from compile
+
+This is now confirmed necessary, not optional.
+
+```json
+{
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist",
+    "**/*.test.ts",
+    "client/src/pages/versions/**",
+    "client/src/pages/test-api.tsx"
+  ]
+}
+```
+
+### 2) Fix investment client typing
+
+Confirmed from `client/src/lib/api.ts`.
+
+```ts
+createInvestment: (data: {
+  productId: number;
+  amount: number;
+  sourceCurrency?: string;
+  sourceAmount?: number;
+}) => apiRequest("POST", "/api/investments", data).then(res => res.json()),
+```
+
+### 3) Replace hardcoded demo user access
+
+Do this before launch.
+
+```ts
+import type { Request } from "express";
+
+export function requireAuthenticatedUserId(req: Request): number {
+  const userId = (req as any).user?.id ?? req.session?.userId;
+  if (!userId || typeof userId !== "number") {
+    const err = new Error("Unauthorized");
+    (err as any).status = 401;
+    throw err;
+  }
+  return userId;
+}
+```
+
+Then replace all:
+
+```ts
+const userId = 1;
+```
+
+with:
+
+```ts
+const userId = requireAuthenticatedUserId(req);
+```
+
+### 4) Add Zod validation for all money-movement routes
+
+This is now clearly required; earlier roadmap also called for validation schemas. 
+
+```ts
+import { z } from "zod";
+
+export const fxExchangeSchema = z.object({
+  fromCurrency: z.string().min(3).max(10),
+  toCurrency: z.string().min(3).max(10),
+  amount: z.coerce.number().positive(),
+});
+
+export const depositSchema = z.object({
+  currency: z.string().min(3).max(10),
+  amount: z.coerce.number().positive(),
+  description: z.string().max(255).optional(),
+});
+```
+
+### 5) Persist idempotency in DB, not memory
+
+Current FX `Map` is better than nothing, but not launch-safe.
+
+```ts
+export const idempotencyKeys = pgTable("idempotency_keys", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  route: text("route").notNull(),
+  key: text("key").notNull(),
+  payloadHash: text("payload_hash").notNull(),
+  responseJson: text("response_json").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+```
+
+Add unique key on `(userId, route, key)`.
+
+### 6) Make money movement atomic
+
+Still a launch blocker.
+
+```ts
+await db.transaction(async (tx) => {
+  // read wallet(s)
+  // validate balances
+  // update source wallet
+  // update target wallet
+  // insert transaction row
+});
+```
+
+Apply to:
+
+* `/api/fx-exchange`
+* `/api/deposit`
+* `/api/wallets/deposit`
+* `/api/withdraw`
+* `/api/wallets/withdraw`
+* `/api/investments`
+
+### 7) Fix `storage.ts` schema alignment
+
+These are confirmed compile blockers:
+
+* transaction objects need `sourceExchange` and `blockchainTxHash`
+* portfolio snapshots need `source`
+* seeded investment products need `annualReturn` and `returnMethod`
+
+Patch pattern:
+
+```ts
+const transaction: Transaction = {
+  id,
+  userId: insertTransaction.userId,
+  type: insertTransaction.type,
+  fromCurrency: insertTransaction.fromCurrency ?? null,
+  toCurrency: insertTransaction.toCurrency ?? null,
+  amount: insertTransaction.amount,
+  fee: insertTransaction.fee,
+  exchangeRate: insertTransaction.exchangeRate ?? null,
+  status: insertTransaction.status,
+  description: insertTransaction.description,
+  sourceExchange: insertTransaction.sourceExchange ?? null,
+  blockchainTxHash: insertTransaction.blockchainTxHash ?? null,
+  createdAt: new Date(),
+};
+```
+
+```ts
+const snapshot: PortfolioSnapshot = {
+  id: this.currentSnapshotId++,
+  userId: insertSnapshot.userId,
+  totalValue: insertSnapshot.totalValue,
+  cryptoValue: insertSnapshot.cryptoValue,
+  stablecoinValue: insertSnapshot.stablecoinValue,
+  fiatValue: insertSnapshot.fiatValue,
+  investmentValue: insertSnapshot.investmentValue,
+  snapshotDate: insertSnapshot.snapshotDate,
+  source: insertSnapshot.source ?? "actual",
+  createdAt: new Date(),
+};
+```
+
+### 8) Fix Drizzle query chaining
+
+Confirmed in DB storage methods.
+
+```ts
+const [wallet] = await db
+  .select()
+  .from(wallets)
+  .where(and(eq(wallets.userId, userId), eq(wallets.currency, currency)));
+```
+
+And build conditions once instead of repeatedly reassigning `.where()`.
+
+### 9) Fix error middleware
+
+Current middleware is unsafe.
+
+```ts
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  const status = err.status || err.statusCode || 500;
+  const message = status >= 500 ? "Internal Server Error" : (err.message || "Request failed");
+
+  if (status >= 500) console.error(err);
+
+  res.status(status).json({ message });
+});
+```
+
+### 10) Stop logging full API response bodies in production
+
+Current logger can leak sensitive operational data.
+
+```ts
+res.on("finish", () => {
+  const duration = Date.now() - start;
+  if (path.startsWith("/api")) {
+    log(`${req.method} ${path} ${res.statusCode} in ${duration}ms`);
+  }
+});
+```
+
+### 11) Add persistent audit logs
+
+The earlier roadmap called for audit logs; current in-memory event log is not enough. 
+
+```ts
+export const auditLogs = pgTable("audit_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  action: text("action").notNull(),
+  metadata: jsonb("metadata"),
+  ip: text("ip"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+```
+
+### 12) Use decimal-safe math
+
+Still recommended before real-money launch.
+
+```ts
+import Decimal from "decimal.js";
+
+const sourceAmount = new Decimal(amount);
+const rate = new Decimal(fxRate.rate);
+const converted = sourceAmount.mul(rate);
+const fee = converted.mul("0.005");
+const net = converted.minus(fee);
+```
+
+## Final updated verdict
+
+After verification, my table changes like this:
+
+* **Rate limiting:** no longer “missing”; now **partially fixed**
+* **FX idempotency:** no longer “missing”; now **partially fixed**
+* **Audit trail:** no longer “missing”; now **session-only / partially fixed**
+* **Backend return logic:** improved, but **not enough to call launch-ready**
+* **Core blockers remain:** build, auth boundary, atomicity, durable idempotency, schema alignment
+
+So the honest position is:
+
+**Not ready for real-world launch yet.**
+**Potentially ready for controlled staging / pilot after the Priority 0 fixes.**
+
+The earlier deferred items should still remain deferred exactly as discussed. 
+
+I can turn this into a single copy-paste fix pack for `server/routes.ts`, `server/storage.ts`, `client/src/lib/api.ts`, and `tsconfig.json`.

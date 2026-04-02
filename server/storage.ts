@@ -216,8 +216,10 @@ export class MemStorage implements IStorage {
     ];
     this.wallets.set(1, demoWallets);
 
-    // Create demo transactions
-    const demoTransactions: Transaction[] = [
+    // Create demo transactions.
+    // The two-field spread below adds sourceExchange/blockchainTxHash (both null)
+    // to every seed object, avoiding the need to repeat them 12 times in the literal.
+    const demoTransactions: Transaction[] = ([
       {
         id: 1,
         userId: 1,
@@ -374,7 +376,9 @@ export class MemStorage implements IStorage {
         description: "USDT to USDC swap",
         createdAt: new Date(Date.now() - 432000000), // 5 days ago
       },
-    ];
+    ] as Omit<Transaction, "sourceExchange" | "blockchainTxHash">[]).map(
+      (tx): Transaction => ({ ...tx, sourceExchange: null, blockchainTxHash: null })
+    );
     this.transactions.set(1, demoTransactions);
 
     // Create demo FX rates
@@ -2537,7 +2541,7 @@ export class MemStorage implements IStorage {
     this.aiRecommendations.set(1, demoRecommendations);
 
     // Create demo investment products
-    const demoInvestmentProducts: InvestmentProduct[] = [
+    const demoInvestmentProducts: Omit<InvestmentProduct, 'annualReturn' | 'returnMethod'>[] = [
       {
         id: 1,
         name: "Real Estate Equity Fund",
@@ -2820,9 +2824,11 @@ export class MemStorage implements IStorage {
       },
     ];
 
-    demoInvestmentProducts.forEach(product => {
-      this.investmentProducts.set(product.id, product);
-    });
+    demoInvestmentProducts
+      .map(p => ({ ...p, annualReturn: null as string | null, returnMethod: "fixed_annual_compound" }))
+      .forEach(product => {
+        this.investmentProducts.set(product.id, product);
+      });
 
     // Create demo user investments
     const demoUserInvestments: UserInvestment[] = [
@@ -3031,6 +3037,8 @@ export class MemStorage implements IStorage {
       exchangeRate: insertTransaction.exchangeRate || null,
       status: insertTransaction.status,
       description: insertTransaction.description,
+      sourceExchange: insertTransaction.sourceExchange ?? null,
+      blockchainTxHash: insertTransaction.blockchainTxHash ?? null,
       createdAt: new Date(),
     };
     
@@ -3209,6 +3217,7 @@ export class MemStorage implements IStorage {
       fiatValue: insertSnapshot.fiatValue,
       investmentValue: insertSnapshot.investmentValue,
       snapshotDate: insertSnapshot.snapshotDate,
+      source: insertSnapshot.source ?? "actual",
       createdAt: new Date(),
     };
     const existing = this.portfolioSnapshotsStore.get(insertSnapshot.userId) || [];
@@ -3261,8 +3270,7 @@ export class DatabaseStorage implements IStorage {
 
   async getWallet(userId: number, currency: string): Promise<Wallet | undefined> {
     const [wallet] = await db.select().from(wallets)
-      .where(eq(wallets.userId, userId))
-      .where(eq(wallets.currency, currency));
+      .where(and(eq(wallets.userId, userId), eq(wallets.currency, currency)));
     return wallet || undefined;
   }
 
@@ -3294,11 +3302,13 @@ export class DatabaseStorage implements IStorage {
 
   // Transactions
   async getTransactions(userId: number, limit?: number): Promise<Transaction[]> {
-    let query = db.select().from(transactions).where(eq(transactions.userId, userId));
     if (limit) {
-      query = query.limit(limit);
+      return await db.select().from(transactions)
+        .where(eq(transactions.userId, userId))
+        .limit(limit);
     }
-    return await query;
+    return await db.select().from(transactions)
+      .where(eq(transactions.userId, userId));
   }
 
   async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
@@ -3352,19 +3362,13 @@ export class DatabaseStorage implements IStorage {
 
   // Investment Products
   async getInvestmentProducts(filters?: { category?: string; riskProfile?: string; liquidity?: string }): Promise<InvestmentProduct[]> {
-    let query = db.select().from(investmentProducts);
-    
-    if (filters?.category) {
-      query = query.where(eq(investmentProducts.category, filters.category));
-    }
-    if (filters?.riskProfile) {
-      query = query.where(eq(investmentProducts.riskProfile, filters.riskProfile));
-    }
-    if (filters?.liquidity) {
-      query = query.where(eq(investmentProducts.liquidity, filters.liquidity));
-    }
-    
-    return await query;
+    const conditions = [];
+    if (filters?.category) conditions.push(eq(investmentProducts.category, filters.category));
+    if (filters?.riskProfile) conditions.push(eq(investmentProducts.riskProfile, filters.riskProfile));
+    if (filters?.liquidity) conditions.push(eq(investmentProducts.liquidity, filters.liquidity));
+
+    return await db.select().from(investmentProducts)
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
   }
 
   async getInvestmentProduct(id: number): Promise<InvestmentProduct | undefined> {
@@ -3387,17 +3391,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPortfolioSnapshots(userId: number, startDate?: Date, endDate?: Date): Promise<PortfolioSnapshot[]> {
-    let query = db.select().from(portfolioSnapshots).where(eq(portfolioSnapshots.userId, userId));
-    
-    // Add date filters if provided
+    const conditions = [eq(portfolioSnapshots.userId, userId)];
     if (startDate && endDate) {
-      query = query.where(
-        // Using SQL expression to filter by date range
+      conditions.push(
         sql`${portfolioSnapshots.snapshotDate} >= ${startDate} AND ${portfolioSnapshots.snapshotDate} <= ${endDate}`
       );
     }
-    
-    return await query.orderBy(portfolioSnapshots.snapshotDate);
+    return await db.select().from(portfolioSnapshots)
+      .where(and(...conditions))
+      .orderBy(portfolioSnapshots.snapshotDate);
   }
 
   async createPortfolioSnapshot(insertSnapshot: InsertPortfolioSnapshot): Promise<PortfolioSnapshot> {

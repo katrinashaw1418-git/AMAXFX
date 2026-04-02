@@ -80,10 +80,10 @@ export default function Transactions() {
   const { data: transactions, isLoading, error } = useTransactions();
 
   // Compute summary stats from actual transaction data
-  const totalVolume = transactions?.reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0;
-  const totalFees = transactions?.reduce((sum, t) => sum + parseFloat(t.fee || '0'), 0) || 0;
+  const totalVolume = transactions?.reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) || 0;
+  const totalFees = transactions?.reduce((sum: number, t: any) => sum + parseFloat(t.fee || '0'), 0) || 0;
 
-  const filteredTransactions = transactions?.filter(transaction => {
+  const filteredTransactions = transactions?.filter((transaction: any) => {
     const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          transaction.fromCurrency?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          transaction.toCurrency?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -169,7 +169,7 @@ export default function Transactions() {
           <CardContent className="p-6">
             <h3 className="text-sm font-medium text-gray-500 mb-2">Pending</h3>
             <p className="text-2xl font-bold text-yellow-600">
-              {transactions?.filter(t => t.status === "pending").length || 0}
+              {transactions?.filter((t: any) => t.status === "pending").length || 0}
             </p>
             <p className="text-sm text-gray-600 mt-1">Awaiting processing</p>
           </CardContent>
@@ -265,7 +265,7 @@ export default function Transactions() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTransactions?.map((transaction) => (
+              {filteredTransactions?.map((transaction: any) => (
                 <TableRow key={transaction.id}>
                   <TableCell>
                     <div>

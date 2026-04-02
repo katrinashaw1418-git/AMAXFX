@@ -125,7 +125,7 @@ export default function AiAdvisoryPanel() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {recommendations?.map((recommendation) => {
+          {recommendations?.map((recommendation: any) => {
             const Icon = getRecommendationIcon(recommendation.type);
             
             return (

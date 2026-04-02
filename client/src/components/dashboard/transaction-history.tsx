@@ -123,7 +123,7 @@ export default function TransactionHistory() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {transactions?.map((transaction) => (
+            {transactions?.map((transaction: any) => (
               <TableRow key={transaction.id}>
                 <TableCell>
                   {new Date(transaction.createdAt).toLocaleDateString()}

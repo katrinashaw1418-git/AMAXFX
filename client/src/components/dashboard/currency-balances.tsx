@@ -75,7 +75,7 @@ export default function CurrencyBalances() {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {wallets.map((wallet) => {
+          {wallets.map((wallet: any) => {
             const config = currencyConfig[wallet.currency as keyof typeof currencyConfig];
             const balance = parseFloat(wallet.balance);
             

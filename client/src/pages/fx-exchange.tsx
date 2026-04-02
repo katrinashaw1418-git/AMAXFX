@@ -98,8 +98,8 @@ export default function FxExchange() {
   const convertedAmount = grossConverted - fee;
   
   // Get wallet balances for display
-  const fromWallet = wallets.find(w => w.currency === fromCurrency);
-  const toWallet = wallets.find(w => w.currency === toCurrency);
+  const fromWallet = wallets.find((w: any) => w.currency === fromCurrency);
+  const toWallet = wallets.find((w: any) => w.currency === toCurrency);
   const fromBalance = fromWallet ? parseFloat(fromWallet.balance) : 0;
   const toBalance = toWallet ? parseFloat(toWallet.balance) : 0;
 

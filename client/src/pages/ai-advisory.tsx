@@ -144,8 +144,8 @@ export default function AiAdvisory() {
   const investmentValue = portfolioAllocation?.investment?.value || 0;
 
   // Calculate actual investment returns
-  const totalInvested = userInvestments?.reduce((sum, inv) => sum + parseFloat(inv.investedAmount), 0) || 0;
-  const totalCurrent = userInvestments?.reduce((sum, inv) => sum + parseFloat(inv.currentValue), 0) || 0;
+  const totalInvested = userInvestments?.reduce((sum: number, inv: any) => sum + parseFloat(inv.investedAmount), 0) || 0;
+  const totalCurrent = userInvestments?.reduce((sum: number, inv: any) => sum + parseFloat(inv.currentValue), 0) || 0;
   const investmentReturn = totalCurrent - totalInvested;
   const investmentReturnRate = totalInvested > 0 ? (investmentReturn / totalInvested) : 0;
 
@@ -674,7 +674,7 @@ export default function AiAdvisory() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recommendations?.map((recommendation) => {
+                {recommendations?.map((recommendation: any) => {
                   const Icon = getRecommendationIcon(recommendation.type);
                   
                   return (
@@ -993,7 +993,7 @@ export default function AiAdvisory() {
                     paddingAngle={5}
                     dataKey="value"
                   >
-                    {(investmentBreakdown?.categories || []).map((entry, index) => (
+                    {(investmentBreakdown?.categories || []).map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={getCategoryColor(entry.name)} />
                     ))}
                   </Pie>
@@ -1002,7 +1002,7 @@ export default function AiAdvisory() {
               </ResponsiveContainer>
             </div>
             <div className="flex-1 space-y-3">
-              {(investmentBreakdown?.categories || []).map((item, index) => (
+              {(investmentBreakdown?.categories || []).map((item: any, index: number) => (
                 <div 
                   key={item.name} 
                   className="flex items-center justify-between hover:bg-gray-50 p-2 rounded-lg cursor-pointer transition-colors"
@@ -1035,11 +1035,11 @@ export default function AiAdvisory() {
                 View All Investments
               </Button>
             </div>
-            {(investmentBreakdown?.categories || []).map((category) => (
+            {(investmentBreakdown?.categories || []).map((category: any) => (
               <div key={category.name} className="space-y-2">
                 <h5 className="font-medium text-sm text-gray-700 uppercase tracking-wide">{category.name}</h5>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {category.products.map((product, idx) => (
+                  {category.products.map((product: any, idx: number) => (
                     <div 
                       key={idx} 
                       className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
