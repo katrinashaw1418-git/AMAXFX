@@ -800,11 +800,18 @@ export default function Portfolio() {
                   <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
                     <p className="text-xs font-medium text-amber-900">Based on reconstructed history</p>
                     <p className="text-xs text-amber-800 mt-1">
-                      Metrics are calculated using partially reconstructed portfolio data. Risk metrics (volatility, Sharpe ratio, drawdown) are unavailable because historical data consists of reconstructed portfolio values rather than market-based price movements. These metrics will be enabled automatically once real price history is recorded.
+                      Metrics are calculated using partially reconstructed portfolio data.
                     </p>
                   </div>
                 );
-                return null; // state === 'historical' — no warning needed
+                return (
+                  <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+                    <p className="text-xs font-medium text-green-900">Historical data</p>
+                    <p className="text-xs text-green-800 mt-1">
+                      Metrics are based on observed portfolio performance.
+                    </p>
+                  </div>
+                );
               })()}
             </div>
           </CardContent>
