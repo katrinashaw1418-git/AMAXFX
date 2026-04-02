@@ -1,0 +1,248 @@
+Here is the clean summary of the **additional fixes still worth doing** and the **code patches** for them. These are hardening fixes, not core-engine repairs. Your core math and historical reconstruction are already in much better shape; the remaining work is mainly about **truthfulness, integrity, and resilience**. 
+
+## Summary table of additional fixes required
+
+| Priority | Area                          | Additional fix                                                 | Why it matters                                                                    | Patch                                                                                    |
+| -------- | ----------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| High     | `manual_nav` / `market_price` | Stop using `investedAmount` as a proxy valuation               | Keeps totals stable, but economically incorrect                                   | Return `null` for `currentValue`, keep `valuationStatus`, and make aggregation null-safe |
+| High     | Ledger reconciliation         | Add drift detection between reconstructed and current balances | Reconstruction is only reliable if the transaction ledger is complete and correct | Add `reconcileWalletBalances()` and warn on mismatch                                     |
+| High     | Transaction validation        | Validate transaction inputs before insert                      | Bad transactions can corrupt historical reconstruction                            | Add `validateTransaction()` for amount, currencies, rate, and type                       |
+| Medium   | History source visibility     | Show when history includes reconstructed estimates             | Prevents users from treating estimated history as fully actual                    | Return `historySource` / `snapshotType` from API and display a note in UI                |
+| Medium   | Missing-price visibility      | Surface unpriced assets clearly                                | Placeholder/unpriced assets can hide inside totals                                | Add `hasUnpricedAssets` and show warning text                                            |
+| Medium   | Forecast clamping             | Prevent extreme CAGR forecasts                                 | Short or unusual history can create unrealistic projection lines                  | Clamp `annualProjectionRate` to safe bounds                                              |
+| Medium   | Decimal-safe money math       | Improve FX / crypto precision                                  | Float arithmetic can accumulate drift over time                                   | Use `Decimal` in exchange/reconstruction paths when you’re ready                         |
+| Low      | Persistent audit logs         | Keep reconstruction and drift events beyond console            | `console.warn` is not durable or queryable                                        | Add an audit table or event log later                                                    |
+| Low      | Regression tests              | Protect reconstruction and metric logic from regressions       | These paths are now correctness-sensitive                                         | Add tests for deposits, withdrawals, exchanges, null valuations                          |
+
+## Code patches
+
+### 1) Remove placeholder valuation for unpriced assets
+
+This is the biggest remaining economic fix.
+
+```ts
+case "manual_nav":
+case "market_price":
+  currentValue = null;
+  valuationStatus = "missing_price_source";
+  break;
+```
+
+Then make totals safe:
+
+```ts
+totalCurrentValue += perf.currentValue ?? 0;
+```
+
+Optional visibility flag:
+
+```ts
+const hasUnpricedAssets = performances.some(
+  (p) => p.currentValue === null
+);
+```
+
+---
+
+### 2) Add ledger reconciliation
+
+This is the most useful integrity check after wallet reconstruction.
+
+```ts
+async function reconcileWalletBalances(userId: number, asOfDate: Date) {
+  const reconstructed = await reconstructWalletBalancesAsOf(userId, asOfDate);
+  const currentWallets = await storage.getWallets(userId);
+
+  const tolerance = 1e-6;
+
+  const mismatches = currentWallets
+    .map((wallet) => {
+      const reconstructedBalance = reconstructed[wallet.currency] ?? 0;
+      const currentBalance = Number(wallet.balance ?? 0);
+      const delta = currentBalance - reconstructedBalance;
+
+      return {
+        currency: wallet.currency,
+        reconstructedBalance,
+        currentBalance,
+        delta,
+      };
+    })
+    .filter((x) => Math.abs(x.delta) > tolerance);
+
+  if (mismatches.length > 0) {
+    console.warn("ledger_drift_detected", {
+      userId,
+      asOfDate,
+      mismatches,
+    });
+  }
+
+  return mismatches;
+}
+```
+
+---
+
+### 3) Validate transactions before saving
+
+This protects the reconstruction engine.
+
+```ts
+function validateTransaction(tx: {
+  type: string;
+  amount: number;
+  fromCurrency?: string | null;
+  toCurrency?: string | null;
+  exchangeRate?: number | null;
+}) {
+  if (!Number.isFinite(tx.amount) || tx.amount <= 0) {
+    throw new Error("Invalid transaction amount");
+  }
+
+  if (!tx.type) {
+    throw new Error("Transaction type required");
+  }
+
+  if (tx.type === "exchange") {
+    if (!tx.fromCurrency || !tx.toCurrency) {
+      throw new Error("Exchange requires both currencies");
+    }
+
+    if (!Number.isFinite(tx.exchangeRate) || tx.exchangeRate! <= 0) {
+      throw new Error("Invalid exchange rate");
+    }
+  }
+
+  if (tx.fromCurrency && tx.toCurrency && tx.fromCurrency === tx.toCurrency) {
+    throw new Error("fromCurrency and toCurrency cannot be the same");
+  }
+}
+```
+
+Call it before insert:
+
+```ts
+validateTransaction(transactionData);
+```
+
+---
+
+### 4) Show whether history is actual or mixed
+
+This improves honesty in the UI.
+
+Backend:
+
+```ts
+const hasEstimated = snapshots.some(
+  (s) => s.snapshotType === "historical_estimate"
+);
+
+return res.json({
+  snapshots,
+  historySource: hasEstimated ? "mixed" : "actual",
+});
+```
+
+Frontend:
+
+```tsx
+{historySource !== "actual" && (
+  <p className="text-xs text-gray-500">
+    Includes reconstructed historical estimates
+  </p>
+)}
+```
+
+---
+
+### 5) Show missing-price warning
+
+Useful once you stop proxy-valuing unpriced assets.
+
+```ts
+return {
+  performances,
+  hasUnpricedAssets: performances.some(
+    (p) => p.valuationStatus === "missing_price_source"
+  ),
+};
+```
+
+UI:
+
+```tsx
+{hasUnpricedAssets && (
+  <p className="text-xs text-amber-600">
+    Some asset values are unavailable due to missing price/NAV sources.
+  </p>
+)}
+```
+
+---
+
+### 6) Clamp extreme CAGR forecast outputs
+
+Prevents absurd projection lines.
+
+```ts
+if (Number.isFinite(cagr)) {
+  annualProjectionRate = Math.max(-0.95, Math.min(1.0, cagr));
+  projectionMethod = "realized_cagr";
+}
+```
+
+---
+
+### 7) Decimal-safe FX / crypto math
+
+This is optional for now, but it is the right future hardening path.
+
+```ts
+import Decimal from "decimal.js";
+
+const credit = new Decimal(tx.amount).mul(tx.exchangeRate ?? 1);
+
+balances[tx.toCurrency!] = new Decimal(
+  balances[tx.toCurrency!] ?? 0
+)
+  .minus(credit)
+  .toNumber();
+```
+
+---
+
+### 8) Regression test skeleton
+
+Even if not enabled now, this is the right future set.
+
+```ts
+it("reverses deposit after asOfDate", () => {});
+it("reverses withdrawal correctly", () => {});
+it("handles exchange with rate", () => {});
+it("ignores transactions before asOfDate", () => {});
+it("handles null valuations safely", () => {});
+```
+
+## Best order to implement
+
+| Order | Fix                                                    |
+| ----- | ------------------------------------------------------ |
+| 1     | Remove placeholder valuation and make totals null-safe |
+| 2     | Add ledger reconciliation                              |
+| 3     | Add transaction validation                             |
+| 4     | Expose history-source and missing-price warnings       |
+| 5     | Clamp forecasts                                        |
+| 6     | Add decimal-safe money math later                      |
+| 7     | Add tests later                                        |
+
+## Bottom line
+
+The most valuable remaining fixes are:
+
+* **stop proxy-valuing unpriced assets**
+* **add ledger drift detection**
+* **validate transactions at the boundary**
+
+Those three will give you the biggest gain in reliability with the least extra complexity. 

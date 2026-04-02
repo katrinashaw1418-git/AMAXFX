@@ -1,0 +1,294 @@
+Your decisions here are **mostly correct and defensible**, but a couple of them need **tight clarification** so you don’t accidentally introduce hidden risks later.
+
+I’ll go line-by-line and give you a **true verification (approve / adjust / caution)** — not generic advice.
+
+---
+
+# ✅ 📊 VERIFICATION TABLE — SKIPPED ITEMS
+
+| Item                            | Your Decision | Verdict                         | Why                                           |
+| ------------------------------- | ------------- | ------------------------------- | --------------------------------------------- |
+| Backfill batching (Promise.all) | ❌ Skipped     | ✅ **Correct decision**          | Prevents race conditions + duplicate inserts  |
+| Decimal-safe math (decimal.js)  | ❌ Skipped     | ⚠️ **Conditionally OK**         | Safe *at current scale*, but not future-proof |
+| Regression tests                | ❌ Skipped     | ⚠️ **Risky but understandable** | Leaves system exposed to silent regressions   |
+| Persistent audit logs           | ❌ Skipped     | ⚠️ **Partially OK**             | Console logs ≠ audit trail                    |
+
+---
+
+# 🔍 1. BACKFILL BATCHING — ✅ YOU MADE THE RIGHT CALL
+
+Your reasoning:
+
+> concurrent check-then-insert creates race conditions
+
+✔ **100% correct**
+
+### Why sequential is safer:
+
+* Your logic depends on:
+
+  * `existingDays` check
+  * then insert
+* In parallel:
+
+  * multiple workers may see "missing"
+  * → duplicate snapshots
+
+### ✔ Verdict:
+
+> **Keep sequential OR enforce DB-level uniqueness constraint**
+
+### 🔧 Optional future-safe version:
+
+```ts
+UNIQUE(user_id, snapshot_date)
+```
+
+👉 This allows safe parallelism later if needed.
+
+---
+
+# 🔍 2. DECIMAL.JS — ⚠️ YOU'RE RIGHT *FOR NOW*
+
+Your reasoning:
+
+> drift < $0.01
+
+✔ Correct **given current constraints**
+
+### BUT here’s the real boundary:
+
+| Scenario                | Float Safe?      |
+| ----------------------- | ---------------- |
+| Small retail balances   | ✅ Yes            |
+| High-frequency crypto   | ⚠️ Borderline    |
+| FX conversions chaining | ❌ Risky          |
+| Institutional scale     | ❌ Not acceptable |
+
+### Hidden issue:
+
+```ts
+0.1 + 0.2 !== 0.3
+```
+
+Compounds across:
+
+* exchange
+* reconstruction
+* aggregation
+
+---
+
+### ✔ Verdict:
+
+> Acceptable **only because**:
+
+* your system is not high-frequency
+* precision tolerance is low
+
+---
+
+### 🚨 Recommendation (important nuance):
+
+👉 **Do NOT refactor now**, but:
+
+Add a comment:
+
+```ts
+// NOTE: Float math used intentionally.
+// Safe within current precision tolerance (<$0.01 drift).
+// Replace with Decimal.js if FX volume or precision requirements increase.
+```
+
+---
+
+# 🔍 3. REGRESSION TESTS — ⚠️ THIS IS YOUR WEAKEST AREA
+
+Your reasoning:
+
+> disabled in this environment
+
+✔ Understandable
+❌ But this is the **highest future risk**
+
+---
+
+### Why this matters now (post-fix):
+
+You just fixed:
+
+* reconstruction
+* risk metrics
+* null propagation
+
+👉 These are **fragile systems**
+
+---
+
+### Real risk:
+
+A future change like:
+
+```ts
+if (!tx.exchangeRate) ...
+```
+
+👉 could silently break:
+
+* historical balances
+* Sharpe ratio
+* portfolio totals
+
+---
+
+### ✔ Verdict:
+
+> Acceptable short-term
+> ❌ Not acceptable long-term
+
+---
+
+### 🔧 Minimal compromise (no full test suite):
+
+Add **inline assertions**:
+
+```ts
+if (!Number.isFinite(totalCurrentValue)) {
+  throw new Error("Invalid portfolio total (NaN detected)");
+}
+```
+
+👉 This gives you **runtime protection without full testing infra**
+
+---
+
+# 🔍 4. AUDIT LOGS — ⚠️ PARTIALLY CORRECT
+
+Your reasoning:
+
+> console.warn is enough
+
+✔ For debugging
+❌ Not for auditability
+
+---
+
+### Difference:
+
+| Type         | Purpose                |
+| ------------ | ---------------------- |
+| console.warn | Developer debugging    |
+| audit log    | Financial traceability |
+
+---
+
+### Current:
+
+```ts
+console.warn("ledger_drift_detected", mismatches);
+```
+
+✔ Good for dev
+❌ Lost after runtime
+
+---
+
+### ✔ Verdict:
+
+> Acceptable for now
+> ❌ Not audit-grade
+
+---
+
+### 🔧 Minimal upgrade (no DB migration):
+
+```ts
+if (mismatches.length > 0) {
+  console.warn("ledger_drift_detected", mismatches);
+
+  // lightweight persistence
+  await storage.saveSystemEvent({
+    type: "ledger_drift",
+    payload: mismatches,
+    timestamp: new Date(),
+  });
+}
+```
+
+👉 This gives you:
+
+* history
+* traceability
+* zero heavy infra
+
+---
+
+# 🧠 FINAL CROSS-CHECK SUMMARY
+
+| Area           | Status          |
+| -------------- | --------------- |
+| Core math      | ✅ Fully correct |
+| Reconstruction | ✅ Correct       |
+| Data integrity | ✅ Strong        |
+| Precision      | ⚠️ Acceptable   |
+| Testing        | ⚠️ Weak         |
+| Auditability   | ⚠️ Basic        |
+
+---
+
+# 🚨 WHAT YOU SHOULD *ACTUALLY* DO NEXT
+
+## Keep as-is:
+
+* ✅ Sequential backfill
+* ✅ No Decimal.js (for now)
+
+## Upgrade minimally:
+
+* ⚠️ Add runtime assertions
+* ⚠️ Add lightweight audit persistence
+
+---
+
+# 🏁 FINAL VERDICT
+
+Your decisions are:
+
+> ✅ **Technically sound**
+> ✅ **Pragmatic for current stage**
+> ⚠️ **Not yet production-hardened for scale**
+
+---
+
+# 💡 REAL TALK (IMPORTANT)
+
+You are now past the “build” phase.
+
+You are in:
+
+> 🔹 **System integrity phase**
+
+At this stage, failures don’t come from math anymore — they come from:
+
+* missing logs
+* silent drift
+* edge cases
+
+---
+
+## ✔ Bottom line
+
+> Your skips are justified — but you should add **lightweight safeguards**, not ignore the risks entirely.
+
+---
+
+If you want, next step:
+
+👉 **“Add lightweight integrity layer (no heavy infra)”**
+
+I’ll give you:
+
+* 5 small changes
+* that eliminate 80% of future system risk
+
+Without overengineering.

@@ -820,6 +820,14 @@ export default function Portfolio() {
                   </div>
                 );
               })()}
+              {!metricsLoading && realMetrics?.hasUnpricedAssets && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <p className="text-xs font-medium text-amber-900">Unpriced assets detected</p>
+                  <p className="text-xs text-amber-800 mt-1">
+                    One or more investments are missing live price or NAV data and are excluded from portfolio totals.
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

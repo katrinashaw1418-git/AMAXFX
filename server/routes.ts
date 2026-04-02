@@ -2,6 +2,19 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 
+// ---------------------------------------------------------------------------
+// Lightweight in-memory system event log — persists within a server session.
+// Stores the last MAX_EVENTS entries (FIFO ring); no DB migration required.
+// Replace with a persistent events table when audit-grade traceability is needed.
+// ---------------------------------------------------------------------------
+const MAX_SYSTEM_EVENTS = 200;
+const systemEventLog: Array<{ type: string; payload: unknown; timestamp: string }> = [];
+
+function saveSystemEvent(event: { type: string; payload: unknown }): void {
+  systemEventLog.unshift({ ...event, timestamp: new Date().toISOString() });
+  if (systemEventLog.length > MAX_SYSTEM_EVENTS) systemEventLog.length = MAX_SYSTEM_EVENTS;
+}
+
 // Category-level fallback rates — only used when a product has no explicit annualReturn set
 function getAnnualReturnFallback(category: string, productName?: string): number {
   const rates = {
@@ -126,6 +139,12 @@ async function calculateInvestmentTotalsAtDate(userId: number, asOfDate: Date = 
     });
   }
 
+  // Runtime guard — NaN here means a perf.currentValue ?? 0 silently received a non-numeric;
+  // fail fast rather than propagate a corrupt total downstream.
+  if (!Number.isFinite(totalCurrentValue)) {
+    throw new Error(`[investment_totals] NaN in totalCurrentValue for userId=${userId}`);
+  }
+
   return {
     totalInvested,
     totalCurrentValue,
@@ -139,6 +158,10 @@ async function calculateInvestmentTotalsAtDate(userId: number, asOfDate: Date = 
 // Reconstruct wallet balances at a historical date using reverse transaction replay.
 // Formula: balance_at_date = current_balance + debits_after_date - credits_after_date
 // This accurately undoes any deposits/withdrawals/investments that occurred after asOfDate.
+//
+// NOTE: Float (IEEE 754 double) arithmetic is used intentionally here.
+// Safe within current precision tolerance (<$0.01 drift per transaction chain).
+// Replace with Decimal.js if FX volume or precision requirements increase significantly.
 async function reconstructWalletBalancesAsOf(
   userId: number,
   asOfDate: Date
@@ -225,7 +248,10 @@ async function reconcileWalletBalances(
     .filter((x) => Math.abs(x.delta) > tolerance);
 
   if (mismatches.length > 0) {
-    console.warn("[ledger_drift_detected]", { userId, asOfDate: asOfDate.toISOString().split("T")[0], mismatches });
+    const logPayload = { userId, asOfDate: asOfDate.toISOString().split("T")[0], mismatches };
+    console.warn("[ledger_drift_detected]", logPayload);
+    // Persist to in-memory event log for session-level traceability
+    saveSystemEvent({ type: "ledger_drift", payload: logPayload });
   }
 
   return mismatches;
@@ -1031,6 +1057,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Real metrics error:", error);
       res.status(500).json({ error: "Failed to compute real metrics" });
     }
+  });
+
+  // Diagnostic: expose the in-memory system event log for integrity monitoring
+  // Returns the last MAX_SYSTEM_EVENTS entries (most recent first)
+  app.get("/api/system-events", async (_req, res) => {
+    res.json({ count: systemEventLog.length, events: systemEventLog });
   });
 
   // Get user wallets
