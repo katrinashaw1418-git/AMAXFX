@@ -42,6 +42,28 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
+  // Cron-based ledger reconciliation — runs every 24 hours for all users.
+  const { db: cronDb } = await import("./db");
+  const { users: usersTable } = await import("@shared/schema");
+  const { reconcileWalletBalances } = await import("./routes");
+
+  async function runReconciliation() {
+    try {
+      const allUsers = await cronDb.select({ id: usersTable.id }).from(usersTable);
+      for (const user of allUsers) {
+        await reconcileWalletBalances(user.id, new Date()).catch((e: any) =>
+          console.error(`[reconciliation] failed for userId=${user.id}`, e)
+        );
+      }
+      log(`[reconciliation] completed for ${allUsers.length} user(s)`);
+    } catch (e) {
+      console.error("[reconciliation] cron error", e);
+    }
+  }
+
+  // Schedule 24-hour reconciliation
+  setInterval(runReconciliation, 24 * 60 * 60 * 1000);
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     // Expose the original message for 4xx client errors; hide internals for 5xx.

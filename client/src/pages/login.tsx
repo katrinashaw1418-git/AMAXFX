@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useAuth } from "@/contexts/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -101,6 +101,11 @@ export default function Login() {
                   "Sign In"
                 )}
               </Button>
+              <div className="text-center">
+                <Link href="/forgot-password" className="text-sm text-amber-400 hover:text-amber-300">
+                  Forgot your password?
+                </Link>
+              </div>
             </form>
           </CardContent>
         </Card>

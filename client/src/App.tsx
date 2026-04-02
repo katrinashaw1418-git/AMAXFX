@@ -15,6 +15,8 @@ import Transactions from "@/pages/transactions";
 import Compliance from "@/pages/compliance";
 import Investments from "@/pages/investments";
 import Login from "@/pages/login";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 
@@ -65,6 +67,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route component={ProtectedApp} />
     </Switch>
   );

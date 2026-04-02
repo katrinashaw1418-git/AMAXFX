@@ -1,6 +1,6 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
-import { createHash } from "crypto";
+import { createHash, randomBytes } from "crypto";
 import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import { and, eq, sql } from "drizzle-orm";
@@ -13,6 +13,8 @@ import {
   userInvestments,
   idempotencyKeys,
   auditLogs,
+  passwordResetTokens,
+  users,
 } from "@shared/schema";
 import {
   requireAuth,
@@ -375,7 +377,7 @@ function validateTransaction(tx: {
 
 // Compares reconstructed balances against current wallet state and logs any drift.
 // Returns the list of mismatches so callers can decide how to surface them.
-async function reconcileWalletBalances(
+export async function reconcileWalletBalances(
   userId: number,
   asOfDate: Date
 ): Promise<Array<{ currency: string; reconstructedBalance: number; currentBalance: number; delta: number }>> {
@@ -1663,6 +1665,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // FX Exchange — atomic SERIALIZABLE transaction + Decimal + DB idempotency
   // ---------------------------------------------------------------------------
   app.post("/api/fx-exchange", moneyMovementLimiter, async (req, res) => {
+    let pendingTx: any = null;
     try {
       const { userId } = requireAuth(req);
 
@@ -1699,6 +1702,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fee = converted.mul("0.005");
       const netConverted = converted.minus(fee);
 
+      // Pre-insert pending record — persists even if the DB transaction rolls back
+      [pendingTx] = await db.insert(transactions).values({
+        userId, type: "exchange", fromCurrency, toCurrency,
+        amount: amount.toFixed(8), fee: fee.toFixed(8),
+        exchangeRate: exchangeRate.toFixed(8), status: "pending",
+        description: `${fromCurrency} to ${toCurrency} Exchange`,
+        sourceExchange: null, blockchainTxHash: null,
+      }).returning();
+
       let txRecord: any;
       await db.transaction(async (tx) => {
         await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
@@ -1726,14 +1738,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .set({ balance: new Decimal(toWallet.balance).plus(netConverted).toFixed(8), availableBalance: new Decimal(toWallet.availableBalance).plus(netConverted).toFixed(8) })
           .where(eq(wallets.id, toWallet.id));
 
-        const [t] = await tx.insert(transactions).values({
-          userId, type: "exchange", fromCurrency, toCurrency,
-          amount: amount.toFixed(8), fee: fee.toFixed(8),
-          exchangeRate: exchangeRate.toFixed(8), status: "completed",
-          description: `${fromCurrency} to ${toCurrency} Exchange`,
-          sourceExchange: null, blockchainTxHash: null,
-        }).returning();
-        txRecord = t;
+        [txRecord] = await tx.update(transactions)
+          .set({ status: "completed" })
+          .where(eq(transactions.id, pendingTx.id))
+          .returning();
       });
 
       const responseBody = { transaction: txRecord, convertedAmount: netConverted.toNumber(), exchangeRate: exchangeRate.toNumber(), fee: fee.toNumber() };
@@ -1741,6 +1749,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await writeAuditLog(userId, "fx_exchange", "transaction", String(txRecord?.id), { fromCurrency, toCurrency, amount: rawAmount }, req.ip || null);
       res.json(responseBody);
     } catch (error: any) {
+      if (pendingTx?.id) {
+        await db.update(transactions).set({ status: "failed" }).where(eq(transactions.id, pendingTx.id)).catch(() => {});
+      }
       if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to process FX exchange" });
     }
@@ -1751,6 +1762,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Consolidates /api/deposit and /api/wallets/deposit into one canonical route.
   // ---------------------------------------------------------------------------
   app.post("/api/deposit", moneyMovementLimiter, async (req, res) => {
+    let pendingTx: any = null;
     try {
       const { userId } = requireAuth(req);
       const parsedDeposit = depositSchema.safeParse(req.body);
@@ -1766,6 +1778,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (idem.existing) return res.json({ ...(idem.response as object), idempotent: true });
       }
 
+      [pendingTx] = await db.insert(transactions).values({
+        userId, type: "deposit", fromCurrency: null, toCurrency: currency,
+        amount: amount.toFixed(8), fee: "0.00000000", exchangeRate: null,
+        status: "pending", description: description || `${currency} Deposit`,
+        sourceExchange: null, blockchainTxHash: null,
+      }).returning();
+
       let txRecord: any;
       await db.transaction(async (tx) => {
         await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
@@ -1779,19 +1798,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           availableBalance: new Decimal(wallet.availableBalance).plus(amount).toFixed(8),
         }).where(eq(wallets.id, wallet.id));
 
-        const [t] = await tx.insert(transactions).values({
-          userId, type: "deposit", fromCurrency: null, toCurrency: currency,
-          amount: amount.toFixed(8), fee: "0.00000000", exchangeRate: null,
-          status: "completed", description: description || `${currency} Deposit`,
-          sourceExchange: null, blockchainTxHash: null,
-        }).returning();
-        txRecord = t;
+        [txRecord] = await tx.update(transactions)
+          .set({ status: "completed" })
+          .where(eq(transactions.id, pendingTx.id))
+          .returning();
       });
 
       if (idemKey) await saveIdempotentResponse(userId, "/api/deposit", idemKey, payloadHash, txRecord);
       await writeAuditLog(userId, "deposit", "transaction", String(txRecord?.id), { currency, amount: rawAmount }, req.ip || null);
       res.json(txRecord);
     } catch (error: any) {
+      if (pendingTx?.id) {
+        await db.update(transactions).set({ status: "failed" }).where(eq(transactions.id, pendingTx.id)).catch(() => {});
+      }
       if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to process deposit" });
     }
@@ -1799,14 +1818,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Thin redirect — legacy clients using /api/wallets/deposit forwarded to canonical route
   app.post("/api/wallets/deposit", moneyMovementLimiter, async (req, res) => {
-    req.url = "/api/deposit";
-    // Forward to the canonical handler by calling it inline
+    let pendingTx: any = null;
     try {
       const { userId } = requireAuth(req);
       const parsedDeposit = depositSchema.safeParse(req.body);
       if (!parsedDeposit.success) return res.status(400).json({ error: parsedDeposit.error.errors[0].message });
       const { currency, amount: rawAmount, description } = parsedDeposit.data;
       const amount = new Decimal(rawAmount);
+      [pendingTx] = await db.insert(transactions).values({
+        userId, type: "deposit", fromCurrency: null, toCurrency: currency,
+        amount: amount.toFixed(8), fee: "0.00000000", exchangeRate: null,
+        status: "pending", description: description || `${currency} Deposit`,
+        sourceExchange: null, blockchainTxHash: null,
+      }).returning();
       let txRecord: any;
       await db.transaction(async (tx) => {
         await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
@@ -1817,16 +1841,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           balance: new Decimal(wallet.balance).plus(amount).toFixed(8),
           availableBalance: new Decimal(wallet.availableBalance).plus(amount).toFixed(8),
         }).where(eq(wallets.id, wallet.id));
-        const [t] = await tx.insert(transactions).values({
-          userId, type: "deposit", fromCurrency: null, toCurrency: currency,
-          amount: amount.toFixed(8), fee: "0.00000000", exchangeRate: null,
-          status: "completed", description: description || `${currency} Deposit`,
-          sourceExchange: null, blockchainTxHash: null,
-        }).returning();
-        txRecord = t;
+        [txRecord] = await tx.update(transactions)
+          .set({ status: "completed" })
+          .where(eq(transactions.id, pendingTx.id))
+          .returning();
       });
       res.json(txRecord);
     } catch (error: any) {
+      if (pendingTx?.id) {
+        await db.update(transactions).set({ status: "failed" }).where(eq(transactions.id, pendingTx.id)).catch(() => {});
+      }
       if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to process deposit" });
     }
@@ -1837,6 +1861,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Consolidates /api/withdraw and /api/wallets/withdraw into one canonical route.
   // ---------------------------------------------------------------------------
   app.post("/api/withdraw", moneyMovementLimiter, async (req, res) => {
+    let pendingTx: any = null;
     try {
       const { userId } = requireAuth(req);
       const parsedWithdraw = withdrawSchema.safeParse(req.body);
@@ -1854,6 +1879,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (idem.existing) return res.json({ ...(idem.response as object), idempotent: true });
       }
 
+      [pendingTx] = await db.insert(transactions).values({
+        userId, type: "withdrawal", fromCurrency: currency, toCurrency: null,
+        amount: amount.toFixed(8), fee: fee.toFixed(8), exchangeRate: null,
+        status: "pending", description: description || `${currency} Withdrawal`,
+        sourceExchange: null, blockchainTxHash: null,
+      }).returning();
+
       let txRecord: any;
       await db.transaction(async (tx) => {
         await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
@@ -1870,19 +1902,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           availableBalance: available.minus(totalDeduction).toFixed(8),
         }).where(eq(wallets.id, wallet.id));
 
-        const [t] = await tx.insert(transactions).values({
-          userId, type: "withdrawal", fromCurrency: currency, toCurrency: null,
-          amount: amount.toFixed(8), fee: fee.toFixed(8), exchangeRate: null,
-          status: "completed", description: description || `${currency} Withdrawal`,
-          sourceExchange: null, blockchainTxHash: null,
-        }).returning();
-        txRecord = t;
+        [txRecord] = await tx.update(transactions)
+          .set({ status: "completed" })
+          .where(eq(transactions.id, pendingTx.id))
+          .returning();
       });
 
       if (idemKey) await saveIdempotentResponse(userId, "/api/withdraw", idemKey, payloadHash, txRecord);
       await writeAuditLog(userId, "withdrawal", "transaction", String(txRecord?.id), { currency, amount: rawAmount }, req.ip || null);
       res.json(txRecord);
     } catch (error: any) {
+      if (pendingTx?.id) {
+        await db.update(transactions).set({ status: "failed" }).where(eq(transactions.id, pendingTx.id)).catch(() => {});
+      }
       if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to process withdrawal" });
     }
@@ -1890,6 +1922,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Thin redirect — legacy /api/wallets/withdraw uses same atomic logic as canonical route
   app.post("/api/wallets/withdraw", moneyMovementLimiter, async (req, res) => {
+    let pendingTx: any = null;
     try {
       const { userId } = requireAuth(req);
       const parsedWithdraw = withdrawSchema.safeParse(req.body);
@@ -1898,6 +1931,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const amount = new Decimal(rawAmount);
       const fee = new Decimal("25.00");
       const totalDeduction = amount.plus(fee);
+      [pendingTx] = await db.insert(transactions).values({
+        userId, type: "withdrawal", fromCurrency: currency, toCurrency: null,
+        amount: amount.toFixed(8), fee: fee.toFixed(8), exchangeRate: null,
+        status: "pending", description: description || `${currency} Withdrawal`,
+        sourceExchange: null, blockchainTxHash: null,
+      }).returning();
       let txRecord: any;
       await db.transaction(async (tx) => {
         await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
@@ -1910,16 +1949,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           balance: new Decimal(wallet.balance).minus(totalDeduction).toFixed(8),
           availableBalance: available.minus(totalDeduction).toFixed(8),
         }).where(eq(wallets.id, wallet.id));
-        const [t] = await tx.insert(transactions).values({
-          userId, type: "withdrawal", fromCurrency: currency, toCurrency: null,
-          amount: amount.toFixed(8), fee: fee.toFixed(8), exchangeRate: null,
-          status: "completed", description: description || `${currency} Withdrawal`,
-          sourceExchange: null, blockchainTxHash: null,
-        }).returning();
-        txRecord = t;
+        [txRecord] = await tx.update(transactions)
+          .set({ status: "completed" })
+          .where(eq(transactions.id, pendingTx.id))
+          .returning();
       });
       res.json(txRecord);
     } catch (error: any) {
+      if (pendingTx?.id) {
+        await db.update(transactions).set({ status: "failed" }).where(eq(transactions.id, pendingTx.id)).catch(() => {});
+      }
       if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to process withdrawal" });
     }
@@ -2256,6 +2295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Investments — atomic SERIALIZABLE transaction + Decimal + DB idempotency
   // ---------------------------------------------------------------------------
   app.post("/api/investments", moneyMovementLimiter, async (req, res) => {
+    let pendingTx: any = null;
     try {
       const { userId } = requireAuth(req);
       const parsedInvestment = investmentSchema.safeParse(req.body);
@@ -2282,6 +2322,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (idem.existing) return res.json({ ...(idem.response as object), idempotent: true });
       }
 
+      const exchangeRateStr = currency !== "USD" ? investmentAmount.div(deductionAmount).toFixed(8) : null;
+      [pendingTx] = await db.insert(transactions).values({
+        userId, type: "investment", fromCurrency: currency,
+        toCurrency: currency === "USD" ? null : "USD",
+        amount: deductionAmount.toFixed(8), fee: "0.00000000",
+        exchangeRate: exchangeRateStr, status: "pending",
+        description: `Investment in ${product.name}${currency !== "USD" ? ` (converted from ${currency})` : ""}`,
+        sourceExchange: null, blockchainTxHash: null,
+      }).returning();
+
       let txRecord: any;
       let investRecord: any;
       await db.transaction(async (tx) => {
@@ -2300,16 +2350,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           availableBalance: available.minus(deductionAmount).toFixed(8),
         }).where(eq(wallets.id, sourceWallet.id));
 
-        const exchangeRateStr = currency !== "USD" ? investmentAmount.div(deductionAmount).toFixed(8) : null;
-        const [t] = await tx.insert(transactions).values({
-          userId, type: "investment", fromCurrency: currency,
-          toCurrency: currency === "USD" ? null : "USD",
-          amount: deductionAmount.toFixed(8), fee: "0.00000000",
-          exchangeRate: exchangeRateStr, status: "completed",
-          description: `Investment in ${product.name}${currency !== "USD" ? ` (converted from ${currency})` : ""}`,
-          sourceExchange: null, blockchainTxHash: null,
-        }).returning();
-        txRecord = t;
+        [txRecord] = await tx.update(transactions)
+          .set({ status: "completed" })
+          .where(eq(transactions.id, pendingTx.id))
+          .returning();
 
         const [inv] = await tx.insert(userInvestments).values({
           userId, productId,
@@ -2329,6 +2373,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await writeAuditLog(userId, "investment_created", "investment", String(investRecord?.id), { productId, amount: rawAmount, currency }, req.ip || null);
       res.json(responseBody);
     } catch (error: any) {
+      if (pendingTx?.id) {
+        await db.update(transactions).set({ status: "failed" }).where(eq(transactions.id, pendingTx.id)).catch(() => {});
+      }
       if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to create investment" });
     }
@@ -2339,6 +2386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // (previously had no validation, no atomicity, no decimal math)
   // ---------------------------------------------------------------------------
   app.post("/api/wallets/transfer", moneyMovementLimiter, async (req, res) => {
+    let pendingTx: any = null;
     try {
       const { userId } = requireAuth(req);
       const parsedTransfer = walletTransferSchema.safeParse(req.body);
@@ -2371,6 +2419,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fee = converted.mul("0.005");
       const finalAmount = converted.minus(fee);
 
+      [pendingTx] = await db.insert(transactions).values({
+        userId, type: "exchange", fromCurrency, toCurrency,
+        amount: amount.toFixed(8), fee: fee.toFixed(8),
+        exchangeRate: exchangeRate.toFixed(8), status: "pending",
+        description: `Converted ${rawAmount} ${fromCurrency} to ${finalAmount.toFixed(8)} ${toCurrency}`,
+        sourceExchange: null, blockchainTxHash: null,
+      }).returning();
+
       let txRecord: any;
       await db.transaction(async (tx) => {
         await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
@@ -2397,14 +2453,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           availableBalance: new Decimal(tgtWallet.availableBalance).plus(finalAmount).toFixed(8),
         }).where(eq(wallets.id, tgtWallet.id));
 
-        const [t] = await tx.insert(transactions).values({
-          userId, type: "exchange", fromCurrency, toCurrency,
-          amount: amount.toFixed(8), fee: fee.toFixed(8),
-          exchangeRate: exchangeRate.toFixed(8), status: "completed",
-          description: `Converted ${rawAmount} ${fromCurrency} to ${finalAmount.toFixed(8)} ${toCurrency}`,
-          sourceExchange: null, blockchainTxHash: null,
-        }).returning();
-        txRecord = t;
+        [txRecord] = await tx.update(transactions)
+          .set({ status: "completed" })
+          .where(eq(transactions.id, pendingTx.id))
+          .returning();
       });
 
       const responseBody = { transaction: txRecord, exchangeRate: exchangeRate.toNumber(), convertedAmount: converted.toNumber(), fee: fee.toNumber(), finalAmount: finalAmount.toNumber() };
@@ -2412,6 +2464,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await writeAuditLog(userId, "wallet_transfer", "transaction", String(txRecord?.id), { fromCurrency, toCurrency, amount: rawAmount }, req.ip || null);
       res.json(responseBody);
     } catch (error: any) {
+      if (pendingTx?.id) {
+        await db.update(transactions).set({ status: "failed" }).where(eq(transactions.id, pendingTx.id)).catch(() => {});
+      }
       if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to process transfer" });
     }
@@ -2436,6 +2491,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // Password Reset — forgot-password generates a token; reset-password validates
+  // it, hashes the new password, and marks the token used. Single-use, 1h TTL.
+  // ---------------------------------------------------------------------------
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { username } = z.object({ username: z.string().min(1) }).parse(req.body);
+      const [user] = await db.select().from(users).where(eq(users.username, username));
+      // Always return 200 to prevent username enumeration
+      if (!user) return res.json({ message: "If that account exists, a reset token has been generated." });
+
+      // Expire any existing unused tokens for this user
+      await db.update(passwordResetTokens)
+        .set({ usedAt: new Date() })
+        .where(and(eq(passwordResetTokens.userId, user.id), sql`${passwordResetTokens.usedAt} IS NULL`));
+
+      const token = randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      await db.insert(passwordResetTokens).values({ userId: user.id, token, expiresAt });
+
+      await writeAuditLog(user.id, "password_reset_requested", "user", String(user.id), { username }, null);
+
+      // In production this token would be emailed. For demo we return it directly.
+      res.json({ message: "Reset token generated.", resetToken: token });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: error.errors[0].message });
+      res.status(500).json({ error: "Failed to process request" });
+    }
+  });
+
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { token, newPassword } = z.object({
+        token: z.string().min(1),
+        newPassword: z.string().min(8, "Password must be at least 8 characters"),
+      }).parse(req.body);
+
+      const [record] = await db.select().from(passwordResetTokens)
+        .where(and(
+          eq(passwordResetTokens.token, token),
+          sql`${passwordResetTokens.usedAt} IS NULL`,
+          sql`${passwordResetTokens.expiresAt} > now()`
+        ));
+
+      if (!record) return res.status(400).json({ error: "Invalid or expired reset token." });
+
+      const hashed = await hashPassword(newPassword);
+
+      await db.transaction(async (tx) => {
+        await tx.update(users).set({ password: hashed }).where(eq(users.id, record.userId));
+        await tx.update(passwordResetTokens).set({ usedAt: new Date() }).where(eq(passwordResetTokens.id, record.id));
+      });
+
+      await writeAuditLog(record.userId, "password_reset_completed", "user", String(record.userId), {}, null);
+
+      res.json({ message: "Password reset successfully." });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: error.errors[0].message });
+      if (error.status) return res.status(error.status).json({ error: error.message });
+      res.status(500).json({ error: "Failed to reset password" });
     }
   });
 

@@ -222,3 +222,15 @@ export type PortfolioSnapshot = typeof portfolioSnapshots.$inferSelect;
 export type InsertPortfolioSnapshot = z.infer<typeof insertPortfolioSnapshotSchema>;
 export type IdempotencyKey = typeof idempotencyKeys.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;
+
+// Password reset tokens — ephemeral, expire after 1 hour, single-use
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;

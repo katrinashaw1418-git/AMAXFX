@@ -136,11 +136,14 @@ export default function Compliance() {
       </div>
 
       <Tabs defaultValue="kyc" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="kyc">KYC Status</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-          <TabsTrigger value="risk">Risk Profile</TabsTrigger>
-          <TabsTrigger value="regulatory">Regulatory</TabsTrigger>
+        <TabsList className="flex flex-wrap h-auto gap-1 bg-slate-100 p-1 rounded-lg">
+          <TabsTrigger value="kyc" className="flex-1 min-w-[120px]">KYC Status</TabsTrigger>
+          <TabsTrigger value="documents" className="flex-1 min-w-[120px]">Documents</TabsTrigger>
+          <TabsTrigger value="risk" className="flex-1 min-w-[120px]">Risk Profile</TabsTrigger>
+          <TabsTrigger value="regulatory" className="flex-1 min-w-[120px]">Regulatory</TabsTrigger>
+          <TabsTrigger value="terms" className="flex-1 min-w-[120px]">Terms &amp; Conditions</TabsTrigger>
+          <TabsTrigger value="privacy" className="flex-1 min-w-[120px]">Privacy Policy</TabsTrigger>
+          <TabsTrigger value="risk-disclosure" className="flex-1 min-w-[120px]">Risk Disclosure</TabsTrigger>
         </TabsList>
 
         {/* KYC Status Tab */}
@@ -408,6 +411,143 @@ export default function Compliance() {
                   </ul>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Terms & Conditions Tab */}
+        <TabsContent value="terms" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-600" />
+                Terms & Conditions
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="prose prose-sm max-w-none text-gray-700 space-y-4">
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">1. Acceptance of Terms</h3>
+                <p>By accessing or using AMAX Wealth Management platform, you agree to be bound by these Terms and Conditions. If you do not agree, please do not use our services. These terms constitute a legally binding agreement between you and AMAX Financial Services Ltd.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">2. Eligibility</h3>
+                <p>You must be at least 18 years of age and legally capable of entering into binding contracts to use our services. Use of AMAX services is restricted in jurisdictions where such services are prohibited by law.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">3. Account Responsibilities</h3>
+                <p>You are responsible for maintaining the confidentiality of your account credentials and for all activity that occurs under your account. You must notify AMAX immediately of any unauthorized use or suspected breach of security.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">4. Services</h3>
+                <p>AMAX provides multi-currency wallet management, foreign exchange services, investment products, and AI-assisted financial advisory tools. All investment services are subject to applicable financial regulations and require completed KYC verification.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">5. Fees and Charges</h3>
+                <p>AMAX charges fees for certain services including FX conversion (0.5% of converted amount), withdrawals (flat $25 fee), and investment management (per product schedule). All fees are disclosed prior to transaction confirmation.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">6. Limitation of Liability</h3>
+                <p>AMAX is not liable for losses arising from market fluctuations, system outages, third-party failures, or events beyond our reasonable control. Our total liability to you shall not exceed fees paid in the preceding 12 months.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">7. Governing Law</h3>
+                <p>These Terms are governed by the laws of England and Wales. Disputes shall be subject to the exclusive jurisdiction of the courts of England and Wales.</p>
+              </div>
+              <p className="text-xs text-gray-400 pt-2">Last updated: January 2024 | Version 3.2</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Privacy Policy Tab */}
+        <TabsContent value="privacy" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-green-600" />
+                Privacy Policy
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="prose prose-sm max-w-none text-gray-700 space-y-4">
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">1. Data We Collect</h3>
+                <p>We collect information you provide directly (name, email, government ID, financial data), usage data (transaction history, platform interactions), and technical data (IP address, device type, browser). All collection is governed by GDPR and applicable data protection laws.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">2. How We Use Your Data</h3>
+                <p>Your data is used to: provide and improve our services, comply with KYC/AML obligations, process transactions, generate AI-powered investment insights, detect and prevent fraud, and communicate account updates. We do not sell your personal data to third parties.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">3. Data Sharing</h3>
+                <p>We share data with: regulatory bodies (as required by law), payment processors and banking partners (for transaction processing), identity verification providers (for KYC), and cloud service providers (under strict data processing agreements).</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">4. Data Retention</h3>
+                <p>Financial records are retained for a minimum of 7 years as required by financial regulations. Account data is retained for the duration of your relationship with AMAX and 5 years thereafter. You may request deletion of non-regulatory data at any time.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">5. Your Rights</h3>
+                <p>Under GDPR you have the right to: access your data, correct inaccuracies, request deletion (where not legally required to retain), object to processing, data portability, and withdraw consent. Submit requests to privacy@amax.finance.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">6. Cookies</h3>
+                <p>AMAX uses strictly necessary cookies for session management and authentication. We use analytics cookies (with your consent) to improve platform performance. You can manage cookie preferences in your browser settings.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">7. Security</h3>
+                <p>We employ industry-standard security measures including AES-256 encryption at rest, TLS 1.3 in transit, multi-factor authentication, and regular penetration testing. In the event of a data breach, we will notify affected users within 72 hours as required by GDPR.</p>
+              </div>
+              <p className="text-xs text-gray-400 pt-2">Last updated: January 2024 | Compliant with GDPR, CCPA, and FCA requirements</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Risk Disclosure Tab */}
+        <TabsContent value="risk-disclosure" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+                Risk Disclosure Statement
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="prose prose-sm max-w-none text-gray-700 space-y-4">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <p className="font-semibold text-amber-800">Important Notice</p>
+                <p className="text-amber-700 text-sm mt-1">All investments carry risk. The value of your investments can go down as well as up. You may receive back less than you invest. Past performance is not a reliable indicator of future results.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">1. Market Risk</h3>
+                <p>Investment values fluctuate with market conditions including interest rate changes, economic developments, geopolitical events, and investor sentiment. Equity investments are subject to higher volatility than fixed-income products.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">2. Currency Risk</h3>
+                <p>Multi-currency investments are exposed to foreign exchange fluctuations. Changes in exchange rates can materially affect the value of your holdings when converted back to your base currency. FX hedging is available for select products.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">3. Liquidity Risk</h3>
+                <p>Some investment products have lock-up periods or limited redemption windows. You may be unable to access your funds on short notice. Always ensure you have sufficient liquid reserves outside your AMAX investments.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">4. Credit Risk</h3>
+                <p>Fixed-income products are subject to the credit risk of the issuer. A downgrade or default may result in partial or total loss of the invested capital. Credit ratings are provided as guidance only and are not guarantees of performance.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">5. Concentration Risk</h3>
+                <p>Concentrating investments in a single asset class, sector, or geography increases vulnerability to specific adverse events. AMAX recommends diversified portfolios aligned with your risk tolerance and investment horizon.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">6. Technology Risk</h3>
+                <p>Digital assets and crypto investments are subject to additional risks including regulatory uncertainty, technological failures, smart contract vulnerabilities, and extreme price volatility. These are suitable only for experienced investors who can afford total loss.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">7. AI Advisory Limitations</h3>
+                <p>AMAX AI advisory tools provide information and educational content only. They do not constitute regulated investment advice. Always consult a qualified financial adviser before making significant investment decisions based on AI-generated insights.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base mb-2">8. Regulatory Risk</h3>
+                <p>Changes in law, tax treatment, or regulatory requirements may adversely affect your investments. AMAX monitors regulatory developments and will notify clients of material changes that affect their holdings.</p>
+              </div>
+              <p className="text-xs text-gray-400 pt-2">This disclosure is provided in accordance with FCA COBS 4.2 requirements | Last updated: January 2024</p>
             </CardContent>
           </Card>
         </TabsContent>
