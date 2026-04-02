@@ -1,9 +1,27 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { createHash } from "crypto";
 import { z } from "zod";
 import rateLimit from "express-rate-limit";
+import { and, eq, sql } from "drizzle-orm";
+import Decimal from "decimal.js";
 import { storage } from "./storage";
+import { db } from "./db";
+import {
+  wallets,
+  transactions,
+  userInvestments,
+  idempotencyKeys,
+  auditLogs,
+} from "@shared/schema";
+import {
+  requireAuth,
+  authMiddleware,
+  signToken,
+  verifyPassword,
+  hashPassword,
+  type AuthPayload,
+} from "./auth";
 
 // ---------------------------------------------------------------------------
 // Zod validation schemas for all money-movement routes.
@@ -62,37 +80,87 @@ const moneyMovementLimiter = rateLimit({
 });
 
 // ---------------------------------------------------------------------------
-// In-memory idempotency store for FX exchange (and future money-movement routes).
-// Key: `${userId}:${Idempotency-Key header}` → cached response + payload hash + TTL.
-// payloadHash guards against key reuse with a different request body — standard
-// behaviour used by Stripe, Adyen, and all major payment APIs. Returns 422 on conflict.
-// 24-hour TTL covers typical client retry windows. No DB schema change required.
-// Limitation: not durable across process restarts or horizontal scaling — upgrade
-// to a DB-backed idempotency_keys table when moving to multi-instance production.
+// DB-backed idempotency for all money-movement routes.
+// Uses the idempotency_keys table (unique on userId+route+key).
+// payloadHash guards against key reuse with a different request body.
+// Durable across restarts and horizontal scaling.
 // ---------------------------------------------------------------------------
-const IDEM_TTL_MS = 24 * 60 * 60 * 1000;
-const idempotencyCache = new Map<string, { response: unknown; payloadHash: string; expiresAt: number }>();
-
 function hashPayload(body: unknown): string {
   return createHash("sha256").update(JSON.stringify(body)).digest("hex");
 }
 
-function getIdempotentEntry(
+async function checkIdempotency(
   userId: number,
-  key: string
-): { response: unknown; payloadHash: string } | null {
-  const entry = idempotencyCache.get(`${userId}:${key}`);
-  if (!entry) return null;
-  if (entry.expiresAt < Date.now()) {
-    idempotencyCache.delete(`${userId}:${key}`);
-    return null;
-  }
-  return { response: entry.response, payloadHash: entry.payloadHash };
+  route: string,
+  key: string,
+  payloadHash: string
+): Promise<{ existing: boolean; response?: unknown; conflict?: boolean }> {
+  const [row] = await db
+    .select()
+    .from(idempotencyKeys)
+    .where(
+      and(
+        eq(idempotencyKeys.userId, userId),
+        eq(idempotencyKeys.route, route),
+        eq(idempotencyKeys.key, key)
+      )
+    );
+  if (!row) return { existing: false };
+  if (row.payloadHash !== payloadHash) return { existing: true, conflict: true };
+  return { existing: true, response: row.responseJson };
 }
 
-function setIdempotentResponse(userId: number, key: string, response: unknown, payloadHash: string): void {
-  idempotencyCache.set(`${userId}:${key}`, { response, payloadHash, expiresAt: Date.now() + IDEM_TTL_MS });
+async function saveIdempotentResponse(
+  userId: number,
+  route: string,
+  key: string,
+  payloadHash: string,
+  response: unknown
+): Promise<void> {
+  await db.insert(idempotencyKeys).values({
+    userId,
+    route,
+    key,
+    payloadHash,
+    responseJson: response as any,
+  }).onConflictDoNothing();
 }
+
+// ---------------------------------------------------------------------------
+// Persistent audit log writer — writes finance-grade event records to DB.
+// ---------------------------------------------------------------------------
+async function writeAuditLog(
+  userId: number | null,
+  action: string,
+  entityType: string | null,
+  entityId: string | null,
+  metadata: unknown,
+  ipAddress: string | null
+): Promise<void> {
+  try {
+    await db.insert(auditLogs).values({
+      userId,
+      action,
+      entityType,
+      entityId,
+      metadata: metadata as any,
+      ipAddress,
+    });
+  } catch {
+    // Audit log failures must never crash money routes
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Wallet transfer Zod schema (audit: missing validation added here)
+// ---------------------------------------------------------------------------
+const walletTransferSchema = z.object({
+  fromCurrency: z.string().min(2).max(10),
+  toCurrency: z.string().min(2).max(10),
+  amount: z.coerce.number().positive("Amount must be positive"),
+}).refine(d => d.fromCurrency !== d.toCurrency, {
+  message: "Source and target currencies must differ",
+});
 
 // Category-level fallback rates — only used when a product has no explicit annualReturn set
 function getAnnualReturnFallback(category: string, productName?: string): number {
@@ -509,15 +577,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await backfillPortfolioHistory(1, backfillStart, backfillEnd);
   }
 
-  // Get current user (hardcoded for demo)
+  // ---------------------------------------------------------------------------
+  // One-time startup migrations: DB constraints + demo user password hashing
+  // ---------------------------------------------------------------------------
+  {
+    // Wallet integrity constraints — enforce non-negative balances at DB level
+    await db.execute(sql.raw(`
+      DO $$ BEGIN
+        ALTER TABLE wallets ADD CONSTRAINT balance_non_negative CHECK (balance >= 0);
+      EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    `));
+    await db.execute(sql.raw(`
+      DO $$ BEGIN
+        ALTER TABLE wallets ADD CONSTRAINT available_balance_non_negative CHECK (available_balance >= 0);
+      EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    `));
+    // Unique wallet per user+currency — prevent duplicate wallets
+    await db.execute(sql.raw(`
+      CREATE UNIQUE INDEX IF NOT EXISTS unique_wallet_user_currency ON wallets (user_id, currency);
+    `));
+    // Hash the demo user's plaintext password on first startup
+    const demoUser = await storage.getUser(1);
+    if (demoUser && !demoUser.password.startsWith("$2")) {
+      const hashed = await hashPassword(demoUser.password);
+      await storage.updateUser(1, { password: hashed });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Auth routes — login, current user, logout
+  // ---------------------------------------------------------------------------
+
+  // Login — returns JWT on valid credentials
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password are required" });
+      }
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      const valid = await verifyPassword(password, user.password);
+      if (!valid) {
+        await writeAuditLog(user.id, "login_failed", "user", String(user.id), { username }, req.ip || null);
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      const token = signToken({ userId: user.id, username: user.username, email: user.email });
+      await writeAuditLog(user.id, "login", "user", String(user.id), { username }, req.ip || null);
+      res.json({ token, user: { id: user.id, username: user.username, email: user.email, firstName: user.firstName, lastName: user.lastName, kycStatus: user.kycStatus, userTier: user.userTier } });
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  // Current authenticated user
+  app.get("/api/auth/me", async (req, res) => {
+    try {
+      const auth = requireAuth(req);
+      const user = await storage.getUser(auth.userId);
+      if (!user) return res.status(404).json({ error: "User not found" });
+      const { password: _, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error: any) {
+      res.status(error.status || 500).json({ error: error.message || "Failed to get user" });
+    }
+  });
+
+  // Logout (client drops the token; this endpoint logs the event server-side)
+  app.post("/api/auth/logout", async (req, res) => {
+    try {
+      const auth = requireAuth(req);
+      await writeAuditLog(auth.userId, "logout", "user", String(auth.userId), {}, req.ip || null);
+      res.json({ success: true });
+    } catch {
+      res.json({ success: true }); // Always succeed — client drops token regardless
+    }
+  });
+
+  // Get current user (auth-aware)
   app.get("/api/user", async (req, res) => {
     try {
-      const user = await storage.getUser(1);
+      const auth = requireAuth(req);
+      const user = await storage.getUser(auth.userId);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
-      res.json(user);
-    } catch (error) {
+      const { password: _, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error: any) {
       res.status(500).json({ error: "Failed to get user" });
     }
   });
@@ -525,7 +675,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user portfolio — all values computed from the single shared valuation engine
   app.get("/api/portfolio", async (req, res) => {
     try {
-      const userId = 1;
+      const { userId } = requireAuth(req);
       const now = new Date();
 
       // One call to the shared engine — no duplicated FX/investment loops
@@ -585,7 +735,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         monthlyPnlMethod,
         updatedAt: now,
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to get portfolio" });
     }
   });
@@ -594,7 +745,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/portfolio/history", async (req, res) => {
     try {
       const { timeframe = "1M" } = req.query;
-      const userId = 1;
+      const { userId } = requireAuth(req);
       
       // Calculate date range based on timeframe
       const endDate = new Date();
@@ -673,7 +824,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         historySource,
         hasSufficientHistory: dataPoints.length >= 2,
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       console.error("Portfolio history error:", error);
       res.status(500).json({ error: "Failed to get portfolio history" });
     }
@@ -683,7 +835,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/portfolio/performance-chart", async (req, res) => {
     try {
       const { timeframe = "1Y" } = req.query;
-      const userId = 1;
+      const { userId } = requireAuth(req);
       const today = new Date();
 
       // Anchor = Jan 1 of current year
@@ -811,7 +963,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Investment value — full year from Jan 1 2026, month-by-month, historical + projected
   app.get("/api/investments/history-ytd", async (req, res) => {
     try {
-      const userId = 1;
+      const { userId } = requireAuth(req);
       const ANCHOR = new Date("2026-01-01T00:00:00.000Z");
       const today = new Date();
       const TOTAL_MONTHS = 12; // Jan through Jan (13 points)
@@ -898,7 +1050,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get portfolio asset allocation — delegates entirely to the shared valuation engine
   app.get("/api/portfolio/allocation", async (req, res) => {
     try {
-      const userId = 1;
+      const { userId } = requireAuth(req);
       const totals = await calculatePortfolioTotalsAtDate(userId, new Date());
       const { fiatValue, cryptoValue, stablecoinValue, investmentValue, totalValue } = totals;
 
@@ -909,7 +1061,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         investment: { value: investmentValue,   percentage: totalValue > 0 ? (investmentValue  / totalValue) * 100 : 0 },
         totalValue,
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to get portfolio allocation" });
     }
   });
@@ -917,7 +1070,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Real metrics for AI advisory — diversification score, expected return, rebalancing gap, period returns
   app.get("/api/portfolio/real-metrics", async (req, res) => {
     try {
-      const userId = 1;
+      const { userId } = requireAuth(req);
 
       // Reuse the shared valuation engine for allocation fractions
       const totals = await calculatePortfolioTotalsAtDate(userId, new Date());
@@ -1132,7 +1285,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           investment: +(alloc.investment * 100).toFixed(1),
         },
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       console.error("Real metrics error:", error);
       res.status(500).json({ error: "Failed to compute real metrics" });
     }
@@ -1149,7 +1303,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const wallets = await storage.getWallets(1);
       res.json(wallets);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to get wallets" });
     }
   });
@@ -1160,7 +1315,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
       const transactions = await storage.getTransactions(1, limit);
       res.json(transactions);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to get transactions" });
     }
   });
@@ -1170,7 +1326,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const rates = await storage.getFxRates();
       res.json(rates);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to get FX rates" });
     }
   });
@@ -1184,7 +1341,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "FX rate not found" });
       }
       res.json(rate);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to get FX rate" });
     }
   });
@@ -1194,7 +1352,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const recommendations = await storage.getAiRecommendations(1);
       res.json(recommendations);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to get AI recommendations" });
     }
   });
@@ -1203,7 +1362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ai-recommendations/generate", async (req, res) => {
     try {
       const { riskTolerance, investmentHorizon, investmentGoal } = req.body;
-      const userId = 1;
+      const { userId } = requireAuth(req);
       
       // Get current portfolio allocation data
       const wallets = await storage.getWallets(userId);
@@ -1493,314 +1652,275 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rebalancingGap: +(rebalancingGap * 100).toFixed(1),
         message: "AI recommendations generated successfully"
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       console.error("AI recommendations error:", error);
       res.status(500).json({ error: "Failed to generate AI recommendations" });
     }
   });
 
-  // Create FX exchange transaction
+  // ---------------------------------------------------------------------------
+  // FX Exchange — atomic SERIALIZABLE transaction + Decimal + DB idempotency
+  // ---------------------------------------------------------------------------
   app.post("/api/fx-exchange", moneyMovementLimiter, async (req, res) => {
     try {
-      const userId = 1;
-
-      // Optional idempotency — if the client sends an Idempotency-Key header:
-      //   • same key + same payload → return cached result (idempotent: true)
-      //   • same key + different payload → 422 (standard behaviour per Stripe / Adyen)
-      //   • no key → proceed normally
-      const idemKey = req.headers["idempotency-key"] as string | undefined;
-      const currentPayloadHash = idemKey ? hashPayload(req.body) : "";
-      if (idemKey) {
-        const cached = getIdempotentEntry(userId, idemKey);
-        if (cached !== null) {
-          if (cached.payloadHash !== currentPayloadHash) {
-            return res.status(422).json({
-              error: "Idempotency-Key reused with a different request payload. Use a new key for a different transaction.",
-            });
-          }
-          return res.json({ ...(cached.response as object), idempotent: true });
-        }
-      }
+      const { userId } = requireAuth(req);
 
       const parsed = fxExchangeSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.errors[0].message });
       }
-      const { fromCurrency, toCurrency, amount } = parsed.data;
+      const { fromCurrency, toCurrency, amount: rawAmount } = parsed.data;
+      const amount = new Decimal(rawAmount);
+
+      // DB-backed idempotency check
+      const idemKey = req.headers["idempotency-key"] as string | undefined;
+      const payloadHash = hashPayload(req.body);
+      if (idemKey) {
+        const idem = await checkIdempotency(userId, "/api/fx-exchange", idemKey, payloadHash);
+        if (idem.conflict) return res.status(422).json({ error: "Idempotency-Key reused with a different request payload." });
+        if (idem.existing) return res.json({ ...(idem.response as object), idempotent: true });
+      }
 
       const rate = await storage.getFxRate(fromCurrency, toCurrency);
-      if (!rate) {
-        return res.status(400).json({ error: "Exchange rate not available" });
-      }
+      if (!rate) return res.status(400).json({ error: "Exchange rate not available" });
 
-      // Get source wallet
-      const fromWallet = await storage.getWallet(userId, fromCurrency);
-      if (!fromWallet) {
-        return res.status(404).json({ error: "Source wallet not found" });
-      }
-
-      // Get or create target wallet
-      let toWallet = await storage.getWallet(userId, toCurrency);
-      if (!toWallet) {
-        console.log(`Creating new wallet for ${toCurrency}`);
-        toWallet = await storage.createWallet({
-          userId,
-          currency: toCurrency,
-          balance: "0.00",
-          availableBalance: "0.00",
-          walletType: toCurrency === 'BTC' || toCurrency === 'ETH' ? 'crypto' : 'fiat'
+      // Ensure target wallet exists before entering transaction
+      const existingToWallet = await storage.getWallet(userId, toCurrency);
+      if (!existingToWallet) {
+        await storage.createWallet({
+          userId, currency: toCurrency, balance: "0.00", availableBalance: "0.00",
+          walletType: toCurrency === "BTC" || toCurrency === "ETH" ? "crypto" : "fiat",
         });
       }
 
-      const exchangeRate = parseFloat(rate.rate);
-      const convertedAmount = amount * exchangeRate;
-      const fee = convertedAmount * 0.005; // 0.5% fee on converted amount
-      const netConvertedAmount = convertedAmount - fee;
-      const totalDeduction = amount; // Only deduct the original amount from source
+      const exchangeRate = new Decimal(rate.rate);
+      const converted = amount.mul(exchangeRate);
+      const fee = converted.mul("0.005");
+      const netConverted = converted.minus(fee);
 
-      // Check if sufficient balance in source wallet
-      if (parseFloat(fromWallet.availableBalance) < totalDeduction) {
-        return res.status(400).json({ error: "Insufficient balance" });
-      }
+      let txRecord: any;
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
 
-      // Validate exchange parameters before any state mutation
-      validateTransaction({ type: "exchange", amount, fromCurrency, toCurrency, exchangeRate });
+        const [fromWallet] = await tx.select().from(wallets)
+          .where(and(eq(wallets.userId, userId), eq(wallets.currency, fromCurrency)))
+          .for("update");
+        if (!fromWallet) throw Object.assign(new Error("Source wallet not found"), { status: 404 });
 
-      // Update source wallet (deduct amount + fee)
-      const newFromBalance = (parseFloat(fromWallet.balance) - totalDeduction).toFixed(2);
-      const newFromAvailableBalance = (parseFloat(fromWallet.availableBalance) - totalDeduction).toFixed(2);
-      
-      await storage.updateWallet(fromWallet.id, {
-        balance: newFromBalance,
-        availableBalance: newFromAvailableBalance,
+        const available = new Decimal(fromWallet.availableBalance);
+        if (available.lt(amount)) throw Object.assign(new Error("Insufficient balance"), { status: 400 });
+
+        validateTransaction({ type: "exchange", amount: amount.toNumber(), fromCurrency, toCurrency, exchangeRate: exchangeRate.toNumber() });
+
+        const [toWallet] = await tx.select().from(wallets)
+          .where(and(eq(wallets.userId, userId), eq(wallets.currency, toCurrency)))
+          .for("update");
+        if (!toWallet) throw Object.assign(new Error("Target wallet not found"), { status: 404 });
+
+        await tx.update(wallets)
+          .set({ balance: new Decimal(fromWallet.balance).minus(amount).toFixed(8), availableBalance: available.minus(amount).toFixed(8) })
+          .where(eq(wallets.id, fromWallet.id));
+
+        await tx.update(wallets)
+          .set({ balance: new Decimal(toWallet.balance).plus(netConverted).toFixed(8), availableBalance: new Decimal(toWallet.availableBalance).plus(netConverted).toFixed(8) })
+          .where(eq(wallets.id, toWallet.id));
+
+        const [t] = await tx.insert(transactions).values({
+          userId, type: "exchange", fromCurrency, toCurrency,
+          amount: amount.toFixed(8), fee: fee.toFixed(8),
+          exchangeRate: exchangeRate.toFixed(8), status: "completed",
+          description: `${fromCurrency} to ${toCurrency} Exchange`,
+          sourceExchange: null, blockchainTxHash: null,
+        }).returning();
+        txRecord = t;
       });
 
-      // Update target wallet (add net converted amount after fee)
-      const newToBalance = (parseFloat(toWallet.balance) + netConvertedAmount).toFixed(2);
-      const newToAvailableBalance = (parseFloat(toWallet.availableBalance) + netConvertedAmount).toFixed(2);
-      
-      await storage.updateWallet(toWallet.id, {
-        balance: newToBalance,
-        availableBalance: newToAvailableBalance,
-      });
-
-      const transaction = await storage.createTransaction({
-        userId,
-        type: "exchange",
-        fromCurrency,
-        toCurrency,
-        amount: amount.toString(),
-        fee: fee.toFixed(2),
-        exchangeRate: exchangeRate.toString(),
-        status: "completed",
-        description: `${fromCurrency} to ${toCurrency} Exchange`,
-      });
-
-      const responseBody = {
-        transaction,
-        convertedAmount: netConvertedAmount,
-        exchangeRate,
-        fee,
-      };
-
-      // Cache result + payload hash. Future retries with the same key are served from cache;
-      // retries with the same key but different payload will receive a 422.
-      if (idemKey) setIdempotentResponse(userId, idemKey, responseBody, currentPayloadHash);
-
+      const responseBody = { transaction: txRecord, convertedAmount: netConverted.toNumber(), exchangeRate: exchangeRate.toNumber(), fee: fee.toNumber() };
+      if (idemKey) await saveIdempotentResponse(userId, "/api/fx-exchange", idemKey, payloadHash, responseBody);
+      await writeAuditLog(userId, "fx_exchange", "transaction", String(txRecord?.id), { fromCurrency, toCurrency, amount: rawAmount }, req.ip || null);
       res.json(responseBody);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to process FX exchange" });
     }
   });
 
-  // Create deposit transaction (legacy route)
-  app.post("/api/deposit", async (req, res) => {
+  // ---------------------------------------------------------------------------
+  // Deposit — atomic SERIALIZABLE transaction + Decimal + DB idempotency
+  // Consolidates /api/deposit and /api/wallets/deposit into one canonical route.
+  // ---------------------------------------------------------------------------
+  app.post("/api/deposit", moneyMovementLimiter, async (req, res) => {
     try {
-      const userId = 1;
+      const { userId } = requireAuth(req);
       const parsedDeposit = depositSchema.safeParse(req.body);
-      if (!parsedDeposit.success) {
-        return res.status(400).json({ error: parsedDeposit.error.errors[0].message });
-      }
-      const { currency, amount, description } = parsedDeposit.data;
+      if (!parsedDeposit.success) return res.status(400).json({ error: parsedDeposit.error.errors[0].message });
+      const { currency, amount: rawAmount, description } = parsedDeposit.data;
+      const amount = new Decimal(rawAmount);
 
-      // Get current wallet
-      const wallet = await storage.getWallet(userId, currency);
-      if (!wallet) {
-        return res.status(404).json({ error: "Wallet not found" });
+      const idemKey = req.headers["idempotency-key"] as string | undefined;
+      const payloadHash = hashPayload(req.body);
+      if (idemKey) {
+        const idem = await checkIdempotency(userId, "/api/deposit", idemKey, payloadHash);
+        if (idem.conflict) return res.status(422).json({ error: "Idempotency-Key reused with a different request payload." });
+        if (idem.existing) return res.json({ ...(idem.response as object), idempotent: true });
       }
-      
-      // Update wallet balance
-      const depositAmount = amount;
-      const newBalance = (parseFloat(wallet.balance) + depositAmount).toFixed(2);
-      const newAvailableBalance = (parseFloat(wallet.availableBalance) + depositAmount).toFixed(2);
-      
-      await storage.updateWallet(wallet.id, {
-        balance: newBalance,
-        availableBalance: newAvailableBalance,
+
+      let txRecord: any;
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+        const [wallet] = await tx.select().from(wallets)
+          .where(and(eq(wallets.userId, userId), eq(wallets.currency, currency)))
+          .for("update");
+        if (!wallet) throw Object.assign(new Error("Wallet not found"), { status: 404 });
+
+        await tx.update(wallets).set({
+          balance: new Decimal(wallet.balance).plus(amount).toFixed(8),
+          availableBalance: new Decimal(wallet.availableBalance).plus(amount).toFixed(8),
+        }).where(eq(wallets.id, wallet.id));
+
+        const [t] = await tx.insert(transactions).values({
+          userId, type: "deposit", fromCurrency: null, toCurrency: currency,
+          amount: amount.toFixed(8), fee: "0.00000000", exchangeRate: null,
+          status: "completed", description: description || `${currency} Deposit`,
+          sourceExchange: null, blockchainTxHash: null,
+        }).returning();
+        txRecord = t;
       });
 
-      const transaction = await storage.createTransaction({
-        userId,
-        type: "deposit",
-        fromCurrency: null,
-        toCurrency: currency,
-        amount: amount.toString(),
-        fee: "0.00",
-        exchangeRate: null,
-        status: "completed",
-        description: description || `${currency} Deposit`,
-      });
-
-      res.json(transaction);
-    } catch (error) {
+      if (idemKey) await saveIdempotentResponse(userId, "/api/deposit", idemKey, payloadHash, txRecord);
+      await writeAuditLog(userId, "deposit", "transaction", String(txRecord?.id), { currency, amount: rawAmount }, req.ip || null);
+      res.json(txRecord);
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to process deposit" });
     }
   });
 
-  // Create deposit transaction (new wallet route)
-  app.post("/api/wallets/deposit", async (req, res) => {
+  // Thin redirect — legacy clients using /api/wallets/deposit forwarded to canonical route
+  app.post("/api/wallets/deposit", moneyMovementLimiter, async (req, res) => {
+    req.url = "/api/deposit";
+    // Forward to the canonical handler by calling it inline
     try {
-      const { currency, amount, type } = req.body;
-      const userId = 1;
-      
-      if (!currency || !amount) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
-
-      // Get current wallet
-      const wallet = await storage.getWallet(userId, currency);
-      if (!wallet) {
-        return res.status(404).json({ error: "Wallet not found" });
-      }
-      
-      // Update wallet balance
-      const depositAmount = parseFloat(amount);
-      const newBalance = (parseFloat(wallet.balance) + depositAmount).toFixed(2);
-      const newAvailableBalance = (parseFloat(wallet.availableBalance) + depositAmount).toFixed(2);
-      
-      await storage.updateWallet(wallet.id, {
-        balance: newBalance,
-        availableBalance: newAvailableBalance,
+      const { userId } = requireAuth(req);
+      const parsedDeposit = depositSchema.safeParse(req.body);
+      if (!parsedDeposit.success) return res.status(400).json({ error: parsedDeposit.error.errors[0].message });
+      const { currency, amount: rawAmount, description } = parsedDeposit.data;
+      const amount = new Decimal(rawAmount);
+      let txRecord: any;
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+        const [wallet] = await tx.select().from(wallets)
+          .where(and(eq(wallets.userId, userId), eq(wallets.currency, currency))).for("update");
+        if (!wallet) throw Object.assign(new Error("Wallet not found"), { status: 404 });
+        await tx.update(wallets).set({
+          balance: new Decimal(wallet.balance).plus(amount).toFixed(8),
+          availableBalance: new Decimal(wallet.availableBalance).plus(amount).toFixed(8),
+        }).where(eq(wallets.id, wallet.id));
+        const [t] = await tx.insert(transactions).values({
+          userId, type: "deposit", fromCurrency: null, toCurrency: currency,
+          amount: amount.toFixed(8), fee: "0.00000000", exchangeRate: null,
+          status: "completed", description: description || `${currency} Deposit`,
+          sourceExchange: null, blockchainTxHash: null,
+        }).returning();
+        txRecord = t;
       });
-
-      const transaction = await storage.createTransaction({
-        userId,
-        type: "deposit",
-        fromCurrency: null,
-        toCurrency: currency,
-        amount: amount.toString(),
-        fee: "0.00",
-        exchangeRate: null,
-        status: "completed",
-        description: `${currency} Deposit`,
-      });
-
-      res.json(transaction);
-    } catch (error) {
+      res.json(txRecord);
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to process deposit" });
     }
   });
 
-  // Create withdrawal transaction (legacy route)
+  // ---------------------------------------------------------------------------
+  // Withdraw — atomic SERIALIZABLE transaction + Decimal + DB idempotency
+  // Consolidates /api/withdraw and /api/wallets/withdraw into one canonical route.
+  // ---------------------------------------------------------------------------
   app.post("/api/withdraw", moneyMovementLimiter, async (req, res) => {
     try {
-      const userId = 1;
+      const { userId } = requireAuth(req);
       const parsedWithdraw = withdrawSchema.safeParse(req.body);
-      if (!parsedWithdraw.success) {
-        return res.status(400).json({ error: parsedWithdraw.error.errors[0].message });
-      }
-      const { currency, amount, description } = parsedWithdraw.data;
+      if (!parsedWithdraw.success) return res.status(400).json({ error: parsedWithdraw.error.errors[0].message });
+      const { currency, amount: rawAmount, description } = parsedWithdraw.data;
+      const amount = new Decimal(rawAmount);
+      const fee = new Decimal("25.00");
+      const totalDeduction = amount.plus(fee);
 
-      // Get current wallet
-      const wallet = await storage.getWallet(userId, currency);
-      if (!wallet) {
-        return res.status(404).json({ error: "Wallet not found" });
+      const idemKey = req.headers["idempotency-key"] as string | undefined;
+      const payloadHash = hashPayload(req.body);
+      if (idemKey) {
+        const idem = await checkIdempotency(userId, "/api/withdraw", idemKey, payloadHash);
+        if (idem.conflict) return res.status(422).json({ error: "Idempotency-Key reused with a different request payload." });
+        if (idem.existing) return res.json({ ...(idem.response as object), idempotent: true });
       }
-      
-      const withdrawAmount = amount;
-      const fee = 25.00;
-      const totalDeduction = withdrawAmount + fee;
-      
-      // Check if sufficient balance
-      if (parseFloat(wallet.availableBalance) < totalDeduction) {
-        return res.status(400).json({ error: "Insufficient balance" });
-      }
-      
-      // Update wallet balance
-      const newBalance = (parseFloat(wallet.balance) - totalDeduction).toFixed(2);
-      const newAvailableBalance = (parseFloat(wallet.availableBalance) - totalDeduction).toFixed(2);
-      
-      await storage.updateWallet(wallet.id, {
-        balance: newBalance,
-        availableBalance: newAvailableBalance,
+
+      let txRecord: any;
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+        const [wallet] = await tx.select().from(wallets)
+          .where(and(eq(wallets.userId, userId), eq(wallets.currency, currency)))
+          .for("update");
+        if (!wallet) throw Object.assign(new Error("Wallet not found"), { status: 404 });
+
+        const available = new Decimal(wallet.availableBalance);
+        if (available.lt(totalDeduction)) throw Object.assign(new Error("Insufficient balance"), { status: 400 });
+
+        await tx.update(wallets).set({
+          balance: new Decimal(wallet.balance).minus(totalDeduction).toFixed(8),
+          availableBalance: available.minus(totalDeduction).toFixed(8),
+        }).where(eq(wallets.id, wallet.id));
+
+        const [t] = await tx.insert(transactions).values({
+          userId, type: "withdrawal", fromCurrency: currency, toCurrency: null,
+          amount: amount.toFixed(8), fee: fee.toFixed(8), exchangeRate: null,
+          status: "completed", description: description || `${currency} Withdrawal`,
+          sourceExchange: null, blockchainTxHash: null,
+        }).returning();
+        txRecord = t;
       });
 
-      const transaction = await storage.createTransaction({
-        userId,
-        type: "withdrawal",
-        fromCurrency: currency,
-        toCurrency: null,
-        amount: amount.toString(),
-        fee: fee.toFixed(2),
-        exchangeRate: null,
-        status: "completed",
-        description: description || `${currency} Withdrawal`,
-      });
-
-      res.json(transaction);
-    } catch (error) {
+      if (idemKey) await saveIdempotentResponse(userId, "/api/withdraw", idemKey, payloadHash, txRecord);
+      await writeAuditLog(userId, "withdrawal", "transaction", String(txRecord?.id), { currency, amount: rawAmount }, req.ip || null);
+      res.json(txRecord);
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to process withdrawal" });
     }
   });
 
-  // Create withdrawal transaction (new wallet route)
-  app.post("/api/wallets/withdraw", async (req, res) => {
+  // Thin redirect — legacy /api/wallets/withdraw uses same atomic logic as canonical route
+  app.post("/api/wallets/withdraw", moneyMovementLimiter, async (req, res) => {
     try {
-      const { currency, amount, type } = req.body;
-      const userId = 1;
-      
-      if (!currency || !amount) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
-
-      // Get current wallet
-      const wallet = await storage.getWallet(userId, currency);
-      if (!wallet) {
-        return res.status(404).json({ error: "Wallet not found" });
-      }
-      
-      const withdrawAmount = parseFloat(amount);
-      const fee = 25.00;
-      const totalDeduction = withdrawAmount + fee;
-      
-      // Check if sufficient balance
-      if (parseFloat(wallet.availableBalance) < totalDeduction) {
-        return res.status(400).json({ error: "Insufficient balance" });
-      }
-      
-      // Update wallet balance
-      const newBalance = (parseFloat(wallet.balance) - totalDeduction).toFixed(2);
-      const newAvailableBalance = (parseFloat(wallet.availableBalance) - totalDeduction).toFixed(2);
-      
-      await storage.updateWallet(wallet.id, {
-        balance: newBalance,
-        availableBalance: newAvailableBalance,
+      const { userId } = requireAuth(req);
+      const parsedWithdraw = withdrawSchema.safeParse(req.body);
+      if (!parsedWithdraw.success) return res.status(400).json({ error: parsedWithdraw.error.errors[0].message });
+      const { currency, amount: rawAmount, description } = parsedWithdraw.data;
+      const amount = new Decimal(rawAmount);
+      const fee = new Decimal("25.00");
+      const totalDeduction = amount.plus(fee);
+      let txRecord: any;
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+        const [wallet] = await tx.select().from(wallets)
+          .where(and(eq(wallets.userId, userId), eq(wallets.currency, currency))).for("update");
+        if (!wallet) throw Object.assign(new Error("Wallet not found"), { status: 404 });
+        const available = new Decimal(wallet.availableBalance);
+        if (available.lt(totalDeduction)) throw Object.assign(new Error("Insufficient balance"), { status: 400 });
+        await tx.update(wallets).set({
+          balance: new Decimal(wallet.balance).minus(totalDeduction).toFixed(8),
+          availableBalance: available.minus(totalDeduction).toFixed(8),
+        }).where(eq(wallets.id, wallet.id));
+        const [t] = await tx.insert(transactions).values({
+          userId, type: "withdrawal", fromCurrency: currency, toCurrency: null,
+          amount: amount.toFixed(8), fee: fee.toFixed(8), exchangeRate: null,
+          status: "completed", description: description || `${currency} Withdrawal`,
+          sourceExchange: null, blockchainTxHash: null,
+        }).returning();
+        txRecord = t;
       });
-
-      const transaction = await storage.createTransaction({
-        userId,
-        type: "withdraw",
-        fromCurrency: currency,
-        toCurrency: null,
-        amount: amount.toString(),
-        fee: fee.toFixed(2),
-        exchangeRate: null,
-        status: "completed",
-        description: `${currency} Withdrawal`,
-      });
-
-      res.json(transaction);
-    } catch (error) {
+      res.json(txRecord);
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to process withdrawal" });
     }
   });
@@ -1811,7 +1931,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       await storage.markRecommendationAsRead(id);
       res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to mark recommendation as read" });
     }
   });
@@ -1827,7 +1948,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Recommendation applied successfully",
         appliedAt: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to apply recommendation" });
     }
   });
@@ -1850,7 +1972,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const products = await storage.getInvestmentProducts(Object.keys(filters).length > 0 ? filters : undefined);
       res.json(products);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to get investment products" });
     }
   });
@@ -1864,7 +1987,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Investment product not found" });
       }
       res.json(product);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to get investment product" });
     }
   });
@@ -1874,7 +1998,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user investments with real-time performance calculation
   app.get("/api/user-investments", async (req, res) => {
     try {
-      const userId = 1; // Hardcoded user ID for demo
+      const { userId } = requireAuth(req);
       const investments = await storage.getUserInvestments(userId);
       const allProducts = await storage.getInvestmentProducts();
       const currentDate = new Date();
@@ -1898,7 +2022,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.json(investmentsWithPerformance);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to get user investments" });
     }
   });
@@ -1907,7 +2032,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/investment-performance", async (req, res) => {
     try {
       const { timeframe = "1Y" } = req.query;
-      const userId = 1;
+      const { userId } = requireAuth(req);
       
       // Get all user investments
       const investments = await storage.getUserInvestments(userId);
@@ -2062,7 +2187,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalReturnPercent: totalReturnPercent.toFixed(2),
         portfolioAllocation: currentPortfolioAllocation
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       console.error("Investment performance error:", error);
       res.status(500).json({ error: "Failed to get investment performance" });
     }
@@ -2071,7 +2197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get investment breakdown by category
   app.get("/api/investment-breakdown", async (req, res) => {
     try {
-      const userId = 1;
+      const { userId } = requireAuth(req);
       const totals = await calculateInvestmentTotalsAtDate(userId, new Date());
 
       const categoryDisplayNames: Record<string, string> = {
@@ -2120,174 +2246,173 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalReturnPercent: totals.totalReturnPercent,
         categories,
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to fetch investment breakdown" });
     }
   });
 
-  // Create investment
+  // ---------------------------------------------------------------------------
+  // Investments — atomic SERIALIZABLE transaction + Decimal + DB idempotency
+  // ---------------------------------------------------------------------------
   app.post("/api/investments", moneyMovementLimiter, async (req, res) => {
     try {
-      const userId = 1; // Hardcoded user ID for demo
+      const { userId } = requireAuth(req);
       const parsedInvestment = investmentSchema.safeParse(req.body);
-      if (!parsedInvestment.success) {
-        return res.status(400).json({ error: parsedInvestment.error.errors[0].message });
-      }
-      const { productId, amount, sourceCurrency = "USD", sourceAmount } = parsedInvestment.data;
+      if (!parsedInvestment.success) return res.status(400).json({ error: parsedInvestment.error.errors[0].message });
+      const { productId, amount: rawAmount, sourceCurrency = "USD", sourceAmount: rawSourceAmount } = parsedInvestment.data;
 
       const product = await storage.getInvestmentProduct(productId);
-      if (!product) {
-        return res.status(400).json({ error: "Investment product not found" });
-      }
+      if (!product) return res.status(400).json({ error: "Investment product not found" });
 
-      const investmentAmount = amount; // USD equivalent
-      const deductionAmount = sourceAmount ?? investmentAmount; // Original currency amount
+      const investmentAmount = new Decimal(rawAmount);
+      const deductionAmount = rawSourceAmount ? new Decimal(rawSourceAmount) : investmentAmount;
       const currency = sourceCurrency || "USD";
-      const minimumInvestment = parseFloat(product.minimumInvestment);
-      
-      if (investmentAmount < minimumInvestment) {
-        return res.status(400).json({ error: `Minimum investment is $${minimumInvestment.toLocaleString()}` });
+      const minimumInvestment = new Decimal(product.minimumInvestment);
+
+      if (investmentAmount.lt(minimumInvestment)) {
+        return res.status(400).json({ error: `Minimum investment is $${minimumInvestment.toFixed(2)}` });
       }
 
-      // Check source currency wallet balance
-      const sourceWallet = await storage.getWallet(userId, currency);
-      if (!sourceWallet) {
-        return res.status(400).json({ error: `${currency} wallet not found` });
+      const idemKey = req.headers["idempotency-key"] as string | undefined;
+      const payloadHash = hashPayload(req.body);
+      if (idemKey) {
+        const idem = await checkIdempotency(userId, "/api/investments", idemKey, payloadHash);
+        if (idem.conflict) return res.status(422).json({ error: "Idempotency-Key reused with a different request payload." });
+        if (idem.existing) return res.json({ ...(idem.response as object), idempotent: true });
       }
 
-      const currentBalance = parseFloat(sourceWallet.availableBalance);
-      if (currentBalance < deductionAmount) {
-        return res.status(400).json({ error: `Insufficient balance. Available: ${deductionAmount.toLocaleString()} ${currency}` });
-      }
+      let txRecord: any;
+      let investRecord: any;
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+        const [sourceWallet] = await tx.select().from(wallets)
+          .where(and(eq(wallets.userId, userId), eq(wallets.currency, currency))).for("update");
+        if (!sourceWallet) throw Object.assign(new Error(`${currency} wallet not found`), { status: 400 });
 
-      // Update source wallet balance (deduct investment amount in original currency)
-      const newBalance = (parseFloat(sourceWallet.balance) - deductionAmount).toFixed(2);
-      const newAvailableBalance = (parseFloat(sourceWallet.availableBalance) - deductionAmount).toFixed(2);
-      
-      await storage.updateWallet(sourceWallet.id, {
-        balance: newBalance,
-        availableBalance: newAvailableBalance,
+        const available = new Decimal(sourceWallet.availableBalance);
+        if (available.lt(deductionAmount)) throw Object.assign(
+          new Error(`Insufficient balance. Available: ${available.toFixed(2)} ${currency}`), { status: 400 }
+        );
+
+        await tx.update(wallets).set({
+          balance: new Decimal(sourceWallet.balance).minus(deductionAmount).toFixed(8),
+          availableBalance: available.minus(deductionAmount).toFixed(8),
+        }).where(eq(wallets.id, sourceWallet.id));
+
+        const exchangeRateStr = currency !== "USD" ? investmentAmount.div(deductionAmount).toFixed(8) : null;
+        const [t] = await tx.insert(transactions).values({
+          userId, type: "investment", fromCurrency: currency,
+          toCurrency: currency === "USD" ? null : "USD",
+          amount: deductionAmount.toFixed(8), fee: "0.00000000",
+          exchangeRate: exchangeRateStr, status: "completed",
+          description: `Investment in ${product.name}${currency !== "USD" ? ` (converted from ${currency})` : ""}`,
+          sourceExchange: null, blockchainTxHash: null,
+        }).returning();
+        txRecord = t;
+
+        const [inv] = await tx.insert(userInvestments).values({
+          userId, productId,
+          investedAmount: investmentAmount.toFixed(2),
+          currentValue: investmentAmount.toFixed(2),
+          totalReturn: "0.00",
+          returnPercent: "0.00",
+          status: "active",
+          maturityDate: null,
+        }).returning();
+        investRecord = inv;
       });
 
-      // Create transaction record
-      const transaction = await storage.createTransaction({
-        userId,
-        type: "investment",
-        fromCurrency: currency,
-        toCurrency: currency === "USD" ? null : "USD",
-        amount: deductionAmount.toString(),
-        fee: "0.00",
-        exchangeRate: currency === "USD" ? null : (investmentAmount / deductionAmount).toString(),
-        status: "completed",
-        description: `Investment in ${product.name}${currency !== "USD" ? ` (converted from ${currency})` : ""}`,
-      });
-
-      // Create investment record (always in USD equivalent)
-      const investment = await storage.createUserInvestment({
-        userId,
-        productId,
-        investedAmount: investmentAmount.toString(), // USD equivalent
-        currentValue: investmentAmount.toString(), // Initially same as invested amount
-        totalReturn: "0.00",
-        returnPercent: "0.00",
-        status: "active",
-        maturityDate: null, // Can be calculated based on product term
-      });
-
-      // Save an "actual" portfolio snapshot so all pages reflect the new investment immediately
       await saveActualSnapshot(userId);
-
-      res.json({
-        investment,
-        transaction,
-        newBalance: newAvailableBalance,
-        sourceCurrency: currency,
-        message: "Investment created successfully"
-      });
-    } catch (error) {
+      const responseBody = { investment: investRecord, transaction: txRecord, newBalance: deductionAmount.toString(), sourceCurrency: currency, message: "Investment created successfully" };
+      if (idemKey) await saveIdempotentResponse(userId, "/api/investments", idemKey, payloadHash, responseBody);
+      await writeAuditLog(userId, "investment_created", "investment", String(investRecord?.id), { productId, amount: rawAmount, currency }, req.ip || null);
+      res.json(responseBody);
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to create investment" });
     }
   });
 
-  // Wallet transfer endpoint
-  app.post("/api/wallets/transfer", async (req, res) => {
+  // ---------------------------------------------------------------------------
+  // Wallet Transfer — atomic SERIALIZABLE + Zod + Decimal + DB idempotency
+  // (previously had no validation, no atomicity, no decimal math)
+  // ---------------------------------------------------------------------------
+  app.post("/api/wallets/transfer", moneyMovementLimiter, async (req, res) => {
     try {
-      const { fromCurrency, toCurrency, amount } = req.body;
-      const userId = 1; // Demo user
-      
-      // Get source wallet
-      const sourceWallet = await storage.getWallet(userId, fromCurrency);
-      if (!sourceWallet) {
-        return res.status(404).json({ error: "Source wallet not found" });
+      const { userId } = requireAuth(req);
+      const parsedTransfer = walletTransferSchema.safeParse(req.body);
+      if (!parsedTransfer.success) return res.status(400).json({ error: parsedTransfer.error.errors[0].message });
+      const { fromCurrency, toCurrency, amount: rawAmount } = parsedTransfer.data;
+      const amount = new Decimal(rawAmount);
+
+      const idemKey = req.headers["idempotency-key"] as string | undefined;
+      const payloadHash = hashPayload(req.body);
+      if (idemKey) {
+        const idem = await checkIdempotency(userId, "/api/wallets/transfer", idemKey, payloadHash);
+        if (idem.conflict) return res.status(422).json({ error: "Idempotency-Key reused with a different request payload." });
+        if (idem.existing) return res.json({ ...(idem.response as object), idempotent: true });
       }
-      
-      if (sourceWallet.availableBalance < amount) {
-        return res.status(400).json({ error: "Insufficient balance" });
-      }
-      
-      // Get or create target wallet
-      let targetWallet = await storage.getWallet(userId, toCurrency);
-      if (!targetWallet) {
-        targetWallet = await storage.createWallet({
-          userId,
-          currency: toCurrency,
-          balance: "0.00",
-          availableBalance: "0.00",
-          walletType: ['BTC', 'ETH'].includes(toCurrency) ? 'crypto' : 'fiat'
+
+      const rate = await storage.getFxRate(fromCurrency, toCurrency);
+      if (!rate) return res.status(400).json({ error: `Exchange rate not found for ${fromCurrency} to ${toCurrency}` });
+      const exchangeRate = new Decimal(rate.rate);
+
+      // Ensure target wallet exists before entering the transaction
+      const existingTarget = await storage.getWallet(userId, toCurrency);
+      if (!existingTarget) {
+        await storage.createWallet({
+          userId, currency: toCurrency, balance: "0.00", availableBalance: "0.00",
+          walletType: ["BTC", "ETH"].includes(toCurrency) ? "crypto" : "fiat",
         });
       }
-      
-      // Get exchange rate - must find valid rate or fail
-      const rate = await storage.getFxRate(fromCurrency, toCurrency);
-      if (!rate) {
-        return res.status(400).json({ error: `Exchange rate not found for ${fromCurrency} to ${toCurrency}` });
-      }
-      const exchangeRate = parseFloat(rate.rate);
-      
-      const convertedAmount = amount * exchangeRate;
-      const fee = convertedAmount * 0.005; // 0.5% fee
-      const finalAmount = convertedAmount - fee;
-      
-      // Update balances with proper numeric conversion
-      const newSourceBalance = (parseFloat(sourceWallet.balance) - amount).toFixed(2);
-      const newSourceAvailable = (parseFloat(sourceWallet.availableBalance) - amount).toFixed(2);
-      
-      await storage.updateWallet(sourceWallet.id, {
-        balance: newSourceBalance,
-        availableBalance: newSourceAvailable
+
+      const converted = amount.mul(exchangeRate);
+      const fee = converted.mul("0.005");
+      const finalAmount = converted.minus(fee);
+
+      let txRecord: any;
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+        const [srcWallet] = await tx.select().from(wallets)
+          .where(and(eq(wallets.userId, userId), eq(wallets.currency, fromCurrency))).for("update");
+        if (!srcWallet) throw Object.assign(new Error("Source wallet not found"), { status: 404 });
+
+        const available = new Decimal(srcWallet.availableBalance);
+        if (available.lt(amount)) throw Object.assign(new Error("Insufficient balance"), { status: 400 });
+
+        validateTransaction({ type: "exchange", amount: amount.toNumber(), fromCurrency, toCurrency, exchangeRate: exchangeRate.toNumber() });
+
+        const [tgtWallet] = await tx.select().from(wallets)
+          .where(and(eq(wallets.userId, userId), eq(wallets.currency, toCurrency))).for("update");
+        if (!tgtWallet) throw Object.assign(new Error("Target wallet not found"), { status: 404 });
+
+        await tx.update(wallets).set({
+          balance: new Decimal(srcWallet.balance).minus(amount).toFixed(8),
+          availableBalance: available.minus(amount).toFixed(8),
+        }).where(eq(wallets.id, srcWallet.id));
+
+        await tx.update(wallets).set({
+          balance: new Decimal(tgtWallet.balance).plus(finalAmount).toFixed(8),
+          availableBalance: new Decimal(tgtWallet.availableBalance).plus(finalAmount).toFixed(8),
+        }).where(eq(wallets.id, tgtWallet.id));
+
+        const [t] = await tx.insert(transactions).values({
+          userId, type: "exchange", fromCurrency, toCurrency,
+          amount: amount.toFixed(8), fee: fee.toFixed(8),
+          exchangeRate: exchangeRate.toFixed(8), status: "completed",
+          description: `Converted ${rawAmount} ${fromCurrency} to ${finalAmount.toFixed(8)} ${toCurrency}`,
+          sourceExchange: null, blockchainTxHash: null,
+        }).returning();
+        txRecord = t;
       });
-      
-      const newTargetBalance = (parseFloat(targetWallet.balance) + finalAmount).toFixed(2);
-      const newTargetAvailable = (parseFloat(targetWallet.availableBalance) + finalAmount).toFixed(2);
-      
-      await storage.updateWallet(targetWallet.id, {
-        balance: newTargetBalance,
-        availableBalance: newTargetAvailable
-      });
-      
-      // Create transaction record
-      const transaction = await storage.createTransaction({
-        userId,
-        type: "currency_transfer",
-        amount: amount.toString(),
-        fromCurrency: fromCurrency,
-        toCurrency: toCurrency,
-        status: "completed",
-        description: `Converted ${amount} ${fromCurrency} to ${finalAmount.toFixed(2)} ${toCurrency}`,
-        fee: fee.toFixed(8)
-      });
-      
-      res.json({
-        transaction,
-        exchangeRate,
-        convertedAmount,
-        fee,
-        finalAmount,
-        sourceWallet: await storage.getWallet(userId, fromCurrency),
-        targetWallet: await storage.getWallet(userId, toCurrency)
-      });
-    } catch (error) {
-      console.error("Wallet transfer error:", error);
+
+      const responseBody = { transaction: txRecord, exchangeRate: exchangeRate.toNumber(), convertedAmount: converted.toNumber(), fee: fee.toNumber(), finalAmount: finalAmount.toNumber() };
+      if (idemKey) await saveIdempotentResponse(userId, "/api/wallets/transfer", idemKey, payloadHash, responseBody);
+      await writeAuditLog(userId, "wallet_transfer", "transaction", String(txRecord?.id), { fromCurrency, toCurrency, amount: rawAmount }, req.ip || null);
+      res.json(responseBody);
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to process transfer" });
     }
   });
@@ -2308,7 +2433,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Your message has been sent to your wealth planner",
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to send message" });
     }
   });

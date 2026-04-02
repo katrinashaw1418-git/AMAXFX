@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, decimal, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, decimal, timestamp, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -123,6 +123,37 @@ export const userInvestments = pgTable("user_investments", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const idempotencyKeys = pgTable(
+  "idempotency_keys",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").references(() => users.id).notNull(),
+    route: text("route").notNull(),
+    key: text("key").notNull(),
+    payloadHash: text("payload_hash").notNull(),
+    responseJson: jsonb("response_json").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    uniqUserRouteKey: uniqueIndex("idempotency_user_route_key_idx").on(
+      table.userId,
+      table.route,
+      table.key
+    ),
+  })
+);
+
+export const auditLogs = pgTable("audit_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  action: text("action").notNull(),
+  entityType: text("entity_type"),
+  entityId: text("entity_id"),
+  metadata: jsonb("metadata"),
+  ipAddress: text("ip_address"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -189,3 +220,5 @@ export type UserInvestment = typeof userInvestments.$inferSelect;
 export type InsertUserInvestment = z.infer<typeof insertUserInvestmentSchema>;
 export type PortfolioSnapshot = typeof portfolioSnapshots.$inferSelect;
 export type InsertPortfolioSnapshot = z.infer<typeof insertPortfolioSnapshotSchema>;
+export type IdempotencyKey = typeof idempotencyKeys.$inferSelect;
+export type AuditLog = typeof auditLogs.$inferSelect;

@@ -1,12 +1,30 @@
 import { Button } from "@/components/ui/button";
-import { Menu, Bell, Globe } from "lucide-react";
+import { Menu, Bell, Globe, LogOut, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/auth";
+import { useLocation } from "wouter";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface HeaderProps {
   onMenuClick: () => void;
 }
 
 export default function Header({ onMenuClick }: HeaderProps) {
+  const { user, logout } = useAuth();
+  const [, navigate] = useLocation();
+
+  function handleLogout() {
+    logout();
+    navigate("/login");
+  }
+
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -21,16 +39,18 @@ export default function Header({ onMenuClick }: HeaderProps) {
           </Button>
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Wealth Dashboard</h2>
-            <p className="text-sm text-gray-500">Welcome back, manage your global wealth portfolio</p>
+            <p className="text-sm text-gray-500">
+              {user ? `Welcome back, ${user.firstName || user.username}` : "Manage your global wealth portfolio"}
+            </p>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-4">
           <div className="relative">
             <Button variant="ghost" size="icon">
               <Bell className="w-5 h-5" />
-              <Badge 
-                variant="destructive" 
+              <Badge
+                variant="destructive"
                 className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-xs"
               >
                 3
@@ -41,6 +61,26 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <Globe className="w-4 h-4 text-primary" />
             <span className="text-sm font-medium text-gray-700">Global</span>
           </div>
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <User className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>
+                  <div className="font-medium">{user.firstName} {user.lastName}</div>
+                  <div className="text-xs text-muted-foreground font-normal">{user.email}</div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
     </header>

@@ -1,0 +1,531 @@
+I’ve re-audited your **latest uploaded build (v12)** against everything we’ve agreed (what’s achievable now vs deferred). This is the **final, production-grade checklist + exact fixes**—no fluff, just what must be true before real-world launch.
+
+---
+
+# 🧠 FINAL EXECUTIVE VERDICT
+
+You are now **~80–85% ready for controlled production**, but still **NOT safe for unrestricted real-world use** until the remaining **P0 blockers** are resolved.
+
+👉 The biggest remaining risks are:
+
+* concurrency (double-spend)
+* DB-level guarantees (constraints, locking)
+* auth boundary completeness
+* idempotency persistence + correctness
+* ledger integrity enforcement
+
+---
+
+# 🔴 1. NON-NEGOTIABLE LAUNCH BLOCKERS (P0)
+
+These must ALL be fixed before any real money.
+
+---
+
+## 1.1 Authentication Boundary (still incomplete)
+
+### Problem
+
+Even if partially implemented:
+
+* no strict middleware enforcement across ALL routes
+* possible fallback paths
+
+### Fix
+
+**Every mutation route must require auth:**
+
+```ts
+app.use("/api", authMiddleware);
+```
+
+And remove ALL:
+
+```ts
+const userId = 1;
+```
+
+---
+
+## 1.2 Atomic + Concurrent-Safe Money Movement (CRITICAL)
+
+You added transactions — good.
+But without **row locking**, it is still unsafe.
+
+### REQUIRED PATCH
+
+```ts
+await db.transaction(async (tx) => {
+  await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+
+  const [wallet] = await tx
+    .select()
+    .from(wallets)
+    .where(and(
+      eq(wallets.userId, userId),
+      eq(wallets.currency, fromCurrency)
+    ))
+    .for("update"); // 🔴 REQUIRED
+
+  if (!wallet) throw new Error("Wallet not found");
+
+  // proceed safely
+});
+```
+
+👉 Without this → system can go negative under load.
+
+---
+
+## 1.3 Idempotency (must be DB-backed + strict)
+
+### Required behavior
+
+| Scenario                     | Result  |
+| ---------------------------- | ------- |
+| same key + same payload      | replay  |
+| same key + different payload | ❌ 422   |
+| no key                       | process |
+
+---
+
+### REQUIRED TABLE
+
+```ts
+idempotency_keys (
+  id,
+  user_id,
+  route,
+  key,
+  payload_hash,
+  response_json,
+  created_at
+)
+```
+
+### REQUIRED INDEX
+
+```sql
+CREATE UNIQUE INDEX idempotency_unique
+ON idempotency_keys (user_id, route, key);
+```
+
+---
+
+## 1.4 Wallet Integrity (DB constraints missing)
+
+### REQUIRED
+
+```sql
+CREATE UNIQUE INDEX unique_user_currency
+ON wallets (user_id, currency);
+
+ALTER TABLE wallets
+ADD CONSTRAINT balance_non_negative CHECK (balance >= 0),
+ADD CONSTRAINT available_balance_non_negative CHECK (available_balance >= 0);
+```
+
+---
+
+## 1.5 TypeScript MUST compile clean
+
+Still seeing:
+
+* implicit `any`
+* schema mismatch types
+* unused legacy files leaking into build
+
+### REQUIRED
+
+* `npm run check` = 0 errors
+* remove `/versions` and test pages from build
+
+---
+
+## 1.6 Route ↔ Schema mismatch (still exists in some flows)
+
+Particularly:
+
+* transfer
+* investment
+* transaction creation
+
+### RULE
+
+All transactions must follow:
+
+```ts
+{
+  userId,
+  type,
+  fromCurrency,
+  toCurrency,
+  amount,
+  fee,
+  exchangeRate,
+  status,
+  description,
+  sourceExchange,
+  blockchainTxHash
+}
+```
+
+No extra / missing fields.
+
+---
+
+## 1.7 Validation (must be universal)
+
+Every mutation must use Zod:
+
+```ts
+const parsed = schema.parse(req.body);
+```
+
+No exceptions.
+
+---
+
+# 🟠 2. HIGH PRIORITY (P1 — REQUIRED BEFORE SCALE)
+
+---
+
+## 2.1 Ledger Integrity Check (YOU MISSED ENFORCEMENT)
+
+You mentioned it conceptually — but not enforced.
+
+### REQUIRED
+
+Add periodic or triggered check:
+
+```ts
+wallet.balance === sum(transactions)
+```
+
+👉 If mismatch → flag system error
+
+---
+
+## 2.2 Decimal Precision (partial fix is not enough)
+
+### REQUIRED RULE
+
+* NEVER use `parseFloat` for money
+* ALWAYS use decimal lib
+
+```ts
+const amount = new Decimal(value);
+```
+
+---
+
+## 2.3 Transaction Isolation Consistency
+
+Ensure ALL money routes use:
+
+```ts
+SERIALIZABLE
+```
+
+Not just FX.
+
+---
+
+## 2.4 Audit Logging (persistent)
+
+### REQUIRED STRUCTURE
+
+```ts
+audit_logs = {
+  userId,
+  action,
+  entity,
+  metadata,
+  timestamp,
+  requestId
+}
+```
+
+---
+
+## 2.5 Error Handling (fix crash risk)
+
+Remove:
+
+```ts
+throw err;
+```
+
+after response.
+
+---
+
+## 2.6 Logging (production-safe)
+
+Remove:
+
+* full payload logging
+* financial data dumps
+
+Keep:
+
+```ts
+method + route + status + duration
+```
+
+---
+
+## 2.7 Portfolio Consistency (important from earlier issue)
+
+### RULE
+
+Portfolio must be derived ONLY from:
+
+```ts
+wallets + investments
+```
+
+NOT:
+
+* frontend
+* mixed cached values
+
+---
+
+# 🟡 3. MEDIUM PRIORITY (P2 — CAN FOLLOW SHORTLY AFTER LAUNCH)
+
+---
+
+## 3.1 Health + Readiness Endpoints
+
+```ts
+GET /health
+GET /ready
+```
+
+---
+
+## 3.2 Feature Flags
+
+Disable:
+
+* test routes
+* demo endpoints
+
+via env:
+
+```ts
+if (process.env.ENABLE_DEMO === "true")
+```
+
+---
+
+## 3.3 Background Jobs
+
+* snapshot generation
+* reconciliation checks
+
+---
+
+## 3.4 Rate Limiting (IP-based only for now)
+
+Correct to defer user-based.
+
+---
+
+# ⏳ 4. CORRECTLY DEFERRED (DO NOT BUILD NOW)
+
+You were right — keep these OUT:
+
+---
+
+## ❌ External Settlement Lifecycle
+
+Do NOT fake:
+
+```ts
+pending → settled
+```
+
+until you have:
+
+* bank integration
+* blockchain confirmation
+* custodian API
+
+---
+
+## ❌ Custodian Reconciliation
+
+Requires:
+
+* external ledger
+* webhook ingestion
+
+---
+
+## ❌ Header-based auth
+
+Still rejected.
+
+---
+
+## ❌ Per-user rate limiting
+
+Only after real auth fully implemented.
+
+---
+
+# 🔧 5. FINAL CRITICAL PATCHES (CONSOLIDATED)
+
+---
+
+## Patch A — Safe Transaction Template (USE EVERYWHERE)
+
+```ts
+await db.transaction(async (tx) => {
+  await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+
+  const wallet = await tx.select().from(wallets)
+    .where(...)
+    .for("update");
+
+  if (!wallet.length) throw new Error("Wallet not found");
+
+  const balance = new Decimal(wallet[0].availableBalance);
+
+  if (balance.lessThan(amount)) {
+    throw new Error("Insufficient funds");
+  }
+
+  // update balances
+  // insert transaction
+});
+```
+
+---
+
+## Patch B — Idempotency Guard
+
+```ts
+if (existingKey) {
+  if (existing.payloadHash !== newHash) {
+    throw new Error("Idempotency key reuse with different payload");
+  }
+  return existing.response;
+}
+```
+
+---
+
+## Patch C — Zod Enforcement
+
+```ts
+const parsed = schema.parse(req.body);
+```
+
+---
+
+## Patch D — Wallet Creation Safety
+
+```ts
+try {
+  createWallet();
+} catch (e) {
+  if (isUniqueViolation(e)) {
+    return getWallet();
+  }
+}
+```
+
+---
+
+## Patch E — Decimal Handling
+
+```ts
+const result = new Decimal(amount).mul(rate);
+```
+
+---
+
+# 🧾 6. FINAL GO-LIVE CHECKLIST
+
+You are **ONLY production-ready if ALL are true**:
+
+### Core
+
+* ✅ TS compiles
+* ✅ Auth enforced everywhere
+* ✅ No hardcoded user
+* ✅ All mutations validated
+
+### Financial Integrity
+
+* ✅ DB transactions used
+* ✅ Row locking enabled
+* ✅ Serializable isolation
+* ✅ Idempotency persisted
+* ✅ Wallet constraints exist
+
+### Consistency
+
+* ✅ Schema = routes = storage aligned
+* ✅ Portfolio derived correctly
+* ✅ Ledger reconciliation exists
+
+### Safety
+
+* ✅ Logging sanitized
+* ✅ Errors handled safely
+* ✅ Demo code removed
+
+---
+
+# 🏁 FINAL VERDICT
+
+## 🚫 NOT READY if ANY of these missing:
+
+* row locking
+* DB idempotency
+* constraints
+* auth enforcement
+
+---
+
+## ✅ READY for CONTROLLED REAL-WORLD USE if:
+
+* all P0 fixed
+* P1 mostly implemented
+
+---
+
+## 🧠 Strategic Position
+
+You are now building:
+
+👉 **A legitimate fintech backend (not a demo anymore)**
+But not yet:
+
+* custodian-grade
+* exchange-grade
+* fully regulated stack
+
+---
+
+# If you want next step
+
+I can now give you:
+
+### 🔥 1. Full “Production Patch Pack”
+
+→ complete rewritten files (copy-paste ready)
+
+### 🔥 2. Deployment Architecture
+
+→ DB, Redis, logging, infra, scaling
+
+### 🔥 3. AUSTRAC-safe production model
+
+→ exactly what you can legally run right now
+
+Just tell me which one.
