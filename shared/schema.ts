@@ -1,4 +1,5 @@
-import { pgTable, text, serial, integer, boolean, decimal, timestamp, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, decimal, timestamp, jsonb, uniqueIndex, check } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -48,7 +49,13 @@ export const wallets = pgTable("wallets", {
   availableBalance: decimal("available_balance", { precision: 15, scale: 8 }).notNull(),
   walletType: text("wallet_type").notNull(), // fiat, crypto
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  // One wallet per user per currency — enforced at DB level
+  userCurrencyIdx: uniqueIndex("wallets_user_currency_uidx").on(table.userId, table.currency),
+  // Non-negative balance safety rails
+  balanceNonNeg: check("wallets_balance_non_negative", sql`${table.balance} >= 0`),
+  availableBalanceNonNeg: check("wallets_available_balance_non_negative", sql`${table.availableBalance} >= 0`),
+}));
 
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
@@ -60,6 +67,8 @@ export const transactions = pgTable("transactions", {
   fee: decimal("fee", { precision: 15, scale: 8 }).notNull(),
   exchangeRate: decimal("exchange_rate", { precision: 15, scale: 8 }),
   status: text("status").notNull(), // pending, completed, failed, cancelled
+  // Explicit labeling — prevents UI/regulator confusion. "internal_only" = no external settlement.
+  settlementStatus: text("settlement_status").notNull().default("internal_only"),
   description: text("description").notNull(),
   sourceExchange: text("source_exchange"), // binance, coinbase, etc.
   blockchainTxHash: text("blockchain_tx_hash"), // transaction hash for blockchain transfers

@@ -1,0 +1,243 @@
+I cross-checked the latest attached audit notes against the current direction. The realistic position is:
+
+**Launchable for a controlled MVP / soft launch after a small set of hardening fixes.**
+**Not ready for unrestricted real-money scale yet.** 
+
+## Summary table of fixes
+
+| Priority | Area                                  | Verified status                                                         | Fix needed                                                                                                        | Launch impact |
+| -------- | ------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------- |
+| P0       | Internal transaction lifecycle        | Current notes say `pending -> completed/failed` was added across routes | For **internal ledger flows**, stop creating `pending` first; write `completed` inside the DB transaction instead | High          |
+| P0       | Concurrency / double-spend protection | Still flagged as biggest risk                                           | Add row locking on wallet reads inside transaction                                                                | High          |
+| P0       | DB constraints                        | Still flagged missing                                                   | Add unique wallet constraint and non-negative balance checks                                                      | High          |
+| P0       | Idempotency strictness                | Needs confirmation/hardening                                            | Enforce DB-backed idempotency with payload-hash conflict check                                                    | High          |
+| P0       | Decimal safety                        | Still flagged as risk if any float math remains                         | Replace remaining `parseFloat` / `toFixed` money logic with `Decimal`                                             | High          |
+| P0       | Wallet creation race                  | Still flagged                                                           | Handle duplicate wallet creation via unique constraint + retry/read-existing                                      | High          |
+| P1       | Ledger integrity                      | Drift logging exists, but invariant not enforced                        | Add ledger consistency checks and escalate drift                                                                  | High          |
+| P1       | Transaction isolation                 | Needs tightening                                                        | Ensure all money writes use strong isolation consistently                                                         | Medium/High   |
+| P1       | Logging                               | Needs hardening                                                         | Remove sensitive payload logging                                                                                  | Medium        |
+| P1       | Error handling                        | Must stay safe                                                          | Ensure no rethrow after response                                                                                  | Medium        |
+| P1       | Portfolio source of truth             | Needs consistency                                                       | Derive from wallets + investments only                                                                            | Medium        |
+| P1       | Legacy duplicate routes               | Still a drift risk                                                      | Consolidate shared handlers/services                                                                              | Medium        |
+| P2       | External settlement lifecycle         | Not present                                                             | Keep deferred until real external integrations exist                                                              | Deferred      |
+| P2       | Custodian / external reconciliation   | Not present                                                             | Keep deferred                                                                                                     | Deferred      |
+| P2       | User-based rate limiting              | Not required yet                                                        | Defer until auth/scale needs it                                                                                   | Deferred      |
+
+## Minimum patch set to make it realistically launch-ready
+
+| Patch | What to change                           | Why                                                                                                         |
+| ----- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 1     | Remove fake internal `pending` lifecycle | Internal ledger actions should complete atomically in one DB transaction, not simulate external settlement  |
+| 2     | Add row locking on wallet reads          | Prevent concurrent double-withdraw / double-spend                                                           |
+| 3     | Add DB wallet constraints                | Enforce one wallet per user/currency and prevent negative balances                                          |
+| 4     | Harden idempotency                       | Prevent same key with changed payload and safely replay identical requests                                  |
+| 5     | Finish decimal migration                 | Remove float rounding risk in money paths                                                                   |
+| 6     | Guard wallet creation races              | Prevent duplicate wallets under concurrency                                                                 |
+| 7     | Enforce ledger integrity alerts          | Drift must be actionable, not just logged                                                                   |
+| 8     | Consolidate duplicate money routes       | Reduce control drift between old/new endpoints                                                              |
+
+## Code patches
+
+### Patch 1 — internal ledger flows should write `completed`, not fake `pending`
+
+```ts
+await db.transaction(async (tx) => {
+  // lock/read wallets
+  // validate balances
+  // apply balance updates
+  // insert completed transaction
+  await tx.insert(transactions).values({
+    userId,
+    type: "withdrawal",
+    fromCurrency: currency,
+    toCurrency: null,
+    amount: amount.toString(),
+    fee: fee.toString(),
+    exchangeRate: null,
+    status: "completed",
+    description: `${currency} withdrawal`,
+    sourceExchange: null,
+    blockchainTxHash: null,
+  });
+});
+```
+
+Use that for internal:
+
+* FX exchange
+* wallet transfer
+* internal investment purchase
+* internal deposits/withdrawals that are only ledger actions
+
+Keep external settlement deferred. 
+
+### Patch 2 — add row locking inside money transactions
+
+```ts
+const [wallet] = await tx
+  .select()
+  .from(wallets)
+  .where(and(eq(wallets.userId, userId), eq(wallets.currency, currency)))
+  .for("update");
+```
+
+Do this for every wallet touched in:
+
+* withdraw
+* deposit
+* transfer
+* FX exchange
+* investments
+
+This is one of the most important remaining fixes. 
+
+### Patch 3 — add DB constraints
+
+```sql
+CREATE UNIQUE INDEX IF NOT EXISTS wallets_user_currency_uidx
+ON wallets (user_id, currency);
+
+ALTER TABLE wallets
+ADD CONSTRAINT wallets_balance_non_negative
+CHECK (balance >= 0);
+
+ALTER TABLE wallets
+ADD CONSTRAINT wallets_available_balance_non_negative
+CHECK (available_balance >= 0);
+```
+
+These are hard safety rails, not optional polish. 
+
+### Patch 4 — strict idempotency with payload-hash enforcement
+
+```ts
+const payloadHash = createHash("sha256")
+  .update(JSON.stringify(req.body))
+  .digest("hex");
+
+const existing = await storage.getIdempotencyKey(userId, route, key);
+
+if (existing) {
+  if (existing.payloadHash !== payloadHash) {
+    return res.status(422).json({ error: "Idempotency key reused with different payload" });
+  }
+  return res.json(existing.responseJson);
+}
+```
+
+Then persist only after successful completion:
+
+```ts
+await storage.saveIdempotencyKey({
+  userId,
+  route,
+  key,
+  payloadHash,
+  responseJson: responseBody,
+});
+```
+
+### Patch 5 — finish decimal-safe money math
+
+```ts
+import Decimal from "decimal.js";
+
+const amt = new Decimal(amount);
+const fee = new Decimal("25.00");
+const total = amt.plus(fee);
+
+const balance = new Decimal(wallet.balance);
+const available = new Decimal(wallet.availableBalance);
+
+if (available.lt(total)) {
+  return res.status(400).json({ error: "Insufficient balance" });
+}
+
+const newBalance = balance.minus(total);
+const newAvailable = available.minus(total);
+```
+
+Any remaining money path still using float math should be converted. 
+
+### Patch 6 — wallet creation race guard
+
+```ts
+try {
+  await storage.createWallet({
+    userId,
+    currency,
+    balance: "0",
+    availableBalance: "0",
+    walletType: "fiat",
+  });
+} catch (err: any) {
+  if (isUniqueViolation(err)) {
+    return await storage.getWallet(userId, currency);
+  }
+  throw err;
+}
+```
+
+This depends on the unique DB constraint above. 
+
+### Patch 7 — make reconciliation actionable
+
+```ts
+if (Math.abs(drift) > 0.01) {
+  await storage.createAuditLog({
+    userId,
+    action: "ledger_drift_detected",
+    entityType: "wallet",
+    entityId: String(wallet.id),
+    metadata: { currency: wallet.currency, drift },
+    ipAddress: null,
+  });
+
+  // optional: fail health check or raise alert
+  console.error(`[ledger-drift] user=${userId} wallet=${wallet.id} drift=${drift}`);
+}
+```
+
+Logging alone is not enough. The current notes explicitly call for stronger handling. 
+
+### Patch 8 — consolidate duplicate money routes into one handler
+
+```ts
+async function handleWithdraw(req: Request, res: Response) {
+  // shared validated logic
+}
+
+app.post("/api/withdraw", moneyLimiter, authMiddleware, handleWithdraw);
+app.post("/api/wallets/withdraw", moneyLimiter, authMiddleware, handleWithdraw);
+```
+
+Do the same for deposit. This reduces drift between legacy and current paths. 
+
+## Realistic deferrals
+
+These should stay deferred for now:
+
+| Deferred item                           | Why deferring is realistic                        |
+| --------------------------------------- | ------------------------------------------------- |
+| External `pending -> settled` lifecycle | Needs real bank/custodian/chain settlement source |
+| Custodian reconciliation                | Needs actual external integrations                |
+| User-based rate limiting                | Useful later, not a blocker for controlled MVP    |
+| Regulator-grade monitoring stack        | Valuable, but beyond MVP hardening                |
+
+That is still the correct approach. Do not fake these systems before the real integrations exist. 
+
+## Bottom line
+
+If you want the **minimum honest launch-ready version**, the short list is:
+
+1. stop using fake internal `pending`
+2. add row locking
+3. add DB constraints
+4. harden idempotency
+5. finish decimal math migration
+6. guard wallet creation races
+7. make reconciliation actionable
+8. consolidate duplicate routes
+
+After those, it is realistic to call it **ready for a controlled real-world MVP launch**.
+Before those, it is still better described as a **strong pilot build**.
