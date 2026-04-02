@@ -530,7 +530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { db } = await import('./db');
     const { sql: rawSql } = await import('drizzle-orm');
     // Reset the serial sequence to MAX(id) so inserts don't collide with existing rows
-    await db.execute(rawSql`SELECT setval(pg_get_serial_sequence('fx_rates', 'id'), COALESCE((SELECT MAX(id) FROM fx_rates), 0))`);
+    await db.execute(rawSql`SELECT setval(pg_get_serial_sequence('fx_rates', 'id'), GREATEST(COALESCE((SELECT MAX(id) FROM fx_rates), 1), 1))`);
     const missingRates = [
       { baseCurrency: 'BTC', targetCurrency: 'USD', rate: '95000.00', spread: '0.0050' },
       { baseCurrency: 'ETH', targetCurrency: 'USD', rate: '3500.00',  spread: '0.0050' },
