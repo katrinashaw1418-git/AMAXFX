@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 
 // ---------------------------------------------------------------------------
@@ -13,6 +14,40 @@ const systemEventLog: Array<{ type: string; payload: unknown; timestamp: string 
 function saveSystemEvent(event: { type: string; payload: unknown }): void {
   systemEventLog.unshift({ ...event, timestamp: new Date().toISOString() });
   if (systemEventLog.length > MAX_SYSTEM_EVENTS) systemEventLog.length = MAX_SYSTEM_EVENTS;
+}
+
+// ---------------------------------------------------------------------------
+// Money-movement rate limiter — applied to FX exchange, withdrawals, and
+// investment purchases. 30 requests per 5 minutes per IP prevents automated abuse.
+// ---------------------------------------------------------------------------
+const moneyMovementLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests for this operation. Please try again in a few minutes." },
+});
+
+// ---------------------------------------------------------------------------
+// In-memory idempotency store for FX exchange (and future money-movement routes).
+// Key: `${userId}:${Idempotency-Key header}` → cached response + TTL.
+// 24-hour TTL covers typical client retry windows. No DB schema change required.
+// ---------------------------------------------------------------------------
+const IDEM_TTL_MS = 24 * 60 * 60 * 1000;
+const idempotencyCache = new Map<string, { response: unknown; expiresAt: number }>();
+
+function getIdempotentResponse(userId: number, key: string): unknown | null {
+  const entry = idempotencyCache.get(`${userId}:${key}`);
+  if (!entry) return null;
+  if (entry.expiresAt < Date.now()) {
+    idempotencyCache.delete(`${userId}:${key}`);
+    return null;
+  }
+  return entry.response;
+}
+
+function setIdempotentResponse(userId: number, key: string, response: unknown): void {
+  idempotencyCache.set(`${userId}:${key}`, { response, expiresAt: Date.now() + IDEM_TTL_MS });
 }
 
 // Category-level fallback rates — only used when a product has no explicit annualReturn set
@@ -1421,11 +1456,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create FX exchange transaction
-  app.post("/api/fx-exchange", async (req, res) => {
+  app.post("/api/fx-exchange", moneyMovementLimiter, async (req, res) => {
     try {
       const { fromCurrency, toCurrency, amount } = req.body;
       const userId = 1;
-      
+
+      // Optional idempotency — if the client sends an Idempotency-Key header,
+      // return the cached result for any duplicate request within 24 hours.
+      const idemKey = req.headers["idempotency-key"] as string | undefined;
+      if (idemKey) {
+        const cached = getIdempotentResponse(userId, idemKey);
+        if (cached !== null) {
+          return res.json({ ...(cached as object), idempotent: true });
+        }
+      }
+
       if (!fromCurrency || !toCurrency || !amount) {
         return res.status(400).json({ error: "Missing required fields" });
       }
@@ -1498,12 +1543,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: `${fromCurrency} to ${toCurrency} Exchange`,
       });
 
-      res.json({
+      const responseBody = {
         transaction,
         convertedAmount: netConvertedAmount,
         exchangeRate,
         fee,
-      });
+      };
+
+      // Cache the result so any retry with the same Idempotency-Key gets the same response.
+      if (idemKey) setIdempotentResponse(userId, idemKey, responseBody);
+
+      res.json(responseBody);
     } catch (error) {
       res.status(500).json({ error: "Failed to process FX exchange" });
     }
@@ -1598,7 +1648,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create withdrawal transaction (legacy route)
-  app.post("/api/withdraw", async (req, res) => {
+  app.post("/api/withdraw", moneyMovementLimiter, async (req, res) => {
     try {
       const { currency, amount, description } = req.body;
       const userId = 1;
@@ -2022,7 +2072,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create investment
-  app.post("/api/investments", async (req, res) => {
+  app.post("/api/investments", moneyMovementLimiter, async (req, res) => {
     try {
       const { productId, amount, sourceCurrency = "USD", sourceAmount } = req.body;
       const userId = 1; // Hardcoded user ID for demo

@@ -1,0 +1,194 @@
+Great — here’s a **real, no-BS Day-0 launch checklist** tailored to your setup (**portfolio engine + third-party custodian**).
+This is what you should be able to say **“YES” to before going live**.
+
+---
+
+# 🚀 Fintech Launch Checklist (Day 0)
+
+## 🔴 1. Money Movement Safety (MUST PASS)
+
+| Check                   | Pass criteria                                                                 |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| Idempotency             | Every deposit/transfer API requires `Idempotency-Key` and prevents duplicates |
+| Transaction states      | All transactions have `pending → settled/failed/reversed`                     |
+| No direct balance edits | All balances derived from ledger (no `wallet +=`)                             |
+| Custodian confirmation  | Funds only marked “settled” after custodian confirms                          |
+| Retry safety            | API retries cannot double-execute                                             |
+
+✅ If ANY of these fail → **do NOT launch**
+
+---
+
+## 🔴 2. Ledger Integrity (MUST PASS)
+
+| Check                    | Pass criteria                                |
+| ------------------------ | -------------------------------------------- |
+| Ledger = source of truth | Wallet balances derived from transactions    |
+| Reconstruction works     | Historical balances reproducible from ledger |
+| Reconciliation exists    | Internal balances vs custodian checked       |
+| Drift detection          | Mismatches logged and visible                |
+| No silent corrections    | All fixes go through transactions            |
+
+---
+
+## 🔴 3. Custodian Integration (MUST PASS)
+
+| Check                | Pass criteria                         |
+| -------------------- | ------------------------------------- |
+| Webhooks verified    | Signature validation implemented      |
+| Webhook idempotency  | Duplicate webhook handling safe       |
+| API failure handling | Failed calls update transaction state |
+| Timeouts handled     | No hanging transactions               |
+| Mapping consistency  | Custodian tx ↔ your tx 1:1 traceable  |
+
+---
+
+## 🔴 4. Security (MUST PASS)
+
+| Check            | Pass criteria                        |
+| ---------------- | ------------------------------------ |
+| Authentication   | No hardcoded user IDs                |
+| Authorization    | Users can only access their own data |
+| Admin protection | MFA for admin actions                |
+| Secrets          | API keys NOT in code                 |
+| Rate limiting    | Basic abuse protection in place      |
+
+---
+
+## 🔴 5. Data Truthfulness (MUST PASS)
+
+| Check                   | Pass criteria                         |
+| ----------------------- | ------------------------------------- |
+| No fake valuations      | `manual_nav` not misleading           |
+| Missing data visible    | UI shows “unpriced” or “estimated”    |
+| Historical source clear | “estimated vs actual” disclosed       |
+| No silent NaN/0         | Null handled explicitly               |
+| Forecast labeled        | Projection clearly marked as estimate |
+
+---
+
+## 🟠 6. Operations (SHOULD PASS)
+
+| Check              | Pass criteria                       |
+| ------------------ | ----------------------------------- |
+| Reconciliation job | Runs daily (or more frequently)     |
+| Error logging      | Centralized logs (not just console) |
+| Alerts             | You know when something breaks      |
+| Manual override    | Ability to pause transfers          |
+| Backups            | Database backup working             |
+
+---
+
+## 🟠 7. Failure Handling (SHOULD PASS)
+
+| Check            | Pass criteria                    |
+| ---------------- | -------------------------------- |
+| Custodian outage | Transactions fail safely         |
+| Partial failure  | No half-completed states         |
+| Retry strategy   | Safe retries without duplication |
+| Rollback logic   | Failed flows revert cleanly      |
+| User messaging   | Errors shown clearly             |
+
+---
+
+## 🟡 8. Compliance & Legal (DEPENDS ON SCOPE)
+
+| Check              | Pass criteria                    |
+| ------------------ | -------------------------------- |
+| Terms & Conditions | Users accept before use          |
+| Privacy policy     | Data handling disclosed          |
+| Risk disclosure    | Especially for investments       |
+| KYC (if required)  | Implemented or custodian-covered |
+| AML (if required)  | Responsibility clearly defined   |
+
+---
+
+## 🟡 9. UX / Support (MINIMUM VIABLE)
+
+| Check               | Pass criteria                |
+| ------------------- | ---------------------------- |
+| Transaction history | Users can see what happened  |
+| Status visibility   | Pending vs completed visible |
+| Support contact     | Users can reach you          |
+| Error messages      | Not cryptic                  |
+| Account recovery    | Basic flow exists            |
+
+---
+
+# ⚠️ HARD FAIL CONDITIONS (DO NOT LAUNCH IF TRUE)
+
+* ❌ Duplicate transactions possible
+* ❌ Wallet balance ≠ ledger
+* ❌ No reconciliation
+* ❌ Webhooks not verified
+* ❌ Using fake valuations silently
+* ❌ Hardcoded user/account access
+* ❌ Custodian failures not handled
+
+---
+
+# 🧠 Real-world sanity test
+
+Before launch, simulate this:
+
+### Scenario 1
+
+* User deposits
+* API retries 3 times
+  👉 Result must = **1 transaction only**
+
+### Scenario 2
+
+* Custodian API fails mid-transfer
+  👉 Result = **transaction = failed, no balance drift**
+
+### Scenario 3
+
+* Webhook sent twice
+  👉 Result = **processed once**
+
+### Scenario 4
+
+* Missing price for asset
+  👉 Result = **UI shows “unpriced” (NOT fake value)**
+
+### Scenario 5
+
+* Reconciliation mismatch
+  👉 Result = **alert triggered**
+
+---
+
+# 🏁 Final launch readiness score
+
+| Category          | Your current state        |
+| ----------------- | ------------------------- |
+| Core math engine  | ✅ Strong                  |
+| Portfolio history | ✅ Fixed                   |
+| Custodian model   | ✅ Good choice             |
+| Ledger design     | ⚠️ Needs validation layer |
+| Production safety | ⚠️ Needs hardening        |
+| Compliance layer  | ⚠️ Depends on scope       |
+
+---
+
+# 💡 Bottom line
+
+You are **~80–90% there technically**.
+
+To safely launch, you must ensure:
+
+### The “final 3” are rock solid:
+
+1. **Idempotency**
+2. **Reconciliation (internal vs custodian)**
+3. **Transaction lifecycle states**
+
+Everything else improves robustness —
+but those three **prevent catastrophic failure**.
+
+---
+
+If you want next step, I can:
+👉 turn this into a **pre-launch test script you can run in 30 minutes**
+👉 or simulate **real failure scenarios against your current code**

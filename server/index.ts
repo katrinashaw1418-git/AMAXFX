@@ -1,10 +1,24 @@
 import express, { type Request, Response, NextFunction } from "express";
+import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// General rate limit — covers all /api/* routes against burst abuse.
+// 200 req/min per IP is generous enough for a dashboard with auto-refresh queries.
+app.use(
+  "/api",
+  rateLimit({
+    windowMs: 60 * 1000,
+    max: 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests. Please try again shortly." },
+  })
+);
 
 app.use((req, res, next) => {
   const start = Date.now();
