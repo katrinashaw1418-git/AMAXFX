@@ -12,7 +12,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import { TrendingUp, TrendingDown, DollarSign, Bitcoin, PieChart as PieChartIcon, Target, RefreshCw, Phone, MessageCircle, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, apiFetch } from "@/lib/queryClient";
 
 const COLORS = ['hsl(207, 90%, 54%)', 'hsl(0, 84%, 55%)', '#D1D5DB', '#8B5CF6', '#10B981', '#F59E0B'];
 
@@ -42,51 +42,31 @@ export default function Portfolio() {
   
   const { data: investmentBreakdown, isLoading: breakdownLoading } = useQuery({
     queryKey: ["/api/investment-breakdown"],
-    queryFn: async () => {
-      const response = await fetch("/api/investment-breakdown");
-      if (!response.ok) throw new Error("Failed to fetch investment breakdown");
-      return response.json();
-    },
+    queryFn: async () => (await apiFetch("/api/investment-breakdown")).json(),
     refetchInterval: 5000, // Refresh every 5 seconds to track investment changes
   });
 
   // Portfolio history chart — monthly points from Jan 1, 2026 (historical + projected)
   const { data: perfChart } = useQuery({
     queryKey: ["/api/portfolio/performance-chart", "1Y"],
-    queryFn: async () => {
-      const res = await fetch("/api/portfolio/performance-chart?timeframe=1Y");
-      if (!res.ok) throw new Error("Failed to fetch performance chart");
-      return res.json();
-    },
+    queryFn: async () => (await apiFetch("/api/portfolio/performance-chart?timeframe=1Y")).json(),
   });
 
   // 1-year portfolio history — still used for Performance by Period period calculations
   const { data: yearHistory } = useQuery({
     queryKey: ["/api/portfolio/history", "1Y"],
-    queryFn: async () => {
-      const response = await fetch("/api/portfolio/history?timeframe=1Y");
-      if (!response.ok) throw new Error("Failed to fetch portfolio history");
-      return response.json();
-    },
+    queryFn: async () => (await apiFetch("/api/portfolio/history?timeframe=1Y")).json(),
   });
 
   // YTD investment history — monthly points anchored from 1 Jan 2026
   const { data: investmentYtdHistory } = useQuery({
     queryKey: ["/api/investments/history-ytd"],
-    queryFn: async () => {
-      const res = await fetch("/api/investments/history-ytd");
-      if (!res.ok) throw new Error("Failed to fetch investment YTD history");
-      return res.json();
-    },
+    queryFn: async () => (await apiFetch("/api/investments/history-ytd")).json(),
   });
 
   const { data: realMetrics, isLoading: metricsLoading } = useQuery({
     queryKey: ["/api/portfolio/real-metrics"],
-    queryFn: async () => {
-      const res = await fetch("/api/portfolio/real-metrics");
-      if (!res.ok) throw new Error("Failed to fetch real metrics");
-      return res.json();
-    },
+    queryFn: async () => (await apiFetch("/api/portfolio/real-metrics")).json(),
   });
 
   // Advisor contact mutation

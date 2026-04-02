@@ -7,6 +7,7 @@ import {
 } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { apiFetch } from '@/lib/queryClient';
 
 type Timeframe = '1Y' | '3Y' | '7Y';
 
@@ -45,11 +46,7 @@ export default function PortfolioChart() {
 
   const { data, isLoading } = useQuery<PerfChartResponse>({
     queryKey: ['/api/portfolio/performance-chart', selectedTimeframe],
-    queryFn: async () => {
-      const res = await fetch(`/api/portfolio/performance-chart?timeframe=${selectedTimeframe}`);
-      if (!res.ok) throw new Error('Failed to fetch performance chart');
-      return res.json();
-    },
+    queryFn: async () => (await apiFetch(`/api/portfolio/performance-chart?timeframe=${selectedTimeframe}`)).json(),
   });
 
   const lastHistorical = data?.data.reduce<number | null>((acc, row) =>

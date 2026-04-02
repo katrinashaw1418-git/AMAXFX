@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { apiFetch } from "@/lib/queryClient";
 
 export function usePortfolio() {
   return useQuery({
@@ -45,7 +46,7 @@ export function useUserInvestments() {
 export function usePortfolioAllocation() {
   return useQuery({
     queryKey: ["/api/portfolio/allocation"],
-    queryFn: () => fetch("/api/portfolio/allocation").then(res => res.json()),
+    queryFn: () => apiFetch("/api/portfolio/allocation").then(res => res.json()),
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 }

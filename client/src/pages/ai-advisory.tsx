@@ -14,7 +14,7 @@ import { PieChart as PieChartIcon } from "lucide-react";
 import { useAiRecommendations } from "@/hooks/use-portfolio";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, apiFetch } from "@/lib/queryClient";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -78,50 +78,30 @@ export default function AiAdvisory() {
   // Fetch current portfolio allocation
   const { data: portfolioAllocation, isLoading: allocationLoading } = useQuery({
     queryKey: ["/api/portfolio/allocation"],
-    queryFn: async () => {
-      const response = await fetch("/api/portfolio/allocation");
-      if (!response.ok) throw new Error("Failed to fetch portfolio allocation");
-      return response.json();
-    },
+    queryFn: async () => (await apiFetch("/api/portfolio/allocation")).json(),
   });
 
   // Fetch investment breakdown
   const { data: investmentBreakdown, isLoading: breakdownLoading } = useQuery({
     queryKey: ["/api/investment-breakdown"],
-    queryFn: async () => {
-      const response = await fetch("/api/investment-breakdown");
-      if (!response.ok) throw new Error("Failed to fetch investment breakdown");
-      return response.json();
-    },
+    queryFn: async () => (await apiFetch("/api/investment-breakdown")).json(),
   });
 
   // Fetch portfolio data for performance calculations
   const { data: portfolio, isLoading: portfolioLoading } = useQuery({
     queryKey: ["/api/portfolio"],
-    queryFn: async () => {
-      const response = await fetch("/api/portfolio");
-      if (!response.ok) throw new Error("Failed to fetch portfolio");
-      return response.json();
-    },
+    queryFn: async () => (await apiFetch("/api/portfolio")).json(),
   });
 
   // Fetch user investments for actual returns
   const { data: userInvestments, isLoading: investmentsLoading } = useQuery({
     queryKey: ["/api/user-investments"],
-    queryFn: async () => {
-      const response = await fetch("/api/user-investments");
-      if (!response.ok) throw new Error("Failed to fetch user investments");
-      return response.json();
-    },
+    queryFn: async () => (await apiFetch("/api/user-investments")).json(),
   });
 
   const { data: realMetrics, isLoading: metricsLoading } = useQuery({
     queryKey: ["/api/portfolio/real-metrics"],
-    queryFn: async () => {
-      const res = await fetch("/api/portfolio/real-metrics");
-      if (!res.ok) throw new Error("Failed to fetch real metrics");
-      return res.json();
-    },
+    queryFn: async () => (await apiFetch("/api/portfolio/real-metrics")).json(),
   });
 
   const currentPortfolioAllocation = portfolioAllocation ? {
@@ -179,12 +159,7 @@ export default function AiAdvisory() {
   // Generate new recommendations when risk profile changes
   const generateRecommendationsMutation = useMutation({
     mutationFn: async (profileData: { riskTolerance: number; investmentHorizon: string; investmentGoal: string }) => {
-      const response = await fetch("/api/ai-recommendations/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profileData),
-      });
-      if (!response.ok) throw new Error("Failed to generate recommendations");
+      const response = await apiRequest("POST", "/api/ai-recommendations/generate", profileData);
       return response.json();
     },
     onSuccess: () => {

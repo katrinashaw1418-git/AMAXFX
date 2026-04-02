@@ -41,6 +41,12 @@ export async function apiRequest(
   return res;
 }
 
+export async function apiFetch(url: string): Promise<Response> {
+  const res = await fetch(url, { headers: authHeaders() });
+  await throwIfResNotOk(res);
+  return res;
+}
+
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
