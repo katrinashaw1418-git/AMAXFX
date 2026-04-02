@@ -790,17 +790,17 @@ export default function Portfolio() {
                 const state = realMetrics?.riskMetricsState;
                 if (state === 'limited') return (
                   <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                    <p className="text-xs font-medium text-amber-900">Limited historical basis</p>
+                    <p className="text-xs font-medium text-amber-900">Building performance history</p>
                     <p className="text-xs text-amber-800 mt-1">
-                      More observed history is required before risk metrics become meaningful.
+                      Risk metrics will appear once sufficient portfolio history and variability are observed.
                     </p>
                   </div>
                 );
                 if (state === 'estimated') return (
                   <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                    <p className="text-xs font-medium text-amber-900">Based on reconstructed history</p>
+                    <p className="text-xs font-medium text-amber-900">Building performance history</p>
                     <p className="text-xs text-amber-800 mt-1">
-                      Metrics are calculated using partially reconstructed portfolio data.
+                      Metrics will appear as more real portfolio data is recorded. Current values are based on reconstructed history.
                     </p>
                   </div>
                 );

@@ -826,10 +826,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? +(((returnMean - riskFreeDaily) / returnStd) * Math.sqrt(365)).toFixed(2)
         : null;
 
-      // Volatility — length + finite check (intentionally more permissive than Sharpe)
+      // Volatility — same threshold as Sharpe; near-zero stddev (smooth backfill) → null
       const canShowVolatility =
         dailyReturns.length >= 20 &&
-        Number.isFinite(returnStd);
+        Number.isFinite(returnStd) &&
+        returnStd > 0.0001;
       const annualizedVolatility: number | null = canShowVolatility
         ? +(returnStd * Math.sqrt(365) * 100).toFixed(2)
         : null;

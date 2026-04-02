@@ -1,0 +1,249 @@
+Here’s the straight answer:
+👉 **Your system is correct — now you need to handle early-stage data better, not loosen the rules.**
+
+Right now the issue isn’t computation — it’s **insufficient + low-quality history**. The fix is about **how you handle that phase cleanly**.
+
+---
+
+# 🧠 My Advice (Practical & Strategic)
+
+## 1) **Do NOT force metrics early**
+
+Resist the temptation to “show something”.
+
+If you do:
+
+* users will see fake low volatility (like 0.06%)
+* Sharpe will be misleading or explode later
+* trust drops immediately
+
+👉 **Your current gating is correct — keep it strict**
+
+---
+
+## 2) **Make “Limited History” a feature, not a problem**
+
+Right now it feels like something is missing.
+
+Turn it into a **clear system state**:
+
+Instead of:
+
+> metrics unavailable
+
+Say:
+
+> **Building performance history**
+
+This reframes the experience.
+
+---
+
+## 3) **Unify all risk metrics under ONE rule**
+
+Right now the only inconsistency is volatility.
+
+👉 Fix:
+
+> If Sharpe is hidden → volatility must also be hidden
+
+This removes confusion.
+
+---
+
+## 4) **Expose progress (very important UX win)**
+
+You already have:
+
+```txt
+Observed Snapshots: 1 / 30
+```
+
+Upgrade it to:
+
+> **History Strength: 1 / 30 days**
+
+This tells users:
+
+* system is working
+* they just need more data
+
+---
+
+## 5) **Let real data naturally unlock metrics**
+
+Do NOT simulate in production.
+
+Instead:
+
+* record daily snapshots consistently
+* let variability come from real price movements
+
+👉 Within ~2–4 weeks:
+
+* volatility appears
+* drawdown appears
+* Sharpe stabilises
+
+---
+
+# 📊 Clean Summary Table
+
+| Problem                        | Root Cause                      | Correct Behaviour   | Fix                                          |
+| ------------------------------ | ------------------------------- | ------------------- | -------------------------------------------- |
+| Metrics not showing            | Too few data points             | Hide metrics        | Keep thresholds (≥20 returns, ≥30 snapshots) |
+| Volatility showing (0.06%)     | Missing variability check       | Should be hidden    | Add `returnStd > 0.0001`                     |
+| Sharpe hidden                  | Low stddev or insufficient data | Correct             | Keep as-is                                   |
+| Drawdown hidden                | No real peak/trough             | Correct             | Keep as-is                                   |
+| Confusing UX                   | “Unavailable” unclear           | Show progress state | Add “History Strength”                       |
+| Misleading interpretation risk | Reconstructed smooth data       | Warn user           | Keep “reconstructed history” label           |
+
+---
+
+# 🔧 Final Patches (Copy-Paste Ready)
+
+## 1) Fix Volatility (CRITICAL)
+
+```ts
+const returnStd = stddev(dailyReturns);
+
+const canShowVolatility =
+  dailyReturns.length >= 20 &&
+  Number.isFinite(returnStd) &&
+  returnStd > 0.0001;
+
+const volatility =
+  canShowVolatility
+    ? returnStd * Math.sqrt(365) * 100
+    : null;
+```
+
+---
+
+## 2) Keep Sharpe (already correct)
+
+```ts
+const canShowSharpe =
+  dailyReturns.length >= 20 &&
+  Number.isFinite(returnStd) &&
+  Number.isFinite(avgReturn) &&
+  returnStd > 0.0001;
+```
+
+---
+
+## 3) Drawdown Guard (safe version)
+
+```ts
+const hasDrawdownEvent = detectDrawdown(sortedSnapshots);
+
+const canShowDrawdown =
+  sortedSnapshots.length >= 20 &&
+  hasDrawdownEvent;
+
+const maxDrawdown =
+  canShowDrawdown
+    ? calculateMaxDrawdown(sortedSnapshots) * 100
+    : null;
+```
+
+---
+
+## 4) Unified Meaningfulness Rule
+
+```ts
+const hasMeaningfulHistory =
+  snapshotCount >= 30 &&
+  dailyReturns.length >= 20;
+```
+
+---
+
+## 5) UI State Logic (IMPORTANT)
+
+```ts
+const state =
+  !hasMeaningfulHistory
+    ? "limited"
+    : historySource === "historical_estimate"
+    ? "estimated"
+    : "historical";
+```
+
+---
+
+## 6) Replace “Unavailable” Messaging
+
+### ❌ Old
+
+> Risk metrics unavailable
+
+### ✅ New
+
+```txt
+Building performance history
+
+Risk metrics will appear once sufficient portfolio history and variability are observed.
+```
+
+---
+
+## 7) Improve Header UX
+
+Replace:
+
+```txt
+Observed Snapshots: 1 / 30
+```
+
+With:
+
+```txt
+History Strength: 1 / 30 days
+```
+
+---
+
+# 🟢 Final “Correct” UI Output
+
+```txt
+YTD Return           +1.90%
+Annualised (CAGR)   +7.83%
+Data Quality        Estimated
+Risk-Free Rate      4%
+
+Sharpe Ratio        —
+Volatility p.a.     —
+Max Drawdown        —
+
+Building performance history
+Metrics will appear as more real portfolio data is recorded.
+```
+
+---
+
+# 🟢 Final Verdict
+
+👉 Nothing is broken
+👉 Your system is behaving correctly
+👉 You just needed:
+
+* consistency (volatility fix)
+* better messaging (UX clarity)
+
+---
+
+# 🔥 Bottom Line
+
+> **Do not relax the math — improve the experience around limited data.**
+
+That’s exactly what you’ve now done.
+
+---
+
+If you want next, I can:
+
+* add a **“confidence score” (0–100%)**
+* or design a **progress bar + timeline for history maturity**
+
+That’s the next level UX upgrade.
