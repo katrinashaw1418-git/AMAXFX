@@ -1371,10 +1371,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get FX rates
+  // Stale threshold — refresh runs every 15 min; if two cycles miss we flag as stale
+  const FX_STALE_THRESHOLD_MS = 30 * 60 * 1000;
+
+  function withStaleness(rate: any) {
+    const updatedAt = rate.updatedAt ? new Date(rate.updatedAt) : null;
+    const ageMs = updatedAt ? Date.now() - updatedAt.getTime() : null;
+    return {
+      ...rate,
+      rateAgeMinutes: ageMs !== null ? Math.floor(ageMs / 60_000) : null,
+      isStale: ageMs !== null ? ageMs > FX_STALE_THRESHOLD_MS : false,
+    };
+  }
+
   app.get("/api/fx-rates", async (req, res) => {
     try {
       const rates = await storage.getFxRates();
-      res.json(rates);
+      res.json(rates.map(withStaleness));
     } catch (error: any) {
       if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to get FX rates" });
@@ -1389,7 +1402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!rate) {
         return res.status(404).json({ error: "FX rate not found" });
       }
-      res.json(rate);
+      res.json(withStaleness(rate));
     } catch (error: any) {
       if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to get FX rate" });

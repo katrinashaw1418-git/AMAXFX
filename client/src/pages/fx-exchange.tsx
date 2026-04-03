@@ -187,6 +187,14 @@ export default function FxExchange() {
                     {rateLoading ? "Loading..." : `1 ${fromCurrency} = ${exchangeRate.toFixed(4)} ${toCurrency}`}
                   </span>
                 </div>
+                {!rateLoading && (fxRate as any)?.isStale && (
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+                    <span>⚠</span>
+                    <span>
+                      Rate data is {(fxRate as any).rateAgeMinutes} min old — live refresh may have been delayed. Rate shown reflects last confirmed market data.
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-sm mt-2">
                   <span className="text-gray-600">Processing Fee</span>
                   <span className="font-medium">
@@ -231,7 +239,13 @@ export default function FxExchange() {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold">{rateValue.toFixed(4)}</p>
-                        <span className="text-xs text-gray-500">Live rate</span>
+                        {rate.isStale ? (
+                          <span className="text-xs text-amber-600">⚠ {rate.rateAgeMinutes}m ago</span>
+                        ) : (
+                          <span className="text-xs text-green-600">
+                            {rate.rateAgeMinutes !== null ? `${rate.rateAgeMinutes}m ago` : "Live rate"}
+                          </span>
+                        )}
                       </div>
                     </div>
                   );
