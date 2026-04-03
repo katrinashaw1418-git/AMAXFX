@@ -549,20 +549,23 @@ export default function AiAdvisory() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Expected Annual Return</h3>
+              <h3 className="text-sm font-medium text-gray-500">Realized CAGR</h3>
               <Zap className="w-4 h-4 text-purple-500" />
             </div>
             {metricsLoading ? (
               <p className="text-2xl font-bold text-gray-300">—</p>
-            ) : realMetrics ? (
+            ) : realMetrics?.cagr != null ? (
               <>
-                <p className="text-2xl font-bold text-purple-600">
-                  {realMetrics.estimatedPortfolioReturn >= 0 ? '+' : ''}{realMetrics.estimatedPortfolioReturn.toFixed(1)}%
+                <p className={`text-2xl font-bold ${realMetrics.cagr >= 0 ? 'text-purple-600' : 'text-red-600'}`}>
+                  {realMetrics.cagr >= 0 ? '+' : ''}{realMetrics.cagr.toFixed(1)}%
                 </p>
-                <p className="text-sm text-gray-600 mt-1">Weighted avg (product rates + estimates)</p>
+                <p className="text-sm text-gray-600 mt-1">Annualized return from actual transaction history</p>
               </>
             ) : (
-              <p className="text-sm text-gray-400">Unavailable</p>
+              <>
+                <p className="text-2xl font-bold text-gray-400">—</p>
+                <p className="text-sm text-gray-400 mt-1">Insufficient history to compute</p>
+              </>
             )}
           </CardContent>
         </Card>

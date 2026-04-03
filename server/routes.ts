@@ -203,31 +203,34 @@ function calculateInvestmentPerformance(
   const daysHeld = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
   const yearsHeld = daysHeld / 365;
 
-  // Product-level annualReturn takes precedence over category fallback
-  const annualReturn = product.annualReturn != null
-    ? parseFloat(product.annualReturn)
-    : getAnnualReturnFallback(product.category, product.name);
-
   const returnMethod = product.returnMethod || "fixed_annual_compound";
 
   let currentValue: number | null = investedAmount;
   let valuationStatus: string | undefined;
 
   switch (returnMethod) {
-    case "fixed_annual_compound":
-      currentValue = investedAmount * Math.pow(1 + annualReturn, yearsHeld);
-      break;
-    case "fixed_annual_simple":
-      currentValue = investedAmount * (1 + annualReturn * yearsHeld);
-      break;
     case "manual_nav":
     case "market_price":
       // No live price source available — exclude from totals and surface via valuationStatus
       currentValue = null;
       valuationStatus = "missing_price_source";
       break;
-    default:
-      currentValue = investedAmount * Math.pow(1 + annualReturn, yearsHeld);
+    default: {
+      // Fail-closed: refuse to compute if no explicit product rate is stored in the DB.
+      // Category assumption fallbacks (getAnnualReturnFallback) are intentionally not used here
+      // to prevent silently overstating portfolio value with made-up rates.
+      if (product.annualReturn == null) {
+        currentValue = null;
+        valuationStatus = "missing_product_rate";
+        break;
+      }
+      const annualReturn = parseFloat(product.annualReturn);
+      if (returnMethod === "fixed_annual_simple") {
+        currentValue = investedAmount * (1 + annualReturn * yearsHeld);
+      } else {
+        currentValue = investedAmount * Math.pow(1 + annualReturn, yearsHeld);
+      }
+    }
   }
 
   // returnAmount and returnPercentage are 0 when currentValue is unknown
@@ -1130,11 +1133,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hhi = alloc.fiat ** 2 + alloc.crypto ** 2 + alloc.stablecoin ** 2 + alloc.investment ** 2;
       const diversificationScore = Math.max(0, Math.min(100, (1 - (hhi - 0.25) / 0.75) * 100));
 
-      // Expected portfolio return — weighted average of asset-class estimates.
-      // Fiat:       2.0 % p.a. (savings / money-market proxy)
-      // Crypto:    20.0 % p.a. (blended market-consensus estimate for directly-held BTC/ETH)
-      // Stablecoin: 5.0 % p.a. (DeFi yield proxy)
-      // Investment: product-level annualReturn rates from the DB (per-product compound rates)
+      // Investment-weighted contracted return — based solely on explicit product annualReturn
+      // values stored in the DB (no asset-class assumption blending for fiat/crypto/stablecoin).
+      // null when no investments have an explicit rate.
       const investments = await storage.getUserInvestments(userId);
       let weightedInvReturn = 0;
       let totalInvested = 0;
@@ -1147,17 +1148,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       const hasProductRateCoverage = totalInvested > 0;
-      const investExpectedReturn = hasProductRateCoverage ? weightedInvReturn / totalInvested : 0;
-
-      // IMPORTANT: Use ONE return framework — arithmetic returns throughout.
-      // NOTE: fiat/crypto/stablecoin returns are asset-class model assumptions,
-      // not sourced from live market data. This is labelled as estimated below.
-      const estimatedPortfolioReturn = (
-        alloc.fiat       * 0.02 +
-        alloc.crypto     * 0.20 +
-        alloc.stablecoin * 0.05 +
-        alloc.investment * investExpectedReturn
-      ) * 100;
+      const contractedInvestmentReturn: number | null = hasProductRateCoverage
+        ? +(weightedInvReturn / totalInvested * 100).toFixed(2)
+        : null;
 
       // Rebalancing gap — one-sided turnover from equal-weight benchmark [0, 50%]
       const rebalancingGap = 0.5 * (
@@ -1298,8 +1291,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         diversificationScore: +diversificationScore.toFixed(1),
-        estimatedPortfolioReturn: +estimatedPortfolioReturn.toFixed(2),
-        estimatedReturnMethod: "asset_class_assumptions_plus_product_rates",
+        // contractedInvestmentReturn: weighted average of explicit product annualReturn rates from DB.
+        // null when no investments have explicit rates. Does NOT include assumption-based
+        // rates for fiat/crypto/stablecoin asset classes.
+        contractedInvestmentReturn,
         hasProductRateCoverage,
         rebalancingGap: +rebalancingGap.toFixed(1),
         historySource,
