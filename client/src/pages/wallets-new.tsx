@@ -651,9 +651,6 @@ export default function Wallets() {
                 {selectedWallet && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Current balance: {selectedWallet.balance} {selectedWallet.currency}
-                    {!['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(selectedWallet?.currency) && (
-                      <span className="block">Exchange rate: 1 AUD ≈ {selectedWallet.currency === 'BTC' ? '0.000023 BTC' : selectedWallet.currency === 'ETH' ? '0.00031 ETH' : `0.98 ${selectedWallet.currency}`}</span>
-                    )}
                   </p>
                 )}
               </div>
@@ -724,22 +721,16 @@ export default function Wallets() {
                   </div>
                 </div>
 
-                <Button 
-                  onClick={() => {
-                    const demoAmount = selectedWallet.currency === "BTC" ? "0.1" : 
-                                    selectedWallet.currency === "ETH" ? "1.0" : "1000.00";
-                    depositMutation.mutate({
-                      type: "deposit",
-                      currency: selectedWallet.currency,
-                      amount: demoAmount,
-                    });
-                  }} 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full"
-                  disabled={depositMutation.isPending}
+                  disabled
                 >
-                  {depositMutation.isPending ? "Processing..." : `Demo Deposit (${selectedWallet.currency})`}
+                  Deposits unavailable
                 </Button>
+                <p className="text-xs text-muted-foreground text-center mt-1">
+                  Live blockchain deposit processing is not enabled in this environment.
+                </p>
               </div>
             ) : depositMethod && depositMethod !== 'blockchain' && (
               <>

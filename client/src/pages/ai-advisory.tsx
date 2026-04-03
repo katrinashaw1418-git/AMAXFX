@@ -557,7 +557,7 @@ export default function AiAdvisory() {
             ) : realMetrics ? (
               <>
                 <p className="text-2xl font-bold text-purple-600">
-                  {realMetrics.expectedPortfolioReturn >= 0 ? '+' : ''}{realMetrics.expectedPortfolioReturn.toFixed(1)}%
+                  {realMetrics.estimatedPortfolioReturn >= 0 ? '+' : ''}{realMetrics.estimatedPortfolioReturn.toFixed(1)}%
                 </p>
                 <p className="text-sm text-gray-600 mt-1">Weighted avg (product rates + estimates)</p>
               </>

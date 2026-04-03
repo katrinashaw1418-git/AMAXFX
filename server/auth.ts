@@ -2,11 +2,18 @@ import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
-// In production, JWT_SECRET MUST be set explicitly — no silent fallback.
-// An undefined secret in production would sign tokens with a predictable value
-// and create replay risk across environments.
-if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
-  throw new Error("FATAL: JWT_SECRET environment variable must be set in production.");
+// isLocalDev: true only when both NODE_ENV=development AND an explicit
+// APP_ENV=local or ALLOW_LOCAL_DEV_AUTH=true signal is present.
+// This prevents dev shortcuts from silently activating in shared staging
+// environments that happen to have NODE_ENV=development.
+const isLocalDev =
+  process.env.NODE_ENV === "development" &&
+  (process.env.APP_ENV === "local" || process.env.ALLOW_LOCAL_DEV_AUTH === "true");
+
+// JWT_SECRET must be set explicitly in any environment that is not isolated
+// local development.
+if (!process.env.JWT_SECRET && !isLocalDev) {
+  throw new Error("FATAL: JWT_SECRET environment variable must be set outside local development.");
 }
 const JWT_SECRET = process.env.JWT_SECRET || "amax-local-dev-only-secret";
 const JWT_EXPIRY = "24h";
@@ -37,11 +44,10 @@ export async function verifyPassword(plain: string, hashed: string): Promise<boo
   if (hashed.startsWith("$2")) {
     return bcrypt.compare(plain, hashed);
   }
-  // Plaintext fallback: allowed ONLY in local development to accommodate
-  // the seeded demo_user whose password is stored unhashed. In production
-  // every stored password must be a bcrypt hash — if it is not, we refuse
-  // the comparison rather than silently accepting it.
-  if (process.env.NODE_ENV !== "production") {
+  // Plaintext fallback: allowed ONLY in isolated local development.
+  // In shared staging or production, if the stored value is not a bcrypt hash,
+  // we refuse the comparison rather than silently accepting it.
+  if (isLocalDev) {
     return plain === hashed;
   }
   return false;

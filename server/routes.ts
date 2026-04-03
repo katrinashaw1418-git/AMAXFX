@@ -676,9 +676,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
       const { password: _, ...safeUser } = user;
-      res.json(safeUser);
+      return res.json(safeUser);
     } catch (error: any) {
-      res.status(500).json({ error: "Failed to get user" });
+      if (error?.status === 401) {
+        return res.status(401).json({ error: error.message || "Unauthorized" });
+      }
+      return res.status(500).json({ error: "Failed to get user" });
     }
   });
 
@@ -1119,10 +1122,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalInvested += amount;
         }
       }
-      const investExpectedReturn = totalInvested > 0 ? weightedInvReturn / totalInvested : 0.10;
+      const hasProductRateCoverage = totalInvested > 0;
+      const investExpectedReturn = hasProductRateCoverage ? weightedInvReturn / totalInvested : 0;
 
       // IMPORTANT: Use ONE return framework — arithmetic returns throughout.
-      const expectedPortfolioReturn = (
+      // NOTE: fiat/crypto/stablecoin returns are asset-class model assumptions,
+      // not sourced from live market data. This is labelled as estimated below.
+      const estimatedPortfolioReturn = (
         alloc.fiat       * 0.02 +
         alloc.crypto     * 0.20 +
         alloc.stablecoin * 0.05 +
@@ -1268,7 +1274,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         diversificationScore: +diversificationScore.toFixed(1),
-        expectedPortfolioReturn: +expectedPortfolioReturn.toFixed(2),
+        estimatedPortfolioReturn: +estimatedPortfolioReturn.toFixed(2),
+        estimatedReturnMethod: "asset_class_assumptions_plus_product_rates",
+        hasProductRateCoverage,
         rebalancingGap: +rebalancingGap.toFixed(1),
         historySource,
         hasSufficientHistory,

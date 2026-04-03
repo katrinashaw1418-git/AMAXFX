@@ -149,6 +149,15 @@ export default function Investments() {
     // Convert to USD if needed
     const usdAmount = selectedCurrency === 'USD' ? amount : getUsdEquivalent(amount, selectedCurrency);
 
+    if (usdAmount === null) {
+      toast({
+        title: "Rate unavailable",
+        description: `Live ${selectedCurrency}/USD pricing is currently unavailable. Please try again shortly.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (usdAmount < minimumInvestment) {
       toast({
         title: "Below Minimum",
@@ -216,7 +225,7 @@ export default function Investments() {
   })) || [];
 
   // Convert to USD for display if not USD
-  const getUsdEquivalent = (amount: number, currency: string): number => {
+  const getUsdEquivalent = (amount: number, currency: string): number | null => {
     if (currency === 'USD') return amount;
     
     // Look for direct rate from currency to USD
@@ -235,23 +244,10 @@ export default function Investments() {
       rate = parseFloat(rate);
     }
     
-    // Fallback rates for common currencies if no FX data
-    if (!rate) {
-      const fallbackRates: Record<string, number> = {
-        'CAD': 0.75,
-        'EUR': 1.10,
-        'GBP': 1.25,
-        'AUD': 0.67,
-        'HKD': 0.13,
-        'SGD': 0.74,
-        'BTC': 42000,
-        'ETH': 2500,
-        'USDT': 1.0,
-        'USDC': 1.0
-      };
-      rate = fallbackRates[currency] || 1;
-    }
-    
+    // No live rate available — return null so callers can show "unavailable"
+    // rather than silently using a stale hardcoded value.
+    if (!rate) return null;
+
     return amount * rate;
   };
 
@@ -421,7 +417,9 @@ export default function Investments() {
                 <div className="h-4 flex items-center">
                   {selectedCurrency !== 'USD' && (
                     <span className="text-xs text-gray-600">
-                      US${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()}
+                      {getUsdEquivalent(availableBalance, selectedCurrency) !== null
+                        ? `US$${getUsdEquivalent(availableBalance, selectedCurrency)!.toLocaleString()}`
+                        : "Rate unavailable"}
                     </span>
                   )}
                 </div>
@@ -691,14 +689,24 @@ export default function Investments() {
                   </p>
                   <p className="text-xs font-medium text-green-600">
                     Available to Invest: {currencySymbols[selectedCurrency] || selectedCurrency}{availableBalance.toLocaleString()}
-                    {selectedCurrency !== 'USD' && ` (≈ US$${getUsdEquivalent(availableBalance, selectedCurrency).toLocaleString()})`}
+                    {selectedCurrency !== 'USD' && (() => {
+                      const eq = getUsdEquivalent(availableBalance, selectedCurrency);
+                      return eq !== null ? ` (≈ US$${eq.toLocaleString()})` : " (rate unavailable)";
+                    })()}
                   </p>
 
-                  {selectedCurrency !== 'USD' && investmentAmount && (
-                    <p className="text-xs text-orange-600">
-                      Will convert {currencySymbols[selectedCurrency] || selectedCurrency}{parseFloat(investmentAmount).toLocaleString()} → US$${getUsdEquivalent(parseFloat(investmentAmount), selectedCurrency).toLocaleString()} at current exchange rate
-                    </p>
-                  )}
+                  {selectedCurrency !== 'USD' && investmentAmount && (() => {
+                    const eq = getUsdEquivalent(parseFloat(investmentAmount), selectedCurrency);
+                    return eq !== null ? (
+                      <p className="text-xs text-orange-600">
+                        Will convert {currencySymbols[selectedCurrency] || selectedCurrency}{parseFloat(investmentAmount).toLocaleString()} → US${eq.toLocaleString()} at current exchange rate
+                      </p>
+                    ) : (
+                      <p className="text-xs text-red-600">
+                        Live {selectedCurrency}/USD rate unavailable — cannot estimate USD equivalent.
+                      </p>
+                    );
+                  })()}
                 </div>
               )}
             </div>

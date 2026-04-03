@@ -1,0 +1,383 @@
+Here is the **file-by-file verified patch list** for the uploaded codebase.
+
+### P0 — fix before any real launch
+
+**1) `server/routes.ts`**
+
+* **Issue:** `/api/user` returns `500` for auth failures.
+* **Where:** around the `/api/user` handler.
+* **Current behavior:** `requireAuth(req)` throws `401`, but the catch block always returns `500`.
+* **Patch:**
+
+```ts
+app.get("/api/user", async (req, res) => {
+  try {
+    const auth = requireAuth(req);
+    const user = await storage.getUser(auth.userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const { password: _, ...safeUser } = user;
+    return res.json(safeUser);
+  } catch (error: any) {
+    if (error?.status === 401) {
+      return res.status(401).json({ error: error.message || "Unauthorized" });
+    }
+    return res.status(500).json({ error: "Failed to get user" });
+  }
+});
+```
+
+* **Issue:** forgot-password returns raw reset token in all non-production environments.
+* **Risk:** unsafe in shared staging.
+* **Patch:** restrict to explicit local dev only.
+
+```ts
+const isLocalDev =
+  process.env.NODE_ENV === "development" &&
+  (process.env.APP_ENV === "local" || process.env.ALLOW_DEV_RESET_TOKEN === "true");
+
+if (isLocalDev) {
+  return res.json({ message: "Reset token generated (local dev only).", resetToken: token });
+}
+return res.json({ message: "If that account exists, a reset link has been sent." });
+```
+
+* **Issue:** `/api/portfolio/real-metrics` uses modeled asset-class assumptions:
+
+  * fiat `2%`
+  * crypto `20%`
+  * stablecoin `5%`
+* **Risk:** “real metrics” name is misleading.
+* **Minimum patch:** rename response field and label source clearly.
+
+```ts
+res.json({
+  diversificationScore: +diversificationScore.toFixed(1),
+  estimatedPortfolioReturn: +expectedPortfolioReturn.toFixed(2),
+  estimatedReturnMethod: "asset_class_assumptions_plus_product_rates",
+  rebalancingGap: +rebalancingGap.toFixed(1),
+  hasUnpricedAssets,
+  historySource,
+  periodReturns,
+  allocation: {
+    fiat: +(alloc.fiat * 100).toFixed(1),
+    crypto: +(alloc.crypto * 100).toFixed(1),
+    stablecoin: +(alloc.stablecoin * 100).toFixed(1),
+    investment: +(alloc.investment * 100).toFixed(1),
+  },
+});
+```
+
+* **Better patch:** fail closed on missing product rates instead of defaulting silently to `0.10` investment return.
+
+---
+
+**2) `client/src/pages/wallets.tsx`**
+
+* **Issue:** demo deposit logic is still active.
+* **Where:** `handleDeposit()`
+* **Current behavior:** immediate client-side conversion assumptions, then immediate deposit processing “for demo purposes”.
+* **Patch:** remove demo auto-processing and block unsupported flows until real funding rails exist.
+
+```ts
+const handleDeposit = () => {
+  toast({
+    title: "Deposits unavailable",
+    description: "Live deposit rails are not enabled in this environment.",
+    variant: "destructive",
+  });
+  return;
+};
+```
+
+* **If you want to keep UI visible temporarily:**
+
+  * remove these hardcoded demo conversion lines:
+
+    * `depositAmount * 0.000023`
+    * `depositAmount * 0.00031`
+    * `depositAmount * 0.98`
+  * remove the comment and behavior:
+
+    * `// For demo purposes, we'll process the deposit immediately`
+
+---
+
+**3) `client/src/components/wallets/stablecoin-card.tsx`**
+
+* **Issue:** explicit **“Simulate Demo Deposit”** button remains.
+* **Patch:** remove the entire simulation block.
+
+```tsx
+{/* Remove this whole block in production
+<div className="border-t pt-4">
+  <Button ...>
+    {createTransactionMutation.isPending ? "Processing..." : "Simulate Demo Deposit"}
+  </Button>
+  <p className="text-xs text-muted-foreground mt-2 text-center">
+    For testing: adds 1000 {currency} to your balance
+  </p>
+</div>
+*/}
+```
+
+* **Replacement:** show deposit instructions only, or a disabled button:
+
+```tsx
+<div className="border-t pt-4">
+  <Button disabled className="w-full">
+    Deposits unavailable
+  </Button>
+  <p className="text-xs text-muted-foreground mt-2 text-center">
+    Live blockchain deposit processing is not enabled in this environment.
+  </p>
+</div>
+```
+
+---
+
+**4) `client/src/pages/fx-exchange.tsx`**
+
+* **Issue:** fake trend direction and fake percentage change use `Math.random()`.
+* **Where:** live rates list.
+* **Patch:** remove trend UI unless you have actual historical delta data.
+
+```tsx
+<div className="text-right">
+  <p className="font-semibold">{rateValue.toFixed(4)}</p>
+  <span className="text-xs text-gray-500">Live rate</span>
+</div>
+```
+
+* **Delete:**
+
+```tsx
+const isUp = Math.random() > 0.5;
+...
+{isUp ? '+' : '-'}0.{Math.floor(Math.random() * 9) + 1}%
+```
+
+---
+
+**5) `client/src/pages/investments.tsx`**
+
+* **Issue:** hardcoded fallback valuation rates.
+* **Current values found:**
+
+  * `CAD: 0.75`
+  * `EUR: 1.10`
+  * `AUD: 0.67`
+  * `BTC: 42000`
+  * `ETH: 2500`
+* **Risk:** false valuations.
+* **Patch:** fail closed and show unavailable pricing.
+
+```ts
+const getUsdRate = (currency: string): number | null => {
+  const live = fxRates?.find((r: any) => r.baseCurrency === currency && r.targetCurrency === "USD");
+  if (live?.rate) return parseFloat(live.rate);
+
+  if (currency === "USD") return 1;
+  return null;
+};
+```
+
+Then replace usages like:
+
+```ts
+const rate = getUsdRate(sourceCurrency);
+if (rate == null) {
+  toast({
+    title: "Rate unavailable",
+    description: `Live ${sourceCurrency}/USD pricing is unavailable.`,
+    variant: "destructive",
+  });
+  return;
+}
+```
+
+* **Do not keep** hardcoded fallback maps in user-facing investment valuation.
+
+---
+
+### P1 — high priority
+
+**6) `server/auth.ts`**
+
+* **Issue:** fallback JWT secret is allowed in any non-production environment.
+* **Issue:** plaintext password fallback is allowed in any non-production environment.
+* **Risk:** unsafe in shared staging.
+* **Patch:** make both local-only, not broad non-production.
+
+```ts
+const isLocalDev =
+  process.env.NODE_ENV === "development" &&
+  (process.env.APP_ENV === "local" || process.env.ALLOW_LOCAL_DEV_AUTH === "true");
+
+if (!process.env.JWT_SECRET && !isLocalDev) {
+  throw new Error("JWT_SECRET must be set outside local development.");
+}
+const JWT_SECRET = process.env.JWT_SECRET || "amax-local-dev-only-secret";
+```
+
+```ts
+export async function verifyPassword(plain: string, hashed: string): Promise<boolean> {
+  if (hashed.startsWith("$2")) {
+    return bcrypt.compare(plain, hashed);
+  }
+  if (isLocalDev) {
+    return plain === hashed;
+  }
+  return false;
+}
+```
+
+---
+
+**7) `shared/schema.ts`**
+
+* **Issue:** snapshot `source` already distinguishes `"actual"` vs `"historical_estimate"`, which is good.
+* **Patch needed:** no schema emergency here, but add stricter semantics for estimated metrics if you extend the model.
+* **Recommended addition:**
+
+  * `isEstimated boolean`
+  * `estimationMethod text`
+  * or keep current schema and make the API surface it consistently.
+
+This is not a blocker, but useful for clean downstream labeling.
+
+---
+
+**8) `server/db.ts`**
+
+* **Issue:** not really a bug; it hard-fails without `DATABASE_URL`.
+* **Verdict:** keep this behavior.
+* **No patch needed** for correctness.
+* **Only action:** document it clearly in README or deployment docs.
+
+---
+
+**9) `server/routes.ts` — historical metrics**
+
+* **Issue:** snapshot history uses `historical_estimate` and then feeds performance/risk metrics.
+* **Risk:** users may read estimated history as actual history.
+* **Patch:** surface explicit estimated flags everywhere period returns or charts are consumed.
+
+```ts
+const historySource = sorted.some((s: any) => s.source === "historical_estimate")
+  ? "historical_estimate"
+  : "actual";
+
+res.json({
+  ...existingFields,
+  historySource,
+  isEstimatedHistory: historySource === "historical_estimate",
+});
+```
+
+---
+
+### P2 — structural but important
+
+**10) `server/routes.ts` / transaction model**
+
+* **Issue:** no immutable double-entry ledger layer.
+* **Verdict:** this is a real-money controls gap, not a compile bug.
+* **Patch direction:** introduce ledger entries on every completed money movement.
+
+Recommended new table:
+
+```ts
+export const ledgerEntries = pgTable("ledger_entries", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  transactionId: integer("transaction_id").notNull(),
+  entryType: text("entry_type").notNull(), // debit | credit
+  accountCode: text("account_code").notNull(), // wallet:USD, wallet:BTC, clearing, fees, etc
+  currency: text("currency").notNull(),
+  amount: decimal("amount", { precision: 20, scale: 8 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+```
+
+And for each completed transfer/exchange/investment:
+
+* write one debit entry
+* write one credit entry
+* optionally a fee entry
+
+This is not the first patch to do, but it is the patch that moves the system toward auditability.
+
+---
+
+### P1 — dependency cleanup
+
+**11) `package.json` / `package-lock.json`**
+
+* **Issue:** vulnerable dependencies were reported earlier.
+* **Patch:** run and verify:
+
+```bash
+npm audit
+npm audit fix
+npm audit fix --force
+npm install
+npm run check
+npm run build
+```
+
+* Then retest:
+
+  * login
+  * `/api/user`
+  * wallets
+  * exchange
+  * investments
+  * forgot-password
+
+Do not blindly force upgrades without rerunning route smoke tests.
+
+---
+
+### Not a confirmed bug, so do not overstate it
+
+**12) `package.json`**
+
+* `passport`, `express-session`, `stripe`, and related packages are present.
+* That alone does **not** prove the app is actively using those flows in the live request path.
+* So this is **cleanup/verification work**, not a confirmed runtime bug.
+
+Recommended action:
+
+* remove unused auth/payment packages if they are truly unused
+* otherwise document active vs inactive integrations
+
+---
+
+## Best execution order
+
+1. `server/routes.ts` — fix `/api/user` and forgot-password exposure
+2. `client/src/components/wallets/stablecoin-card.tsx` — remove simulate deposit
+3. `client/src/pages/wallets.tsx` — remove demo deposit processing
+4. `client/src/pages/fx-exchange.tsx` — remove fake trend rendering
+5. `client/src/pages/investments.tsx` — remove fallback pricing
+6. `server/auth.ts` — restrict dev auth shortcuts to local-only
+7. `server/routes.ts` — relabel estimated/assumption-based metrics
+8. `package.json` / deps — audit remediation
+9. ledger design patch
+
+## Bottom line
+
+The most important confirmed code changes are in:
+
+* `server/routes.ts`
+* `server/auth.ts`
+* `client/src/pages/wallets.tsx`
+* `client/src/components/wallets/stablecoin-card.tsx`
+* `client/src/pages/fx-exchange.tsx`
+* `client/src/pages/investments.tsx`
+
+These are the files where the verified launch-risk issues actually sit.
+
+I can now turn this into **copy-paste replacement patches for each file**, one file at a time.

@@ -242,20 +242,15 @@ export default function Wallets() {
       return;
     }
     
-    // For crypto purchases with fiat, convert AUD to crypto amount
-    let finalAmount = depositAmount;
-    if (selectedWallet.walletType === 'crypto' && (depositMethod === 'payid' || depositMethod === 'bank_transfer')) {
-      if (selectedWallet.currency === 'BTC') {
-        finalAmount = depositAmount * 0.000023; // AUD to BTC
-      } else if (selectedWallet.currency === 'ETH') {
-        finalAmount = depositAmount * 0.00031; // AUD to ETH
-      } else if (selectedWallet.currency === 'USDT' || selectedWallet.currency === 'USDC') {
-        finalAmount = depositAmount * 0.98; // AUD to stablecoin
-      }
-    }
-    
-    // For demo purposes, we'll process the deposit immediately
-    depositMutation.mutate({ currency: selectedWallet.currency, amount: finalAmount });
+    // Live deposit rails are not yet enabled. Crypto conversion rates must
+    // come from the live FX feed — hardcoded approximations are not acceptable
+    // for a financial product.
+    toast({
+      title: "Deposits unavailable",
+      description: "Live deposit processing is not enabled in this environment. Please contact support.",
+      variant: "destructive",
+    });
+    return;
   };
 
   const handleWithdraw = () => {
@@ -849,24 +844,15 @@ export default function Wallets() {
                     </div>
                   </div>
                   
-                  <Button 
-                    onClick={() => {
-                      // Simulate a crypto deposit
-                      const amount = selectedWallet.currency === "BTC" ? "0.1" : 
-                                    selectedWallet.currency === "ETH" ? "1.0" : "1000.00";
-                      depositMutation.mutate({
-                        currency: selectedWallet.currency,
-                        amount: parseFloat(amount),
-                      });
-                    }} 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="w-full"
-                    disabled={depositMutation.isPending}
+                    disabled
                   >
-                    {depositMutation.isPending ? "Processing..." : `Simulate Demo Deposit (${selectedWallet.currency})`}
+                    Deposits unavailable
                   </Button>
                   <p className="text-xs text-muted-foreground text-center">
-                    For testing: adds demo {selectedWallet.currency} to your balance
+                    Live blockchain deposit processing is not enabled in this environment.
                   </p>
                 </div>
               </div>

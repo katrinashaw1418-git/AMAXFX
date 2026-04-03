@@ -1,0 +1,563 @@
+Below are the **copy-paste replacement patches** for the highest-priority files.
+
+---
+
+## 1) `server/auth.ts` — lock dev shortcuts to local-only
+
+Replace the whole file with this:
+
+```ts
+import type { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+
+const isLocalDev =
+  process.env.NODE_ENV === "development" &&
+  (process.env.APP_ENV === "local" ||
+    process.env.ALLOW_LOCAL_DEV_AUTH === "true");
+
+// In production and shared non-local environments, JWT_SECRET must be explicit.
+if (!process.env.JWT_SECRET && !isLocalDev) {
+  throw new Error("FATAL: JWT_SECRET environment variable must be set outside local development.");
+}
+
+const JWT_SECRET = process.env.JWT_SECRET || "amax-local-dev-only-secret";
+const JWT_EXPIRY = "24h";
+
+export interface AuthPayload {
+  userId: number;
+  username: string;
+  email: string;
+}
+
+export function signToken(payload: AuthPayload): string {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
+}
+
+export function verifyToken(token: string): AuthPayload | null {
+  try {
+    return jwt.verify(token, JWT_SECRET) as AuthPayload;
+  } catch {
+    return null;
+  }
+}
+
+export async function hashPassword(plain: string): Promise<string> {
+  return bcrypt.hash(plain, 12);
+}
+
+export async function verifyPassword(plain: string, hashed: string): Promise<boolean> {
+  if (hashed.startsWith("$2")) {
+    return bcrypt.compare(plain, hashed);
+  }
+
+  // Plaintext fallback is local-dev only.
+  if (isLocalDev) {
+    return plain === hashed;
+  }
+
+  return false;
+}
+
+export function requireAuth(req: Request): AuthPayload {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
+  if (!token) {
+    const err = new Error("Unauthorized — no token provided");
+    (err as any).status = 401;
+    throw err;
+  }
+
+  const payload = verifyToken(token);
+  if (!payload) {
+    const err = new Error("Unauthorized — invalid or expired token");
+    (err as any).status = 401;
+    throw err;
+  }
+
+  return payload;
+}
+
+export function optionalAuth(req: Request): AuthPayload | null {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  if (!token) return null;
+  return verifyToken(token);
+}
+
+export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
+  try {
+    const payload = requireAuth(req);
+    (req as any).user = payload;
+    next();
+  } catch (err: any) {
+    res.status(err.status || 401).json({ error: err.message });
+  }
+}
+
+export async function requireKyc(
+  userId: number,
+  storageInstance: { getUser: (id: number) => Promise<any> }
+): Promise<void> {
+  const user = await storageInstance.getUser(userId);
+  if (!user) {
+    throw Object.assign(new Error("User not found"), { status: 401 });
+  }
+  if (user.kycStatus !== "verified") {
+    throw Object.assign(
+      new Error("KYC verification required. Please complete identity verification to perform transactions."),
+      { status: 403 }
+    );
+  }
+}
+```
+
+---
+
+## 2) `server/routes.ts` — fix `/api/user`
+
+Find this block:
+
+```ts
+  app.get("/api/user", async (req, res) => {
+    try {
+      const auth = requireAuth(req);
+      const user = await storage.getUser(auth.userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      const { password: _, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to get user" });
+    }
+  });
+```
+
+Replace with:
+
+```ts
+  app.get("/api/user", async (req, res) => {
+    try {
+      const auth = requireAuth(req);
+      const user = await storage.getUser(auth.userId);
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const { password: _, ...safeUser } = user;
+      return res.json(safeUser);
+    } catch (error: any) {
+      if (error?.status === 401) {
+        return res.status(401).json({ error: error.message || "Unauthorized" });
+      }
+      return res.status(500).json({ error: "Failed to get user" });
+    }
+  });
+```
+
+---
+
+## 3) `server/routes.ts` — forgot-password should only expose token in local dev
+
+Find this section inside `/api/auth/forgot-password`:
+
+```ts
+      // In production this token should be delivered by email.  For now it
+      // would be emailed to the user. In development/staging we return it
+```
+
+and the response logic around it.
+
+Replace the whole handler with this safer version:
+
+```ts
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { username } = req.body;
+      if (!username) {
+        return res.status(400).json({ error: "Username is required." });
+      }
+
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.json({ message: "If that account exists, a reset token has been generated." });
+      }
+
+      const token = crypto.randomBytes(24).toString("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      await storage.createPasswordResetToken({
+        userId: user.id,
+        token,
+        expiresAt,
+      });
+
+      const isLocalDev =
+        process.env.NODE_ENV === "development" &&
+        (process.env.APP_ENV === "local" ||
+          process.env.ALLOW_DEV_RESET_TOKEN === "true");
+
+      if (isLocalDev) {
+        return res.json({
+          message: "Reset token generated (local dev only).",
+          resetToken: token,
+        });
+      }
+
+      return res.json({
+        message: "If that account exists, a reset link has been sent.",
+      });
+    } catch (error: any) {
+      return res.status(error.status || 500).json({
+        error: error.message || "Failed to process forgot-password request.",
+      });
+    }
+  });
+```
+
+If `crypto` is not already imported at the top of `server/routes.ts`, add:
+
+```ts
+import crypto from "crypto";
+```
+
+---
+
+## 4) `server/routes.ts` — stop calling modeled return a “real” return
+
+Find this part in `/api/portfolio/real-metrics`:
+
+```ts
+      const investExpectedReturn = totalInvested > 0 ? weightedInvReturn / totalInvested : 0.10;
+
+      const expectedPortfolioReturn = (
+        alloc.fiat       * 0.02 +
+        alloc.crypto     * 0.20 +
+        alloc.stablecoin * 0.05 +
+        alloc.investment * investExpectedReturn
+      ) * 100;
+```
+
+Replace with:
+
+```ts
+      const hasProductRateCoverage = totalInvested > 0;
+      const investExpectedReturn = hasProductRateCoverage
+        ? weightedInvReturn / totalInvested
+        : 0;
+
+      const estimatedPortfolioReturn = (
+        alloc.fiat * 0.02 +
+        alloc.crypto * 0.20 +
+        alloc.stablecoin * 0.05 +
+        alloc.investment * investExpectedReturn
+      ) * 100;
+```
+
+Then find the JSON response near the end:
+
+```ts
+        expectedPortfolioReturn: +expectedPortfolioReturn.toFixed(2),
+```
+
+Replace with:
+
+```ts
+        estimatedPortfolioReturn: +estimatedPortfolioReturn.toFixed(2),
+        estimatedReturnMethod: "asset_class_assumptions_plus_product_rates",
+        hasProductRateCoverage,
+```
+
+This avoids presenting an assumption-based output as a truly real metric.
+
+---
+
+## 5) `client/src/pages/wallets.tsx` — remove simulated crypto deposit
+
+Find this block:
+
+```tsx
+                  <Button 
+                    onClick={() => {
+                      // Simulate a crypto deposit
+                      const amount = selectedWallet.currency === "BTC" ? "0.1" : 
+                                    selectedWallet.currency === "ETH" ? "1.0" : "1000.00";
+                      depositMutation.mutate({
+                        currency: selectedWallet.currency,
+                        amount: parseFloat(amount),
+                      });
+                    }} 
+                    variant="outline" 
+                    className="w-full"
+                    disabled={depositMutation.isPending}
+                  >
+                    {depositMutation.isPending ? "Processing..." : `Simulate Demo Deposit (${selectedWallet.currency})`}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    For testing: adds demo {selectedWallet.currency} to your balance
+                  </p>
+```
+
+Replace with:
+
+```tsx
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    disabled
+                  >
+                    Deposits unavailable
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Live blockchain deposit processing is not enabled in this environment.
+                  </p>
+```
+
+---
+
+## 6) `client/src/components/wallets/stablecoin-card.tsx` — remove “Simulate Demo Deposit”
+
+Find this block:
+
+```tsx
+                  <Button
+                    onClick={() =>
+                      createTransactionMutation.mutate({
+                        type: "deposit",
+                        amount: "1000",
+                        currency,
+                        description: `Demo ${currency} deposit`,
+                      })
+                    }
+                    disabled={createTransactionMutation.isPending}
+                    className="w-full"
+                  >
+                    {createTransactionMutation.isPending ? "Processing..." : "Simulate Demo Deposit"}
+                  </Button>
+```
+
+Replace with:
+
+```tsx
+                  <Button
+                    disabled
+                    className="w-full"
+                  >
+                    Deposits unavailable
+                  </Button>
+```
+
+Then replace any nearby supporting text like:
+
+```tsx
+<p className="text-xs text-muted-foreground mt-2 text-center">
+  For testing: adds 1000 {currency} to your balance
+</p>
+```
+
+with:
+
+```tsx
+<p className="text-xs text-muted-foreground mt-2 text-center">
+  Live stablecoin deposit processing is not enabled in this environment.
+</p>
+```
+
+---
+
+## 7) `client/src/pages/fx-exchange.tsx` — remove fake trend output
+
+Find this mapping block:
+
+```tsx
+                {fxRates?.map((rate: any) => {
+                  const rateValue = parseFloat(rate.rate);
+                  const isUp = Math.random() > 0.5; // Mock trend
+                  
+                  return (
+                    <div key={`${rate.baseCurrency}-${rate.targetCurrency}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium">{rate.baseCurrency}/{rate.targetCurrency}</p>
+                        <p className="text-sm text-gray-600">
+                          {currencies.find(c => c.code === rate.baseCurrency)?.name} to {currencies.find(c => c.code === rate.targetCurrency)?.name}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">{rateValue.toFixed(4)}</p>
+                        <div className="flex items-center space-x-1">
+                          {isUp ? (
+                            <TrendingUp className="w-3 h-3 text-green-500" />
+                          ) : (
+                            <TrendingDown className="w-3 h-3 text-red-500" />
+                          )}
+                          <span className={`text-xs ${isUp ? 'text-green-600' : 'text-red-600'}`}>
+                            {isUp ? '+' : '-'}0.{Math.floor(Math.random() * 9) + 1}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+```
+
+Replace with:
+
+```tsx
+                {fxRates?.map((rate: any) => {
+                  const rateValue = parseFloat(rate.rate);
+
+                  return (
+                    <div
+                      key={`${rate.baseCurrency}-${rate.targetCurrency}`}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
+                      <div>
+                        <p className="font-medium">
+                          {rate.baseCurrency}/{rate.targetCurrency}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {currencies.find(c => c.code === rate.baseCurrency)?.name} to{" "}
+                          {currencies.find(c => c.code === rate.targetCurrency)?.name}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">{rateValue.toFixed(4)}</p>
+                        <span className="text-xs text-gray-500">Live rate</span>
+                      </div>
+                    </div>
+                  );
+                })}
+```
+
+Also remove these imports if they become unused:
+
+```tsx
+TrendingUp, TrendingDown
+```
+
+---
+
+## 8) `client/src/pages/investments.tsx` — remove hardcoded fallback valuation rates
+
+Find the whole `getUsdEquivalent` function and replace it with this:
+
+```ts
+  const getUsdEquivalent = (amount: number, currency: string): number | null => {
+    if (currency === "USD") return amount;
+
+    let rate = fxRates?.find(
+      (r: any) => r.baseCurrency === currency && r.targetCurrency === "USD"
+    )?.rate;
+
+    if (!rate) {
+      const inverseRate = fxRates?.find(
+        (r: any) => r.baseCurrency === "USD" && r.targetCurrency === currency
+      )?.rate;
+
+      if (inverseRate) {
+        rate = (1 / parseFloat(inverseRate)).toString();
+      }
+    }
+
+    if (!rate) {
+      return null;
+    }
+
+    return amount * parseFloat(rate);
+  };
+```
+
+Then in `handleInvest`, replace this:
+
+```ts
+    const usdAmount = selectedCurrency === 'USD' ? amount : getUsdEquivalent(amount, selectedCurrency);
+
+    if (usdAmount < minimumInvestment) {
+```
+
+with:
+
+```ts
+    const usdAmount =
+      selectedCurrency === "USD" ? amount : getUsdEquivalent(amount, selectedCurrency);
+
+    if (usdAmount == null) {
+      toast({
+        title: "Rate unavailable",
+        description: `Live ${selectedCurrency}/USD pricing is unavailable.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (usdAmount < minimumInvestment) {
+```
+
+This stops fake valuation by fallback constants.
+
+---
+
+## 9) `client/src/pages/ai-advisory.tsx` — adapt to renamed estimated metric
+
+If you apply the backend rename from `expectedPortfolioReturn` to `estimatedPortfolioReturn`, find:
+
+```tsx
+{realMetrics.expectedPortfolioReturn >= 0 ? '+' : ''}{realMetrics.expectedPortfolioReturn.toFixed(1)}%
+```
+
+Replace with:
+
+```tsx
+{realMetrics.estimatedPortfolioReturn >= 0 ? "+" : ""}
+{realMetrics.estimatedPortfolioReturn.toFixed(1)}%
+```
+
+And ideally relabel the surrounding UI text from “Expected Return” to:
+
+```tsx
+Estimated Return
+```
+
+or
+
+```tsx
+Modeled Return Estimate
+```
+
+---
+
+## 10) After patching, run this exact validation sequence
+
+```bash
+npm install
+npm run check
+npm run build
+```
+
+Then smoke test:
+
+* login with valid and invalid token
+* `/api/user` with no token, expired token, valid token
+* forgot-password in local dev and non-local env
+* wallets page
+* stablecoin card
+* FX exchange page
+* investments page with and without FX rates
+
+---
+
+## What these patches fix immediately
+
+They remove the biggest confirmed launch-risk items:
+
+* fake deposit behavior
+* fake market movement
+* fake fallback valuation
+* misleading “real metric” naming
+* overly broad non-prod auth shortcuts
+* wrong auth status code on `/api/user`
+
+The next structural patch after this is the ledger layer.

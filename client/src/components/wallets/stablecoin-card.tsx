@@ -293,16 +293,15 @@ export default function StablecoinCard({ currency, balance, availableBalance, co
                 </Alert>
 
                 <div className="border-t pt-4">
-                  <Button 
-                    onClick={handleSimulateDeposit} 
-                    variant="outline" 
+                  <Button
+                    disabled
                     className="w-full"
-                    disabled={createTransactionMutation.isPending}
+                    variant="outline"
                   >
-                    {createTransactionMutation.isPending ? "Processing..." : "Simulate Demo Deposit"}
+                    Deposits unavailable
                   </Button>
                   <p className="text-xs text-muted-foreground mt-2 text-center">
-                    For testing: adds 1000 {currency} to your balance
+                    Live stablecoin deposit processing is not enabled in this environment.
                   </p>
                 </div>
               </div>

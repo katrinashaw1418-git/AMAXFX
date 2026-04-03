@@ -220,8 +220,7 @@ export default function FxExchange() {
               <div className="space-y-3">
                 {fxRates?.map((rate: any) => {
                   const rateValue = parseFloat(rate.rate);
-                  const isUp = Math.random() > 0.5; // Mock trend
-                  
+
                   return (
                     <div key={`${rate.baseCurrency}-${rate.targetCurrency}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div>
@@ -232,16 +231,7 @@ export default function FxExchange() {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold">{rateValue.toFixed(4)}</p>
-                        <div className="flex items-center space-x-1">
-                          {isUp ? (
-                            <TrendingUp className="w-3 h-3 text-green-500" />
-                          ) : (
-                            <TrendingDown className="w-3 h-3 text-red-500" />
-                          )}
-                          <span className={`text-xs ${isUp ? 'text-green-600' : 'text-red-600'}`}>
-                            {isUp ? '+' : '-'}0.{Math.floor(Math.random() * 9) + 1}%
-                          </span>
-                        </div>
+                        <span className="text-xs text-gray-500">Live rate</span>
                       </div>
                     </div>
                   );
