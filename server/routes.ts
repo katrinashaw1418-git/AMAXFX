@@ -675,7 +675,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password: _, ...safeUser } = user;
       res.json(safeUser);
     } catch (error: any) {
-      res.status(error.status || 500).json({ error: error.message || "Failed to get user" });
+      // Only pass through messages from errors we explicitly constructed (requireAuth uses .status).
+      // Unexpected DB or runtime errors get a generic message to avoid leaking internal details.
+      if (error?.status) return res.status(error.status).json({ error: error.message });
+      res.status(500).json({ error: "Failed to retrieve account details" });
     }
   });
 
@@ -1337,7 +1340,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       requireAuth(req);
       res.json({ count: systemEventLog.length, events: systemEventLog });
     } catch (error: any) {
-      return res.status(error.status || 401).json({ error: error.message });
+      if (error?.status) return res.status(error.status).json({ error: error.message });
+      res.status(500).json({ error: "Failed to retrieve system events" });
     }
   });
 
