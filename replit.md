@@ -3,6 +3,32 @@
 ## Overview
 This platform is a comprehensive cross-border wealth management solution designed for high-net-worth individuals, the global Chinese diaspora, and SMEs with international financial needs. It integrates traditional finance and cryptocurrency services, offering dual-channel support for FX and crypto trading, multi-currency wallets, AI-powered wealth advisory, and robust compliance features. The vision is to provide a unified, intelligent, and secure platform for managing diverse global assets.
 
+## Recent Changes (April 2026) — Security Hardening + Live FX Rates (Third Pass)
+
+### KYC backend enforcement (all money-movement routes)
+- Added `requireKyc(userId, storage)` in `server/auth.ts` — reads `kycStatus` from DB, throws 403 if not "verified".
+- Wired into all 5 money-movement handlers: deposit, withdraw, FX exchange, investments, wallet transfer.
+- Demo user (`demo_user`) has `kycStatus: "verified"` seeded in storage — demo still works.
+- New users get 403 on transaction attempts until KYC is completed — matches frontend `kyc-modal.tsx` flow.
+
+### Live FX rate refresh (no API key required)
+- `refreshFxRates()` function added at the end of `registerRoutes`.
+- **Fiat pairs** (EUR, GBP, CAD, CNY vs USD): fetched from `frankfurter.app` — ECB reference rates, free, no key.
+- **Crypto pairs** (BTC, ETH): fetched from `api.coinbase.com/v2/prices` public endpoint — no key required.
+- Runs once on startup, then every 15 minutes via `setInterval`.
+- Fails silently on network error — existing seeded DB rates remain as fallback.
+- All updates use `UPDATE ... WHERE base_currency = X AND target_currency = Y` so only existing rows are touched (no inserts that could violate the sequence).
+
+### Audit cross-check results (items already correctly implemented — no action taken)
+- Transaction atomicity: already SERIALIZABLE db.transaction() in all routes
+- Rate limiting: already 200/min general + 30/5min money-movement
+- Idempotency: already implemented on all 7 money-movement routes
+- Audit logging: already `writeAuditLog()` on every money-movement route
+- CAGR formula: `Math.pow(Vf/Vi, 1/years) - 1` — mathematically correct
+- Volatility: `stdDev * sqrt(365)` — correctly annualized
+- Sharpe Ratio: implemented, shows `—` only when < 20 days of portfolio history (by design, not a bug)
+- Portfolio calculations: all server-side, charts fetch from `/api/portfolio/performance-chart`
+
 ## Recent Changes (April 2026) — Transaction Lifecycle Integrity Audit (Second Pass)
 
 ### Fake-pending removal (all 7 money-movement routes)

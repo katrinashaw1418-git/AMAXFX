@@ -18,6 +18,7 @@ import {
 } from "@shared/schema";
 import {
   requireAuth,
+  requireKyc,
   authMiddleware,
   signToken,
   verifyPassword,
@@ -1674,6 +1675,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/fx-exchange", moneyMovementLimiter, async (req, res) => {
     try {
       const { userId } = requireAuth(req);
+      await requireKyc(userId, storage);
 
       const parsed = fxExchangeSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -1762,6 +1764,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const handleDeposit = async (req: Request, res: any) => {
     try {
       const { userId } = requireAuth(req);
+      await requireKyc(userId, storage);
       const parsedDeposit = depositSchema.safeParse(req.body);
       if (!parsedDeposit.success) return res.status(400).json({ error: parsedDeposit.error.errors[0].message });
       const { currency, amount: rawAmount, description } = parsedDeposit.data;
@@ -1816,6 +1819,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const handleWithdraw = async (req: Request, res: any) => {
     try {
       const { userId } = requireAuth(req);
+      await requireKyc(userId, storage);
       const parsedWithdraw = withdrawSchema.safeParse(req.body);
       if (!parsedWithdraw.success) return res.status(400).json({ error: parsedWithdraw.error.errors[0].message });
       const { currency, amount: rawAmount, description } = parsedWithdraw.data;
@@ -2201,6 +2205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/investments", moneyMovementLimiter, async (req, res) => {
     try {
       const { userId } = requireAuth(req);
+      await requireKyc(userId, storage);
       const parsedInvestment = investmentSchema.safeParse(req.body);
       if (!parsedInvestment.success) return res.status(400).json({ error: parsedInvestment.error.errors[0].message });
       const { productId, amount: rawAmount, sourceCurrency = "USD", sourceAmount: rawSourceAmount } = parsedInvestment.data;
@@ -2285,6 +2290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/wallets/transfer", moneyMovementLimiter, async (req, res) => {
     try {
       const { userId } = requireAuth(req);
+      await requireKyc(userId, storage);
       const parsedTransfer = walletTransferSchema.safeParse(req.body);
       if (!parsedTransfer.success) return res.status(400).json({ error: parsedTransfer.error.errors[0].message });
       const { fromCurrency, toCurrency, amount: rawAmount } = parsedTransfer.data;
@@ -2449,6 +2455,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to reset password" });
     }
   });
+
+  // ---------------------------------------------------------------------------
+  // Live FX Rate Refresh
+  // Uses two free, key-free public APIs to keep rates current:
+  //   • frankfurter.app  — ECB fiat rates (EUR, GBP, CAD, CNY vs USD)
+  //   • api.coinbase.com — BTC and ETH spot prices
+  // Runs immediately on startup, then every 15 minutes.
+  // Fails silently on network errors — existing DB rates are kept as fallback.
+  // ---------------------------------------------------------------------------
+  async function refreshFxRates(): Promise<void> {
+    try {
+      // ── Fiat pairs ─────────────────────────────────────────────────────────
+      const fiatRes = await fetch(
+        "https://api.frankfurter.app/latest?from=USD&to=EUR,GBP,CAD,CNY"
+      );
+      if (fiatRes.ok) {
+        const fiatData = await fiatRes.json() as { rates: Record<string, number> };
+        for (const [currency, rate] of Object.entries(fiatData.rates)) {
+          const rateStr = rate.toFixed(8);
+          const inverseStr = (1 / rate).toFixed(8);
+          await db.execute(
+            sql`UPDATE fx_rates SET rate = ${rateStr}, updated_at = NOW() WHERE base_currency = 'USD' AND target_currency = ${currency}`
+          ).catch(() => {});
+          await db.execute(
+            sql`UPDATE fx_rates SET rate = ${inverseStr}, updated_at = NOW() WHERE base_currency = ${currency} AND target_currency = 'USD'`
+          ).catch(() => {});
+        }
+      }
+
+      // ── Crypto pairs ───────────────────────────────────────────────────────
+      for (const [symbol, dbCurrency] of [["BTC-USD", "BTC"], ["ETH-USD", "ETH"]] as const) {
+        const res = await fetch(`https://api.coinbase.com/v2/prices/${symbol}/spot`);
+        if (res.ok) {
+          const body = await res.json() as { data: { amount: string } };
+          const price = parseFloat(body.data.amount);
+          if (isFinite(price) && price > 0) {
+            await db.execute(
+              sql`UPDATE fx_rates SET rate = ${price.toFixed(8)}, updated_at = NOW() WHERE base_currency = ${dbCurrency} AND target_currency = 'USD'`
+            ).catch(() => {});
+          }
+        }
+      }
+
+      console.log("[fx-refresh] rates updated at", new Date().toISOString());
+    } catch (err) {
+      // Fail silently — DB rates remain as fallback; don't crash the server
+      console.error("[fx-refresh] failed:", (err as Error).message);
+    }
+  }
+
+  // Run immediately on startup, then every 15 minutes
+  refreshFxRates();
+  setInterval(refreshFxRates, 15 * 60 * 1000);
 
   return httpServer;
 }

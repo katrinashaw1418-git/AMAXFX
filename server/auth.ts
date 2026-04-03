@@ -69,3 +69,21 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
     res.status(err.status || 401).json({ error: err.message });
   }
 }
+
+// ---------------------------------------------------------------------------
+// KYC enforcement — throws 403 if the user's KYC is not "verified".
+// Call after requireAuth on all money-movement routes.
+// Intentionally async so it reads the current DB state on every call.
+// ---------------------------------------------------------------------------
+export async function requireKyc(userId: number, storageInstance: { getUser: (id: number) => Promise<any> }): Promise<void> {
+  const user = await storageInstance.getUser(userId);
+  if (!user) {
+    throw Object.assign(new Error("User not found"), { status: 401 });
+  }
+  if (user.kycStatus !== "verified") {
+    throw Object.assign(
+      new Error("KYC verification required. Please complete identity verification to perform transactions."),
+      { status: 403 }
+    );
+  }
+}
