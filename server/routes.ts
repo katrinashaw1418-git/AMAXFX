@@ -1304,14 +1304,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Diagnostic: expose the in-memory system event log for integrity monitoring
   // Returns the last MAX_SYSTEM_EVENTS entries (most recent first)
-  app.get("/api/system-events", async (_req, res) => {
-    res.json({ count: systemEventLog.length, events: systemEventLog });
+  // Requires authentication — unauthenticated access would leak internal state.
+  app.get("/api/system-events", async (req, res) => {
+    try {
+      requireAuth(req);
+      res.json({ count: systemEventLog.length, events: systemEventLog });
+    } catch (error: any) {
+      return res.status(error.status || 401).json({ error: error.message });
+    }
   });
 
   // Get user wallets
   app.get("/api/wallets", async (req, res) => {
     try {
-      const wallets = await storage.getWallets(1);
+      const { userId } = requireAuth(req);
+      const wallets = await storage.getWallets(userId);
       res.json(wallets);
     } catch (error: any) {
       if (error.status) return res.status(error.status).json({ error: error.message });
@@ -1322,8 +1329,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user transactions
   app.get("/api/transactions", async (req, res) => {
     try {
+      const { userId } = requireAuth(req);
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
-      const transactions = await storage.getTransactions(1, limit);
+      const transactions = await storage.getTransactions(userId, limit);
       res.json(transactions);
     } catch (error: any) {
       if (error.status) return res.status(error.status).json({ error: error.message });
@@ -1360,7 +1368,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get AI recommendations
   app.get("/api/ai-recommendations", async (req, res) => {
     try {
-      const recommendations = await storage.getAiRecommendations(1);
+      const { userId } = requireAuth(req);
+      const recommendations = await storage.getAiRecommendations(userId);
       res.json(recommendations);
     } catch (error: any) {
       if (error.status) return res.status(error.status).json({ error: error.message });
@@ -2413,8 +2422,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await writeAuditLog(user.id, "password_reset_requested", "user", String(user.id), { username }, null);
 
-      // In production this token would be emailed. For demo we return it directly.
-      res.json({ message: "Reset token generated.", resetToken: token });
+      // Never expose the raw token in production — in a real deployment this
+      // would be emailed to the user. In development/staging we return it
+      // directly so engineers can test the reset flow without an SMTP server.
+      if (process.env.NODE_ENV !== "production") {
+        return res.json({ message: "Reset token generated (dev mode).", resetToken: token });
+      }
+      res.json({ message: "If that account exists, a password reset link has been sent." });
     } catch (error: any) {
       if (error instanceof z.ZodError) return res.status(400).json({ error: error.errors[0].message });
       res.status(500).json({ error: "Failed to process request" });

@@ -2,7 +2,13 @@ import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
-const JWT_SECRET = process.env.JWT_SECRET || "amax-dev-secret-change-before-production";
+// In production, JWT_SECRET MUST be set explicitly — no silent fallback.
+// An undefined secret in production would sign tokens with a predictable value
+// and create replay risk across environments.
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error("FATAL: JWT_SECRET environment variable must be set in production.");
+}
+const JWT_SECRET = process.env.JWT_SECRET || "amax-local-dev-only-secret";
 const JWT_EXPIRY = "24h";
 
 export interface AuthPayload {
@@ -31,9 +37,14 @@ export async function verifyPassword(plain: string, hashed: string): Promise<boo
   if (hashed.startsWith("$2")) {
     return bcrypt.compare(plain, hashed);
   }
-  // Plaintext fallback for migration (demo_user in DB has unhashed password).
-  // This branch only runs if the stored value is NOT a bcrypt hash.
-  return plain === hashed;
+  // Plaintext fallback: allowed ONLY in local development to accommodate
+  // the seeded demo_user whose password is stored unhashed. In production
+  // every stored password must be a bcrypt hash — if it is not, we refuse
+  // the comparison rather than silently accepting it.
+  if (process.env.NODE_ENV !== "production") {
+    return plain === hashed;
+  }
+  return false;
 }
 
 export function requireAuth(req: Request): AuthPayload {

@@ -3036,6 +3036,7 @@ export class MemStorage implements IStorage {
       fee: insertTransaction.fee,
       exchangeRate: insertTransaction.exchangeRate || null,
       status: insertTransaction.status,
+      settlementStatus: insertTransaction.settlementStatus ?? "internal_only",
       description: insertTransaction.description,
       sourceExchange: insertTransaction.sourceExchange ?? null,
       blockchainTxHash: insertTransaction.blockchainTxHash ?? null,

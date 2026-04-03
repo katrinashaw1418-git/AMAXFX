@@ -11,8 +11,8 @@ import { Loader2, Shield, TrendingUp } from "lucide-react";
 export default function Login() {
   const { login } = useAuth();
   const [, navigate] = useLocation();
-  const [username, setUsername] = useState("demo_user");
-  const [password, setPassword] = useState("demo123");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 

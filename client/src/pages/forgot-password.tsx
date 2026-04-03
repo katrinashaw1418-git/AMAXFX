@@ -6,13 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, TrendingUp, ArrowLeft, KeyRound } from "lucide-react";
+import { Loader2, TrendingUp, ArrowLeft, CheckCircle2, KeyRound } from "lucide-react";
 
 export default function ForgotPassword() {
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [resetToken, setResetToken] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  // Dev-only: backend returns raw token outside production for testing
+  const [devToken, setDevToken] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -21,7 +23,10 @@ export default function ForgotPassword() {
     try {
       const res = await apiRequest("POST", "/api/auth/forgot-password", { username });
       const data = await res.json();
-      setResetToken(data.resetToken);
+      if (data.resetToken) {
+        setDevToken(data.resetToken);
+      }
+      setSubmitted(true);
     } catch (err: any) {
       setError(err.message || "Failed to process request.");
     } finally {
@@ -40,18 +45,18 @@ export default function ForgotPassword() {
             <span className="text-2xl font-bold text-white">AMAX</span>
           </div>
           <h1 className="text-2xl font-bold text-white">Reset your password</h1>
-          <p className="text-slate-400">Enter your username and we'll generate a reset token</p>
+          <p className="text-slate-400">Enter your username to request a password reset</p>
         </div>
 
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader>
             <CardTitle className="text-white">Account Recovery</CardTitle>
             <CardDescription className="text-slate-400">
-              Enter your username to receive a password reset token
+              Enter your username to begin the password reset process
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {!resetToken ? (
+            {!submitted ? (
               <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
                   <Alert variant="destructive">
@@ -77,22 +82,32 @@ export default function ForgotPassword() {
                 >
                   {isLoading ? (
                     <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
-                  ) : "Generate Reset Token"}
+                  ) : "Request Password Reset"}
                 </Button>
               </form>
             ) : (
               <div className="space-y-4">
-                <Alert className="border-amber-500 bg-amber-500/10">
-                  <KeyRound className="h-4 w-4 text-amber-500" />
-                  <AlertDescription className="text-amber-200">
-                    Your reset token has been generated. Copy it and use it on the reset page.
-                    <strong className="block mt-2 font-mono text-sm break-all text-amber-100 bg-slate-900 p-2 rounded mt-2">
-                      {resetToken}
-                    </strong>
-                    <span className="text-xs text-slate-400 mt-1 block">Expires in 1 hour. Single use only.</span>
+                <Alert className="border-green-500 bg-green-500/10">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <AlertDescription className="text-green-200">
+                    If that account exists, a password reset link has been sent.
                   </AlertDescription>
                 </Alert>
-                <Link href={`/reset-password?token=${resetToken}`}>
+
+                {devToken && (
+                  <Alert className="border-amber-500 bg-amber-500/10">
+                    <KeyRound className="h-4 w-4 text-amber-500" />
+                    <AlertDescription className="text-amber-200">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-amber-400 block mb-1">Development mode — token visible for testing</span>
+                      <strong className="block font-mono text-sm break-all text-amber-100 bg-slate-900 p-2 rounded">
+                        {devToken}
+                      </strong>
+                      <span className="text-xs text-slate-400 mt-1 block">Expires in 1 hour. Single use only.</span>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <Link href={`/reset-password${devToken ? `?token=${devToken}` : ""}`}>
                   <Button className="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold">
                     Go to Reset Password
                   </Button>
