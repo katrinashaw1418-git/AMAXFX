@@ -42,7 +42,7 @@ export interface IStorage {
   // AI Recommendations
   getAiRecommendations(userId: number): Promise<AiRecommendation[]>;
   createAiRecommendation(recommendation: InsertAiRecommendation): Promise<AiRecommendation>;
-  markRecommendationAsRead(id: number): Promise<void>;
+  markRecommendationAsRead(id: number, userId: number): Promise<void>;
   clearAiRecommendations(userId: number): Promise<void>;
 
   // Investment Products
@@ -3120,14 +3120,12 @@ export class MemStorage implements IStorage {
     return recommendation;
   }
 
-  async markRecommendationAsRead(id: number): Promise<void> {
-    for (const [userId, userRecommendations] of Array.from(this.aiRecommendations.entries())) {
-      const recommendationIndex = userRecommendations.findIndex((r: AiRecommendation) => r.id === id);
-      if (recommendationIndex !== -1) {
-        userRecommendations[recommendationIndex].isRead = true;
-        this.aiRecommendations.set(userId, userRecommendations);
-        break;
-      }
+  async markRecommendationAsRead(id: number, userId: number): Promise<void> {
+    const userRecommendations = this.aiRecommendations.get(userId) || [];
+    const recommendationIndex = userRecommendations.findIndex((r: AiRecommendation) => r.id === id);
+    if (recommendationIndex !== -1) {
+      userRecommendations[recommendationIndex].isRead = true;
+      this.aiRecommendations.set(userId, userRecommendations);
     }
   }
 
@@ -3353,8 +3351,10 @@ export class DatabaseStorage implements IStorage {
     return recommendation;
   }
 
-  async markRecommendationAsRead(id: number): Promise<void> {
-    await db.update(aiRecommendations).set({ isRead: true }).where(eq(aiRecommendations.id, id));
+  async markRecommendationAsRead(id: number, userId: number): Promise<void> {
+    await db.update(aiRecommendations)
+      .set({ isRead: true })
+      .where(and(eq(aiRecommendations.id, id), eq(aiRecommendations.userId, userId)));
   }
 
   async clearAiRecommendations(userId: number): Promise<void> {

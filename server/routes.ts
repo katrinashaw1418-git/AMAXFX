@@ -23,6 +23,7 @@ import {
   signToken,
   verifyPassword,
   hashPassword,
+  isLocalDev,
   type AuthPayload,
 } from "./auth";
 
@@ -339,13 +340,16 @@ async function reconstructWalletBalancesAsOf(
       .reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0);
 
     // Credits: money ENTERED this wallet after asOfDate → subtract to get historical balance
-    // For exchange transactions the received amount = amount * exchangeRate; otherwise it's the amount directly
+    // For exchange transactions the net credited amount = (amount * exchangeRate) - fee.
+    // t.fee is stored in the target currency (the fee was deducted from the converted amount).
+    // Using gross (amount * exchangeRate) would overstate the historical credit by the 0.5% fee.
     const totalCredits = txAfter
       .filter((t: any) => t.toCurrency === currency)
       .reduce((sum: number, t: any) => {
         const base = parseFloat(t.amount);
         const rate = t.exchangeRate ? parseFloat(t.exchangeRate) : 1;
-        return sum + (t.type === "exchange" ? base * rate : base);
+        const feeInTarget = t.fee ? parseFloat(t.fee) : 0;
+        return sum + (t.type === "exchange" ? base * rate - feeInTarget : base);
       }, 0);
 
     const historicalBalance = Math.max(0, currentBalance + totalDebits - totalCredits);
@@ -601,13 +605,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ALTER TABLE portfolio_snapshots
       ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'actual'
     `);
-    // Backfill 90 days so charts and period returns always have data to draw from
-    // Only runs for days with no snapshot — safe to call repeatedly
+    // Backfill 90 days so charts and period returns always have data to draw from.
+    // Runs for every registered user — not just the seed/demo user.
+    // Only creates snapshots for days with none already present — safe to repeat.
     const backfillEnd = new Date();
     backfillEnd.setHours(0, 0, 0, 0);
     const backfillStart = new Date(backfillEnd);
     backfillStart.setDate(backfillStart.getDate() - 90);
-    await backfillPortfolioHistory(1, backfillStart, backfillEnd);
+    const allUsers = await db.select({ id: users.id }).from(users);
+    for (const u of allUsers) {
+      await backfillPortfolioHistory(u.id, backfillStart, backfillEnd);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -966,34 +974,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         chartRows[0].historical = openingValue;
       }
 
-      // Bridge: give the last historical row a projected value equal to today's portfolio value
-      // so the forecast line starts exactly where the historical line ends (no gap).
-      if (chartRows.length > 0 && latestHistoricalValue > 0) {
-        chartRows[chartRows.length - 1].projected = latestHistoricalValue;
+      // Only add a forecast when we have a real CAGR derived from actual history.
+      // A 10% "fallback default" with no data basis is assumption-based and must not be shown.
+      const canForecast = projectionMethod === "realized_cagr";
+
+      if (canForecast) {
+        // Bridge: give the last historical row a projected value equal to today's portfolio value
+        // so the forecast line starts exactly where the historical line ends (no gap).
+        if (chartRows.length > 0 && latestHistoricalValue > 0) {
+          chartRows[chartRows.length - 1].projected = latestHistoricalValue;
+        }
+
+        // --- Append forecast rows (i=1 = one month out, grows from the bridge point) ---
+        for (let i = 1; i <= forecastMonths; i++) {
+          const forecastDate = new Date(today);
+          forecastDate.setMonth(forecastDate.getMonth() + i);
+          const label = forecastDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+          const projected =
+            latestHistoricalValue > 0
+              ? Math.round(latestHistoricalValue * Math.pow(1 + annualProjectionRate, i / 12))
+              : 0;
+          chartRows.push({ month: label, historical: null, projected });
+        }
       }
 
-      // --- Append forecast rows (i=1 = one month out, grows from the bridge point) ---
-      for (let i = 1; i <= forecastMonths; i++) {
-        const forecastDate = new Date(today);
-        forecastDate.setMonth(forecastDate.getMonth() + i);
-        const label = forecastDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-        const projected =
-          latestHistoricalValue > 0
-            ? Math.round(latestHistoricalValue * Math.pow(1 + annualProjectionRate, i / 12))
-            : 0;
-        chartRows.push({ month: label, historical: null, projected });
-      }
-
-      const chartSource = snapshots.some((s: any) => s.source === 'historical_estimate')
-        ? 'historical_estimate_plus_forecast'
-        : 'historical_plus_forecast';
+      const hasEstimateSource = snapshots.some((s: any) => s.source === 'historical_estimate');
+      const chartSource = canForecast
+        ? (hasEstimateSource ? 'historical_estimate_plus_forecast' : 'historical_plus_forecast')
+        : (hasEstimateSource ? 'historical_estimate' : 'historical_only');
 
       res.json({
         timeframe,
         anchorDate: anchor.toISOString().split('T')[0],
         openingValue,
-        projectionRate: `${(annualProjectionRate * 100).toFixed(2)}% p.a.`,
         projectionMethod,
+        ...(canForecast ? { projectionRate: `${(annualProjectionRate * 100).toFixed(2)}% p.a.` } : {}),
         chartSource,
         data: chartRows,
       });
@@ -1877,7 +1892,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!parsedWithdraw.success) return res.status(400).json({ error: parsedWithdraw.error.errors[0].message });
       const { currency, amount: rawAmount, description } = parsedWithdraw.data;
       const amount = new Decimal(rawAmount);
-      const fee = new Decimal("25.00");
+
+      // This endpoint handles fiat wire withdrawals only.
+      // Crypto assets (BTC, ETH, USDT, USDC) must not use this route — a flat
+      // fiat fee (e.g. 25 USD) applied to a BTC withdrawal would be catastrophic.
+      const CRYPTO_CURRENCIES = new Set(["BTC", "ETH", "USDT", "USDC", "LTC", "XRP"]);
+      if (CRYPTO_CURRENCIES.has(currency)) {
+        throw Object.assign(
+          new Error("Crypto withdrawals are not supported via this route. Use the crypto withdrawal channel."),
+          { status: 400 }
+        );
+      }
+
+      // Currency-aware fiat wire fee table (flat fee per withdrawal, in native currency).
+      // These represent typical correspondent banking / SWIFT wire charges.
+      const WITHDRAWAL_FEES: Record<string, string> = {
+        USD: "25.00",
+        EUR: "20.00",
+        GBP: "18.00",
+        AUD: "35.00",
+        CAD: "30.00",
+        HKD: "200.00",
+        SGD: "30.00",
+        CNY: "150.00",
+        JPY: "2500.00",
+        CHF: "22.00",
+        NZD: "35.00",
+      };
+      const feeAmount = WITHDRAWAL_FEES[currency] ?? "25.00";
+      const fee = new Decimal(feeAmount);
       const totalDeduction = amount.plus(fee);
 
       const idemKey = req.headers["idempotency-key"] as string | undefined;
@@ -1928,8 +1971,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mark AI recommendation as read
   app.patch("/api/ai-recommendations/:id/read", async (req, res) => {
     try {
+      const { userId } = requireAuth(req);
       const id = parseInt(req.params.id);
-      await storage.markRecommendationAsRead(id);
+      if (!Number.isFinite(id)) throw Object.assign(new Error("Invalid recommendation id"), { status: 400 });
+      await storage.markRecommendationAsRead(id, userId);
       res.json({ success: true });
     } catch (error: any) {
       if (error.status) return res.status(error.status).json({ error: error.message });
@@ -1940,9 +1985,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Apply AI recommendation
   app.post("/api/ai-recommendations/:id/apply", async (req, res) => {
     try {
+      const { userId } = requireAuth(req);
       const id = parseInt(req.params.id);
-      // For demo purposes, we'll just mark it as read and return success
-      await storage.markRecommendationAsRead(id);
+      if (!Number.isFinite(id)) throw Object.assign(new Error("Invalid recommendation id"), { status: 400 });
+      await storage.markRecommendationAsRead(id, userId);
       res.json({ 
         success: true, 
         message: "Recommendation applied successfully",
@@ -2466,10 +2512,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await writeAuditLog(user.id, "password_reset_requested", "user", String(user.id), { username }, null);
 
-      // Never expose the raw token in production — in a real deployment this
-      // would be emailed to the user. In development/staging we return it
-      // directly so engineers can test the reset flow without an SMTP server.
-      if (process.env.NODE_ENV !== "production") {
+      // Never expose the raw token outside isolated local development — in a real
+      // deployment this would be emailed to the user. Only returned when isLocalDev
+      // is true (NODE_ENV=development + APP_ENV=local or ALLOW_LOCAL_DEV_AUTH=true),
+      // which is never satisfied by a shared staging server.
+      if (isLocalDev) {
         return res.json({ message: "Reset token generated (dev mode).", resetToken: token });
       }
       res.json({ message: "If that account exists, a password reset link has been sent." });

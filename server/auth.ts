@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 // APP_ENV=local or ALLOW_LOCAL_DEV_AUTH=true signal is present.
 // This prevents dev shortcuts from silently activating in shared staging
 // environments that happen to have NODE_ENV=development.
-const isLocalDev =
+export const isLocalDev =
   process.env.NODE_ENV === "development" &&
   (process.env.APP_ENV === "local" || process.env.ALLOW_LOCAL_DEV_AUTH === "true");
 

@@ -1,0 +1,114 @@
+I audited the uploaded AMAX zip directly, ran type-check and production build, and reviewed the active server/client code paths.
+
+Result: the app is **much stronger than a prototype**, but it is **not yet clean enough to call real-world launch-safe**.
+
+What verified clean:
+
+* `npm run check` passes.
+* `npm run build` passes.
+* Core money routes use DB transactions, `SERIALIZABLE`, Decimal math, idempotency keys, and KYC checks.
+* JWT auth is wired properly for most sensitive read/write flows.
+* The database-backed storage is the active implementation, not the in-memory demo store.
+
+My own audit findings, ranked by severity:
+
+**1. Historical balances are wrong after FX exchanges/transfers**
+
+* File: `server/routes.ts`
+* Cause: `reconstructWalletBalancesAsOf()` reconstructs credits for exchange transactions as `amount * exchangeRate`.
+* But the real credited amount in `/api/fx-exchange` and `/api/wallets/transfer` is **net of fee** (`converted - fee`).
+* Impact: historical wallet balances, historical snapshots, YTD charting, period returns, and risk metrics can all be overstated after any exchange/transfer involving fees.
+* This is a real accounting logic bug.
+
+**2. There is still active hardcoded / assumed financial data**
+
+* File: `server/routes.ts`
+* Startup seeds hardcoded rates like BTC `95000`, ETH `3500`, GBP/USD, and product `annual_return` values if missing.
+* `/api/portfolio/performance-chart` still falls back to a default **10% projection** with `projectionMethod = "fallback_default"` when history is thin.
+* Impact: this means the system is **not fully real-data-only** yet. It still contains forced assumptions in live code paths.
+
+**3. “Real metrics” are still partly based on estimated history**
+
+* File: `server/routes.ts`
+* `backfillPortfolioHistory()` creates `historical_estimate` snapshots.
+* Then `/api/portfolio/real-metrics` still uses those snapshots for YTD, CAGR, volatility, Sharpe, and drawdown logic.
+* Impact: the endpoint is mathematically consistent, but not fully market-truthful. It can present synthetic-history-derived risk numbers.
+
+**4. AI recommendation mutation endpoints are unauthenticated**
+
+* File: `server/routes.ts`
+* `PATCH /api/ai-recommendations/:id/read`
+* `POST /api/ai-recommendations/:id/apply`
+* Neither route calls `requireAuth(req)`.
+* `markRecommendationAsRead(id)` updates by recommendation id only, not `userId + id`.
+* Impact: any caller who can guess an id can mutate another user’s recommendation state. This is a direct authorization gap.
+
+**5. Password reset token is exposed in any non-production environment**
+
+* File: `server/routes.ts`
+* `forgot-password` returns the raw reset token whenever `NODE_ENV !== "production"`.
+* Impact: if staging or preview is internet-accessible, reset tokens can be harvested. Safe for isolated localhost only, not shared environments.
+
+**6. Withdrawal fee logic is not realistic across currencies**
+
+* File: `server/routes.ts`
+* Withdrawal fee is hardcoded as `25.00` for every currency.
+* Impact:
+
+  * 25 USD might be plausible for fiat wire withdrawal.
+  * 25 AUD/CAD/EUR/GBP/HKD/SGD is arbitrary.
+  * 25 BTC or 25 ETH is obviously catastrophic if crypto withdrawals are allowed through the same route.
+* This is a major financial product-logic issue.
+
+**7. Startup code is still user-1 / demo-state biased**
+
+* File: `server/routes.ts`
+* Startup backfills snapshots only for `userId = 1`.
+* It also hashes “demo user” password for user 1.
+* Impact: this is operationally brittle and not tenant-neutral. It suggests the code still carries demo assumptions.
+
+**8. Dependency security is behind**
+
+* I ran `npm audit`.
+* Current result: **20 vulnerabilities** total, including **7 high**.
+* Notable direct package exposure includes `express`, `vite`, `tsx`, `drizzle-kit`, and transitive issues in `path-to-regexp`, `lodash`, `glob`, `minimatch`, `rollup`, etc.
+* This is fixable, but it is not launch-grade as-is.
+
+**9. Some “demo” behavior remains in live UX**
+
+* `dashboard.tsx` still auto-opens KYC modal after 5 seconds “for demo purposes”.
+* `advisor/contact` just returns success instead of creating a real ticket/email workflow.
+* `ai-recommendations/:id/apply` only marks read and returns success.
+* These are less dangerous than the accounting issues, but they are still fake operational behavior.
+
+My overall verdict:
+
+**Current state**
+
+* Backend transaction integrity: **good**
+* Authentication baseline: **mostly good**
+* Financial formula correctness: **mixed**
+* Historical valuation integrity: **not reliable enough yet**
+* Real-data purity: **not complete**
+* Operational security: **not launch-ready**
+* Production readiness: **close in structure, not close enough in control quality**
+
+The most important fixes, in order:
+
+1. Fix historical reconstruction for exchange/transfer credits to use the **net credited amount**, not gross `amount * rate`.
+2. Remove all live hardcoded rates and default projection assumptions from startup/runtime paths.
+3. Split “estimated history” from “real metrics” so risk metrics only compute from true market/snapshot history.
+4. Add auth + ownership checks to AI recommendation mutation routes.
+5. Restrict password-reset token return to explicit local-only mode, not generic non-production.
+6. Replace universal `25.00` withdrawal fee with currency-aware and channel-aware fee rules.
+7. Remove all `userId = 1` startup assumptions.
+8. Upgrade vulnerable packages and rerun audit.
+
+Bottom line:
+
+This codebase is **not fake-demo junk anymore**. It has real structure and some strong controls. But it still has a few **serious correctness and authorization issues** that would make me say:
+
+**Do not launch yet.**
+Fix the top 6 items first, then do one more focused audit pass.
+
+If you want, I’ll turn this into a **file-by-file patch list with exact code changes** next.
