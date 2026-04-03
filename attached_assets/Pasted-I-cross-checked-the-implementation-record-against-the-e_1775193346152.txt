@@ -1,0 +1,45 @@
+I cross-checked the implementation record against the earlier verified issue list.
+
+Result: **the patch set is directionally correct and covers the right confirmed issues.** It addresses the previously verified blockers around `/api/user`, fake FX trend display, hardcoded fallback pricing, demo deposit flows, and overly broad non-prod auth shortcuts. It also correctly updates the frontend consumer for the renamed portfolio return field. 
+
+What looks correctly covered:
+
+* `/api/user` now preserving `401` instead of always returning `500`
+* `expectedPortfolioReturn` renamed to `estimatedPortfolioReturn`
+* `estimatedReturnMethod` and `hasProductRateCoverage` added
+* `ai-advisory.tsx` updated to consume the renamed field
+* `fx-exchange.tsx` fake `Math.random()` trend display removed
+* `investments.tsx` changed from hardcoded fallback rates to null-on-missing-rate handling
+* demo deposit buttons disabled in `wallets.tsx`, `wallets-new.tsx`, and `stablecoin-card.tsx`
+* `server/auth.ts` tightened from broad non-production behavior to a stricter local-dev check
+* TypeScript check reported clean after the changes. 
+
+What is a good correction in this round:
+
+* The note about **`wallets-new.tsx` being the active page** is important. That means the earlier patch list would have been incomplete if it only changed `wallets.tsx`. This update fixes that gap. 
+
+What was intentionally not fixed, and that is reasonable:
+
+* dependency remediation
+* schema enhancement for estimated flags
+* double-entry ledger
+* package cleanup for Passport/session/Stripe
+  Those were correctly treated as separate or lower-priority workstreams, not compile-fix items. 
+
+The one thing I cannot fully prove from this pasted record alone:
+
+* The text says the patches were implemented and the server restarted cleanly, but this message is still a **change log**, not a raw diff. So I can verify that the **reported edits are consistent and appropriate**, but I cannot independently re-open each changed file from this message alone and re-audit the exact final code contents line by line. 
+
+So the strict verdict is:
+
+* **Cross-check against the issue list:** yes, it matches.
+* **Patch coverage:** yes, it covers the main confirmed launch-risk items.
+* **Independent proof every edit is present exactly as stated:** not fully established by the pasted summary alone. 
+
+After these patches, the biggest remaining items are:
+
+* dependency/security upgrade work
+* real database runtime QA
+* ledger/control architecture for real-money launch. 
+
+If you want the most rigorous next step, upload the patched ZIP and I’ll verify the actual final files line by line.

@@ -237,14 +237,16 @@ function calculateInvestmentPerformance(
   return { currentValue, returnAmount, returnPercentage, valuationStatus };
 }
 
-// Shared FX conversion helper — tries direct rate then inverse
-async function convertToUsd(currency: string, amount: number): Promise<number> {
+// Shared FX conversion helper — tries direct rate then inverse.
+// Returns null when no rate is available so callers can surface the gap
+// rather than silently undercounting the portfolio total.
+async function convertToUsd(currency: string, amount: number): Promise<number | null> {
   if (currency === "USD") return amount;
   const direct = await storage.getFxRate(currency, "USD");
   if (direct) return amount * parseFloat(direct.rate);
   const inverse = await storage.getFxRate("USD", currency);
   if (inverse) return amount / parseFloat(inverse.rate);
-  return 0;
+  return null;
 }
 
 // One shared engine for all investment valuation — batch fetches products to avoid N+1 queries
@@ -429,21 +431,39 @@ async function calculatePortfolioTotalsAtDate(userId: number, asOfDate: Date = n
     : await reconstructWalletBalancesAsOf(userId, asOfDate);
 
   let fiatValue = 0, cryptoValue = 0, stablecoinValue = 0;
+  let hasUnpricedWallets = false;
+  const unpricedCurrencies: string[] = [];
+
   for (const wallet of walletData) {
     const balance = wallet.balance;
     if (wallet.walletType === "fiat") {
-      fiatValue += await convertToUsd(wallet.currency, balance);
+      const usd = await convertToUsd(wallet.currency, balance);
+      if (usd !== null) {
+        fiatValue += usd;
+      } else {
+        hasUnpricedWallets = true;
+        unpricedCurrencies.push(wallet.currency);
+      }
     } else if (wallet.currency === "USDT" || wallet.currency === "USDC") {
       stablecoinValue += balance;
     } else {
       const rate = await storage.getFxRate(wallet.currency, "USD");
-      if (rate) cryptoValue += balance * parseFloat(rate.rate);
+      if (rate) {
+        cryptoValue += balance * parseFloat(rate.rate);
+      } else {
+        hasUnpricedWallets = true;
+        unpricedCurrencies.push(wallet.currency);
+      }
     }
   }
   const investmentTotals = await calculateInvestmentTotalsAtDate(userId, asOfDate);
   const investmentValue = investmentTotals.totalCurrentValue;
-  return { fiatValue, cryptoValue, stablecoinValue, investmentValue,
-           totalValue: fiatValue + cryptoValue + stablecoinValue + investmentValue };
+  return {
+    fiatValue, cryptoValue, stablecoinValue, investmentValue,
+    totalValue: fiatValue + cryptoValue + stablecoinValue + investmentValue,
+    hasUnpricedWallets,
+    unpricedCurrencies,
+  };
 }
 
 // Save a fresh "actual" snapshot immediately after any portfolio-changing event
@@ -693,7 +713,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // One call to the shared engine — no duplicated FX/investment loops
       const totals = await calculatePortfolioTotalsAtDate(userId, now);
-      const { fiatValue, cryptoValue, stablecoinValue, investmentValue, totalValue } = totals;
+      const { fiatValue, cryptoValue, stablecoinValue, investmentValue, totalValue,
+              hasUnpricedWallets, unpricedCurrencies } = totals;
 
       // Always upsert today's "actual" snapshot with the current live value.
       // Delete any stale snapshot from earlier today (could be from a previous session
@@ -746,6 +767,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         monthlyPnlPercent: monthlyPnlPercent !== null ? monthlyPnlPercent.toFixed(2) : null,
         monthlyPnlSource,
         monthlyPnlMethod,
+        // Valuation completeness flags — consumers should warn users when true
+        hasUnpricedWallets,
+        unpricedCurrencies,
         updatedAt: now,
       });
     } catch (error: any) {

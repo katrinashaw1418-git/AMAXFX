@@ -808,6 +808,17 @@ export default function Portfolio() {
                   </p>
                 </div>
               )}
+              {!portfolioLoading && portfolio?.hasUnpricedWallets && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <p className="text-xs font-medium text-amber-900">Unpriced wallets detected</p>
+                  <p className="text-xs text-amber-800 mt-1">
+                    {portfolio.unpricedCurrencies?.length
+                      ? `No FX rate available for: ${portfolio.unpricedCurrencies.join(", ")}. `
+                      : ""}
+                    These wallet balances are excluded from your total and may understate your net worth.
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
