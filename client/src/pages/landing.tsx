@@ -153,12 +153,12 @@ export default function Landing() {
 
       {/* ── Hero ── */}
       <section className="max-w-6xl mx-auto px-6 py-24 text-center">
-        <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/30 mb-6">
+        <Badge className="bg-white/10 text-white border border-white/20 mb-6">
           AUSTRAC Registered Digital Currency Exchange
         </Badge>
         <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-6">
           Secure FX, Digital Wallet &{" "}
-          <span className="text-amber-400">Crypto Exchange</span>
+          <span className="text-white">Crypto Exchange</span>
           <br />Platform
         </h1>
         <p className="text-xl text-white max-w-2xl mx-auto mb-10">
