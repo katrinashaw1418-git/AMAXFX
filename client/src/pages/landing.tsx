@@ -87,10 +87,10 @@ const keyFeatures = [
 ];
 
 const targetCustomers = [
-  { icon: UserCheck,  title: "Retail Users",            description: "Individuals sending money overseas, managing multi-currency savings, or holding digital assets with full regulatory protection." },
-  { icon: Briefcase,  title: "SMEs & Businesses",       description: "Small and medium enterprises paying international suppliers, managing foreign currency exposure, or receiving cross-border payments." },
-  { icon: Globe2,     title: "International Transfers", description: "Migrant workers, expats, and families sending remittances across AUD and major Asian, European, and North American corridors." },
-  { icon: Building2,  title: "Institutional Clients",   description: "Corporate treasury teams and financial intermediaries requiring compliant FX execution, reporting, and audit-ready transaction records." },
+  { icon: UserCheck, title: "Retail Users",            description: "Individuals sending money overseas, managing multi-currency savings, or holding digital assets with full regulatory protection.",    color: "text-purple-400", bg: "rgba(192,132,252,0.12)" },
+  { icon: Briefcase, title: "SMEs & Businesses",       description: "Small and medium enterprises paying international suppliers, managing foreign currency exposure, or receiving cross-border payments.", color: "text-green-400",  bg: "rgba(74,222,128,0.12)" },
+  { icon: Globe2,    title: "International Transfers", description: "Migrant workers, expats, and families sending remittances across AUD and major Asian, European, and North American corridors.",       color: "text-blue-400",   bg: "rgba(96,165,250,0.12)" },
+  { icon: Building2, title: "Institutional Clients",   description: "Corporate treasury teams and financial intermediaries requiring compliant FX execution, reporting, and audit-ready transaction records.", color: "text-white",    bg: "#111111" },
 ];
 
 const GREY_BTN = "bg-gray-600 hover:bg-gray-500 text-white font-semibold";
@@ -330,8 +330,8 @@ export default function Landing() {
               const Icon = customer.icon;
               return (
                 <div key={customer.title} className="flex items-start gap-5 p-7 rounded-xl" style={CARD_STYLE}>
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={ICON_BG}>
-                    <Icon className="w-6 h-6 text-white" />
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: customer.bg }}>
+                    <Icon className={`w-6 h-6 ${customer.color}`} />
                   </div>
                   <div>
                     <h3 className="font-semibold text-white text-lg mb-2">{customer.title}</h3>
