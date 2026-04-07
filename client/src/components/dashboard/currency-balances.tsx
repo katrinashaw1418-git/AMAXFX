@@ -1,22 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useWallets } from "@/hooks/use-portfolio";
 import { Skeleton } from "@/components/ui/skeleton";
-
-const currencyConfig = {
-  USD: { name: "US Dollar", symbol: "$", color: "bg-blue-500" },
-  CAD: { name: "Canadian Dollar", symbol: "$", color: "bg-red-500" },
-  EUR: { name: "Euro", symbol: "€", color: "bg-blue-600" },
-  GBP: { name: "British Pound", symbol: "£", color: "bg-green-600" },
-  AUD: { name: "Australian Dollar", symbol: "$", color: "bg-orange-500" },
-  HKD: { name: "Hong Kong Dollar", symbol: "$", color: "bg-pink-500" },
-  BTC: { name: "Bitcoin", symbol: "₿", color: "bg-yellow-500" },
-  ETH: { name: "Ethereum", symbol: "Ξ", color: "bg-purple-500" },
-  USDT: { name: "Tether", symbol: "₮", color: "bg-green-500" },
-  USDC: { name: "USD Coin", symbol: "◎", color: "bg-blue-400" },
-};
+import { CurrencyConfig } from "@/lib/types";
 
 export default function CurrencyBalances() {
-  const { data: wallets, isLoading, error } = useWallets();
+  const { data: rawWallets, isLoading, error } = useWallets();
 
   if (isLoading) {
     return (
@@ -55,7 +43,7 @@ export default function CurrencyBalances() {
     );
   }
 
-  if (!wallets || wallets.length === 0) {
+  if (!rawWallets || rawWallets.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -68,6 +56,21 @@ export default function CurrencyBalances() {
     );
   }
 
+  const cryptoOrder = ['BTC', 'ETH', 'USDT', 'USDC'];
+
+  const wallets = [...rawWallets]
+    .filter((w: any) => parseFloat(w.balance || '0') > 0)
+    .sort((a: any, b: any) => {
+      const aIsCrypto = cryptoOrder.includes(a.currency);
+      const bIsCrypto = cryptoOrder.includes(b.currency);
+      if (aIsCrypto && !bIsCrypto) return 1;
+      if (!aIsCrypto && bIsCrypto) return -1;
+      if (aIsCrypto && bIsCrypto) return cryptoOrder.indexOf(a.currency) - cryptoOrder.indexOf(b.currency);
+      if (a.currency === 'AUD') return -1;
+      if (b.currency === 'AUD') return 1;
+      return a.currency.localeCompare(b.currency);
+    });
+
   return (
     <Card>
       <CardHeader>
@@ -76,16 +79,17 @@ export default function CurrencyBalances() {
       <CardContent>
         <div className="space-y-3">
           {wallets.map((wallet: any) => {
-            const config = currencyConfig[wallet.currency as keyof typeof currencyConfig];
+            const config = CurrencyConfig[wallet.currency as keyof typeof CurrencyConfig];
             const balance = parseFloat(wallet.balance);
-            
+
             return (
               <div key={wallet.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${config?.color || 'bg-gray-500'}`}>
-                    <span className="text-white font-bold text-xs">
-                      {config?.symbol || wallet.currency.slice(0, 2)}
-                    </span>
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0"
+                    style={{ backgroundColor: config?.color || '#9ca3af' }}
+                  >
+                    {config?.flag || wallet.currency.slice(0, 2)}
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">
@@ -98,7 +102,7 @@ export default function CurrencyBalances() {
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-gray-900">
-                    {wallet.walletType === 'crypto' 
+                    {wallet.walletType === 'crypto'
                       ? `${balance.toFixed(4)} ${wallet.currency}`
                       : `${config?.symbol || '$'}${balance.toLocaleString()}`
                     }
