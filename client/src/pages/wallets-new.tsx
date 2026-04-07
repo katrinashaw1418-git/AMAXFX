@@ -552,39 +552,39 @@ export default function Wallets() {
                         <WalletValueDisplay wallet={wallet} displayCurrency={displayCurrency} />
                       </td>
                       <td className="p-4 text-right">
-                        <div className="flex gap-2 justify-end">
+                        <div className="flex gap-1 justify-end">
                           <Button 
                             variant="outline" 
-                            size="sm" 
+                            size="icon"
+                            title="Deposit"
                             onClick={() => {
                               setSelectedWallet(wallet);
                               setDepositModalOpen(true);
                             }}
                           >
-                            <Plus className="w-4 h-4 mr-1" />
-                            Deposit
+                            <Plus className="w-4 h-4" />
                           </Button>
                           <Button 
                             variant="outline" 
-                            size="sm" 
+                            size="icon"
+                            title="Withdraw"
                             onClick={() => {
                               setSelectedWallet(wallet);
                               setWithdrawModalOpen(true);
                             }}
                           >
-                            <Minus className="w-4 h-4 mr-1" />
-                            Withdraw
+                            <Minus className="w-4 h-4" />
                           </Button>
                           <Button 
                             variant="outline" 
-                            size="sm" 
+                            size="icon"
+                            title="Transfer"
                             onClick={() => {
                               setSelectedWallet(wallet);
                               setTransferModalOpen(true);
                             }}
                           >
-                            <ArrowUpDown className="w-4 h-4 mr-1" />
-                            Transfer
+                            <ArrowUpDown className="w-4 h-4" />
                           </Button>
                         </div>
                       </td>
