@@ -15,16 +15,34 @@ import YtdRateChart from "@/components/fx/ytd-rate-chart";
 import RateSparkline from "@/components/fx/rate-sparkline";
 
 const currencies = [
-  { code: "USD", name: "US Dollar", flag: "🇺🇸" },
-  { code: "CAD", name: "Canadian Dollar", flag: "🇨🇦" },
-  { code: "EUR", name: "Euro", flag: "🇪🇺" },
-  { code: "GBP", name: "British Pound", flag: "🇬🇧" },
-  { code: "AUD", name: "Australian Dollar", flag: "🇦🇺" },
-  { code: "HKD", name: "Hong Kong Dollar", flag: "🇭🇰" },
-  { code: "BTC", name: "Bitcoin", flag: "₿" },
-  { code: "ETH", name: "Ethereum", flag: "Ξ" },
-  { code: "USDT", name: "Tether", flag: "💵" },
-  { code: "USDC", name: "USD Coin", flag: "🪙" },
+  { code: "USD",  name: "US Dollar",          flag: "🇺🇸" },
+  { code: "AUD",  name: "Australian Dollar",   flag: "🇦🇺" },
+  { code: "CAD",  name: "Canadian Dollar",     flag: "🇨🇦" },
+  { code: "EUR",  name: "Euro",                flag: "🇪🇺" },
+  { code: "GBP",  name: "British Pound",       flag: "🇬🇧" },
+  { code: "HKD",  name: "Hong Kong Dollar",    flag: "🇭🇰" },
+  { code: "SGD",  name: "Singapore Dollar",    flag: "🇸🇬" },
+  { code: "JPY",  name: "Japanese Yen",        flag: "🇯🇵" },
+  { code: "KRW",  name: "South Korean Won",    flag: "🇰🇷" },
+  { code: "CNY",  name: "Chinese Yuan",        flag: "🇨🇳" },
+  { code: "BTC",  name: "Bitcoin",             flag: "₿"  },
+  { code: "ETH",  name: "Ethereum",            flag: "Ξ"  },
+  { code: "USDT", name: "Tether",              flag: "💵" },
+  { code: "USDC", name: "USD Coin",            flag: "🪙" },
+];
+
+const DISPLAYED_PAIRS = [
+  { base: "USD", target: "AUD" },
+  { base: "USD", target: "CAD" },
+  { base: "USD", target: "EUR" },
+  { base: "USD", target: "GBP" },
+  { base: "USD", target: "HKD" },
+  { base: "USD", target: "SGD" },
+  { base: "USD", target: "JPY" },
+  { base: "USD", target: "KRW" },
+  { base: "USD", target: "CNY" },
+  { base: "BTC", target: "USD" },
+  { base: "ETH", target: "USD" },
 ];
 
 export default function FxExchange() {
@@ -269,52 +287,69 @@ export default function FxExchange() {
                 {ratesLoading ? (
                   <p className="text-sm text-gray-400 text-center py-4">Loading rates...</p>
                 ) : (
-                  fxRates?.map((rate: any) => {
-                    const rateValue = parseFloat(rate.rate);
-                    const isSelected =
-                      fromCurrency === rate.baseCurrency && toCurrency === rate.targetCurrency;
+                  DISPLAYED_PAIRS.map(({ base, target }) => {
+                    const rate = fxRates?.find(
+                      (r: any) => r.baseCurrency === base && r.targetCurrency === target
+                    );
+                    const rateValue = rate ? parseFloat(rate.rate) : null;
+                    const isSelected = fromCurrency === base && toCurrency === target;
+                    const isCrypto = base === "BTC" || base === "ETH";
+                    const baseCurrency = currencies.find((c) => c.code === base);
+                    const targetCurrency = currencies.find((c) => c.code === target);
 
                     return (
                       <div
-                        key={`${rate.baseCurrency}-${rate.targetCurrency}`}
+                        key={`${base}-${target}`}
                         className={`flex items-center gap-2 p-2.5 rounded-lg cursor-pointer transition-colors border ${
                           isSelected
                             ? "bg-amber-50 border-amber-300"
                             : "bg-gray-50 border-transparent hover:bg-gray-100"
                         }`}
                         onClick={() => {
-                          setFromCurrency(rate.baseCurrency);
-                          setToCurrency(rate.targetCurrency);
+                          setFromCurrency(base);
+                          setToCurrency(target);
                         }}
                       >
                         {/* Pair label */}
                         <div className="flex-1 min-w-0">
                           <p className={`font-semibold text-xs ${isSelected ? "text-amber-700" : "text-gray-800"}`}>
-                            {rate.baseCurrency}/{rate.targetCurrency}
+                            {baseCurrency?.flag} {base}/{target}
                           </p>
                           <p className="text-xs text-gray-400 truncate">
-                            {currencies.find((c) => c.code === rate.baseCurrency)?.name}
+                            {baseCurrency?.name}
                           </p>
                         </div>
 
                         {/* Mini sparkline */}
                         <div className="flex-shrink-0">
-                          <RateSparkline
-                            fromCurrency={rate.baseCurrency}
-                            toCurrency={rate.targetCurrency}
-                            currentRate={rateValue}
-                          />
+                          {rateValue && (
+                            <RateSparkline
+                              fromCurrency={base}
+                              toCurrency={target}
+                              currentRate={rateValue}
+                            />
+                          )}
                         </div>
 
                         {/* Rate + freshness */}
                         <div className="text-right flex-shrink-0">
-                          <p className="font-bold text-sm text-gray-900">{rateValue.toFixed(4)}</p>
-                          {rate.isStale ? (
-                            <span className="text-xs text-amber-600">⚠ {rate.rateAgeMinutes}m</span>
+                          {rateValue !== null ? (
+                            <>
+                              <p className="font-bold text-sm text-gray-900">
+                                {isCrypto
+                                  ? rateValue.toLocaleString(undefined, { maximumFractionDigits: 2 })
+                                  : rateValue.toFixed(4)}
+                              </p>
+                              {rate?.isStale ? (
+                                <span className="text-xs text-amber-600">⚠ {rate.rateAgeMinutes}m</span>
+                              ) : (
+                                <span className="text-xs text-green-600">
+                                  {rate?.rateAgeMinutes != null ? `${rate.rateAgeMinutes}m` : "Live"}
+                                </span>
+                              )}
+                            </>
                           ) : (
-                            <span className="text-xs text-green-600">
-                              {rate.rateAgeMinutes !== null ? `${rate.rateAgeMinutes}m` : "Live"}
-                            </span>
+                            <span className="text-xs text-gray-300">—</span>
                           )}
                         </div>
                       </div>

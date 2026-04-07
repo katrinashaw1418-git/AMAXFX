@@ -560,10 +560,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Reset the serial sequence to MAX(id) so inserts don't collide with existing rows
     await db.execute(rawSql`SELECT setval(pg_get_serial_sequence('fx_rates', 'id'), GREATEST(COALESCE((SELECT MAX(id) FROM fx_rates), 1), 1))`);
     const missingRates = [
-      { baseCurrency: 'BTC', targetCurrency: 'USD', rate: '95000.00', spread: '0.0050' },
-      { baseCurrency: 'ETH', targetCurrency: 'USD', rate: '3500.00',  spread: '0.0050' },
-      { baseCurrency: 'GBP', targetCurrency: 'USD', rate: '1.27000',  spread: '0.0050' },
-      { baseCurrency: 'USD', targetCurrency: 'GBP', rate: '0.78740',  spread: '0.0050' },
+      { baseCurrency: 'BTC',  targetCurrency: 'USD', rate: '95000.00',  spread: '0.0050' },
+      { baseCurrency: 'ETH',  targetCurrency: 'USD', rate: '3500.00',   spread: '0.0050' },
+      { baseCurrency: 'GBP',  targetCurrency: 'USD', rate: '1.27000',   spread: '0.0050' },
+      { baseCurrency: 'USD',  targetCurrency: 'GBP', rate: '0.78740',   spread: '0.0050' },
+      { baseCurrency: 'SGD',  targetCurrency: 'USD', rate: '0.74500',   spread: '0.0050' },
+      { baseCurrency: 'USD',  targetCurrency: 'SGD', rate: '1.34228',   spread: '0.0050' },
+      { baseCurrency: 'JPY',  targetCurrency: 'USD', rate: '0.00667',   spread: '0.0050' },
+      { baseCurrency: 'USD',  targetCurrency: 'JPY', rate: '149.9500',  spread: '0.0050' },
+      { baseCurrency: 'KRW',  targetCurrency: 'USD', rate: '0.000756',  spread: '0.0050' },
+      { baseCurrency: 'USD',  targetCurrency: 'KRW', rate: '1323.00',   spread: '0.0050' },
+      { baseCurrency: 'CNY',  targetCurrency: 'USD', rate: '0.13780',   spread: '0.0050' },
+      { baseCurrency: 'USD',  targetCurrency: 'CNY', rate: '7.25900',   spread: '0.0050' },
+      { baseCurrency: 'AUD',  targetCurrency: 'USD', rate: '0.63500',   spread: '0.0050' },
+      { baseCurrency: 'USD',  targetCurrency: 'AUD', rate: '1.57480',   spread: '0.0050' },
+      { baseCurrency: 'HKD',  targetCurrency: 'USD', rate: '0.12810',   spread: '0.0050' },
+      { baseCurrency: 'USD',  targetCurrency: 'HKD', rate: '7.80700',   spread: '0.0050' },
     ];
     for (const { baseCurrency, targetCurrency, rate, spread } of missingRates) {
       const existing = await storage.getFxRate(baseCurrency, targetCurrency);
@@ -2669,7 +2681,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // ── Fiat pairs ─────────────────────────────────────────────────────────
       const fiatRes = await fetch(
-        "https://api.frankfurter.app/latest?from=USD&to=EUR,GBP,CAD,CNY"
+        "https://api.frankfurter.app/latest?from=USD&to=EUR,GBP,CAD,CNY,AUD,HKD,SGD,JPY,KRW"
       );
       if (fiatRes.ok) {
         const fiatData = await fiatRes.json() as { rates: Record<string, number> };
