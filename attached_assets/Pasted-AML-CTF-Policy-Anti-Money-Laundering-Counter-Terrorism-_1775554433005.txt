@@ -1,0 +1,34 @@
+AML/CTF Policy
+Anti-Money Laundering & Counter-Terrorism Financing Policy
+
+Last updated: 7 April 2026
+
+This AML/CTF Policy is a high-level public statement. A comprehensive internal AML/CTF Program is maintained separately in accordance with the Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth).
+1. Our Commitment
+AMAX is committed to complying with Australia's Anti-Money Laundering and Counter-Terrorism Financing (AML/CTF) laws. We operate under the Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth) and maintain an AML/CTF Program designed to detect, deter, and disrupt financial crime.
+2. AUSTRAC Registration
+AMAX is registered (or in the process of registration) with AUSTRAC as a reporting entity in the following categories:
+
+Digital Currency Exchange (DCE)
+Remittance Network Provider (RNP)
+Independent Remittance Dealer (IRD)
+3. Know Your Customer (KYC)
+All users are required to verify their identity before accessing AMAX services. Our KYC process includes:
+
+Collection and verification of government-issued identity documents
+Proof of address verification
+Politically Exposed Person (PEP) and sanctions screening
+Enhanced due diligence for higher-risk customers
+4. Transaction Monitoring
+AMAX monitors all transactions on an ongoing basis to detect suspicious activity. Our monitoring program includes:
+
+Automated rule-based transaction monitoring
+Threshold-based reporting (Threshold Transaction Reports to AUSTRAC)
+Suspicious Matter Reporting (SMR) to AUSTRAC where required
+International funds transfer instruction (IFTI) reporting
+5. Record Keeping
+We retain records of all customer identification, transaction records, and AML/CTF program documentation for a minimum of seven (7) years, in accordance with our legislative obligations.
+6. Training & Governance
+Our staff and key personnel receive regular AML/CTF training. An appointed AML/CTF Compliance Officer oversees the program, ensures ongoing regulatory compliance, and manages AUSTRAC reporting obligations.
+7. Contact
+For AML/CTF enquiries, please contact our Compliance team at compliance@amax.com.au.
