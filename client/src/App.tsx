@@ -12,6 +12,9 @@ import Transactions from "@/pages/transactions";
 import Compliance from "@/pages/compliance";
 import Login from "@/pages/login";
 import Landing from "@/pages/landing";
+import PrivacyPolicy from "@/pages/privacy-policy";
+import Terms from "@/pages/terms";
+import AmlPolicy from "@/pages/aml-policy";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import NotFound from "@/pages/not-found";
@@ -61,6 +64,9 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Landing} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/terms" component={Terms} />
+      <Route path="/aml-policy" component={AmlPolicy} />
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
