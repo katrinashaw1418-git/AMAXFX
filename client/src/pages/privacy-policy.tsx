@@ -4,8 +4,8 @@ import { Coins, ArrowLeft } from "lucide-react";
 
 export default function PrivacyPolicy() {
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
-      <header className="border-b border-slate-800 bg-slate-900/95 backdrop-blur sticky top-0 z-50">
+    <div className="min-h-screen text-white" style={{ background: "#07111f" }}>
+      <header className="backdrop-blur sticky top-0 z-50" style={{ background: "rgba(7,17,31,0.97)", borderBottom: "1px solid #152e4a" }}>
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/">
             <div className="flex items-center gap-3 cursor-pointer">
@@ -16,7 +16,7 @@ export default function PrivacyPolicy() {
             </div>
           </Link>
           <Link href="/">
-            <Button variant="outline" size="sm" className="border-slate-600 text-slate-300 hover:bg-slate-800">
+            <Button variant="outline" size="sm" className="text-white hover:text-white hover:bg-[#152e4a]" style={{ borderColor: "#1d3a55", background: "transparent" }}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
@@ -26,61 +26,31 @@ export default function PrivacyPolicy() {
 
       <main className="max-w-4xl mx-auto px-6 py-16">
         <h1 className="text-4xl font-bold mb-2">Privacy Policy</h1>
-        <p className="text-slate-500 text-sm mb-10">Last updated: {new Date().toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}</p>
+        <p className="text-sm mb-10" style={{ color: "#4a6e88" }}>Last updated: {new Date().toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}</p>
 
-        <div className="prose prose-invert prose-slate max-w-none space-y-8 text-slate-300 leading-relaxed">
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-5 text-amber-300 text-sm">
+        <div className="space-y-8 leading-relaxed" style={{ color: "#a8c5d8" }}>
+          <div className="rounded-lg p-5 text-sm" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", color: "#f59e0b" }}>
             This Privacy Policy is a placeholder document. A full, legally reviewed Privacy Policy will be published prior to the platform's public launch.
           </div>
 
-          <section>
-            <h2 className="text-xl font-semibold text-white mb-3">1. Introduction</h2>
-            <p>AMAX ("we", "our", "us") is committed to protecting the privacy and personal information of our customers and users. This Privacy Policy describes how we collect, use, store, and disclose personal information in connection with the AMAX platform, in accordance with the <em>Privacy Act 1988</em> (Cth) and the Australian Privacy Principles (APPs).</p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold text-white mb-3">2. Information We Collect</h2>
-            <p>We may collect the following categories of personal information:</p>
-            <ul className="list-disc list-inside space-y-1 text-slate-400 mt-2">
-              <li>Identity information (full name, date of birth, government-issued ID)</li>
-              <li>Contact information (email address, phone number, residential address)</li>
-              <li>Financial information (bank account details, transaction history)</li>
-              <li>KYC/AML verification data (as required by AUSTRAC obligations)</li>
-              <li>Device and usage data (IP address, browser type, session logs)</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold text-white mb-3">3. How We Use Your Information</h2>
-            <p>We use your personal information to:</p>
-            <ul className="list-disc list-inside space-y-1 text-slate-400 mt-2">
-              <li>Verify your identity and comply with KYC/AML obligations</li>
-              <li>Process transactions and provide platform services</li>
-              <li>Comply with AUSTRAC reporting requirements</li>
-              <li>Prevent fraud, money laundering, and terrorist financing</li>
-              <li>Communicate service and compliance-related updates</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold text-white mb-3">4. Disclosure of Information</h2>
-            <p>We may disclose your personal information to regulatory authorities (including AUSTRAC), law enforcement agencies, and third-party service providers engaged in operating the platform — only to the extent required by law or necessary to provide our services.</p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold text-white mb-3">5. Data Security</h2>
-            <p>We implement industry-standard security measures including 256-bit TLS encryption, access controls, two-factor authentication, and audit logging to protect your personal information from unauthorised access, disclosure, or misuse.</p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold text-white mb-3">6. Contact</h2>
-            <p>For privacy-related enquiries, please contact us at <a href="mailto:privacy@amax.com.au" className="text-amber-400 hover:underline">privacy@amax.com.au</a>.</p>
-          </section>
+          {[
+            { title: "1. Introduction", body: <>AMAX ("we", "our", "us") is committed to protecting the privacy and personal information of our customers and users. This Privacy Policy describes how we collect, use, store, and disclose personal information in connection with the AMAX platform, in accordance with the <em>Privacy Act 1988</em> (Cth) and the Australian Privacy Principles (APPs).</> },
+            { title: "2. Information We Collect", body: <><p>We may collect the following categories of personal information:</p><ul className="list-disc list-inside space-y-1 mt-2" style={{ color: "#6b9ab8" }}><li>Identity information (full name, date of birth, government-issued ID)</li><li>Contact information (email address, phone number, residential address)</li><li>Financial information (bank account details, transaction history)</li><li>KYC/AML verification data (as required by AUSTRAC obligations)</li><li>Device and usage data (IP address, browser type, session logs)</li></ul></> },
+            { title: "3. How We Use Your Information", body: <><p>We use your personal information to:</p><ul className="list-disc list-inside space-y-1 mt-2" style={{ color: "#6b9ab8" }}><li>Verify your identity and comply with KYC/AML obligations</li><li>Process transactions and provide platform services</li><li>Comply with AUSTRAC reporting requirements</li><li>Prevent fraud, money laundering, and terrorist financing</li><li>Communicate service and compliance-related updates</li></ul></> },
+            { title: "4. Disclosure of Information", body: <>We may disclose your personal information to regulatory authorities (including AUSTRAC), law enforcement agencies, and third-party service providers engaged in operating the platform — only to the extent required by law or necessary to provide our services.</> },
+            { title: "5. Data Security", body: <>We implement industry-standard security measures including 256-bit TLS encryption, access controls, two-factor authentication, and audit logging to protect your personal information from unauthorised access, disclosure, or misuse.</> },
+            { title: "6. Contact", body: <>For privacy-related enquiries, please contact us at <a href="mailto:privacy@amax.com.au" className="text-amber-400 hover:underline">privacy@amax.com.au</a>.</> },
+          ].map(({ title, body }) => (
+            <section key={title}>
+              <h2 className="text-xl font-semibold text-white mb-3">{title}</h2>
+              <div>{body}</div>
+            </section>
+          ))}
         </div>
       </main>
 
-      <footer className="border-t border-slate-800 py-6 mt-16">
-        <div className="max-w-4xl mx-auto px-6 text-center text-slate-600 text-xs">
+      <footer className="py-6 mt-16" style={{ borderTop: "1px solid #152e4a" }}>
+        <div className="max-w-4xl mx-auto px-6 text-center text-xs" style={{ color: "#2d4d65" }}>
           © {new Date().getFullYear()} AMAX. ABN: [Pending]. AUSTRAC Registered Digital Currency Exchange.
         </div>
       </footer>
