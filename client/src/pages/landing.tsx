@@ -78,12 +78,12 @@ const compliancePoints = [
 ];
 
 const keyFeatures = [
-  { icon: Zap,       label: "Instant Settlements",  description: "Near real-time FX and wallet transfers",     color: "text-green-400",  bg: "rgba(74,222,128,0.12)" },
-  { icon: BarChart3, label: "Competitive Rates",     description: "Tight spreads on 20+ currency pairs",       color: "text-blue-400",   bg: "rgba(96,165,250,0.12)" },
-  { icon: Globe2,    label: "Global Coverage",       description: "Send and receive in 40+ countries",          color: "text-purple-400", bg: "rgba(192,132,252,0.12)" },
+  { icon: Zap,       label: "Instant Settlements",  description: "Near real-time FX and wallet transfers",     color: "text-purple-400", bg: "rgba(192,132,252,0.12)" },
+  { icon: BarChart3, label: "Competitive Rates",     description: "Tight spreads on 20+ currency pairs",       color: "text-green-400",  bg: "rgba(74,222,128,0.12)" },
+  { icon: Globe2,    label: "Global Coverage",       description: "Send and receive in 40+ countries",          color: "text-blue-400",   bg: "rgba(96,165,250,0.12)" },
   { icon: Lock,      label: "Bank-Grade Security",   description: "256-bit TLS, 2FA, and session audit logs",   color: "text-amber-400",  bg: "rgba(251,191,36,0.12)" },
   { icon: FileCheck, label: "Regulatory Compliant",  description: "AUSTRAC registered & fully audited",         color: "text-emerald-400",bg: "rgba(52,211,153,0.12)" },
-  { icon: Users,     label: "Dedicated Support",     description: "Human support for all compliance queries",   color: "text-rose-400",   bg: "rgba(251,113,133,0.12)" },
+  { icon: Users,     label: "Dedicated Support",     description: "Human support for all compliance queries",   color: "text-purple-400", bg: "rgba(192,132,252,0.12)" },
 ];
 
 const targetCustomers = [
