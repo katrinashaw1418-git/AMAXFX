@@ -1,0 +1,27 @@
+Yes — separate them. Here's why:
+
+**The tab approach in FX Exchange has created an overlap problem.**
+
+Right now your FX Exchange handles both fiat-to-fiat and fiat-to-crypto conversions under one component. Your eWallet holds the balances. If they live in the same view, users and regulators can't clearly see where *holding* ends and *transacting* begins. That boundary matters legally.
+
+**Recommended separation:**
+
+The eWallet should be purely a balance and holdings view — what you own, in fiat and crypto, with deposit/withdraw actions. No conversion happens here. It's a statement of position.
+
+The FX Exchange should be purely a transactional tool — you come here to convert or transfer. The tabs (Fiat / Digital Assets) work well here because the *purpose* of the page is explicitly transactional, so showing both asset types in that context is defensible.
+
+**Why this is better for AUSTRAC:**
+
+Two distinct regulated activities — remittance/FX and DCE — map cleanly to two distinct UI sections. If a regulator asks "show me how a customer accesses your DCE service versus your remittance service," you can point to two separate pages with separate flows, separate disclosures, and separate audit trails. That's a much cleaner answer than "it's all in one component with tabs."
+
+**Practical nav structure:**
+
+- Dashboard — overview and portfolio summary
+- eWallet — balances, deposit, withdraw
+- FX Exchange — fiat-to-fiat conversion and transfer
+- Crypto — buy, sell, swap digital assets
+- Compliance — KYC and documents
+
+**The key insight:** separating Crypto from FX Exchange as well is worth considering. Fiat-to-fiat is your remittance/FX licence. Fiat-to-crypto and crypto-to-crypto is your DCE licence. Keeping them as separate nav items means each page has one regulatory identity, one disclosure footer, and one clear purpose. That's the cleanest possible story for AUSTRAC and future banking due diligence.
+
+Want me to mock up the revised nav and page structure?
