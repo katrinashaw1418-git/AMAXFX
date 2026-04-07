@@ -1470,31 +1470,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const startOfYear = `${now.getFullYear()}-01-01`;
     const today = now.toISOString().split("T")[0];
 
+    // Stablecoins use Frankfurter (pegged to $1 USD — no CoinGecko needed)
+    const STABLECOINS = new Set(["USDT", "USDC"]);
+
     const CRYPTO_IDS: Record<string, string> = {
       BTC: "bitcoin",
       ETH: "ethereum",
-      USDT: "tether",
-      USDC: "usd-coin",
     };
 
+    // Helper: fetch CoinGecko with one retry on rate-limit
+    async function fetchCoinGecko(url: string): Promise<Response> {
+      const r1 = await fetch(url, { headers: { "Accept": "application/json" } });
+      if (r1.status === 429) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return fetch(url, { headers: { "Accept": "application/json" } });
+      }
+      return r1;
+    }
+
     try {
-      // ── Crypto pairs ─────────────────────────────────────────────────────────
+      // ── Stablecoins: mirror USD/target or base/USD via Frankfurter ──────────
+      const baseIsStable  = STABLECOINS.has(base);
+      const targetIsStable = STABLECOINS.has(target);
+
+      if (baseIsStable || targetIsStable) {
+        // Stablecoin ≈ $1 USD, so treat as USD for historical purposes
+        const ffBase   = baseIsStable  ? "USD" : base;
+        const ffTarget = targetIsStable ? "USD" : target;
+        const ffRes = await fetch(
+          `https://api.frankfurter.app/${startOfYear}..${today}?from=${ffBase}&to=${ffTarget}`
+        );
+        if (!ffRes.ok) return res.status(502).json({ error: "Frankfurter unavailable" });
+        const ffData = await ffRes.json() as { rates: Record<string, Record<string, number>> };
+        const points = Object.entries(ffData.rates)
+          .map(([date, rates]) => ({ date, rate: rates[ffTarget] ?? 0 }))
+          .sort((a, b) => a.date.localeCompare(b.date));
+        return res.json({ base, target, points });
+      }
+
+      // ── Volatile crypto pairs ─────────────────────────────────────────────────
       const cryptoBase = CRYPTO_IDS[base];
       const cryptoTarget = CRYPTO_IDS[target];
 
-      // Crypto as base currency (BTC/USD, BTC/AUD, ETH/USD, ETH/AUD, etc.)
+      // Crypto as base currency (BTC/AUD, ETH/AUD, BTC/USD, ETH/USD, etc.)
       if (cryptoBase) {
         const dayCount = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (1000 * 60 * 60 * 24));
         const vsCurrency = target.toLowerCase();
-        const cgRes = await fetch(
-          `https://api.coingecko.com/api/v3/coins/${cryptoBase}/market_chart?vs_currency=${vsCurrency}&days=${dayCount}&interval=daily`,
-          { headers: { "Accept": "application/json" } }
+        const cgRes = await fetchCoinGecko(
+          `https://api.coingecko.com/api/v3/coins/${cryptoBase}/market_chart?vs_currency=${vsCurrency}&days=${dayCount}&interval=daily`
         );
         if (!cgRes.ok) {
-          // Fallback: fetch vs USD then convert via Frankfurter if target isn't USD
-          const cgUsdRes = await fetch(
-            `https://api.coingecko.com/api/v3/coins/${cryptoBase}/market_chart?vs_currency=usd&days=${dayCount}&interval=daily`,
-            { headers: { "Accept": "application/json" } }
+          // Fallback: fetch vs USD (always available), return USD-denominated
+          const cgUsdRes = await fetchCoinGecko(
+            `https://api.coingecko.com/api/v3/coins/${cryptoBase}/market_chart?vs_currency=usd&days=${dayCount}&interval=daily`
           );
           if (!cgUsdRes.ok) return res.status(502).json({ error: "CoinGecko unavailable" });
           const cgData = await cgUsdRes.json() as { prices: [number, number][] };
@@ -1514,9 +1542,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (cryptoTarget) {
         const dayCount = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (1000 * 60 * 60 * 24));
         const vsCurrency = base.toLowerCase();
-        const cgRes = await fetch(
-          `https://api.coingecko.com/api/v3/coins/${cryptoTarget}/market_chart?vs_currency=${vsCurrency}&days=${dayCount}&interval=daily`,
-          { headers: { "Accept": "application/json" } }
+        const cgRes = await fetchCoinGecko(
+          `https://api.coingecko.com/api/v3/coins/${cryptoTarget}/market_chart?vs_currency=${vsCurrency}&days=${dayCount}&interval=daily`
         );
         if (!cgRes.ok) return res.status(502).json({ error: "CoinGecko unavailable" });
         const cgData = await cgRes.json() as { prices: [number, number][] };
