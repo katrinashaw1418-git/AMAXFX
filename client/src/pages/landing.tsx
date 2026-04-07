@@ -511,8 +511,8 @@ export default function Landing() {
             </div>
           </div>
 
-          <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs" style={{ borderTop: "1px solid #152e4a", color: "#2d4d65" }}>
-            <p>© {new Date().getFullYear()} AMAX. All rights reserved. AUSTRAC Registered Digital Currency Exchange.</p>
+          <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-white/70" style={{ borderTop: "1px solid #152e4a" }}>
+            <p>© {new Date().getFullYear()} AMAX. All rights reserved. AUSTRAC Registered Digital Currency Exchange. ABN 54 690 827 608</p>
             <p>Regulated in Australia. Platform launching following regulatory registration.</p>
           </div>
         </div>
