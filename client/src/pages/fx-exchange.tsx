@@ -41,8 +41,10 @@ const DISPLAYED_PAIRS = [
   { base: "AUD", target: "JPY" },
   { base: "AUD", target: "KRW" },
   { base: "AUD", target: "CNY" },
-  { base: "BTC", target: "AUD" },
-  { base: "ETH", target: "AUD" },
+  { base: "BTC",  target: "AUD" },
+  { base: "ETH",  target: "AUD" },
+  { base: "USDT", target: "AUD" },
+  { base: "USDC", target: "AUD" },
 ];
 
 export default function FxExchange() {

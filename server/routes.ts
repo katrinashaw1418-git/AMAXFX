@@ -596,6 +596,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // BTC and ETH vs AUD
       { baseCurrency: 'BTC',  targetCurrency: 'AUD', rate: '150000.00', spread: '0.0050' },
       { baseCurrency: 'ETH',  targetCurrency: 'AUD', rate: '5600.00',   spread: '0.0050' },
+      // Stablecoins vs AUD (pegged ~$1 USD)
+      { baseCurrency: 'USDT', targetCurrency: 'AUD', rate: '1.45520',   spread: '0.0050' },
+      { baseCurrency: 'AUD',  targetCurrency: 'USDT', rate: '0.68720',  spread: '0.0050' },
+      { baseCurrency: 'USDC', targetCurrency: 'AUD', rate: '1.45520',   spread: '0.0050' },
+      { baseCurrency: 'AUD',  targetCurrency: 'USDC', rate: '0.68720',  spread: '0.0050' },
     ];
     for (const { baseCurrency, targetCurrency, rate, spread } of missingRates) {
       const existing = await storage.getFxRate(baseCurrency, targetCurrency);
@@ -2743,8 +2748,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // ── Crypto pairs ───────────────────────────────────────────────────────
+      // ── Stablecoins (USDT, USDC pegged ~$1 USD) ───────────────────────────
       const audUsd = audRates['USD'] || 0;
+      if (audUsd > 0) {
+        const usdPerAud = audUsd;           // how many USD per 1 AUD
+        const audPerUsd = 1 / audUsd;       // how many AUD per 1 USD (= USDT/USDC rate)
+        for (const stable of ["USDT", "USDC"]) {
+          await db.execute(
+            sql`UPDATE fx_rates SET rate = ${audPerUsd.toFixed(8)}, updated_at = NOW() WHERE base_currency = ${stable} AND target_currency = 'AUD'`
+          ).catch(() => {});
+          await db.execute(
+            sql`UPDATE fx_rates SET rate = ${usdPerAud.toFixed(8)}, updated_at = NOW() WHERE base_currency = 'AUD' AND target_currency = ${stable}`
+          ).catch(() => {});
+        }
+      }
+
+      // ── Crypto pairs ───────────────────────────────────────────────────────
       for (const [symbol, dbCurrency] of [["BTC-USD", "BTC"], ["ETH-USD", "ETH"]] as const) {
         const res = await fetch(`https://api.coinbase.com/v2/prices/${symbol}/spot`);
         if (res.ok) {
