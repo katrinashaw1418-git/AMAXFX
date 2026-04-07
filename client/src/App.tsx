@@ -8,7 +8,6 @@ import { AuthProvider, useAuth } from "@/contexts/auth";
 import Layout from "@/components/layout/layout";
 import Dashboard from "@/pages/dashboard";
 import WalletsNew from "@/pages/wallets-new";
-import FxExchange from "@/pages/fx-exchange";
 import Transactions from "@/pages/transactions";
 import Compliance from "@/pages/compliance";
 import Login from "@/pages/login";
@@ -49,7 +48,7 @@ function ProtectedApp() {
       <Switch>
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/wallets" component={WalletsNew} />
-        <Route path="/fx-exchange" component={FxExchange} />
+        <Route path="/fx-exchange" component={() => { navigate("/dashboard"); return null; }} />
         <Route path="/transactions" component={Transactions} />
         <Route path="/compliance" component={Compliance} />
         <Route component={NotFound} />

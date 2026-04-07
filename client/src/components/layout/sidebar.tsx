@@ -5,7 +5,6 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { 
   Home, 
   Wallet, 
-  ArrowRightLeft, 
   History, 
   Shield,
   Coins,
@@ -21,7 +20,6 @@ interface SidebarProps {
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Wallets", href: "/wallets", icon: Wallet },
-  { name: "FX Exchange", href: "/fx-exchange", icon: ArrowRightLeft },
   { name: "Transactions", href: "/transactions", icon: History },
   { name: "Compliance", href: "/compliance", icon: Shield },
 ];
