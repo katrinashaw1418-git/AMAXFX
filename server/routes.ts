@@ -1461,11 +1461,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // In-memory cache for YTD history (1 hour TTL per pair)
+  const fxHistoryCache = new Map<string, { ts: number; data: unknown }>();
+  const FX_HISTORY_TTL_MS = 60 * 60 * 1000; // 1 hour
+
   // YTD historical FX rate data — real market data
   // Fiat pairs: Frankfurter.app (ECB data, same source as live rates)
   // Crypto pairs: CoinGecko free API
   app.get("/api/fx-history/:base/:target", async (req, res) => {
     const { base, target } = req.params;
+    const cacheKey = `${base}/${target}`;
+    const cached = fxHistoryCache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < FX_HISTORY_TTL_MS) {
+      return res.json(cached.data);
+    }
+
     const now = new Date();
     const startOfYear = `${now.getFullYear()}-01-01`;
     const today = now.toISOString().split("T")[0];
@@ -1488,13 +1498,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return r1;
     }
 
+    // Helper: build and cache a successful response
+    const sendCached = (payload: unknown) => {
+      fxHistoryCache.set(cacheKey, { ts: Date.now(), data: payload });
+      return res.json(payload);
+    };
+
     try {
-      // ── Stablecoins: mirror USD/target or base/USD via Frankfurter ──────────
-      const baseIsStable  = STABLECOINS.has(base);
+      // ── Stablecoins: mirror USD via Frankfurter (pegged to $1 USD) ──────────
+      const baseIsStable   = STABLECOINS.has(base);
       const targetIsStable = STABLECOINS.has(target);
 
       if (baseIsStable || targetIsStable) {
-        // Stablecoin ≈ $1 USD, so treat as USD for historical purposes
         const ffBase   = baseIsStable  ? "USD" : base;
         const ffTarget = targetIsStable ? "USD" : target;
         const ffRes = await fetch(
@@ -1505,14 +1520,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const points = Object.entries(ffData.rates)
           .map(([date, rates]) => ({ date, rate: rates[ffTarget] ?? 0 }))
           .sort((a, b) => a.date.localeCompare(b.date));
-        return res.json({ base, target, points });
+        return sendCached({ base, target, points });
       }
 
       // ── Volatile crypto pairs ─────────────────────────────────────────────────
-      const cryptoBase = CRYPTO_IDS[base];
+      const cryptoBase   = CRYPTO_IDS[base];
       const cryptoTarget = CRYPTO_IDS[target];
 
-      // Crypto as base currency (BTC/AUD, ETH/AUD, BTC/USD, ETH/USD, etc.)
+      // Crypto as base (BTC/AUD, ETH/AUD, BTC/USD, ETH/USD…)
       if (cryptoBase) {
         const dayCount = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (1000 * 60 * 60 * 24));
         const vsCurrency = target.toLowerCase();
@@ -1520,7 +1535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `https://api.coingecko.com/api/v3/coins/${cryptoBase}/market_chart?vs_currency=${vsCurrency}&days=${dayCount}&interval=daily`
         );
         if (!cgRes.ok) {
-          // Fallback: fetch vs USD (always available), return USD-denominated
+          // Fallback: try vs USD (more reliable), return as-is
           const cgUsdRes = await fetchCoinGecko(
             `https://api.coingecko.com/api/v3/coins/${cryptoBase}/market_chart?vs_currency=usd&days=${dayCount}&interval=daily`
           );
@@ -1529,13 +1544,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const points = cgData.prices
             .filter(([ts]) => { const d = new Date(ts).toISOString().split("T")[0]; return d >= startOfYear && d <= today; })
             .map(([ts, price]) => ({ date: new Date(ts).toISOString().split("T")[0], rate: price }));
-          return res.json({ base, target, points });
+          return sendCached({ base, target, points });
         }
         const cgData = await cgRes.json() as { prices: [number, number][] };
         const points = cgData.prices
           .filter(([ts]) => { const d = new Date(ts).toISOString().split("T")[0]; return d >= startOfYear && d <= today; })
           .map(([ts, price]) => ({ date: new Date(ts).toISOString().split("T")[0], rate: price }));
-        return res.json({ base, target, points });
+        return sendCached({ base, target, points });
       }
 
       // Crypto as target (USD/BTC, AUD/BTC, etc.) — invert
@@ -1550,7 +1565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const points = cgData.prices
           .filter(([ts]) => { const d = new Date(ts).toISOString().split("T")[0]; return d >= startOfYear && d <= today; })
           .map(([ts, price]) => ({ date: new Date(ts).toISOString().split("T")[0], rate: price > 0 ? 1 / price : 0 }));
-        return res.json({ base, target, points });
+        return sendCached({ base, target, points });
       }
 
       // ── Fiat pairs via Frankfurter.app ─────────────────────────────────────
@@ -1559,7 +1574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { headers: { "Accept": "application/json" } }
       );
       if (!ffRes.ok) {
-        // Try inverse then invert
+        // Try inverse then invert values
         const invRes = await fetch(
           `https://api.frankfurter.app/${startOfYear}..${today}?from=${target}&to=${base}`,
           { headers: { "Accept": "application/json" } }
@@ -1568,19 +1583,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const invData = await invRes.json() as { rates: Record<string, Record<string, number>> };
         const points = Object.entries(invData.rates)
           .sort(([a], [b]) => a.localeCompare(b))
-          .map(([date, vals]) => ({
-            date,
-            rate: vals[base] ? 1 / vals[base] : null,
-          }))
+          .map(([date, vals]) => ({ date, rate: vals[base] ? 1 / vals[base] : null }))
           .filter((p) => p.rate !== null);
-        return res.json({ base, target, points });
+        return sendCached({ base, target, points });
       }
       const ffData = await ffRes.json() as { rates: Record<string, Record<string, number>> };
       const points = Object.entries(ffData.rates)
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([date, vals]) => ({ date, rate: vals[target] ?? null }))
         .filter((p) => p.rate !== null);
-      return res.json({ base, target, points });
+      return sendCached({ base, target, points });
 
     } catch (err) {
       console.error("[fx-history] error:", (err as Error).message);
