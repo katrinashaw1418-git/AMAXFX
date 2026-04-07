@@ -19,8 +19,16 @@ import YtdRateChart from "@/components/fx/ytd-rate-chart";
 import RateSparkline from "@/components/fx/rate-sparkline";
 
 const FIAT_ENTRY = [
-  { code: "AUD", name: "Australian Dollar", flag: "🇦🇺" },
-  { code: "USD", name: "US Dollar",          flag: "🇺🇸" },
+  { code: "AUD",  name: "Australian Dollar",  flag: "🇦🇺" },
+  { code: "USD",  name: "US Dollar",          flag: "🇺🇸" },
+  { code: "CAD",  name: "Canadian Dollar",    flag: "🇨🇦" },
+  { code: "EUR",  name: "Euro",               flag: "🇪🇺" },
+  { code: "GBP",  name: "British Pound",      flag: "🇬🇧" },
+  { code: "HKD",  name: "Hong Kong Dollar",   flag: "🇭🇰" },
+  { code: "SGD",  name: "Singapore Dollar",   flag: "🇸🇬" },
+  { code: "JPY",  name: "Japanese Yen",       flag: "🇯🇵" },
+  { code: "KRW",  name: "South Korean Won",   flag: "🇰🇷" },
+  { code: "CNY",  name: "Chinese Yuan",       flag: "🇨🇳" },
 ];
 
 const DIGITAL_ASSETS = [
