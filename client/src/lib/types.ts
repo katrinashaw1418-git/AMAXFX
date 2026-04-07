@@ -28,7 +28,7 @@ export const CurrencyConfig = {
   SGD: { name: "Singapore Dollar", symbol: "$", color: "bg-yellow-500", flag: "🇸🇬", region: "Asia" },
   
   // Additional Wise-supported currencies
-  JPY: { name: "Japanese Yen", symbol: "¥", color: "bg-rose-500", flag: "🇯🇵", region: "Asia" },
+  JPY: { name: "Japanese Yen", symbol: "¥", color: "bg-red-500", flag: "🇯🇵", region: "Asia" },
   CHF: { name: "Swiss Franc", symbol: "Fr", color: "bg-slate-500", flag: "🇨🇭", region: "Europe" },
   NZD: { name: "New Zealand Dollar", symbol: "NZ$", color: "bg-lime-500", flag: "🇳🇿", region: "Oceania" },
   SEK: { name: "Swedish Krona", symbol: "kr", color: "bg-blue-400", flag: "🇸🇪", region: "Europe" },
