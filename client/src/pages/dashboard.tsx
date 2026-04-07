@@ -400,8 +400,9 @@ export default function Dashboard() {
                     const rate      = fxRates?.find((r: any) => r.baseCurrency === base && r.targetCurrency === target);
                     const rateValue = rate ? parseFloat(rate.rate) : null;
                     const isSelected = fromCurrency === base && toCurrency === target;
-                    const targetMeta = currencies.find((c) => c.code === target);
-                    const baseMeta   = currencies.find((c) => c.code === base);
+                    const allCurrencies = [...FIAT_CURRENCIES, ...CRYPTO_CURRENCIES];
+                    const targetMeta = allCurrencies.find((c) => c.code === target);
+                    const baseMeta   = allCurrencies.find((c) => c.code === base);
                     const formatRate = (v: number) =>
                       v < 0.0001 ? v.toFixed(8) :
                       v < 0.01   ? v.toFixed(6) :
