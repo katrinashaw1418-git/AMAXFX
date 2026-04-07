@@ -1,0 +1,157 @@
+Mostly yes — but with **two important corrections** after cross-checking it against the actual `AMAX-V2.zip`.
+
+Your minimum-change framework is directionally right: **keep most of the system, improve traceability, keep fiat and crypto clearly distinguished, and add a basic monitoring layer instead of rebuilding into full double-entry infrastructure.** That is consistent with the staged approach in your pasted notes.  
+
+The two corrections are:
+
+**1. The app already has more than you described.**
+You said the app is “missing” transaction traceability and fiat/crypto separation. That is only partly true now. In the actual zip:
+
+* there is already a `transactions` table
+* `wallets` already has `walletType` (`fiat` / `crypto`)
+* `transactions` already stores `fromCurrency`, `toCurrency`, `fee`, `exchangeRate`, `settlementStatus`, `sourceExchange`, and `blockchainTxHash`
+
+So your proposed “add a transactions table” is **outdated for this codebase**. That table already exists. What is still missing is a **better compliance/audit layer around it**, not the table itself.
+
+**2. I would not say “this is enough to pass AUSTRAC” as a certainty.**
+That is too strong. A cleaner statement is:
+
+* this is a **reasonable minimum technical uplift**
+* it makes the platform **more defensible and explainable**
+* but AUSTRAC assessment also depends on your AML/CTF program, onboarding controls, governance, disclosures, actual operations, and consistency of your application materials
+
+So I would not frame it as guaranteed “pass”. I would frame it as **minimum viable compliance-oriented structure for a pre-launch application**.
+
+## My verified view
+
+### What in your proposal is correct
+
+These points are correct for this repo:
+
+* **Keep `portfolios`** for reporting/UI rather than rebuilding everything now
+* **Keep the existing wallet model** for phase 1
+* **Use transaction classification** as the main minimum-control layer
+* **Add basic AML/risk flagging**
+* **Keep fiat and crypto visibly distinct**
+* **Do not overbuild full institutional architecture yet**
+
+That matches the staged logic in your pasted notes: transaction classification, separation, monitoring, and only later a fuller ledger split.  
+
+### What I would change in your proposal
+
+Because of the actual codebase, I would revise your recommendation to this:
+
+## Correct minimum-change solution for **this** app
+
+### 1. Keep existing tables
+
+Keep:
+
+* `users`
+* `portfolios`
+* `wallets`
+* `transactions`
+
+Do **not** rebuild schema into `fiat_accounts` / `crypto_wallets` yet.
+
+### 2. Do **not** add a new `transactions` table
+
+Instead, **upgrade the existing `transactions` table** with only the fields still missing for compliance traceability.
+
+Best additions:
+
+* `referenceId` or `externalReference`
+* `riskFlag`
+* `reviewStatus`
+* `reviewNotes`
+* optional `counterpartyCountry` / `destinationAddress` depending on flow
+* optional `initiatedBy` (`user`, `system`, `admin`)
+
+Because the existing transaction table is already close to what you need.
+
+### 3. Add a small AML review table
+
+Your `aml_flags` idea is good, but I would make it a little more operational:
+
+* `id`
+* `userId`
+* `transactionId`
+* `riskLevel`
+* `reason`
+* `status` (`open`, `reviewing`, `cleared`, `escalated`)
+* `notes`
+* `createdAt`
+* `reviewedAt`
+
+That is better than only a passive flag, while still staying small.
+
+### 4. Keep wallet separation logic explicit
+
+Your “tag fiat vs crypto clearly” point is correct, but here the code already has `walletType`. So the real instruction is:
+
+* **preserve and enforce `walletType`**
+* make sure routes do not treat all balances as economically identical
+* dashboard should show **Currency Balances** and **Digital Wallet** separately
+
+That matches your earlier UI structure note. 
+
+### 5. Treat `portfolios` as derived/reporting only
+
+This remains correct.
+Keep it, but do not let it be your only operational truth. Your own pasted redesign note already points to that distinction. 
+
+### 6. Add simple rules-based monitoring
+
+Your suggested starter rules are sensible:
+
+* large transaction threshold
+* rapid movement / repeated movement
+* crypto-fiat conversion monitoring
+
+I would also add:
+
+* repeated failed withdrawals
+* high-risk geography if relevant
+* manual hold status on flagged flows
+
+### 7. Fix the public-facing disclosures
+
+This is outside schema, but very important:
+
+* keep public service explanation
+* clear pre-launch / pending-registration wording
+* AML/CTF commitment
+* do not imply live licensed operation if not yet approved
+
+## Final verdict
+
+So, **cross-checked and verified**:
+
+**Your minimum-change strategy is broadly right, but the “add a transactions table” part is no longer correct for AMAX-V2 because that table already exists.**
+
+The better minimum-change solution for this repo is:
+
+* keep current schema
+* upgrade the existing `transactions` table
+* add one small `aml_flags` / review table
+* enforce fiat vs crypto separation through `walletType` and UI
+* treat `portfolios` as reporting, not sole truth
+* improve website/disclosure language
+
+That is the true minimum-change path.
+
+## My cleaned-up version of your recommendation
+
+I would rewrite your conclusion as:
+
+> Minimum viable solution for AMAX-V2:
+>
+> 1. Keep `portfolios`, `wallets`, and `transactions`
+> 2. Upgrade `transactions` with compliance/review fields
+> 3. Add `aml_flags` (or transaction review) table
+> 4. Keep fiat and crypto explicitly separated in UI and logic
+> 5. Keep `portfolios` as reporting/aggregate only
+
+That version is accurate for the current codebase.
+
+If you want, I can turn that into the **exact schema patch list** for `shared/schema.ts` and the **route changes** needed in `server/routes.ts`.
