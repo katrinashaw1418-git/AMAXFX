@@ -12,6 +12,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowRightLeft, Wallet, Phone, MessageSquare, X, RefreshCw } from "lucide-react";
 import YtdRateChart from "@/components/fx/ytd-rate-chart";
+import RateSparkline from "@/components/fx/rate-sparkline";
 
 const currencies = [
   { code: "USD", name: "US Dollar", flag: "🇺🇸" },
@@ -259,40 +260,60 @@ export default function FxExchange() {
         {/* Live Rates Panel */}
         <div>
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-2">
               <CardTitle>Live Exchange Rates</CardTitle>
+              <p className="text-xs text-gray-500">Click a pair to view its YTD chart above</p>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {ratesLoading ? (
                   <p className="text-sm text-gray-400 text-center py-4">Loading rates...</p>
                 ) : (
                   fxRates?.map((rate: any) => {
                     const rateValue = parseFloat(rate.rate);
+                    const isSelected =
+                      fromCurrency === rate.baseCurrency && toCurrency === rate.targetCurrency;
+
                     return (
                       <div
                         key={`${rate.baseCurrency}-${rate.targetCurrency}`}
-                        className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors"
+                        className={`flex items-center gap-2 p-2.5 rounded-lg cursor-pointer transition-colors border ${
+                          isSelected
+                            ? "bg-amber-50 border-amber-300"
+                            : "bg-gray-50 border-transparent hover:bg-gray-100"
+                        }`}
                         onClick={() => {
                           setFromCurrency(rate.baseCurrency);
                           setToCurrency(rate.targetCurrency);
                         }}
                       >
-                        <div>
-                          <p className="font-medium text-sm">
+                        {/* Pair label */}
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-semibold text-xs ${isSelected ? "text-amber-700" : "text-gray-800"}`}>
                             {rate.baseCurrency}/{rate.targetCurrency}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-400 truncate">
                             {currencies.find((c) => c.code === rate.baseCurrency)?.name}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-sm">{rateValue.toFixed(4)}</p>
+
+                        {/* Mini sparkline */}
+                        <div className="flex-shrink-0">
+                          <RateSparkline
+                            fromCurrency={rate.baseCurrency}
+                            toCurrency={rate.targetCurrency}
+                            currentRate={rateValue}
+                          />
+                        </div>
+
+                        {/* Rate + freshness */}
+                        <div className="text-right flex-shrink-0">
+                          <p className="font-bold text-sm text-gray-900">{rateValue.toFixed(4)}</p>
                           {rate.isStale ? (
-                            <span className="text-xs text-amber-600">⚠ {rate.rateAgeMinutes}m ago</span>
+                            <span className="text-xs text-amber-600">⚠ {rate.rateAgeMinutes}m</span>
                           ) : (
                             <span className="text-xs text-green-600">
-                              {rate.rateAgeMinutes !== null ? `${rate.rateAgeMinutes}m ago` : "Live"}
+                              {rate.rateAgeMinutes !== null ? `${rate.rateAgeMinutes}m` : "Live"}
                             </span>
                           )}
                         </div>
@@ -301,7 +322,6 @@ export default function FxExchange() {
                   })
                 )}
               </div>
-              <p className="text-xs text-gray-400 mt-3 text-center">Click a pair to select it</p>
             </CardContent>
           </Card>
         </div>
