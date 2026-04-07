@@ -1,0 +1,61 @@
+My opinion: **your staged approach is the right one, but you should be stricter about what is “good enough” now versus what is only for later.**
+
+What I agree with most is this:
+
+* **Do not rebuild everything now**
+* **Keep the current shell**
+* **Separate fiat and crypto clearly in UI and data handling**
+* **Use the existing transaction model as the phase-1 audit trail**
+* **Add a small AML/review layer**
+* **Use honest pre-launch wording on the website**
+* **Treat portfolio totals as reporting, not operational truth** 
+
+That is the practical path.
+
+Where I would be firmer is this:
+
+**1. Don’t say “pass AUSTRAC” too confidently**
+I would say “more defensible for AUSTRAC registration” rather than guaranteed approval. Approval will also depend on your AML/CTF program, KYC process, business narrative, responsible managers, website wording, and consistency across the application. 
+
+**2. The UI is already close, but wording matters a lot**
+The layout direction is strong: one dashboard, two clearly separated systems, optional combined value. That is the right design. But labels must stay careful:
+
+* use **“Total Portfolio Value (AUD equivalent)”**
+* say fiat and crypto are **held separately**
+* avoid anything that makes crypto look like cash in an ordinary money account
+* clearly label demo environments as demo only 
+
+**3. Your minimum-change backend should upgrade what exists, not invent a new story**
+Because your app already has wallets and transactions, the best move is not a dramatic redesign. It is:
+
+* strengthen transaction metadata
+* add review/risk fields
+* add simple AML flags
+* enforce wallet type separation
+* keep portfolio as downstream display only
+
+That is better than pretending you already need full ledger architecture tomorrow.
+
+**4. The dropdown issue is real**
+This is not a fatal compliance failure, but it is exactly the kind of subtle product issue that creates ambiguity. My view is:
+
+* yes, users can access both fiat and crypto in one exchange area
+* no, they should not appear as one undifferentiated list
+* group them by asset type or use tabs/toggles first
+
+That small UI fix does a lot of compliance work. 
+
+So overall:
+
+**Your strategy is correct. Your current app should be evolved, not rebuilt.**
+For phase 1, I would aim for:
+
+* honest website/disclosures
+* separate fiat and crypto presentation
+* strengthened transaction traceability
+* basic AML review workflow
+* no misleading “registered/live” claims unless already true
+
+That is my real opinion: **good commercial judgment, good regulatory direction, but keep the claims conservative and the separation explicit.**
+
+The biggest mistake now would be overbuilding the backend or overstating regulatory readiness. The best move is a clean, believable phase-1 compliance build.
