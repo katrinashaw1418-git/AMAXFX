@@ -128,7 +128,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg text-sm">
             <span className="text-slate-400">Live:</span>
             <span className="font-semibold">
-              1 {fromCurrency} = <span className="text-amber-400">{exchangeRate.toFixed(4)}</span> {toCurrency}
+              1 {fromCurrency} = <span className="text-white font-bold">{exchangeRate.toFixed(4)}</span> {toCurrency}
             </span>
             {(fxRate as any)?.isStale ? (
               <Badge className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs">
