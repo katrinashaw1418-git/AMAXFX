@@ -1,0 +1,247 @@
+Good — this is the **right question**. You don’t need to rebuild everything to satisfy AUSTRAC.
+
+👉 You need **minimum viable compliance structure**, not full fintech perfection.
+
+---
+
+# 🎯 GOAL: Minimum Change to Pass AUSTRAC
+
+AUSTRAC cares about:
+
+* Traceability of funds
+* Separation of fiat vs crypto
+* Ability to monitor transactions
+
+👉 NOT perfect architecture
+
+---
+
+# 🧠 Your current state (based on your schema)
+
+You already have:
+
+* `users` ✅
+* `portfolios` (aggregated balances) ⚠️
+* Some transaction logic (assumed)
+
+👉 Missing:
+
+* Proper **transaction traceability**
+* Clear **fiat vs crypto separation**
+
+---
+
+# ✅ MINIMUM CHANGE STRATEGY (keep 80% of your system)
+
+## 🔧 1. KEEP your existing tables
+
+Do NOT delete:
+
+* `portfolios`
+* existing balance logic
+
+👉 Just stop relying on them as the **only source of truth**
+
+---
+
+## 🔧 2. ADD ONE CRITICAL TABLE (BIGGEST WIN)
+
+### ✅ Add: `transactions` (unified audit trail)
+
+```ts
+export const transactions = pgTable("transactions", {
+  id: serial("id").primaryKey(),
+
+  userId: integer("user_id"),
+
+  type: text("type"), 
+  // deposit, withdrawal, fx, crypto_buy, crypto_sell, transfer
+
+  assetType: text("asset_type"), 
+  // fiat | crypto
+
+  asset: text("asset"), 
+  // AUD, USD, BTC
+
+  amount: decimal("amount"),
+
+  direction: text("direction"), 
+  // in / out
+
+  status: text("status"),
+
+  referenceId: text("reference_id"),
+
+  createdAt: timestamp("created_at").defaultNow(),
+});
+```
+
+---
+
+### 🧠 Why this alone is powerful
+
+This gives you:
+
+* Full audit trail ✅
+* Transaction monitoring base ✅
+* AUSTRAC traceability ✅
+
+👉 Without rebuilding your system
+
+---
+
+# 🔧 3. ADD SIMPLE SEGREGATION (VERY LIGHT CHANGE)
+
+👉 You don’t need full ledgers yet
+
+Just enforce:
+
+### Rule:
+
+* Fiat and crypto must be **tagged clearly**
+
+---
+
+### In your logic:
+
+Instead of:
+
+```ts
+balance += amount
+```
+
+👉 Do:
+
+```ts
+if (assetType === "fiat") {
+  portfolio.fiatValue += amount;
+} else {
+  portfolio.cryptoValue += amount;
+}
+```
+
+---
+
+# 🔧 4. ADD BASIC AML FLAGGING (MINIMAL)
+
+### Add:
+
+```ts
+export const amlFlags = pgTable("aml_flags", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  transactionId: integer("transaction_id"),
+  riskLevel: text("risk_level"),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+```
+
+---
+
+### Simple rules (good enough initially):
+
+* Transaction > $10,000 → flag
+* Rapid transactions → flag
+* Crypto ↔ fiat conversion → monitor
+
+👉 This satisfies **basic AML expectations**
+
+---
+
+# 🔧 5. ADD WEBSITE + DISCLOSURE (NON-TECH BUT CRITICAL)
+
+On your website:
+
+* Explain:
+
+  * FX + wallet + crypto flow
+* Add:
+
+  * “Not live yet” disclaimer
+  * AML/CTF commitment
+
+👉 This matters as much as code
+
+---
+
+# ⚠️ WHAT YOU DO NOT NEED (for now)
+
+❌ Full double-entry ledger
+❌ Complex custody system
+❌ Perfect reconciliation engine
+❌ Institutional-grade infra
+
+👉 That’s **Phase 2 (banking + scale)**
+
+---
+
+# 🧾 MINIMUM COMPLIANCE STACK
+
+To satisfy AUSTRAC:
+
+### ✅ You need:
+
+* Transaction log (NEW table)
+* Fiat vs crypto distinction
+* KYC process (even manual initially)
+* Basic AML monitoring
+
+---
+
+# 🧠 SIMPLE ARCHITECTURE (MINIMUM VERSION)
+
+```text
+users
+ ├── portfolios (keep)
+ ├── transactions ✅ (NEW CORE)
+ └── aml_flags ✅ (basic monitoring)
+```
+
+---
+
+# 🔥 WHY THIS WORKS
+
+Because AUSTRAC is assessing:
+
+> “Can you track and explain every transaction?”
+
+👉 With just:
+
+* `transactions` table
+* Basic AML flags
+
+👉 Answer = **YES**
+
+---
+
+# ⚠️ REAL TALK (IMPORTANT)
+
+This will:
+
+* ✅ Get you through AUSTRAC registration
+* ❌ NOT enough for serious banking / scaling
+
+---
+
+# ✔️ FINAL RECOMMENDATION
+
+### Minimum viable solution:
+
+1. Add `transactions` table
+2. Add `aml_flags` table
+3. Tag fiat vs crypto clearly
+4. Keep your existing portfolio system
+
+👉 That’s it.
+
+---
+
+# 🚀 If you want next level (smart move)
+
+I can:
+
+* Convert your current code to use `transactions` **without breaking your app**
+* Or design a **Phase 2 upgrade path (when bank asks for more controls)**
+
+👉 This staged approach is how real fintechs launch fast without overbuilding.
