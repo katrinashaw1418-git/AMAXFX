@@ -8,6 +8,8 @@ import { AuthProvider, useAuth } from "@/contexts/auth";
 import Layout from "@/components/layout/layout";
 import Dashboard from "@/pages/dashboard";
 import WalletsNew from "@/pages/wallets-new";
+import FxExchange from "@/pages/fx-exchange";
+import Crypto from "@/pages/crypto";
 import Transactions from "@/pages/transactions";
 import Compliance from "@/pages/compliance";
 import Login from "@/pages/login";
@@ -49,11 +51,12 @@ function ProtectedApp() {
   return (
     <Layout>
       <Switch>
-        <Route path="/dashboard" component={Dashboard} />
-        <Route path="/wallets" component={WalletsNew} />
-        <Route path="/fx-exchange" component={() => { navigate("/dashboard"); return null; }} />
+        <Route path="/dashboard"    component={Dashboard}    />
+        <Route path="/wallets"      component={WalletsNew}   />
+        <Route path="/fx-exchange"  component={FxExchange}   />
+        <Route path="/crypto"       component={Crypto}       />
         <Route path="/transactions" component={Transactions} />
-        <Route path="/compliance" component={Compliance} />
+        <Route path="/compliance"   component={Compliance}   />
         <Route component={NotFound} />
       </Switch>
     </Layout>
@@ -63,13 +66,13 @@ function ProtectedApp() {
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Landing} />
-      <Route path="/privacy-policy" component={PrivacyPolicy} />
-      <Route path="/terms" component={Terms} />
-      <Route path="/aml-policy" component={AmlPolicy} />
-      <Route path="/login" component={Login} />
+      <Route path="/"               component={Landing}        />
+      <Route path="/privacy-policy" component={PrivacyPolicy}  />
+      <Route path="/terms"          component={Terms}          />
+      <Route path="/aml-policy"     component={AmlPolicy}      />
+      <Route path="/login"          component={Login}          />
       <Route path="/forgot-password" component={ForgotPassword} />
-      <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/reset-password" component={ResetPassword}  />
       <Route component={ProtectedApp} />
     </Switch>
   );

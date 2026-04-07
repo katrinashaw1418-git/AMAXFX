@@ -3,6 +3,16 @@
 ## Overview
 This platform is a comprehensive cross-border wealth management solution designed for high-net-worth individuals, the global Chinese diaspora, and SMEs with international financial needs. It integrates traditional finance and cryptocurrency services, offering dual-channel support for FX and crypto trading, multi-currency wallets, AI-powered wealth advisory, and robust compliance features. The vision is to provide a unified, intelligent, and secure platform for managing diverse global assets.
 
+## Recent Changes (April 2026) — Navigation & Page Restructure
+
+### Product-separated navigation and pages
+- **Sidebar** (`sidebar.tsx`) now has 6 dedicated nav items: Dashboard, eWallet, FX Exchange, Crypto, Transactions, Compliance — with AUSTRAC regulatory labels at bottom.
+- **App.tsx** activates all 6 authenticated routes including new `/fx-exchange` and `/crypto`.
+- **Dashboard** (`dashboard.tsx`) rewritten as overview-only: AUD/USD live rate badge, 4 CTA cards (eWallet, FX Exchange, Crypto, Compliance), Currency Balances + YTD Chart, Live Rate Overview panel (7 clickable pairs), Transaction History. All exchange form state and JSX removed.
+- **FX Exchange** (`fx-exchange.tsx`) is now fiat-only: crypto currencies (BTC, ETH, USDT, USDC) removed from currency list; confirm modal added; settlement updated to "Instant (T+0)"; AUSTRAC remittance & FX regulatory footer added.
+- **Crypto** (`crypto.tsx`) — new dedicated DCE page with: Buy/Sell/Swap asset-class toggles, DCE AUSTRAC registration amber banner, full fee breakdown, compliance disclosure, confirm modal with ABN authorisation, AUSTRAC DCE regulatory footer.
+- **eWallet** (`wallets-new.tsx`) Transfer button: now navigates to `/fx-exchange` (fiat wallets) or `/crypto` (crypto wallets) instead of opening the old convert modal.
+
 ## Recent Changes (April 2026) — AUSTRAC Compliance Uplift
 
 ### Compliance: transaction traceability & AML monitoring

@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { CurrencyConfig, SupportedCurrencies, CurrencyRegions, type WalletBalance } from '@/lib/types';
 import { TrendingUp, TrendingDown, Plus, Minus, ArrowUpDown, Send, Repeat, Info, DollarSign, AlertCircle, Volume2, Settings, ExternalLink } from 'lucide-react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { useFxRate } from '@/hooks/use-fx-rates';
 import { useWallets } from '@/hooks/use-portfolio';
 import { useVoiceNarration } from '@/hooks/use-voice-narration';
@@ -164,6 +164,7 @@ export default function Wallets() {
   const [payerName, setPayerName] = useState('');
   const [payerAccountNumber, setPayerAccountNumber] = useState('');
   const [payerBsb, setPayerBsb] = useState('');
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   
   // Voice narration on page load
@@ -584,10 +585,9 @@ export default function Wallets() {
                           <Button 
                             variant="outline" 
                             size="icon"
-                            title="Transfer"
+                            title={wallet.walletType === 'crypto' ? 'Exchange on Crypto page' : 'Exchange on FX Exchange page'}
                             onClick={() => {
-                              setSelectedWallet(wallet);
-                              setTransferModalOpen(true);
+                              navigate(wallet.walletType === 'crypto' ? '/crypto' : '/fx-exchange');
                             }}
                           >
                             <ArrowUpDown className="w-4 h-4" />

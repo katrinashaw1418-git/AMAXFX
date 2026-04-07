@@ -2,14 +2,16 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { 
-  Home, 
-  Wallet, 
-  History, 
+import {
+  Home,
+  Wallet,
+  History,
   Shield,
   Coins,
   User,
-  ChevronRight
+  ChevronRight,
+  ArrowRightLeft,
+  Bitcoin,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -18,10 +20,12 @@ interface SidebarProps {
 }
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: Home },
-  { name: "Wallets", href: "/wallets", icon: Wallet },
-  { name: "Transactions", href: "/transactions", icon: History },
-  { name: "Compliance", href: "/compliance", icon: Shield },
+  { name: "Dashboard",   href: "/dashboard",   icon: Home            },
+  { name: "eWallet",     href: "/wallets",      icon: Wallet          },
+  { name: "FX Exchange", href: "/fx-exchange",  icon: ArrowRightLeft  },
+  { name: "Crypto",      href: "/crypto",       icon: Bitcoin         },
+  { name: "Transactions",href: "/transactions", icon: History         },
+  { name: "Compliance",  href: "/compliance",   icon: Shield          },
 ];
 
 function SidebarContent() {
@@ -43,19 +47,19 @@ function SidebarContent() {
       </div>
 
       {/* Navigation Menu */}
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-1">
         {navigation.map((item) => {
           const Icon = item.icon;
           const isActive = location === item.href;
-          
+
           return (
             <Link key={item.name} href={item.href}>
               <Button
                 variant={isActive ? "default" : "ghost"}
                 className={cn(
                   "w-full justify-start text-left font-medium",
-                  isActive 
-                    ? "bg-primary text-white hover:bg-primary/90" 
+                  isActive
+                    ? "bg-primary text-white hover:bg-primary/90"
                     : "text-gray-700 hover:bg-gray-100"
                 )}
               >
@@ -66,6 +70,12 @@ function SidebarContent() {
           );
         })}
       </nav>
+
+      {/* Regulatory labels */}
+      <div className="px-4 pb-2 space-y-1">
+        <p className="text-[10px] text-gray-400 px-3">FX & Remittance — AUSTRAC registered</p>
+        <p className="text-[10px] text-gray-400 px-3">DCE — AUSTRAC registered</p>
+      </div>
 
       {/* User Profile Section */}
       <div className="p-4 border-t border-gray-200">
