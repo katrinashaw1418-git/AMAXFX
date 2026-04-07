@@ -535,7 +535,7 @@ export default function Wallets() {
                     <tr key={wallet.id} className="border-b hover:bg-gray-50">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className={`w-9 h-9 ${wallet.config?.color || 'bg-gray-400'} rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}>
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ backgroundColor: wallet.config?.color || '#9ca3af' }}>
                             {wallet.config?.flag}
                           </div>
                           <div>

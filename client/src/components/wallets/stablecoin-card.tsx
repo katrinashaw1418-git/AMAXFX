@@ -210,7 +210,7 @@ export default function StablecoinCard({ currency, balance, availableBalance, co
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className={`w-10 h-10 ${config.color} rounded-full flex items-center justify-center text-white font-bold`}>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: config.color }}>
               {config.flag}
             </div>
             <div>
@@ -393,7 +393,7 @@ export default function StablecoinCard({ currency, balance, availableBalance, co
                   <div className="space-y-2">
                     <Label>From</Label>
                     <div className="flex items-center space-x-2 p-3 border rounded-lg bg-gray-50">
-                      <div className={`w-6 h-6 ${config.color} rounded-full flex items-center justify-center text-white text-xs font-bold`}>
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: config.color }}>
                         {config.flag}
                       </div>
                       <span className="font-medium">{currency}</span>
