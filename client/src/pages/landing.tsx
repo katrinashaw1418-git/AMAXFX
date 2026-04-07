@@ -492,7 +492,7 @@ export default function Landing() {
               <p className="text-sm text-white leading-relaxed">
                 Australia-based regulated platform for FX exchange, digital wallets, cryptocurrency trading, and cross-border remittance.
               </p>
-              <p className="text-xs mt-3" style={{ color: "#2d4d65" }}>ABN: [Pending]</p>
+              <p className="text-xs mt-3 text-white/50">ABN 54 690 827 608</p>
             </div>
 
             <div>
