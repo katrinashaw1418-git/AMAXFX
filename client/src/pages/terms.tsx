@@ -9,7 +9,7 @@ export default function Terms() {
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/">
             <div className="flex items-center gap-3 cursor-pointer">
-              <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
                 <Coins className="w-4 h-4 text-slate-900" />
               </div>
               <span className="text-lg font-bold text-white">AMAX</span>
