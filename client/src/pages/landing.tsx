@@ -26,7 +26,6 @@ import {
   Building2,
   Briefcase,
   UserCheck,
-  AlertTriangle,
 } from "lucide-react";
 
 const services = [
@@ -81,8 +80,8 @@ const keyFeatures = [
   { icon: Zap,       label: "Instant Settlements",  description: "Near real-time FX and wallet transfers",     color: "text-purple-400", bg: "rgba(192,132,252,0.12)" },
   { icon: BarChart3, label: "Competitive Rates",     description: "Tight spreads on 20+ currency pairs",       color: "text-green-400",  bg: "rgba(74,222,128,0.12)" },
   { icon: Globe2,    label: "Global Coverage",       description: "Send and receive in 40+ countries",          color: "text-blue-400",   bg: "rgba(96,165,250,0.12)" },
-  { icon: Lock,      label: "Bank-Grade Security",   description: "256-bit TLS, 2FA, and session audit logs",   color: "text-amber-400",  bg: "rgba(251,191,36,0.12)" },
-  { icon: FileCheck, label: "Regulatory Compliant",  description: "AUSTRAC registered & fully audited",         color: "text-white",      bg: "#111111" },
+  { icon: Lock,      label: "Bank-Grade Security",   description: "256-bit TLS, 2FA, and session audit logs",   color: "text-white",      bg: "#111111" },
+  { icon: FileCheck, label: "Regulatory Compliant",  description: "AUSTRAC registered & fully audited",         color: "text-green-400",  bg: "rgba(74,222,128,0.12)" },
   { icon: Users,     label: "Dedicated Support",     description: "Human support for all compliance queries",   color: "text-purple-400", bg: "rgba(192,132,252,0.12)" },
 ];
 
@@ -112,8 +111,7 @@ export default function Landing() {
 
       {/* ── Pre-launch banner + Nav (sticky together) ── */}
       <div className="sticky top-0 z-50">
-        <div className="bg-amber-500 text-slate-900 text-sm font-medium text-center py-2 px-6 flex items-center justify-center gap-2">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+        <div className="text-white/80 text-sm text-center py-2 px-6" style={{ background: "#0a1928", borderBottom: "1px solid #152e4a" }}>
           Platform in development — services launching following completion of AUSTRAC registration and operational readiness.
         </div>
 
