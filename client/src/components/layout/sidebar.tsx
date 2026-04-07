@@ -6,11 +6,8 @@ import {
   Home, 
   Wallet, 
   ArrowRightLeft, 
-  PieChart, 
-  Bot, 
   History, 
   Shield,
-  Building2,
   Coins,
   User,
   ChevronRight
@@ -22,12 +19,9 @@ interface SidebarProps {
 }
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: Home },
+  { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Wallets", href: "/wallets", icon: Wallet },
   { name: "FX Exchange", href: "/fx-exchange", icon: ArrowRightLeft },
-  { name: "Portfolio", href: "/portfolio", icon: PieChart },
-  { name: "Investments", href: "/investments", icon: Building2 },
-  { name: "AI Advisory", href: "/ai-advisory", icon: Bot },
   { name: "Transactions", href: "/transactions", icon: History },
   { name: "Compliance", href: "/compliance", icon: Shield },
 ];
@@ -45,7 +39,7 @@ function SidebarContent() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">AMAX</h1>
-            <p className="text-xs text-gray-500">Wealth Platform</p>
+            <p className="text-xs text-gray-500">FX & Digital Payments</p>
           </div>
         </div>
       </div>
@@ -83,7 +77,7 @@ function SidebarContent() {
           </div>
           <div className="flex-1">
             <p className="text-sm font-medium text-gray-900">John Chen</p>
-            <p className="text-xs text-gray-500">Premium Client</p>
+            <p className="text-xs text-gray-500">Verified Client</p>
           </div>
           <ChevronRight className="w-4 h-4 text-gray-400" />
         </div>

@@ -5,11 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTransactions } from "@/hooks/use-portfolio";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Filter, Download, Eye, Calendar } from "lucide-react";
-
-import { DateRange } from "react-day-picker";
+import { Search, Download, Eye, ArrowRightLeft, Wallet } from "lucide-react";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -44,25 +43,25 @@ const getTypeColor = (type: string) => {
 
 const formatTransactionAmount = (transaction: any) => {
   const amount = parseFloat(transaction.amount);
-  
+
   if (transaction.type === "exchange") {
     const exchangeRate = parseFloat(transaction.exchangeRate);
     const convertedAmount = amount * exchangeRate;
     return `${amount.toLocaleString()} ${transaction.fromCurrency} → ${convertedAmount.toLocaleString()} ${transaction.toCurrency}`;
   }
-  
+
   if (transaction.type === "deposit") {
     return `+${amount.toLocaleString()} ${transaction.toCurrency}`;
   }
-  
+
   if (transaction.type === "withdrawal") {
     return `-${amount.toLocaleString()} ${transaction.fromCurrency}`;
   }
-  
+
   if (transaction.type === "crypto_buy") {
     return `${amount} ${transaction.toCurrency}`;
   }
-  
+
   return `${amount.toLocaleString()} ${transaction.fromCurrency || transaction.toCurrency}`;
 };
 
@@ -72,30 +71,104 @@ const formatTransactionFee = (transaction: any) => {
   return `${fee.toFixed(2)} ${transaction.fromCurrency || transaction.toCurrency}`;
 };
 
+const FX_TYPES = ["exchange", "crypto_buy", "crypto_sell"];
+const WALLET_TYPES = ["deposit", "withdrawal", "transfer"];
+
+function TransactionTable({ transactions, searchTerm, statusFilter }: {
+  transactions: any[];
+  searchTerm: string;
+  statusFilter: string;
+}) {
+  const filtered = transactions.filter((transaction: any) => {
+    const matchesSearch =
+      transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.fromCurrency?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.toCurrency?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || transaction.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  if (filtered.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500">No transactions found</p>
+      </div>
+    );
+  }
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Date & Time</TableHead>
+          <TableHead>Type</TableHead>
+          <TableHead>Description</TableHead>
+          <TableHead>Amount</TableHead>
+          <TableHead>Fee</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {filtered.map((transaction: any) => (
+          <TableRow key={transaction.id}>
+            <TableCell>
+              <div>
+                <p className="font-medium">
+                  {new Date(transaction.createdAt).toLocaleDateString()}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {new Date(transaction.createdAt).toLocaleTimeString()}
+                </p>
+              </div>
+            </TableCell>
+            <TableCell>
+              <Badge className={getTypeColor(transaction.type)}>
+                {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1).replace("_", " ")}
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <div>
+                <p className="font-medium">{transaction.description}</p>
+                {transaction.exchangeRate && (
+                  <p className="text-sm text-gray-600">
+                    Rate: 1 {transaction.fromCurrency} = {parseFloat(transaction.exchangeRate).toFixed(4)}{" "}
+                    {transaction.toCurrency}
+                  </p>
+                )}
+              </div>
+            </TableCell>
+            <TableCell>
+              <p className="font-medium">{formatTransactionAmount(transaction)}</p>
+            </TableCell>
+            <TableCell>
+              <p className="text-sm">{formatTransactionFee(transaction)}</p>
+            </TableCell>
+            <TableCell>
+              <Badge className={getStatusColor(transaction.status)}>
+                {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <Button size="sm" variant="outline">
+                <Eye className="w-3 h-3 mr-1" />
+                View
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
 export default function Transactions() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const { data: transactions, isLoading, error } = useTransactions();
 
-  // Compute summary stats from actual transaction data
-  const totalVolume = transactions?.reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) || 0;
-  const totalFees = transactions?.reduce((sum: number, t: any) => sum + parseFloat(t.fee || '0'), 0) || 0;
-
-  const filteredTransactions = transactions?.filter((transaction: any) => {
-    const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.fromCurrency?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.toCurrency?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesType = typeFilter === "all" || transaction.type === typeFilter;
-    const matchesStatus = statusFilter === "all" || transaction.status === statusFilter;
-    
-    // Date range filtering would need actual date comparison logic
-    const matchesDateRange = true; // Simplified for demo
-    
-    return matchesSearch && matchesType && matchesStatus && matchesDateRange;
-  });
+  const fxTransactions = transactions?.filter((t: any) => FX_TYPES.includes(t.type)) || [];
+  const walletTransactions = transactions?.filter((t: any) => WALLET_TYPES.includes(t.type)) || [];
 
   if (isLoading) {
     return (
@@ -139,7 +212,7 @@ export default function Transactions() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Transaction History</h1>
-          <p className="text-gray-600">View and manage all your transactions</p>
+          <p className="text-gray-600">FX exchange and wallet transaction records</p>
         </div>
         <Button>
           <Download className="w-4 h-4 mr-2" />
@@ -147,24 +220,24 @@ export default function Transactions() {
         </Button>
       </div>
 
-      {/* Transaction Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardContent className="p-6">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Total Transactions</h3>
-            <p className="text-2xl font-bold">{transactions?.length || 0}</p>
-            <p className="text-sm text-gray-600 mt-1">This month</p>
+            <h3 className="text-sm font-medium text-gray-500 mb-2">FX Exchange Transactions</h3>
+            <p className="text-2xl font-bold text-blue-600">{fxTransactions.length}</p>
+            <p className="text-sm text-gray-600 mt-1">Currency conversions & crypto</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-6">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Total Volume</h3>
-            <p className="text-2xl font-bold">${totalVolume.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-            <p className="text-sm text-gray-600 mt-1">All transactions</p>
+            <h3 className="text-sm font-medium text-gray-500 mb-2">Wallet Transactions</h3>
+            <p className="text-2xl font-bold text-purple-600">{walletTransactions.length}</p>
+            <p className="text-sm text-gray-600 mt-1">Deposits, withdrawals & transfers</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-6">
             <h3 className="text-sm font-medium text-gray-500 mb-2">Pending</h3>
@@ -174,50 +247,23 @@ export default function Transactions() {
             <p className="text-sm text-gray-600 mt-1">Awaiting processing</p>
           </CardContent>
         </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Total Fees</h3>
-            <p className="text-2xl font-bold">${totalFees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-            <p className="text-sm text-gray-600 mt-1">All transactions</p>
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Filters and Search */}
+      {/* Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle>Filter Transactions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="relative">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                placeholder="Search transactions..."
+                placeholder="Search by description or currency..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
-            
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="deposit">Deposit</SelectItem>
-                <SelectItem value="withdrawal">Withdrawal</SelectItem>
-                <SelectItem value="exchange">Exchange</SelectItem>
-                <SelectItem value="transfer">Transfer</SelectItem>
-                <SelectItem value="crypto_buy">Crypto Buy</SelectItem>
-                <SelectItem value="crypto_sell">Crypto Sell</SelectItem>
-              </SelectContent>
-            </Select>
-            
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full sm:w-40">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
@@ -227,100 +273,59 @@ export default function Transactions() {
                 <SelectItem value="failed">Failed</SelectItem>
               </SelectContent>
             </Select>
-            
-            <Button variant="outline">
-              <Calendar className="w-4 h-4 mr-2" />
-              Date Range
-            </Button>
-            
-            <Button variant="outline">
-              <Filter className="w-4 h-4 mr-2" />
-              Clear Filters
-            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Transactions Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>All Transactions</CardTitle>
-            <p className="text-sm text-gray-600">
-              Showing {filteredTransactions?.length || 0} of {transactions?.length || 0} transactions
-            </p>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date & Time</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Fee</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTransactions?.map((transaction: any) => (
-                <TableRow key={transaction.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">
-                        {new Date(transaction.createdAt).toLocaleDateString()}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {new Date(transaction.createdAt).toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getTypeColor(transaction.type)}>
-                      {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1).replace('_', ' ')}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{transaction.description}</p>
-                      {transaction.exchangeRate && (
-                        <p className="text-sm text-gray-600">
-                          Rate: 1 {transaction.fromCurrency} = {parseFloat(transaction.exchangeRate).toFixed(4)} {transaction.toCurrency}
-                        </p>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <p className="font-medium">{formatTransactionAmount(transaction)}</p>
-                  </TableCell>
-                  <TableCell>
-                    <p className="text-sm">{formatTransactionFee(transaction)}</p>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(transaction.status)}>
-                      {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button size="sm" variant="outline">
-                      <Eye className="w-3 h-3 mr-1" />
-                      View
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          
-          {filteredTransactions?.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No transactions found matching your criteria</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Tabbed Transaction Views */}
+      <Tabs defaultValue="fx">
+        <TabsList>
+          <TabsTrigger value="fx" className="flex items-center gap-2">
+            <ArrowRightLeft className="w-4 h-4" />
+            FX Exchange
+          </TabsTrigger>
+          <TabsTrigger value="wallet" className="flex items-center gap-2">
+            <Wallet className="w-4 h-4" />
+            Wallet
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="fx">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>FX Exchange Transactions</CardTitle>
+                <p className="text-sm text-gray-500">Currency conversions and crypto exchange</p>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <TransactionTable
+                transactions={fxTransactions}
+                searchTerm={searchTerm}
+                statusFilter={statusFilter}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="wallet">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Wallet Transactions</CardTitle>
+                <p className="text-sm text-gray-500">Deposits, withdrawals, and transfers</p>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <TransactionTable
+                transactions={walletTransactions}
+                searchTerm={searchTerm}
+                statusFilter={statusFilter}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

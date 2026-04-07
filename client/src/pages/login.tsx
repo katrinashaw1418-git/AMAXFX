@@ -22,7 +22,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       await login(username, password);
-      navigate("/");
+      navigate("/dashboard");
     } catch (err: any) {
       setError(err.message || "Login failed. Please try again.");
     } finally {
