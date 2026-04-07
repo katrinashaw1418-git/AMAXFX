@@ -3,6 +3,29 @@
 ## Overview
 This platform is a comprehensive cross-border wealth management solution designed for high-net-worth individuals, the global Chinese diaspora, and SMEs with international financial needs. It integrates traditional finance and cryptocurrency services, offering dual-channel support for FX and crypto trading, multi-currency wallets, AI-powered wealth advisory, and robust compliance features. The vision is to provide a unified, intelligent, and secure platform for managing diverse global assets.
 
+## Recent Changes (April 2026) — AUSTRAC Compliance Uplift
+
+### Compliance: transaction traceability & AML monitoring
+- **`transactions` table upgraded** with 5 new compliance columns (non-breaking, all nullable for existing data):
+  - `assetType`: `"fiat"` | `"crypto"` | `"cross"` — explicit AUSTRAC-required asset classification per transaction
+  - `direction`: `"in"` | `"out"` | `"exchange"` — money movement direction
+  - `riskFlag`: boolean — set by AML engine, default false
+  - `reviewStatus`: `"clear"` | `"flagged"` | `"reviewing"` | `"cleared"` | `"escalated"`
+  - `reviewNotes`: free text for compliance officer notes
+- **`aml_flags` table added** — operational monitoring table:
+  - Fields: `userId`, `transactionId` (FK), `riskLevel`, `reason`, `status`, `notes`, `createdAt`, `reviewedAt`
+  - Status lifecycle: `"open"` → `"reviewing"` → `"cleared"` | `"escalated"`
+- **Auto-AML-flagging on every transaction**: `runAmlCheck()` fires after each FX exchange, deposit, withdrawal:
+  - > AUD $10,000 → flag `"medium"` (AUSTRAC reporting threshold)
+  - > AUD $50,000 → flag `"high"` (escalation)
+  - Fiat↔crypto conversion (`assetType = "cross"`) → flag `"low"` (layering monitoring)
+  - Flagging is non-blocking — never stops a valid transaction
+- **`classifyAssetType(from, to)`** helper in routes: determines fiat/crypto/cross per transaction
+- **`classifyDirection(type)`** helper: maps transaction type to in/out/exchange
+- **Fixed USDT/USDC walletType bug**: auto-created wallets for USDT/USDC now correctly get `walletType: "crypto"` (was `"fiat"`)
+- **Dashboard now reads `wallet.walletType` from DB** (not hardcoded currency list) to split fiat vs crypto sections
+- Schema pushed to database via `npm run db:push`
+
 ## Recent Changes (April 2026) — Security Hardening + Live FX Rates (Third Pass)
 
 ### KYC backend enforcement (all money-movement routes)

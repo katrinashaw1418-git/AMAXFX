@@ -7,8 +7,6 @@ import { CurrencyConfig } from "@/lib/types";
 import { Link } from "wouter";
 import { ArrowRightLeft, TrendingUp, Coins, Landmark, Info } from "lucide-react";
 
-const CRYPTO = ["BTC", "ETH", "USDT", "USDC"];
-
 function CurrencyCircle({ currency, size = "md" }: { currency: string; size?: "sm" | "md" }) {
   const config = CurrencyConfig[currency as keyof typeof CurrencyConfig];
   const dim = size === "sm" ? "w-7 h-7 text-xs" : "w-9 h-9 text-sm";
@@ -40,17 +38,23 @@ export default function CurrencyBalances() {
     (w: any) => parseFloat(w.balance || "0") > 0
   );
 
+  const CRYPTO_ORDER = ["BTC", "ETH", "USDT", "USDC"];
+
   const fiatWallets = wallets
-    .filter((w) => !CRYPTO.includes(w.currency))
-    .sort((a, b) => {
+    .filter((w: any) => w.walletType === "fiat")
+    .sort((a: any, b: any) => {
       if (a.currency === "AUD") return -1;
       if (b.currency === "AUD") return 1;
       return a.currency.localeCompare(b.currency);
     });
 
   const cryptoWallets = wallets
-    .filter((w) => CRYPTO.includes(w.currency))
-    .sort((a, b) => CRYPTO.indexOf(a.currency) - CRYPTO.indexOf(b.currency));
+    .filter((w: any) => w.walletType === "crypto")
+    .sort((a: any, b: any) => {
+      const ai = CRYPTO_ORDER.indexOf(a.currency);
+      const bi = CRYPTO_ORDER.indexOf(b.currency);
+      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    });
 
   const fiatAud = fxRates
     ? fiatWallets.reduce((sum, w) => {

@@ -1,10 +1,11 @@
 import { 
-  users, wallets, portfolios, transactions, fxRates, aiRecommendations, investmentProducts, userInvestments, portfolioSnapshots,
+  users, wallets, portfolios, transactions, fxRates, aiRecommendations, investmentProducts, userInvestments, portfolioSnapshots, amlFlags,
   type User, type InsertUser, type Wallet, type InsertWallet, 
   type Portfolio, type InsertPortfolio, type Transaction, type InsertTransaction,
   type FxRate, type InsertFxRate, type AiRecommendation, type InsertAiRecommendation,
   type InvestmentProduct, type InsertInvestmentProduct, type UserInvestment, type InsertUserInvestment,
-  type PortfolioSnapshot, type InsertPortfolioSnapshot
+  type PortfolioSnapshot, type InsertPortfolioSnapshot,
+  type AmlFlag, type InsertAmlFlag
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, and } from "drizzle-orm";
@@ -56,6 +57,11 @@ export interface IStorage {
   getPortfolioSnapshots(userId: number, startDate?: Date, endDate?: Date): Promise<PortfolioSnapshot[]>;
   createPortfolioSnapshot(snapshot: InsertPortfolioSnapshot): Promise<PortfolioSnapshot>;
   deletePortfolioSnapshotsForDay(userId: number, day: string): Promise<void>; // day = "YYYY-MM-DD"
+
+  // AML Flags
+  getAmlFlags(userId: number): Promise<AmlFlag[]>;
+  createAmlFlag(flag: InsertAmlFlag): Promise<AmlFlag>;
+  updateAmlFlag(id: number, update: Partial<InsertAmlFlag>): Promise<AmlFlag | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -68,6 +74,8 @@ export class MemStorage implements IStorage {
   private investmentProducts: Map<number, InvestmentProduct> = new Map();
   private userInvestments: Map<number, UserInvestment[]> = new Map();
   private portfolioSnapshotsStore: Map<number, PortfolioSnapshot[]> = new Map();
+  private amlFlagsStore: Map<number, AmlFlag[]> = new Map();
+  private currentAmlFlagId = 1;
   private currentUserId = 1;
   private currentPortfolioId = 1;
   private currentWalletId = 12;
@@ -3040,6 +3048,11 @@ export class MemStorage implements IStorage {
       description: insertTransaction.description,
       sourceExchange: insertTransaction.sourceExchange ?? null,
       blockchainTxHash: insertTransaction.blockchainTxHash ?? null,
+      assetType: insertTransaction.assetType ?? null,
+      direction: insertTransaction.direction ?? null,
+      riskFlag: insertTransaction.riskFlag ?? false,
+      reviewStatus: insertTransaction.reviewStatus ?? "clear",
+      reviewNotes: insertTransaction.reviewNotes ?? null,
       createdAt: new Date(),
     };
     
@@ -3048,6 +3061,41 @@ export class MemStorage implements IStorage {
     this.transactions.set(insertTransaction.userId, userTransactions);
     
     return transaction;
+  }
+
+  async getAmlFlags(userId: number): Promise<AmlFlag[]> {
+    return this.amlFlagsStore.get(userId) || [];
+  }
+
+  async createAmlFlag(flag: InsertAmlFlag): Promise<AmlFlag> {
+    const id = this.currentAmlFlagId++;
+    const amlFlag: AmlFlag = {
+      id,
+      userId: flag.userId,
+      transactionId: flag.transactionId,
+      riskLevel: flag.riskLevel,
+      reason: flag.reason,
+      status: flag.status ?? "open",
+      notes: flag.notes ?? null,
+      createdAt: new Date(),
+      reviewedAt: flag.reviewedAt ?? null,
+    };
+    const existing = this.amlFlagsStore.get(flag.userId) || [];
+    existing.unshift(amlFlag);
+    this.amlFlagsStore.set(flag.userId, existing);
+    return amlFlag;
+  }
+
+  async updateAmlFlag(id: number, update: Partial<InsertAmlFlag>): Promise<AmlFlag | undefined> {
+    for (const [userId, flags] of Array.from(this.amlFlagsStore.entries())) {
+      const idx = flags.findIndex((f) => f.id === id);
+      if (idx !== -1) {
+        flags[idx] = { ...flags[idx], ...update };
+        this.amlFlagsStore.set(userId, flags);
+        return flags[idx];
+      }
+    }
+    return undefined;
   }
 
   async updateTransaction(id: number, updateTransaction: Partial<InsertTransaction>): Promise<Transaction | undefined> {
@@ -3409,11 +3457,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deletePortfolioSnapshotsForDay(userId: number, day: string): Promise<void> {
-    // Delete all snapshots for this user whose date (truncated to day) matches
     await db.delete(portfolioSnapshots).where(
       sql`${portfolioSnapshots.userId} = ${userId}
           AND DATE(${portfolioSnapshots.snapshotDate}) = ${day}::date`
     );
+  }
+
+  // AML Flags
+  async getAmlFlags(userId: number): Promise<AmlFlag[]> {
+    return await db.select().from(amlFlags)
+      .where(eq(amlFlags.userId, userId))
+      .orderBy(sql`${amlFlags.createdAt} DESC`);
+  }
+
+  async createAmlFlag(flag: InsertAmlFlag): Promise<AmlFlag> {
+    const [created] = await db.insert(amlFlags).values(flag).returning();
+    return created;
+  }
+
+  async updateAmlFlag(id: number, update: Partial<InsertAmlFlag>): Promise<AmlFlag | undefined> {
+    const [updated] = await db.update(amlFlags).set(update).where(eq(amlFlags.id, id)).returning();
+    return updated || undefined;
   }
 }
 

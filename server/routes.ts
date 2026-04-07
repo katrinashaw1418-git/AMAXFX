@@ -28,6 +28,66 @@ import {
 } from "./auth";
 
 // ---------------------------------------------------------------------------
+// Compliance helpers — asset classification for AUSTRAC traceability
+// ---------------------------------------------------------------------------
+const CRYPTO_CURRENCIES = ["BTC", "ETH", "USDT", "USDC"];
+
+function classifyAssetType(from?: string | null, to?: string | null): "fiat" | "crypto" | "cross" {
+  const fromCrypto = from ? CRYPTO_CURRENCIES.includes(from) : false;
+  const toCrypto   = to   ? CRYPTO_CURRENCIES.includes(to)   : false;
+  if (fromCrypto && toCrypto) return "crypto";
+  if (!fromCrypto && !toCrypto) return "fiat";
+  return "cross"; // fiat ↔ crypto conversion — monitored separately
+}
+
+function classifyDirection(type: string): "in" | "out" | "exchange" {
+  if (["deposit", "crypto_buy"].includes(type))    return "in";
+  if (["withdrawal", "crypto_sell"].includes(type)) return "out";
+  return "exchange";
+}
+
+async function runAmlCheck(
+  userId: number,
+  txId: number,
+  amount: Decimal,
+  assetType: "fiat" | "crypto" | "cross",
+  type: string
+): Promise<void> {
+  try {
+    const flags: { riskLevel: "low" | "medium" | "high"; reason: string }[] = [];
+
+    // Rule 1: Large transaction (> AUD $10,000 equivalent) — AUSTRAC reporting threshold
+    if (amount.gte(10000)) {
+      flags.push({ riskLevel: "medium", reason: `Large transaction: ${amount.toFixed(2)} (≥ AUD $10,000 threshold)` });
+    }
+
+    // Rule 2: Fiat ↔ crypto conversion — monitored for layering risk
+    if (assetType === "cross") {
+      flags.push({ riskLevel: "low", reason: `Fiat-to-crypto or crypto-to-fiat conversion (type: ${type})` });
+    }
+
+    // Rule 3: Very large transaction (> AUD $50,000) — escalate
+    if (amount.gte(50000)) {
+      flags.push({ riskLevel: "high", reason: `High-value transaction: ${amount.toFixed(2)} (≥ AUD $50,000)` });
+    }
+
+    for (const flag of flags) {
+      await storage.createAmlFlag({
+        userId,
+        transactionId: txId,
+        riskLevel: flag.riskLevel,
+        reason: flag.reason,
+        status: "open",
+        notes: null,
+        reviewedAt: null,
+      });
+    }
+  } catch {
+    // AML flagging must never block the transaction flow — log silently
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Zod validation schemas for all money-movement routes.
 // These run before any storage access so bad input is rejected early.
 // ---------------------------------------------------------------------------
@@ -1947,7 +2007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!existingToWallet) {
         await storage.createWallet({
           userId, currency: toCurrency, balance: "0.00", availableBalance: "0.00",
-          walletType: toCurrency === "BTC" || toCurrency === "ETH" ? "crypto" : "fiat",
+          walletType: CRYPTO_CURRENCIES.includes(toCurrency) ? "crypto" : "fiat",
         });
       }
 
@@ -1990,8 +2050,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           settlementStatus: "internal_only",
           description: `${fromCurrency} to ${toCurrency} Exchange`,
           sourceExchange: null, blockchainTxHash: null,
+          assetType: classifyAssetType(fromCurrency, toCurrency),
+          direction: "exchange",
+          riskFlag: false,
+          reviewStatus: "clear",
+          reviewNotes: null,
         }).returning();
       });
+
+      await runAmlCheck(userId, txRecord?.id, amount, classifyAssetType(fromCurrency, toCurrency), "exchange");
 
       const responseBody = { transaction: txRecord, convertedAmount: netConverted.toNumber(), exchangeRate: exchangeRate.toNumber(), fee: fee.toNumber() };
       if (idemKey) await saveIdempotentResponse(userId, "/api/fx-exchange", idemKey, payloadHash, responseBody);
@@ -2043,6 +2110,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: "completed", settlementStatus: "internal_only",
           description: description || `${currency} Deposit`,
           sourceExchange: null, blockchainTxHash: null,
+          assetType: classifyAssetType(null, currency),
+          direction: "in",
+          riskFlag: false,
+          reviewStatus: "clear",
+          reviewNotes: null,
         }).returning();
       });
 
@@ -2131,6 +2203,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: "completed", settlementStatus: "internal_only",
           description: description || `${currency} Withdrawal`,
           sourceExchange: null, blockchainTxHash: null,
+          assetType: classifyAssetType(currency, null),
+          direction: "out",
+          riskFlag: false,
+          reviewStatus: "clear",
+          reviewNotes: null,
         }).returning();
       });
 
@@ -2535,6 +2612,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           settlementStatus: "internal_only",
           description: `Investment in ${product.name}${currency !== "USD" ? ` (converted from ${currency})` : ""}`,
           sourceExchange: null, blockchainTxHash: null,
+          assetType: classifyAssetType(currency, "USD"),
+          direction: "out",
+          riskFlag: false,
+          reviewStatus: "clear",
+          reviewNotes: null,
         }).returning();
 
         const [inv] = await tx.insert(userInvestments).values({
@@ -2590,7 +2672,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!existingTarget) {
         await storage.createWallet({
           userId, currency: toCurrency, balance: "0.00", availableBalance: "0.00",
-          walletType: ["BTC", "ETH"].includes(toCurrency) ? "crypto" : "fiat",
+          walletType: CRYPTO_CURRENCIES.includes(toCurrency) ? "crypto" : "fiat",
         });
       }
 
@@ -2631,6 +2713,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           settlementStatus: "internal_only",
           description: `Converted ${rawAmount} ${fromCurrency} to ${finalAmount.toFixed(8)} ${toCurrency}`,
           sourceExchange: null, blockchainTxHash: null,
+          assetType: classifyAssetType(fromCurrency, toCurrency),
+          direction: "exchange",
+          riskFlag: false,
+          reviewStatus: "clear",
+          reviewNotes: null,
         }).returning();
       });
 
