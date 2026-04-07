@@ -125,12 +125,12 @@ export default function Landing() {
               <span className="text-xl font-bold text-white">AMAX</span>
             </div>
 
-            <nav className="hidden md:flex items-center gap-7 text-sm text-white/70">
-              <a href="#services"     className="hover:text-white transition-colors">Services</a>
-              <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
-              <a href="#compliance"   className="hover:text-white transition-colors">Compliance</a>
-              <a href="#about"        className="hover:text-white transition-colors">About</a>
-              <a href="#contact"      className="hover:text-white transition-colors">Contact</a>
+            <nav className="hidden md:flex items-center gap-7 text-sm text-white">
+              <a href="#services"     className="hover:text-white/70 transition-colors">Services</a>
+              <a href="#how-it-works" className="hover:text-white/70 transition-colors">How It Works</a>
+              <a href="#compliance"   className="hover:text-white/70 transition-colors">Compliance</a>
+              <a href="#about"        className="hover:text-white/70 transition-colors">About</a>
+              <a href="#contact"      className="hover:text-white/70 transition-colors">Contact</a>
             </nav>
 
             <div className="flex items-center gap-2">
