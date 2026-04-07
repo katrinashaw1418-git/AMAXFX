@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useWallets } from "@/hooks/use-portfolio";
+import { useWallets, usePortfolio } from "@/hooks/use-portfolio";
 import { useFxRates } from "@/hooks/use-fx-rates";
 import { CurrencyConfig } from "@/lib/types";
 import { Link } from "wouter";
