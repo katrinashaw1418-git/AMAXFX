@@ -497,9 +497,9 @@ export default function Landing() {
 
             <div>
               <p className="font-semibold text-white mb-3 text-sm">Platform</p>
-              <ul className="space-y-2 text-sm text-white/60">
+              <ul className="space-y-2 text-sm text-white">
                 {[["#services","Services"],["#how-it-works","How It Works"],["#compliance","Compliance"],["#about","About"],["#contact","Contact"]].map(([href, label]) => (
-                  <li key={label}><a href={href} className="hover:text-white transition-colors">{label}</a></li>
+                  <li key={label}><a href={href} className="hover:text-white/70 transition-colors">{label}</a></li>
                 ))}
               </ul>
             </div>
