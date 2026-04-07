@@ -51,7 +51,7 @@ export default function Terms() {
       </main>
 
       <footer className="py-6 mt-16" style={{ borderTop: "1px solid #152e4a" }}>
-        <div className="max-w-4xl mx-auto px-6 text-center text-xs" style={{ color: "#2d4d65" }}>
+        <div className="max-w-4xl mx-auto px-6 text-center text-xs text-white/70">
           © {new Date().getFullYear()} AMAX. ABN 54 690 827 608. AUSTRAC Registered Digital Currency Exchange.
         </div>
       </footer>
