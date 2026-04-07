@@ -348,10 +348,13 @@ export default function Landing() {
           <Badge className="bg-white/10 text-white border border-white/20 mb-4">About AMAX</Badge>
           <h2 className="text-3xl font-bold mb-6">Australia-Based. Compliance-First.</h2>
           <p className="leading-relaxed text-lg text-white mb-4">
-            AMAX is an Australian-based fintech platform building regulated infrastructure for FX exchange, digital wallets, cryptocurrency trading, and cross-border remittance. Our founding team brings experience from financial services, compliance, and technology — with a focus on building a platform that regulators, banks, and customers can trust.
+            AMAX is an Australian-based FX and remittance service provider, building regulated infrastructure for foreign exchange, digital wallets, cryptocurrency trading, and cross-border remittance. Alongside our digital platform, AMAX will operate from our Kings Court headquarters in Rockdale, Sydney — giving Australians the option to access FX and remittance services in person.
+          </p>
+          <p className="leading-relaxed text-white mb-4">
+            Our founding team brings experience across financial services, compliance, and technology — with a singular focus on building a platform that regulators, banks, and customers can trust.
           </p>
           <p className="leading-relaxed text-white">
-            We are currently completing our AUSTRAC registration process and will launch services to the public following regulatory approval and full operational readiness. Our mission is to make regulated access to global currencies and digital assets simpler, faster, and safer for Australians.
+            Our mission is to make regulated access to global currencies and digital assets simpler, faster, and safer for all Australians.
           </p>
         </div>
       </section>
@@ -370,7 +373,7 @@ export default function Landing() {
             <div className="space-y-6">
               {[
                 { Icon: Mail,   title: "Email",                href: "mailto:contact@amax.com.au",    label: "contact@amax.com.au" },
-                { Icon: MapPin, title: "Registered Office",    href: null,                             label: "Sydney, New South Wales, Australia" },
+                { Icon: MapPin, title: "Registered Office",    href: null,                             label: "Level 2, Kings Court, 8-12 King Street, Rockdale, Sydney NSW 2216" },
                 { Icon: Shield, title: "Compliance Enquiries", href: "mailto:compliance@amax.com.au",  label: "compliance@amax.com.au" },
               ].map(({ Icon, title, href, label }) => (
                 <div key={title} className="flex items-start gap-4">
