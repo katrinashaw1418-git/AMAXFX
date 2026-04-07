@@ -506,10 +506,10 @@ export default function Landing() {
 
             <div>
               <p className="font-semibold text-white mb-3 text-sm">Legal</p>
-              <ul className="space-y-2 text-sm text-white/60">
-                <li><Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-                <li><Link href="/terms"           className="hover:text-white transition-colors">Terms &amp; Conditions</Link></li>
-                <li><Link href="/aml-policy"      className="hover:text-white transition-colors">AML/CTF Policy</Link></li>
+              <ul className="space-y-2 text-sm text-white">
+                <li><Link href="/privacy-policy" className="hover:text-white/70 transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/terms"           className="hover:text-white/70 transition-colors">Terms &amp; Conditions</Link></li>
+                <li><Link href="/aml-policy"      className="hover:text-white/70 transition-colors">AML/CTF Policy</Link></li>
               </ul>
             </div>
           </div>
