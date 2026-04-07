@@ -1,0 +1,92 @@
+✅ My view (aligned with your approach)
+✔️ You SHOULD separate:
+Fiat balances (e.g. AUD, USD)
+Digital assets (crypto wallet)
+
+Because from a regulatory lens (including AUSTRAC):
+
+They are different regulated activities
+They carry different risks (custody, volatility, AML exposure)
+They may sit in different legal structures / safeguarding arrangements
+
+👉 So yes — never merge them into a single “balance”
+
+🧠 Where I’d refine your design (important)
+⚠️ Don’t fully “integrate” them
+⚠️ Don’t fully “isolate” them either
+
+👉 The winning model is:
+
+“Unified dashboard, segregated balances, optional consolidated view”
+
+🧭 Recommended dashboard structure (best practice)
+🔝 Top layer (portfolio summary — optional but powerful)
+“Total Portfolio Value (AUD equivalent)”
+
+Small disclaimer:
+
+“Includes fiat and digital assets. Digital assets are subject to market volatility.”
+
+👉 This gives users a holistic view
+BUT doesn’t legally mix balances
+
+🟦 Section 1: Currency Balances (Fiat)
+AUD, USD, etc.
+
+Clear label:
+
+“Held in fiat accounts”
+
+Show:
+Available balance
+Pending (if applicable)
+🟨 Section 2: Digital Wallet (Crypto)
+BTC, ETH, stablecoins
+
+Label:
+
+“Digital assets held in wallet”
+
+Show:
+Quantity (e.g. 0.5 BTC)
+AUD equivalent
+🔄 Between sections (important UX)
+
+Add clear actions:
+
+“Convert (FX)”
+“Buy/Sell Crypto”
+“Transfer”
+
+👉 This shows controlled interaction between systems, not blending
+
+📊 Transaction history (combined but filterable)
+Unified feed:
+Fiat + crypto transactions
+Filter:
+All / Fiat / Crypto
+
+👉 This is what users expect (and auditors like traceability)
+
+⚠️ Critical compliance nuance (most people miss this)
+
+Even in UI:
+
+👉 You must not imply that crypto = money held like fiat
+
+So avoid:
+
+❌ “Total Balance: $50,000” (if includes crypto without clarity)
+❌ Mixing assets in one wallet visually
+
+Instead:
+
+✅ “Portfolio Value”
+✅ Separate sections with clear labels
+🧾 Why your approach is correct (from regulator + bank lens)
+
+Your logic aligns with how:
+
+Regulators think → segregation of funds
+Banks think → risk isolation
+Auditors think → clear traceability
