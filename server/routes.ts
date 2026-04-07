@@ -1424,6 +1424,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // YTD historical FX rate data — real market data
+  // Fiat pairs: Frankfurter.app (ECB data, same source as live rates)
+  // Crypto pairs: CoinGecko free API
+  app.get("/api/fx-history/:base/:target", async (req, res) => {
+    const { base, target } = req.params;
+    const now = new Date();
+    const startOfYear = `${now.getFullYear()}-01-01`;
+    const today = now.toISOString().split("T")[0];
+
+    const CRYPTO_IDS: Record<string, string> = {
+      BTC: "bitcoin",
+      ETH: "ethereum",
+      USDT: "tether",
+      USDC: "usd-coin",
+    };
+
+    try {
+      // ── Crypto pairs ─────────────────────────────────────────────────────────
+      const cryptoBase = CRYPTO_IDS[base];
+      const cryptoTarget = CRYPTO_IDS[target];
+
+      if (cryptoBase && target === "USD") {
+        const dayCount = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (1000 * 60 * 60 * 24));
+        const cgRes = await fetch(
+          `https://api.coingecko.com/api/v3/coins/${cryptoBase}/market_chart?vs_currency=usd&days=${dayCount}&interval=daily`,
+          { headers: { "Accept": "application/json" } }
+        );
+        if (!cgRes.ok) return res.status(502).json({ error: "CoinGecko unavailable" });
+        const cgData = await cgRes.json() as { prices: [number, number][] };
+        const points = cgData.prices
+          .filter(([ts]) => {
+            const d = new Date(ts).toISOString().split("T")[0];
+            return d >= startOfYear && d <= today;
+          })
+          .map(([ts, price]) => ({
+            date: new Date(ts).toISOString().split("T")[0],
+            rate: price,
+          }));
+        return res.json({ base, target, points });
+      }
+
+      if (base === "USD" && cryptoTarget) {
+        const dayCount = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (1000 * 60 * 60 * 24));
+        const cgRes = await fetch(
+          `https://api.coingecko.com/api/v3/coins/${cryptoTarget}/market_chart?vs_currency=usd&days=${dayCount}&interval=daily`,
+          { headers: { "Accept": "application/json" } }
+        );
+        if (!cgRes.ok) return res.status(502).json({ error: "CoinGecko unavailable" });
+        const cgData = await cgRes.json() as { prices: [number, number][] };
+        const points = cgData.prices
+          .filter(([ts]) => {
+            const d = new Date(ts).toISOString().split("T")[0];
+            return d >= startOfYear && d <= today;
+          })
+          .map(([ts, price]) => ({
+            date: new Date(ts).toISOString().split("T")[0],
+            rate: price > 0 ? 1 / price : 0,
+          }));
+        return res.json({ base, target, points });
+      }
+
+      // ── Fiat pairs via Frankfurter.app ─────────────────────────────────────
+      const ffRes = await fetch(
+        `https://api.frankfurter.app/${startOfYear}..${today}?from=${base}&to=${target}`,
+        { headers: { "Accept": "application/json" } }
+      );
+      if (!ffRes.ok) {
+        // Try inverse then invert
+        const invRes = await fetch(
+          `https://api.frankfurter.app/${startOfYear}..${today}?from=${target}&to=${base}`,
+          { headers: { "Accept": "application/json" } }
+        );
+        if (!invRes.ok) return res.status(502).json({ error: "Frankfurter unavailable" });
+        const invData = await invRes.json() as { rates: Record<string, Record<string, number>> };
+        const points = Object.entries(invData.rates)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([date, vals]) => ({
+            date,
+            rate: vals[base] ? 1 / vals[base] : null,
+          }))
+          .filter((p) => p.rate !== null);
+        return res.json({ base, target, points });
+      }
+      const ffData = await ffRes.json() as { rates: Record<string, Record<string, number>> };
+      const points = Object.entries(ffData.rates)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, vals]) => ({ date, rate: vals[target] ?? null }))
+        .filter((p) => p.rate !== null);
+      return res.json({ base, target, points });
+
+    } catch (err) {
+      console.error("[fx-history] error:", (err as Error).message);
+      res.status(500).json({ error: "Failed to fetch historical FX data" });
+    }
+  });
+
   // Get AI recommendations
   app.get("/api/ai-recommendations", async (req, res) => {
     try {

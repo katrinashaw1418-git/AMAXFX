@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AreaChart,
   Area,
@@ -11,7 +12,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
 
 interface YtdRateChartProps {
   fromCurrency: string;
@@ -20,69 +21,31 @@ interface YtdRateChartProps {
   isLoading?: boolean;
 }
 
-function generateYtdData(currentRate: number, fromCurrency: string, toCurrency: string) {
-  const now = new Date();
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
-
-  const seed = `${fromCurrency}${toCurrency}${now.getFullYear()}`;
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = (hash << 5) - hash + seed.charCodeAt(i);
-    hash |= 0;
-  }
-  const rng = (n: number) => {
-    const x = Math.sin(hash + n) * 10000;
-    return x - Math.floor(x);
-  };
-
-  const dayCount = Math.floor((now.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  const points: { date: string; rate: number; label: string }[] = [];
-
-  const volatility = 0.008;
-  let rate = currentRate;
-
-  for (let d = dayCount; d >= 1; d--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - d + 1);
-    const change = (rng(d) - 0.5) * 2 * volatility * rate;
-    rate = rate - change;
-    if (rate < 0) rate = Math.abs(rate);
-  }
-
-  const startRate = rate;
-  rate = startRate;
-
-  const step = Math.max(1, Math.floor(dayCount / 60));
-  for (let d = 0; d <= dayCount; d += step) {
-    const date = new Date(startOfYear);
-    date.setDate(date.getDate() + d);
-    if (date > now) break;
-
-    const change = (rng(d + 1000) - 0.48) * 2 * volatility * rate;
-    rate = rate + change;
-
-    const label = date.toLocaleDateString("en-AU", { month: "short", day: "numeric" });
-    points.push({ date: date.toISOString().split("T")[0], rate: parseFloat(rate.toFixed(6)), label });
-  }
-
-  if (points.length === 0) {
-    points.push({ date: now.toISOString().split("T")[0], rate: currentRate, label: "Today" });
-  }
-
-  const lastPoint = points[points.length - 1];
-  lastPoint.rate = currentRate;
-  lastPoint.label = "Today";
-
-  return { points, startRate: points[0]?.rate || currentRate };
+interface HistoryPoint {
+  date: string;
+  rate: number;
+  label: string;
 }
 
-const CustomTooltip = ({ active, payload, label, fromCurrency, toCurrency }: any) => {
+async function fetchFxHistory(base: string, target: string): Promise<HistoryPoint[]> {
+  const res = await fetch(`/api/fx-history/${base}/${target}`);
+  if (!res.ok) throw new Error(`History unavailable for ${base}/${target}`);
+  const data = await res.json() as { points: { date: string; rate: number }[] };
+
+  return data.points.map((p) => ({
+    date: p.date,
+    rate: p.rate,
+    label: new Date(p.date + "T12:00:00Z").toLocaleDateString("en-AU", { month: "short", day: "numeric" }),
+  }));
+}
+
+const CustomTooltip = ({ active, payload, fromCurrency, toCurrency }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm">
-        <p className="text-gray-500 mb-1">{payload[0]?.payload?.label || label}</p>
+        <p className="text-gray-500 mb-1">{payload[0]?.payload?.label}</p>
         <p className="font-semibold text-gray-900">
-          1 {fromCurrency} = {parseFloat(payload[0].value).toFixed(4)} {toCurrency}
+          1 {fromCurrency} = {parseFloat(payload[0].value).toFixed(fromCurrency === "BTC" || fromCurrency === "ETH" ? 2 : 4)} {toCurrency}
         </p>
       </div>
     );
@@ -90,43 +53,64 @@ const CustomTooltip = ({ active, payload, label, fromCurrency, toCurrency }: any
   return null;
 };
 
-export default function YtdRateChart({ fromCurrency, toCurrency, currentRate, isLoading }: YtdRateChartProps) {
+export default function YtdRateChart({ fromCurrency, toCurrency, currentRate, isLoading: rateLoading }: YtdRateChartProps) {
   const now = new Date();
   const year = now.getFullYear();
 
-  const { points, startRate } = useMemo(() => {
-    if (!currentRate || currentRate === 0) return { points: [], startRate: 0 };
-    return generateYtdData(currentRate, fromCurrency, toCurrency);
-  }, [currentRate, fromCurrency, toCurrency]);
+  const { data: points, isLoading, error } = useQuery<HistoryPoint[]>({
+    queryKey: ["/api/fx-history", fromCurrency, toCurrency],
+    queryFn: () => fetchFxHistory(fromCurrency, toCurrency),
+    staleTime: 60 * 60 * 1000, // historical daily data doesn't change
+    retry: 1,
+  });
 
-  const ytdChange = currentRate - startRate;
-  const ytdChangePct = startRate > 0 ? (ytdChange / startRate) * 100 : 0;
-  const ytdHigh = points.length > 0 ? Math.max(...points.map((p) => p.rate)) : currentRate;
-  const ytdLow = points.length > 0 ? Math.min(...points.map((p) => p.rate)) : currentRate;
-
-  const isPositive = ytdChange >= 0;
-  const chartColor = isPositive ? "#16a34a" : "#dc2626";
-  const chartFill = isPositive ? "#dcfce7" : "#fee2e2";
-
-  const yMin = ytdLow * 0.998;
-  const yMax = ytdHigh * 1.002;
-
-  if (isLoading || !currentRate) {
+  if (isLoading || rateLoading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">
-            YTD Exchange Rate — {fromCurrency}/{toCurrency}
-          </CardTitle>
+          <Skeleton className="h-5 w-64 mb-2" />
+          <div className="grid grid-cols-3 gap-3 mt-3">
+            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 rounded-lg" />)}
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="h-48 flex items-center justify-center text-gray-400 text-sm">
-            Loading rate history...
-          </div>
+          <Skeleton className="h-48 w-full rounded-lg" />
         </CardContent>
       </Card>
     );
   }
+
+  if (error || !points || points.length < 2) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center">
+          <AlertCircle className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+          <p className="text-sm text-gray-500">
+            Historical data unavailable for {fromCurrency}/{toCurrency}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">This pair may not have ECB/CoinGecko coverage</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const startRate = points[0].rate;
+  const ytdChange = currentRate - startRate;
+  const ytdChangePct = startRate > 0 ? (ytdChange / startRate) * 100 : 0;
+  const ytdHigh = Math.max(...points.map((p) => p.rate));
+  const ytdLow = Math.min(...points.map((p) => p.rate));
+
+  const isPositive = ytdChange >= 0;
+  const chartColor = isPositive ? "#16a34a" : "#dc2626";
+
+  const isCrypto = ["BTC", "ETH"].includes(fromCurrency) || ["BTC", "ETH"].includes(toCurrency);
+  const precision = isCrypto ? 2 : 4;
+
+  const yMin = ytdLow * 0.998;
+  const yMax = ytdHigh * 1.002;
+
+  // Thin out tick labels so they don't crowd
+  const tickInterval = Math.max(1, Math.floor(points.length / 6));
 
   return (
     <Card>
@@ -137,7 +121,8 @@ export default function YtdRateChart({ fromCurrency, toCurrency, currentRate, is
               YTD Exchange Rate — {fromCurrency}/{toCurrency}
             </CardTitle>
             <p className="text-xs text-gray-500 mt-1">
-              Jan 1, {year} to {now.toLocaleDateString("en-AU", { month: "short", day: "numeric", year: "numeric" })}
+              Jan 1, {year} — {now.toLocaleDateString("en-AU", { month: "short", day: "numeric", year: "numeric" })}
+              <span className="ml-2 text-gray-400">· ECB / CoinGecko market data</span>
             </p>
           </div>
           <Badge
@@ -157,15 +142,15 @@ export default function YtdRateChart({ fromCurrency, toCurrency, currentRate, is
         <div className="grid grid-cols-3 gap-3 mt-3">
           <div className="bg-gray-50 rounded-lg p-3 text-center">
             <p className="text-xs text-gray-500 mb-1">YTD Open</p>
-            <p className="text-sm font-semibold">{startRate.toFixed(4)}</p>
+            <p className="text-sm font-semibold">{startRate.toFixed(precision)}</p>
           </div>
           <div className="bg-green-50 rounded-lg p-3 text-center">
             <p className="text-xs text-gray-500 mb-1">YTD High</p>
-            <p className="text-sm font-semibold text-green-700">{ytdHigh.toFixed(4)}</p>
+            <p className="text-sm font-semibold text-green-700">{ytdHigh.toFixed(precision)}</p>
           </div>
           <div className="bg-red-50 rounded-lg p-3 text-center">
             <p className="text-xs text-gray-500 mb-1">YTD Low</p>
-            <p className="text-sm font-semibold text-red-700">{ytdLow.toFixed(4)}</p>
+            <p className="text-sm font-semibold text-red-700">{ytdLow.toFixed(precision)}</p>
           </div>
         </div>
       </CardHeader>
@@ -182,25 +167,20 @@ export default function YtdRateChart({ fromCurrency, toCurrency, currentRate, is
             <XAxis
               dataKey="label"
               tick={{ fontSize: 10, fill: "#9ca3af" }}
-              interval={Math.floor(points.length / 5)}
+              interval={tickInterval}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
               domain={[yMin, yMax]}
               tick={{ fontSize: 10, fill: "#9ca3af" }}
-              tickFormatter={(v) => v.toFixed(3)}
+              tickFormatter={(v) => v.toFixed(precision)}
               axisLine={false}
               tickLine={false}
-              width={52}
+              width={isCrypto ? 64 : 52}
             />
             <Tooltip content={<CustomTooltip fromCurrency={fromCurrency} toCurrency={toCurrency} />} />
-            <ReferenceLine
-              y={startRate}
-              stroke="#94a3b8"
-              strokeDasharray="4 2"
-              strokeWidth={1}
-            />
+            <ReferenceLine y={startRate} stroke="#94a3b8" strokeDasharray="4 2" strokeWidth={1} />
             <Area
               type="monotone"
               dataKey="rate"
@@ -209,11 +189,12 @@ export default function YtdRateChart({ fromCurrency, toCurrency, currentRate, is
               fill={`url(#ytdGradient-${fromCurrency}-${toCurrency})`}
               dot={false}
               activeDot={{ r: 4, fill: chartColor }}
+              isAnimationActive={false}
             />
           </AreaChart>
         </ResponsiveContainer>
         <p className="text-xs text-gray-400 mt-2 text-center">
-          Indicative rate data. For reference only — not a guarantee of future rates.
+          Source: ECB via Frankfurter.app · CoinGecko for crypto · Daily closing rates
         </p>
       </CardContent>
     </Card>
