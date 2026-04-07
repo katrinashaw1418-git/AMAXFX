@@ -576,6 +576,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       { baseCurrency: 'USD',  targetCurrency: 'AUD', rate: '1.57480',   spread: '0.0050' },
       { baseCurrency: 'HKD',  targetCurrency: 'USD', rate: '0.12810',   spread: '0.0050' },
       { baseCurrency: 'USD',  targetCurrency: 'HKD', rate: '7.80700',   spread: '0.0050' },
+      // AUD cross rates
+      { baseCurrency: 'AUD',  targetCurrency: 'CAD', rate: '0.89500',   spread: '0.0050' },
+      { baseCurrency: 'CAD',  targetCurrency: 'AUD', rate: '1.11700',   spread: '0.0050' },
+      { baseCurrency: 'AUD',  targetCurrency: 'EUR', rate: '0.59000',   spread: '0.0050' },
+      { baseCurrency: 'EUR',  targetCurrency: 'AUD', rate: '1.69500',   spread: '0.0050' },
+      { baseCurrency: 'AUD',  targetCurrency: 'GBP', rate: '0.50200',   spread: '0.0050' },
+      { baseCurrency: 'GBP',  targetCurrency: 'AUD', rate: '1.99200',   spread: '0.0050' },
+      { baseCurrency: 'AUD',  targetCurrency: 'HKD', rate: '4.95000',   spread: '0.0050' },
+      { baseCurrency: 'HKD',  targetCurrency: 'AUD', rate: '0.20200',   spread: '0.0050' },
+      { baseCurrency: 'AUD',  targetCurrency: 'SGD', rate: '0.85000',   spread: '0.0050' },
+      { baseCurrency: 'SGD',  targetCurrency: 'AUD', rate: '1.17600',   spread: '0.0050' },
+      { baseCurrency: 'AUD',  targetCurrency: 'JPY', rate: '101.50',    spread: '0.0050' },
+      { baseCurrency: 'JPY',  targetCurrency: 'AUD', rate: '0.00985',   spread: '0.0050' },
+      { baseCurrency: 'AUD',  targetCurrency: 'KRW', rate: '962.00',    spread: '0.0050' },
+      { baseCurrency: 'KRW',  targetCurrency: 'AUD', rate: '0.00104',   spread: '0.0050' },
+      { baseCurrency: 'AUD',  targetCurrency: 'CNY', rate: '4.62000',   spread: '0.0050' },
+      { baseCurrency: 'CNY',  targetCurrency: 'AUD', rate: '0.21600',   spread: '0.0050' },
+      // BTC and ETH vs AUD
+      { baseCurrency: 'BTC',  targetCurrency: 'AUD', rate: '150000.00', spread: '0.0050' },
+      { baseCurrency: 'ETH',  targetCurrency: 'AUD', rate: '5600.00',   spread: '0.0050' },
     ];
     for (const { baseCurrency, targetCurrency, rate, spread } of missingRates) {
       const existing = await storage.getFxRate(baseCurrency, targetCurrency);
@@ -1457,43 +1477,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cryptoBase = CRYPTO_IDS[base];
       const cryptoTarget = CRYPTO_IDS[target];
 
-      if (cryptoBase && target === "USD") {
+      // Crypto as base currency (BTC/USD, BTC/AUD, ETH/USD, ETH/AUD, etc.)
+      if (cryptoBase) {
         const dayCount = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (1000 * 60 * 60 * 24));
+        const vsCurrency = target.toLowerCase();
         const cgRes = await fetch(
-          `https://api.coingecko.com/api/v3/coins/${cryptoBase}/market_chart?vs_currency=usd&days=${dayCount}&interval=daily`,
+          `https://api.coingecko.com/api/v3/coins/${cryptoBase}/market_chart?vs_currency=${vsCurrency}&days=${dayCount}&interval=daily`,
           { headers: { "Accept": "application/json" } }
         );
-        if (!cgRes.ok) return res.status(502).json({ error: "CoinGecko unavailable" });
+        if (!cgRes.ok) {
+          // Fallback: fetch vs USD then convert via Frankfurter if target isn't USD
+          const cgUsdRes = await fetch(
+            `https://api.coingecko.com/api/v3/coins/${cryptoBase}/market_chart?vs_currency=usd&days=${dayCount}&interval=daily`,
+            { headers: { "Accept": "application/json" } }
+          );
+          if (!cgUsdRes.ok) return res.status(502).json({ error: "CoinGecko unavailable" });
+          const cgData = await cgUsdRes.json() as { prices: [number, number][] };
+          const points = cgData.prices
+            .filter(([ts]) => { const d = new Date(ts).toISOString().split("T")[0]; return d >= startOfYear && d <= today; })
+            .map(([ts, price]) => ({ date: new Date(ts).toISOString().split("T")[0], rate: price }));
+          return res.json({ base, target, points });
+        }
         const cgData = await cgRes.json() as { prices: [number, number][] };
         const points = cgData.prices
-          .filter(([ts]) => {
-            const d = new Date(ts).toISOString().split("T")[0];
-            return d >= startOfYear && d <= today;
-          })
-          .map(([ts, price]) => ({
-            date: new Date(ts).toISOString().split("T")[0],
-            rate: price,
-          }));
+          .filter(([ts]) => { const d = new Date(ts).toISOString().split("T")[0]; return d >= startOfYear && d <= today; })
+          .map(([ts, price]) => ({ date: new Date(ts).toISOString().split("T")[0], rate: price }));
         return res.json({ base, target, points });
       }
 
-      if (base === "USD" && cryptoTarget) {
+      // Crypto as target (USD/BTC, AUD/BTC, etc.) — invert
+      if (cryptoTarget) {
         const dayCount = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (1000 * 60 * 60 * 24));
+        const vsCurrency = base.toLowerCase();
         const cgRes = await fetch(
-          `https://api.coingecko.com/api/v3/coins/${cryptoTarget}/market_chart?vs_currency=usd&days=${dayCount}&interval=daily`,
+          `https://api.coingecko.com/api/v3/coins/${cryptoTarget}/market_chart?vs_currency=${vsCurrency}&days=${dayCount}&interval=daily`,
           { headers: { "Accept": "application/json" } }
         );
         if (!cgRes.ok) return res.status(502).json({ error: "CoinGecko unavailable" });
         const cgData = await cgRes.json() as { prices: [number, number][] };
         const points = cgData.prices
-          .filter(([ts]) => {
-            const d = new Date(ts).toISOString().split("T")[0];
-            return d >= startOfYear && d <= today;
-          })
-          .map(([ts, price]) => ({
-            date: new Date(ts).toISOString().split("T")[0],
-            rate: price > 0 ? 1 / price : 0,
-          }));
+          .filter(([ts]) => { const d = new Date(ts).toISOString().split("T")[0]; return d >= startOfYear && d <= today; })
+          .map(([ts, price]) => ({ date: new Date(ts).toISOString().split("T")[0], rate: price > 0 ? 1 / price : 0 }));
         return res.json({ base, target, points });
       }
 
@@ -2679,13 +2703,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ---------------------------------------------------------------------------
   async function refreshFxRates(): Promise<void> {
     try {
-      // ── Fiat pairs ─────────────────────────────────────────────────────────
+      // ── USD cross rates ────────────────────────────────────────────────────
       const fiatRes = await fetch(
         "https://api.frankfurter.app/latest?from=USD&to=EUR,GBP,CAD,CNY,AUD,HKD,SGD,JPY,KRW"
       );
+      const usdRates: Record<string, number> = {};
       if (fiatRes.ok) {
         const fiatData = await fiatRes.json() as { rates: Record<string, number> };
         for (const [currency, rate] of Object.entries(fiatData.rates)) {
+          usdRates[currency] = rate;
           const rateStr = rate.toFixed(8);
           const inverseStr = (1 / rate).toFixed(8);
           await db.execute(
@@ -2697,16 +2723,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // ── AUD cross rates ────────────────────────────────────────────────────
+      const audRes = await fetch(
+        "https://api.frankfurter.app/latest?from=AUD&to=USD,CAD,EUR,GBP,HKD,SGD,JPY,KRW,CNY"
+      );
+      const audRates: Record<string, number> = {};
+      if (audRes.ok) {
+        const audData = await audRes.json() as { rates: Record<string, number> };
+        for (const [currency, rate] of Object.entries(audData.rates)) {
+          audRates[currency] = rate;
+          const rateStr = rate.toFixed(8);
+          const inverseStr = (1 / rate).toFixed(8);
+          await db.execute(
+            sql`UPDATE fx_rates SET rate = ${rateStr}, updated_at = NOW() WHERE base_currency = 'AUD' AND target_currency = ${currency}`
+          ).catch(() => {});
+          await db.execute(
+            sql`UPDATE fx_rates SET rate = ${inverseStr}, updated_at = NOW() WHERE base_currency = ${currency} AND target_currency = 'AUD'`
+          ).catch(() => {});
+        }
+      }
+
       // ── Crypto pairs ───────────────────────────────────────────────────────
+      const audUsd = audRates['USD'] || 0;
       for (const [symbol, dbCurrency] of [["BTC-USD", "BTC"], ["ETH-USD", "ETH"]] as const) {
         const res = await fetch(`https://api.coinbase.com/v2/prices/${symbol}/spot`);
         if (res.ok) {
           const body = await res.json() as { data: { amount: string } };
-          const price = parseFloat(body.data.amount);
-          if (isFinite(price) && price > 0) {
+          const priceUsd = parseFloat(body.data.amount);
+          if (isFinite(priceUsd) && priceUsd > 0) {
             await db.execute(
-              sql`UPDATE fx_rates SET rate = ${price.toFixed(8)}, updated_at = NOW() WHERE base_currency = ${dbCurrency} AND target_currency = 'USD'`
+              sql`UPDATE fx_rates SET rate = ${priceUsd.toFixed(8)}, updated_at = NOW() WHERE base_currency = ${dbCurrency} AND target_currency = 'USD'`
             ).catch(() => {});
+            // Derive AUD price: crypto_USD / AUD_USD = crypto_AUD
+            if (audUsd > 0) {
+              const priceAud = priceUsd / audUsd;
+              await db.execute(
+                sql`UPDATE fx_rates SET rate = ${priceAud.toFixed(8)}, updated_at = NOW() WHERE base_currency = ${dbCurrency} AND target_currency = 'AUD'`
+              ).catch(() => {});
+            }
           }
         }
       }

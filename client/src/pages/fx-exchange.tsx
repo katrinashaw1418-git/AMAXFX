@@ -32,22 +32,22 @@ const currencies = [
 ];
 
 const DISPLAYED_PAIRS = [
-  { base: "USD", target: "AUD" },
-  { base: "USD", target: "CAD" },
-  { base: "USD", target: "EUR" },
-  { base: "USD", target: "GBP" },
-  { base: "USD", target: "HKD" },
-  { base: "USD", target: "SGD" },
-  { base: "USD", target: "JPY" },
-  { base: "USD", target: "KRW" },
-  { base: "USD", target: "CNY" },
-  { base: "BTC", target: "USD" },
-  { base: "ETH", target: "USD" },
+  { base: "AUD", target: "USD" },
+  { base: "AUD", target: "CAD" },
+  { base: "AUD", target: "EUR" },
+  { base: "AUD", target: "GBP" },
+  { base: "AUD", target: "HKD" },
+  { base: "AUD", target: "SGD" },
+  { base: "AUD", target: "JPY" },
+  { base: "AUD", target: "KRW" },
+  { base: "AUD", target: "CNY" },
+  { base: "BTC", target: "AUD" },
+  { base: "ETH", target: "AUD" },
 ];
 
 export default function FxExchange() {
-  const [fromCurrency, setFromCurrency] = useState("USD");
-  const [toCurrency, setToCurrency] = useState("CAD");
+  const [fromCurrency, setFromCurrency] = useState("AUD");
+  const [toCurrency, setToCurrency] = useState("USD");
   const [amount, setAmount] = useState("10000");
   const [showAdvisorBox, setShowAdvisorBox] = useState(true);
   const { toast } = useToast();
