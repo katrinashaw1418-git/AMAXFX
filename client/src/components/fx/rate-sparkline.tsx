@@ -64,10 +64,16 @@ export default function RateSparkline({ fromCurrency, toCurrency, currentRate }:
             <Tooltip
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
-                  const isCrypto = ["BTC", "ETH"].includes(fromCurrency);
+                  const v = parseFloat(String(payload[0].value));
+                  const formatted =
+                    v < 0.0001 ? v.toFixed(8) :
+                    v < 0.01   ? v.toFixed(6) :
+                    v < 1      ? v.toFixed(4) :
+                    v > 1000   ? v.toLocaleString(undefined, { maximumFractionDigits: 2 }) :
+                    v.toFixed(4);
                   return (
                     <div className="bg-white border border-gray-200 rounded shadow px-2 py-1 text-xs">
-                      {parseFloat(String(payload[0].value)).toFixed(isCrypto ? 2 : 4)}
+                      {formatted}
                     </div>
                   );
                 }

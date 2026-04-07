@@ -593,9 +593,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       { baseCurrency: 'KRW',  targetCurrency: 'AUD', rate: '0.00104',   spread: '0.0050' },
       { baseCurrency: 'AUD',  targetCurrency: 'CNY', rate: '4.62000',   spread: '0.0050' },
       { baseCurrency: 'CNY',  targetCurrency: 'AUD', rate: '0.21600',   spread: '0.0050' },
-      // BTC and ETH vs AUD
-      { baseCurrency: 'BTC',  targetCurrency: 'AUD', rate: '150000.00', spread: '0.0050' },
-      { baseCurrency: 'ETH',  targetCurrency: 'AUD', rate: '5600.00',   spread: '0.0050' },
+      // BTC and ETH vs AUD (and inverse)
+      { baseCurrency: 'BTC',  targetCurrency: 'AUD', rate: '150000.00',   spread: '0.0050' },
+      { baseCurrency: 'ETH',  targetCurrency: 'AUD', rate: '5600.00',     spread: '0.0050' },
+      { baseCurrency: 'AUD',  targetCurrency: 'BTC', rate: '0.00000667',  spread: '0.0050' },
+      { baseCurrency: 'AUD',  targetCurrency: 'ETH', rate: '0.00017857',  spread: '0.0050' },
       // Stablecoins vs AUD (pegged ~$1 USD)
       { baseCurrency: 'USDT', targetCurrency: 'AUD', rate: '1.45520',   spread: '0.0050' },
       { baseCurrency: 'AUD',  targetCurrency: 'USDT', rate: '0.68720',  spread: '0.0050' },
@@ -2812,11 +2814,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await db.execute(
               sql`UPDATE fx_rates SET rate = ${priceUsd.toFixed(8)}, updated_at = NOW() WHERE base_currency = ${dbCurrency} AND target_currency = 'USD'`
             ).catch(() => {});
-            // Derive AUD price: crypto_USD / AUD_USD = crypto_AUD
+            // Derive AUD price and inverse
             if (audUsd > 0) {
               const priceAud = priceUsd / audUsd;
               await db.execute(
                 sql`UPDATE fx_rates SET rate = ${priceAud.toFixed(8)}, updated_at = NOW() WHERE base_currency = ${dbCurrency} AND target_currency = 'AUD'`
+              ).catch(() => {});
+              // AUD/crypto inverse (e.g. AUD/BTC)
+              const audPerCrypto = 1 / priceAud;
+              await db.execute(
+                sql`UPDATE fx_rates SET rate = ${audPerCrypto.toFixed(10)}, updated_at = NOW() WHERE base_currency = 'AUD' AND target_currency = ${dbCurrency}`
               ).catch(() => {});
             }
           }

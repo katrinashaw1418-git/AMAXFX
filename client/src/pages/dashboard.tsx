@@ -47,10 +47,10 @@ const DISPLAYED_PAIRS = [
   { base: "AUD", target: "JPY"  },
   { base: "AUD", target: "KRW"  },
   { base: "AUD", target: "CNY"  },
-  { base: "BTC",  target: "AUD" },
-  { base: "ETH",  target: "AUD" },
-  { base: "USDT", target: "AUD" },
-  { base: "USDC", target: "AUD" },
+  { base: "AUD", target: "BTC"  },
+  { base: "AUD", target: "ETH"  },
+  { base: "AUD", target: "USDT" },
+  { base: "AUD", target: "USDC" },
 ];
 
 export default function Dashboard() {
@@ -322,8 +322,14 @@ export default function Dashboard() {
                     const rate      = fxRates?.find((r: any) => r.baseCurrency === base && r.targetCurrency === target);
                     const rateValue = rate ? parseFloat(rate.rate) : null;
                     const isSelected = fromCurrency === base && toCurrency === target;
-                    const isCrypto   = base === "BTC" || base === "ETH";
+                    const targetMeta = currencies.find((c) => c.code === target);
                     const baseMeta   = currencies.find((c) => c.code === base);
+                    const formatRate = (v: number) =>
+                      v < 0.0001 ? v.toFixed(8) :
+                      v < 0.01   ? v.toFixed(6) :
+                      v < 1      ? v.toFixed(4) :
+                      v > 1000   ? v.toLocaleString(undefined, { maximumFractionDigits: 2 }) :
+                      v.toFixed(4);
 
                     return (
                       <div
@@ -337,9 +343,9 @@ export default function Dashboard() {
                       >
                         <div className="flex-1 min-w-0">
                           <p className={`font-semibold text-xs ${isSelected ? "text-amber-700" : "text-gray-800"}`}>
-                            {baseMeta?.flag} {base}/{target}
+                            {baseMeta?.flag} {base}/{targetMeta?.flag} {target}
                           </p>
-                          <p className="text-xs text-gray-400 truncate">{baseMeta?.name}</p>
+                          <p className="text-xs text-gray-400 truncate">{targetMeta?.name}</p>
                         </div>
 
                         <div className="flex-shrink-0">
@@ -352,9 +358,7 @@ export default function Dashboard() {
                           {rateValue !== null ? (
                             <>
                               <p className="font-bold text-sm text-gray-900">
-                                {isCrypto
-                                  ? rateValue.toLocaleString(undefined, { maximumFractionDigits: 2 })
-                                  : rateValue.toFixed(4)}
+                                {formatRate(rateValue)}
                               </p>
                               {rate?.isStale ? (
                                 <span className="text-xs text-amber-600">⚠ {rate.rateAgeMinutes}m</span>
