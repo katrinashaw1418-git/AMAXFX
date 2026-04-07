@@ -49,7 +49,8 @@ const services = [
     title: "Crypto Exchange",
     description: "Buy, sell, and hold digital assets including BTC, ETH, USDT, and USDC through a compliant, regulated platform.",
     features: ["BTC, ETH, USDT & USDC", "Real-time market prices", "Transparent fee structure"],
-    color: "bg-yellow-500",
+    color: "bg-white",
+    iconColor: "text-slate-900",
   },
   {
     icon: Globe2,
@@ -206,7 +207,7 @@ export default function Landing() {
                 <Card key={service.title} className="border-0" style={CARD_STYLE}>
                   <CardContent className="p-7">
                     <div className={`w-12 h-12 ${service.color} rounded-xl flex items-center justify-center mb-5`}>
-                      <Icon className="w-6 h-6 text-white" />
+                      <Icon className={`w-6 h-6 ${service.iconColor ?? "text-white"}`} />
                     </div>
                     <h3 className="text-lg font-semibold text-white mb-2">{service.title}</h3>
                     <p className="mb-5 leading-relaxed text-sm text-white">{service.description}</p>
@@ -282,7 +283,7 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div>
-              <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 mb-4">
+              <Badge className="bg-white/10 text-white border border-white/20 mb-4">
                 Regulatory Compliance
               </Badge>
               <h2 className="text-3xl font-bold mb-4">Built for Regulators, Trusted by Users</h2>
@@ -346,7 +347,7 @@ export default function Landing() {
       {/* ── About ── */}
       <section id="about" className="py-20" style={{ background: "#07111f" }}>
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <Badge className="bg-blue-500/10 text-blue-400 border border-blue-500/30 mb-4">About AMAX</Badge>
+          <Badge className="bg-white/10 text-white border border-white/20 mb-4">About AMAX</Badge>
           <h2 className="text-3xl font-bold mb-6">Australia-Based. Compliance-First.</h2>
           <p className="leading-relaxed text-lg text-white mb-4">
             AMAX is an Australian-based fintech platform building regulated infrastructure for FX exchange, digital wallets, cryptocurrency trading, and cross-border remittance. Our founding team brings experience from financial services, compliance, and technology — with a focus on building a platform that regulators, banks, and customers can trust.
