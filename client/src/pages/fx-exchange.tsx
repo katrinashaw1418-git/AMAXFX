@@ -10,7 +10,8 @@ import { useWallets } from "@/hooks/use-portfolio";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowRightLeft, TrendingUp, TrendingDown, Wallet, Phone, MessageSquare, X } from "lucide-react";
+import { ArrowRightLeft, Wallet, Phone, MessageSquare, X, RefreshCw } from "lucide-react";
+import YtdRateChart from "@/components/fx/ytd-rate-chart";
 
 const currencies = [
   { code: "USD", name: "US Dollar", flag: "🇺🇸" },
@@ -32,25 +33,18 @@ export default function FxExchange() {
   const [showAdvisorBox, setShowAdvisorBox] = useState(true);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  const { data: wallets = [] } = useWallets();
 
+  const { data: wallets = [] } = useWallets();
   const { data: fxRates, isLoading: ratesLoading } = useFxRates();
   const { data: fxRate, isLoading: rateLoading } = useFxRate(fromCurrency, toCurrency);
 
   const exchangeMutation = useMutation({
     mutationFn: async (data: { fromCurrency: string; toCurrency: string; amount: number }) => {
-      console.log("Making exchange API call with data:", data);
       const response = await apiRequest("POST", "/api/fx-exchange", data);
-      if (!response.ok) {
-        throw new Error('Exchange failed');
-      }
-      const result = await response.json();
-      console.log("Exchange API result:", result);
-      return result;
+      if (!response.ok) throw new Error("Exchange failed");
+      return response.json();
     },
     onSuccess: (data) => {
-      console.log("Exchange mutation onSuccess called with data:", data);
       toast({
         title: "Exchange Successful",
         description: `Successfully exchanged ${amount} ${fromCurrency} to ${data.convertedAmount?.toLocaleString()} ${toCurrency}`,
@@ -58,11 +52,8 @@ export default function FxExchange() {
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/portfolio/allocation"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/investment-breakdown"] });
     },
-    onError: (error) => {
-      console.error("Exchange mutation error:", error);
+    onError: () => {
       toast({
         title: "Exchange Failed",
         description: "There was an error processing your exchange. Please try again.",
@@ -80,35 +71,76 @@ export default function FxExchange() {
       });
       return;
     }
-
-    console.log("handleExchange called with:", { fromCurrency, toCurrency, amount });
-    console.log("Starting exchange mutation...");
-    
-    exchangeMutation.mutate({
-      fromCurrency,
-      toCurrency,
-      amount: parseFloat(amount),
-    });
+    exchangeMutation.mutate({ fromCurrency, toCurrency, amount: parseFloat(amount) });
   };
 
-  const exchangeRate = fxRate ? parseFloat(fxRate.rate) : 1;
-  const spread = fxRate ? parseFloat(fxRate.spread) : 0.005;
+  const exchangeRate = fxRate ? parseFloat((fxRate as any).rate) : 1;
+  const spread = fxRate ? parseFloat((fxRate as any).spread) : 0.005;
   const grossConverted = parseFloat(amount || "0") * exchangeRate;
-  const fee = grossConverted * spread; // Use live spread from API (not hardcoded)
+  const fee = grossConverted * spread;
   const convertedAmount = grossConverted - fee;
-  
-  // Get wallet balances for display
+
   const fromWallet = wallets.find((w: any) => w.currency === fromCurrency);
   const toWallet = wallets.find((w: any) => w.currency === toCurrency);
   const fromBalance = fromWallet ? parseFloat(fromWallet.balance) : 0;
   const toBalance = toWallet ? parseFloat(toWallet.balance) : 0;
 
+  const swapCurrencies = () => {
+    setFromCurrency(toCurrency);
+    setToCurrency(fromCurrency);
+  };
+
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">FX Exchange</h1>
-        <p className="text-gray-600">Exchange currencies with competitive rates</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">FX Exchange</h1>
+          <p className="text-gray-600">Exchange currencies at competitive interbank rates</p>
+        </div>
       </div>
+
+      {/* YTD Rate Chart — shown first, before spot rate */}
+      <YtdRateChart
+        fromCurrency={fromCurrency}
+        toCurrency={toCurrency}
+        currentRate={exchangeRate}
+        isLoading={rateLoading}
+      />
+
+      {/* Spot Rate Banner */}
+      <Card className="bg-gradient-to-r from-slate-800 to-slate-700 text-white border-0">
+        <CardContent className="py-4 px-6">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <p className="text-slate-400 text-xs uppercase tracking-wide mb-1">Live Spot Rate</p>
+              <p className="text-2xl font-bold">
+                {rateLoading ? (
+                  <span className="text-slate-400 text-base">Loading...</span>
+                ) : (
+                  <>
+                    1 {fromCurrency} = <span className="text-amber-400">{exchangeRate.toFixed(4)}</span> {toCurrency}
+                  </>
+                )}
+              </p>
+            </div>
+            {(fxRate as any)?.isStale && (
+              <Badge className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs">
+                ⚠ Rate data {(fxRate as any).rateAgeMinutes}m old
+              </Badge>
+            )}
+            {!(fxRate as any)?.isStale && !rateLoading && (
+              <div className="flex items-center gap-1.5 text-xs text-green-400">
+                <RefreshCw className="w-3 h-3" />
+                <span>
+                  {(fxRate as any)?.rateAgeMinutes !== null && (fxRate as any)?.rateAgeMinutes !== undefined
+                    ? `Updated ${(fxRate as any).rateAgeMinutes}m ago`
+                    : "Live rate"}
+                </span>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Exchange Form */}
@@ -121,7 +153,7 @@ export default function FxExchange() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="from-currency">From</Label>
+                    <Label>From</Label>
                     <Select value={fromCurrency} onValueChange={setFromCurrency}>
                       <SelectTrigger>
                         <SelectValue />
@@ -134,15 +166,14 @@ export default function FxExchange() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <div className="flex items-center mt-1 text-sm text-gray-600">
-                      <Wallet className="w-4 h-4 mr-1" />
+                    <div className="flex items-center mt-1 text-sm text-gray-500">
+                      <Wallet className="w-3.5 h-3.5 mr-1" />
                       <span>Available: {fromBalance.toLocaleString()} {fromCurrency}</span>
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="amount">Amount</Label>
+                    <Label>Amount</Label>
                     <Input
-                      id="amount"
                       type="number"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
@@ -150,65 +181,72 @@ export default function FxExchange() {
                     />
                   </div>
                 </div>
-                
+
                 <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="to-currency">To</Label>
-                    <Select value={toCurrency} onValueChange={setToCurrency}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {currencies.map((currency) => (
-                          <SelectItem key={currency.code} value={currency.code}>
-                            {currency.flag} {currency.code} - {currency.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <div className="flex items-center mt-1 text-sm text-gray-600">
-                      <Wallet className="w-4 h-4 mr-1" />
-                      <span>Available: {toBalance.toLocaleString()} {toCurrency}</span>
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
+                      <Label>To</Label>
+                      <Select value={toCurrency} onValueChange={setToCurrency}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {currencies.map((currency) => (
+                            <SelectItem key={currency.code} value={currency.code}>
+                              {currency.flag} {currency.code} - {currency.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="mb-0.5 flex-shrink-0"
+                      onClick={swapCurrencies}
+                      title="Swap currencies"
+                    >
+                      <ArrowRightLeft className="w-4 h-4" />
+                    </Button>
                   </div>
                   <div>
-                    <Label>You'll receive</Label>
-                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-lg font-semibold text-gray-900">
+                    <div className="flex items-center mt-1 text-sm text-gray-500">
+                      <Wallet className="w-3.5 h-3.5 mr-1" />
+                      <span>Available: {toBalance.toLocaleString()} {toCurrency}</span>
+                    </div>
+                    <Label className="mt-2 block">You'll receive</Label>
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-lg font-semibold text-gray-900">
                       {convertedAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} {toCurrency}
                     </div>
                   </div>
                 </div>
               </div>
-              
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Exchange Rate</span>
+
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Spot Rate</span>
                   <span className="font-medium">
                     {rateLoading ? "Loading..." : `1 ${fromCurrency} = ${exchangeRate.toFixed(4)} ${toCurrency}`}
                   </span>
                 </div>
-                {!rateLoading && (fxRate as any)?.isStale && (
-                  <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
-                    <span>⚠</span>
-                    <span>
-                      Rate data is {(fxRate as any).rateAgeMinutes} min old — live refresh may have been delayed. Rate shown reflects last confirmed market data.
-                    </span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between text-sm mt-2">
-                  <span className="text-gray-600">Processing Fee</span>
-                  <span className="font-medium">
-                    0.5% ({fee.toFixed(2)} {toCurrency})
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Processing Fee (0.5%)</span>
+                  <span className="font-medium">{fee.toFixed(2)} {toCurrency}</span>
+                </div>
+                <div className="flex items-center justify-between border-t pt-2">
+                  <span className="text-gray-600">Net Amount</span>
+                  <span className="font-semibold text-gray-900">
+                    {convertedAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} {toCurrency}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-sm mt-2">
-                  <span className="text-gray-600">Estimated completion</span>
-                  <span className="font-medium">Instant</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Settlement</span>
+                  <span className="font-medium text-green-600">Instant</span>
                 </div>
               </div>
-              
-              <Button 
-                className="w-full mt-6" 
+
+              <Button
+                className="w-full mt-6"
                 onClick={handleExchange}
                 disabled={exchangeMutation.isPending || rateLoading}
               >
@@ -218,45 +256,58 @@ export default function FxExchange() {
           </Card>
         </div>
 
-        {/* Live Rates */}
+        {/* Live Rates Panel */}
         <div>
           <Card>
             <CardHeader>
               <CardTitle>Live Exchange Rates</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {fxRates?.map((rate: any) => {
-                  const rateValue = parseFloat(rate.rate);
-
-                  return (
-                    <div key={`${rate.baseCurrency}-${rate.targetCurrency}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium">{rate.baseCurrency}/{rate.targetCurrency}</p>
-                        <p className="text-sm text-gray-600">
-                          {currencies.find(c => c.code === rate.baseCurrency)?.name} to {currencies.find(c => c.code === rate.targetCurrency)?.name}
-                        </p>
+              <div className="space-y-2">
+                {ratesLoading ? (
+                  <p className="text-sm text-gray-400 text-center py-4">Loading rates...</p>
+                ) : (
+                  fxRates?.map((rate: any) => {
+                    const rateValue = parseFloat(rate.rate);
+                    return (
+                      <div
+                        key={`${rate.baseCurrency}-${rate.targetCurrency}`}
+                        className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors"
+                        onClick={() => {
+                          setFromCurrency(rate.baseCurrency);
+                          setToCurrency(rate.targetCurrency);
+                        }}
+                      >
+                        <div>
+                          <p className="font-medium text-sm">
+                            {rate.baseCurrency}/{rate.targetCurrency}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {currencies.find((c) => c.code === rate.baseCurrency)?.name}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-sm">{rateValue.toFixed(4)}</p>
+                          {rate.isStale ? (
+                            <span className="text-xs text-amber-600">⚠ {rate.rateAgeMinutes}m ago</span>
+                          ) : (
+                            <span className="text-xs text-green-600">
+                              {rate.rateAgeMinutes !== null ? `${rate.rateAgeMinutes}m ago` : "Live"}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold">{rateValue.toFixed(4)}</p>
-                        {rate.isStale ? (
-                          <span className="text-xs text-amber-600">⚠ {rate.rateAgeMinutes}m ago</span>
-                        ) : (
-                          <span className="text-xs text-green-600">
-                            {rate.rateAgeMinutes !== null ? `${rate.rateAgeMinutes}m ago` : "Live rate"}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
+              <p className="text-xs text-gray-400 mt-3 text-center">Click a pair to select it</p>
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Floating Contact Your Advisor Box */}
+      {/* Floating Advisor Box */}
       {showAdvisorBox && (
         <div className="fixed top-4 right-4 z-50 w-80">
           <Card className="backdrop-blur-sm bg-white/95 border-purple-200 shadow-lg">
@@ -267,7 +318,7 @@ export default function FxExchange() {
                     <MessageSquare className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-sm">Wealth Planner</h3>
+                    <h3 className="font-semibold text-sm">FX Support</h3>
                     <p className="text-xs text-gray-600">Advisory Team</p>
                   </div>
                 </div>
@@ -280,30 +331,24 @@ export default function FxExchange() {
                   <X className="h-3 w-3" />
                 </Button>
               </div>
-              
               <p className="text-xs text-gray-700 mb-3">
-                Need help with currency exchange? Our wealth planners are here to assist.
+                Need help with your exchange or a large transfer? Contact our team.
               </p>
-              
               <div className="flex items-center space-x-2 text-purple-600 mb-3">
                 <Phone className="w-3 h-3" />
                 <span className="font-medium text-xs">+61 3 9654 1000</span>
               </div>
-              
               <div className="flex space-x-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
-                  onClick={() => window.open('tel:+61396541000', '_self')}
+                  onClick={() => window.open("tel:+61396541000", "_self")}
                   className="flex-1 text-xs h-8"
                 >
                   <Phone className="w-3 h-3 mr-1" />
                   Call
                 </Button>
-                <Button 
-                  size="sm"
-                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-xs h-8"
-                >
+                <Button size="sm" className="flex-1 bg-purple-600 hover:bg-purple-700 text-xs h-8">
                   <MessageSquare className="w-3 h-3 mr-1" />
                   Message
                 </Button>
