@@ -450,6 +450,10 @@ export default function Wallets() {
         return cryptoCurrencies.indexOf(a.currency) - cryptoCurrencies.indexOf(b.currency);
       }
       
+      // AUD always first
+      if (a.currency === 'AUD') return -1;
+      if (b.currency === 'AUD') return 1;
+      
       // For non-crypto currencies, sort alphabetically
       return a.currency.localeCompare(b.currency);
     });
@@ -531,7 +535,9 @@ export default function Wallets() {
                     <tr key={wallet.id} className="border-b hover:bg-gray-50">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <span className="text-lg">{wallet.config?.flag}</span>
+                          <div className={`w-9 h-9 ${wallet.config?.color || 'bg-gray-400'} rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}>
+                            {wallet.config?.flag}
+                          </div>
                           <div>
                             <div className="font-medium">{wallet.currency}</div>
                             <div className="text-sm text-muted-foreground">{wallet.config?.name}</div>
