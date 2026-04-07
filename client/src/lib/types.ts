@@ -23,9 +23,9 @@ export const CurrencyConfig = {
   CAD: { name: "Canadian Dollar", symbol: "$", color: "bg-red-500", flag: "🇨🇦", region: "Americas" },
   EUR: { name: "Euro", symbol: "€", color: "bg-blue-600", flag: "🇪🇺", region: "Europe" },
   GBP: { name: "British Pound", symbol: "£", color: "bg-green-600", flag: "🇬🇧", region: "Europe" },
-  AUD: { name: "Australian Dollar", symbol: "$", color: "bg-orange-500", flag: "🇦🇺", region: "Oceania" },
+  AUD: { name: "Australian Dollar", symbol: "$", color: "bg-purple-500", flag: "🇦🇺", region: "Oceania" },
   HKD: { name: "Hong Kong Dollar", symbol: "$", color: "bg-pink-500", flag: "🇭🇰", region: "Asia" },
-  SGD: { name: "Singapore Dollar", symbol: "$", color: "bg-red-600", flag: "🇸🇬", region: "Asia" },
+  SGD: { name: "Singapore Dollar", symbol: "$", color: "bg-yellow-500", flag: "🇸🇬", region: "Asia" },
   
   // Additional Wise-supported currencies
   JPY: { name: "Japanese Yen", symbol: "¥", color: "bg-rose-500", flag: "🇯🇵", region: "Asia" },
@@ -41,7 +41,7 @@ export const CurrencyConfig = {
   ZAR: { name: "South African Rand", symbol: "R", color: "bg-yellow-400", flag: "🇿🇦", region: "Africa" },
   INR: { name: "Indian Rupee", symbol: "₹", color: "bg-orange-400", flag: "🇮🇳", region: "Asia" },
   CNY: { name: "Chinese Yuan", symbol: "¥", color: "bg-red-400", flag: "🇨🇳", region: "Asia" },
-  KRW: { name: "South Korean Won", symbol: "₩", color: "bg-blue-300", flag: "🇰🇷", region: "Asia" },
+  KRW: { name: "South Korean Won", symbol: "₩", color: "bg-blue-500", flag: "🇰🇷", region: "Asia" },
   TWD: { name: "Taiwan Dollar", symbol: "NT$", color: "bg-indigo-400", flag: "🇹🇼", region: "Asia" },
   THB: { name: "Thai Baht", symbol: "฿", color: "bg-yellow-300", flag: "🇹🇭", region: "Asia" },
   MYR: { name: "Malaysian Ringgit", symbol: "RM", color: "bg-red-300", flag: "🇲🇾", region: "Asia" },
@@ -57,7 +57,7 @@ export const CurrencyConfig = {
   NGN: { name: "Nigerian Naira", symbol: "₦", color: "bg-green-300", flag: "🇳🇬", region: "Africa" },
   
   // Crypto Currencies
-  BTC: { name: "Bitcoin", symbol: "₿", color: "bg-yellow-500", flag: "₿", region: "Crypto" },
+  BTC: { name: "Bitcoin", symbol: "₿", color: "bg-gray-900", flag: "₿", region: "Crypto" },
   ETH: { name: "Ethereum", symbol: "Ξ", color: "bg-purple-500", flag: "Ξ", region: "Crypto" },
   USDT: { name: "Tether", symbol: "$", color: "bg-green-500", flag: "🟢", region: "Stablecoins" },
   USDC: { name: "USD Coin", symbol: "$", color: "bg-blue-400", flag: "🔵", region: "Stablecoins" },
