@@ -1,0 +1,156 @@
+🧭 Homepage Structure (Recommended)
+1. Hero Section (Top of page)
+
+Purpose: Immediately explain what you do
+
+Content:
+
+Headline:
+
+“Secure FX, Digital Wallet & Cryptocurrency Exchange Platform”
+
+Subheading:
+
+“Send, receive, exchange, and manage funds across fiat and digital currencies — built with compliance and security at its core.”
+
+Buttons:
+“Get Started” (→ signup/login)
+“Learn More”
+
+Optional note (important for pre-launch):
+
+“Platform launching soon, subject to regulatory registration.”
+
+2. Services Overview (3–4 cards)
+
+Purpose: Show your core offerings clearly
+
+Cards:
+
+💱 FX Exchange
+
+Convert between major fiat currencies with competitive rates.
+
+👛 Digital Wallet
+
+Store and manage funds securely in a multi-currency wallet.
+
+₿ Crypto Exchange
+
+Buy, sell, and hold digital assets through a compliant platform.
+
+🌍 Remittance
+
+Send funds domestically and internationally with streamlined processing.
+
+3. How It Works (Simple Flow)
+
+Purpose: Explain your end-to-end model clearly
+
+Example:
+
+Sign up & verify identity (KYC)
+Deposit funds (bank transfer / supported methods)
+Choose currency (fiat or crypto)
+Execute exchange or transfer
+Withdraw or hold in wallet
+
+👉 Keep this visual and simple (icons or steps)
+
+4. Compliance & Security Section (VERY important)
+
+Purpose: Build trust with AUSTRAC, banks, and users
+
+Content:
+
+Title:
+
+“Compliance & Risk Management”
+
+Text:
+
+“We are committed to complying with Australian AML/CTF regulations and implementing robust risk management controls.”
+
+Include:
+KYC/Identity verification
+Transaction monitoring
+Suspicious matter reporting
+Data security practices
+
+👉 This aligns your business with expectations of AUSTRAC
+
+5. Platform Status / Disclaimer (if pre-launch)
+
+Purpose: Clarify you are not yet live
+
+Example:
+
+“This platform is currently in development and will be launched following completion of regulatory registration and operational readiness.”
+
+6. Target Customers / Use Cases
+
+Purpose: Clarify positioning
+
+Example:
+
+Retail users
+SMEs
+Cross-border payments
+Institutional clients (if applicable)
+7. About the Company
+
+Purpose: Establish legitimacy
+
+Include:
+
+Company name
+Brief mission statement
+Location (Australia-based)
+Leadership (optional but strong)
+8. Contact Section
+Email
+Contact form
+Business address (your Regus/coworking address)
+9. Footer
+
+Include:
+
+Company name
+ABN/ACN (if available)
+Legal links:
+Privacy Policy
+Terms & Conditions
+AML/CTF statement
+Copyright
+🔐 Login / Signup Placement
+Top navigation:
+“Login”
+“Sign Up”
+
+👉 But not the main landing page
+
+🎯 Key UX Principle for your model
+Public site = informational + trust-building
+Login area = transactional platform
+
+👉 This separation is what regulators expect in fintech/crypto businesses
+
+⚠️ What to avoid
+Landing page that is just login ❌
+Hidden business model ❌
+No compliance mention ❌
+Overly vague descriptions ❌
+💡 Optional advanced sections (if you want stronger credibility)
+API / integrations (if institutional focus)
+Fees structure (even indicative)
+Supported countries/currencies
+Risk disclosures
+✔️ Summary
+
+Your homepage should:
+
+Clearly explain what you do
+Show how it works
+Demonstrate compliance awareness
+Be accessible without login
+Include a clear pre-launch disclaimer (if not live)
