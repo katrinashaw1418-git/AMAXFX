@@ -125,12 +125,12 @@ export default function Landing() {
               <span className="text-xl font-bold text-white">AMAX</span>
             </div>
 
-            <nav className="hidden md:flex items-center gap-7 text-sm text-white">
-              <a href="#services"     className="hover:text-white/70 transition-colors">Services</a>
-              <a href="#how-it-works" className="hover:text-white/70 transition-colors">How It Works</a>
-              <a href="#compliance"   className="hover:text-white/70 transition-colors">Compliance</a>
-              <a href="#about"        className="hover:text-white/70 transition-colors">About</a>
-              <a href="#contact"      className="hover:text-white/70 transition-colors">Contact</a>
+            <nav className="hidden md:flex items-center gap-7 text-sm">
+              <a href="#services"     className="text-white hover:text-white/70 transition-colors">Services</a>
+              <a href="#how-it-works" className="text-white hover:text-white/70 transition-colors">How It Works</a>
+              <a href="#compliance"   className="text-white hover:text-white/70 transition-colors">Compliance</a>
+              <a href="#about"        className="text-white hover:text-white/70 transition-colors">About</a>
+              <a href="#contact"      className="text-white hover:text-white/70 transition-colors">Contact</a>
             </nav>
 
             <div className="flex items-center gap-2">
@@ -497,9 +497,9 @@ export default function Landing() {
 
             <div>
               <p className="font-semibold text-white mb-3 text-sm">Platform</p>
-              <ul className="space-y-2 text-sm text-white">
+              <ul className="space-y-2 text-sm">
                 {[["#services","Services"],["#how-it-works","How It Works"],["#compliance","Compliance"],["#about","About"],["#contact","Contact"]].map(([href, label]) => (
-                  <li key={label}><a href={href} className="hover:text-white/70 transition-colors">{label}</a></li>
+                  <li key={label}><a href={href} className="text-white hover:text-white/70 transition-colors">{label}</a></li>
                 ))}
               </ul>
             </div>
