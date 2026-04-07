@@ -33,32 +33,28 @@ const services = [
   {
     icon: ArrowRightLeft,
     title: "FX Exchange",
-    description:
-      "Convert between major currencies including AUD, USD, EUR, GBP, CAD, SGD, JPY, HKD and more at competitive interbank rates.",
+    description: "Convert between major currencies including AUD, USD, EUR, GBP, CAD, SGD, JPY, HKD and more at competitive interbank rates.",
     features: ["Real-time exchange rates", "Multi-currency accounts", "Instant settlement"],
     color: "bg-purple-600",
   },
   {
     icon: Wallet,
     title: "Digital Wallet",
-    description:
-      "Hold, send, and receive funds across multiple currencies from a single digital wallet with full transaction history.",
+    description: "Hold, send, and receive funds across multiple currencies from a single digital wallet with full transaction history.",
     features: ["Multi-currency balances", "Instant transfers", "Full audit trail"],
     color: "bg-blue-500",
   },
   {
     icon: Bitcoin,
     title: "Crypto Exchange",
-    description:
-      "Buy, sell, and hold digital assets including BTC, ETH, USDT, and USDC through a compliant, regulated platform.",
+    description: "Buy, sell, and hold digital assets including BTC, ETH, USDT, and USDC through a compliant, regulated platform.",
     features: ["BTC, ETH, USDT & USDC", "Real-time market prices", "Transparent fee structure"],
     color: "bg-yellow-500",
   },
   {
     icon: Globe2,
     title: "Remittance",
-    description:
-      "Send funds domestically and internationally with streamlined processing, competitive FX, and full compliance tracking.",
+    description: "Send funds domestically and internationally with streamlined processing, competitive FX, and full compliance tracking.",
     features: ["Cross-border transfers", "40+ supported corridors", "Same-day processing"],
     color: "bg-green-500",
   },
@@ -66,9 +62,9 @@ const services = [
 
 const steps = [
   { step: "01", title: "Create Your Account", description: "Register and complete identity verification (KYC/AML) in minutes." },
-  { step: "02", title: "Fund Your Wallet", description: "Deposit funds via bank transfer or crypto into your multi-currency eWallet." },
-  { step: "03", title: "Exchange or Remit", description: "Convert currencies or send cross-border payments at transparent rates." },
-  { step: "04", title: "Track Everything", description: "Monitor all transactions in real time with a complete audit trail." },
+  { step: "02", title: "Fund Your Wallet",     description: "Deposit funds via bank transfer or crypto into your multi-currency eWallet." },
+  { step: "03", title: "Exchange or Remit",    description: "Convert currencies or send cross-border payments at transparent rates." },
+  { step: "04", title: "Track Everything",     description: "Monitor all transactions in real time with a complete audit trail." },
 ];
 
 const compliancePoints = [
@@ -90,27 +86,15 @@ const keyFeatures = [
 ];
 
 const targetCustomers = [
-  {
-    icon: UserCheck,
-    title: "Retail Users",
-    description: "Individuals sending money overseas, managing multi-currency savings, or holding digital assets with full regulatory protection.",
-  },
-  {
-    icon: Briefcase,
-    title: "SMEs & Businesses",
-    description: "Small and medium enterprises paying international suppliers, managing foreign currency exposure, or receiving cross-border payments.",
-  },
-  {
-    icon: Globe2,
-    title: "International Transfers",
-    description: "Migrant workers, expats, and families sending remittances across AUD and major Asian, European, and North American corridors.",
-  },
-  {
-    icon: Building2,
-    title: "Institutional Clients",
-    description: "Corporate treasury teams and financial intermediaries requiring compliant FX execution, reporting, and audit-ready transaction records.",
-  },
+  { icon: UserCheck,  title: "Retail Users",            description: "Individuals sending money overseas, managing multi-currency savings, or holding digital assets with full regulatory protection." },
+  { icon: Briefcase,  title: "SMEs & Businesses",       description: "Small and medium enterprises paying international suppliers, managing foreign currency exposure, or receiving cross-border payments." },
+  { icon: Globe2,     title: "International Transfers", description: "Migrant workers, expats, and families sending remittances across AUD and major Asian, European, and North American corridors." },
+  { icon: Building2,  title: "Institutional Clients",   description: "Corporate treasury teams and financial intermediaries requiring compliant FX execution, reporting, and audit-ready transaction records." },
 ];
+
+const GREY_BTN = "bg-gray-600 hover:bg-gray-500 text-white font-semibold";
+const ICON_BG  = { background: "rgba(255,255,255,0.08)" };
+const CARD_STYLE = { background: "#0e1f33", border: "1px solid #1a3450" };
 
 export default function Landing() {
   const [contactForm, setContactForm] = useState({ name: "", email: "", message: "" });
@@ -125,7 +109,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen text-white" style={{ background: "#07111f" }}>
 
-      {/* Pre-launch disclaimer + Nav — sticky together */}
+      {/* ── Pre-launch banner + Nav (sticky together) ── */}
       <div className="sticky top-0 z-50">
         <div className="bg-amber-500 text-slate-900 text-sm font-medium text-center py-2 px-6 flex items-center justify-center gap-2">
           <AlertTriangle className="w-4 h-4 flex-shrink-0" />
@@ -134,27 +118,30 @@ export default function Landing() {
 
         <header style={{ background: "rgba(7,17,31,0.97)", borderBottom: "1px solid #152e4a" }} className="backdrop-blur">
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            {/* Black & white logo */}
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-amber-500 rounded-lg flex items-center justify-center">
+              <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center">
                 <Coins className="w-5 h-5 text-slate-900" />
               </div>
               <span className="text-xl font-bold text-white">AMAX</span>
             </div>
-            <nav className="hidden md:flex items-center gap-7 text-sm" style={{ color: "#6b9ab8" }}>
-              <a href="#services"    className="hover:text-white transition-colors">Services</a>
+
+            <nav className="hidden md:flex items-center gap-7 text-sm text-white/70">
+              <a href="#services"     className="hover:text-white transition-colors">Services</a>
               <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
-              <a href="#compliance"  className="hover:text-white transition-colors">Compliance</a>
-              <a href="#about"       className="hover:text-white transition-colors">About</a>
-              <a href="#contact"     className="hover:text-white transition-colors">Contact</a>
+              <a href="#compliance"   className="hover:text-white transition-colors">Compliance</a>
+              <a href="#about"        className="hover:text-white transition-colors">About</a>
+              <a href="#contact"      className="hover:text-white transition-colors">Contact</a>
             </nav>
+
             <div className="flex items-center gap-2">
               <Link href="/login">
-                <Button variant="outline" className="text-sm px-4 text-white hover:text-white hover:bg-[#152e4a]" style={{ borderColor: "#1d3a55", background: "transparent" }}>
+                <Button variant="outline" className="text-sm px-4 text-white hover:text-white hover:bg-white/10" style={{ borderColor: "#1d3a55", background: "transparent" }}>
                   Sign In
                 </Button>
               </Link>
               <Link href="/login">
-                <Button className="bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold text-sm px-4">
+                <Button className={`${GREY_BTN} text-sm px-4`}>
                   Sign Up <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </Link>
@@ -163,7 +150,7 @@ export default function Landing() {
         </header>
       </div>
 
-      {/* Hero */}
+      {/* ── Hero ── */}
       <section className="max-w-6xl mx-auto px-6 py-24 text-center">
         <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/30 mb-6">
           AUSTRAC Registered Digital Currency Exchange
@@ -173,49 +160,42 @@ export default function Landing() {
           <span className="text-amber-400">Crypto Exchange</span>
           <br />Platform
         </h1>
-        <p className="text-xl max-w-2xl mx-auto mb-10" style={{ color: "#6b9ab8" }}>
+        <p className="text-xl text-white max-w-2xl mx-auto mb-10">
           Send, receive, exchange, and manage funds across fiat and digital currencies — built with compliance and security at its core.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/login">
-            <Button size="lg" className="bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold px-8">
-              Get Started
-            </Button>
+            <Button size="lg" className={`${GREY_BTN} px-8`}>Get Started</Button>
           </Link>
           <a href="#how-it-works">
-            <Button size="lg" variant="outline" className="px-8 text-white hover:text-white hover:bg-[#152e4a]" style={{ borderColor: "#1d3a55", background: "transparent" }}>
+            <Button size="lg" variant="outline" className="px-8 text-white hover:text-white hover:bg-white/10" style={{ borderColor: "#1d3a55", background: "transparent" }}>
               How It Works
             </Button>
           </a>
         </div>
 
-        {/* Trust Badges */}
-        <div className="flex flex-wrap gap-6 justify-center mt-16 text-sm" style={{ color: "#4a6e88" }}>
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-amber-500" />
-            <span>256-bit Encrypted</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <FileCheck className="w-4 h-4 text-amber-500" />
-            <span>AUSTRAC Registered</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Lock className="w-4 h-4 text-amber-500" />
-            <span>KYC/AML Verified</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-amber-500" />
-            <span>Segregated Client Funds</span>
-          </div>
+        {/* Trust badges */}
+        <div className="flex flex-wrap gap-6 justify-center mt-16 text-sm text-white">
+          {[
+            { Icon: Shield,       label: "256-bit Encrypted" },
+            { Icon: FileCheck,    label: "AUSTRAC Registered" },
+            { Icon: Lock,         label: "KYC/AML Verified" },
+            { Icon: CheckCircle2, label: "Segregated Client Funds" },
+          ].map(({ Icon, label }) => (
+            <div key={label} className="flex items-center gap-2">
+              <Icon className="w-4 h-4 text-white" />
+              <span>{label}</span>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Services */}
+      {/* ── Services ── */}
       <section id="services" className="py-20" style={{ background: "#0a1928" }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold mb-4">Our Services</h2>
-            <p className="max-w-xl mx-auto" style={{ color: "#6b9ab8" }}>
+            <p className="text-white max-w-xl mx-auto">
               Four core offerings built on a compliant, secure infrastructure — aligned with AUSTRAC's regulated service categories.
             </p>
           </div>
@@ -223,17 +203,17 @@ export default function Landing() {
             {services.map((service) => {
               const Icon = service.icon;
               return (
-                <Card key={service.title} className="border-0" style={{ background: "#0e1f33", border: "1px solid #1a3450" }}>
+                <Card key={service.title} className="border-0" style={CARD_STYLE}>
                   <CardContent className="p-7">
                     <div className={`w-12 h-12 ${service.color} rounded-xl flex items-center justify-center mb-5`}>
                       <Icon className="w-6 h-6 text-white" />
                     </div>
                     <h3 className="text-lg font-semibold text-white mb-2">{service.title}</h3>
-                    <p className="mb-5 leading-relaxed text-sm" style={{ color: "#6b9ab8" }}>{service.description}</p>
+                    <p className="mb-5 leading-relaxed text-sm text-white">{service.description}</p>
                     <ul className="space-y-2">
                       {service.features.map((f) => (
-                        <li key={f} className="flex items-center gap-2 text-xs" style={{ color: "#a8c5d8" }}>
-                          <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                        <li key={f} className="flex items-center gap-2 text-xs text-white">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-white flex-shrink-0" />
                           {f}
                         </li>
                       ))}
@@ -246,14 +226,12 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* How It Works */}
+      {/* ── How It Works ── */}
       <section id="how-it-works" className="py-20" style={{ background: "#07111f" }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold mb-4">How It Works</h2>
-            <p className="max-w-xl mx-auto" style={{ color: "#6b9ab8" }}>
-              Start sending and exchanging in four simple steps.
-            </p>
+            <p className="text-white max-w-xl mx-auto">Start sending and exchanging in four simple steps.</p>
           </div>
           <div className="grid md:grid-cols-4 gap-8">
             {steps.map((step, index) => (
@@ -261,37 +239,36 @@ export default function Landing() {
                 {index < steps.length - 1 && (
                   <div className="hidden md:block absolute top-8 left-1/2 w-full h-px" style={{ background: "#152e4a" }} />
                 )}
-                <div className="relative z-10 inline-flex items-center justify-center w-16 h-16 rounded-full border-2 border-amber-500 text-amber-400 text-xl font-bold mb-5" style={{ background: "#0e1f33" }}>
+                {/* White circle with white number */}
+                <div className="relative z-10 inline-flex items-center justify-center w-16 h-16 rounded-full border-2 border-white text-white text-xl font-bold mb-5" style={{ background: "#0e1f33" }}>
                   {step.step}
                 </div>
                 <h3 className="font-semibold text-white mb-2">{step.title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: "#6b9ab8" }}>{step.description}</p>
+                <p className="text-sm leading-relaxed text-white">{step.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Key Features */}
+      {/* ── Key Features ── */}
       <section className="py-20" style={{ background: "#0a1928" }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold mb-4">Key Features</h2>
-            <p className="max-w-xl mx-auto" style={{ color: "#6b9ab8" }}>
-              Built for reliability, transparency, and regulatory confidence.
-            </p>
+            <p className="text-white max-w-xl mx-auto">Built for reliability, transparency, and regulatory confidence.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {keyFeatures.map((feature) => {
               const Icon = feature.icon;
               return (
-                <div key={feature.label} className="flex items-start gap-4 p-6 rounded-xl" style={{ background: "#0e1f33", border: "1px solid #1a3450" }}>
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "rgba(245,158,11,0.1)" }}>
-                    <Icon className="w-5 h-5 text-amber-400" />
+                <div key={feature.label} className="flex items-start gap-4 p-6 rounded-xl" style={CARD_STYLE}>
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={ICON_BG}>
+                    <Icon className="w-5 h-5 text-white" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-white mb-1">{feature.label}</h3>
-                    <p className="text-sm" style={{ color: "#6b9ab8" }}>{feature.description}</p>
+                    <p className="text-sm text-white">{feature.description}</p>
                   </div>
                 </div>
               );
@@ -300,7 +277,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Compliance */}
+      {/* ── Compliance ── */}
       <section id="compliance" className="py-20" style={{ background: "#07111f" }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-16 items-center">
@@ -309,26 +286,24 @@ export default function Landing() {
                 Regulatory Compliance
               </Badge>
               <h2 className="text-3xl font-bold mb-4">Built for Regulators, Trusted by Users</h2>
-              <p className="mb-8 leading-relaxed" style={{ color: "#6b9ab8" }}>
+              <p className="mb-8 leading-relaxed text-white">
                 AMAX operates under a strict compliance framework aligned with AUSTRAC guidelines for Digital Currency Exchanges and Remittance Network Providers. Every transaction is monitored, recorded, and available for regulatory inspection.
               </p>
               <Link href="/login">
-                <Button className="bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold">
-                  Access the Platform
-                </Button>
+                <Button className={GREY_BTN}>Access the Platform</Button>
               </Link>
             </div>
             <div>
-              <Card style={{ background: "#0e1f33", border: "1px solid #1a3450" }}>
+              <Card style={CARD_STYLE}>
                 <CardContent className="p-8">
                   <h3 className="font-semibold text-white mb-6 flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-amber-400" />
+                    <Shield className="w-5 h-5 text-white" />
                     Compliance Framework
                   </h3>
                   <ul className="space-y-4">
                     {compliancePoints.map((point) => (
-                      <li key={point} className="flex items-start gap-3 text-sm" style={{ color: "#a8c5d8" }}>
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <li key={point} className="flex items-start gap-3 text-sm text-white">
+                        <CheckCircle2 className="w-4 h-4 text-white flex-shrink-0 mt-0.5" />
                         {point}
                       </li>
                     ))}
@@ -340,12 +315,12 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Target Customers */}
+      {/* ── Who We Serve ── */}
       <section className="py-20" style={{ background: "#0a1928" }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold mb-4">Who We Serve</h2>
-            <p className="max-w-xl mx-auto" style={{ color: "#6b9ab8" }}>
+            <p className="text-white max-w-xl mx-auto">
               AMAX is designed for individuals and businesses that need regulated, transparent access to FX, digital wallets, crypto, and cross-border payments.
             </p>
           </div>
@@ -353,13 +328,13 @@ export default function Landing() {
             {targetCustomers.map((customer) => {
               const Icon = customer.icon;
               return (
-                <div key={customer.title} className="flex items-start gap-5 p-7 rounded-xl" style={{ background: "#0e1f33", border: "1px solid #1a3450" }}>
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(245,158,11,0.1)" }}>
-                    <Icon className="w-6 h-6 text-amber-400" />
+                <div key={customer.title} className="flex items-start gap-5 p-7 rounded-xl" style={CARD_STYLE}>
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={ICON_BG}>
+                    <Icon className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-white text-lg mb-2">{customer.title}</h3>
-                    <p className="text-sm leading-relaxed" style={{ color: "#6b9ab8" }}>{customer.description}</p>
+                    <p className="text-sm leading-relaxed text-white">{customer.description}</p>
                   </div>
                 </div>
               );
@@ -368,61 +343,62 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* About */}
+      {/* ── About ── */}
       <section id="about" className="py-20" style={{ background: "#07111f" }}>
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <Badge className="bg-blue-500/10 text-blue-400 border border-blue-500/30 mb-4">
-            About AMAX
-          </Badge>
+          <Badge className="bg-blue-500/10 text-blue-400 border border-blue-500/30 mb-4">About AMAX</Badge>
           <h2 className="text-3xl font-bold mb-6">Australia-Based. Compliance-First.</h2>
-          <p className="leading-relaxed text-lg mb-4" style={{ color: "#6b9ab8" }}>
+          <p className="leading-relaxed text-lg text-white mb-4">
             AMAX is an Australian-based fintech platform building regulated infrastructure for FX exchange, digital wallets, cryptocurrency trading, and cross-border remittance. Our founding team brings experience from financial services, compliance, and technology — with a focus on building a platform that regulators, banks, and customers can trust.
           </p>
-          <p className="leading-relaxed" style={{ color: "#6b9ab8" }}>
+          <p className="leading-relaxed text-white">
             We are currently completing our AUSTRAC registration process and will launch services to the public following regulatory approval and full operational readiness. Our mission is to make regulated access to global currencies and digital assets simpler, faster, and safer for Australians.
           </p>
         </div>
       </section>
 
-      {/* Contact */}
+      {/* ── Contact ── */}
       <section id="contact" className="py-20" style={{ background: "#0a1928" }}>
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold mb-4">Contact Us</h2>
-            <p className="max-w-xl mx-auto" style={{ color: "#6b9ab8" }}>
+            <p className="text-white max-w-xl mx-auto">
               Have a question about the platform, our compliance framework, or partnership opportunities? We'd love to hear from you.
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-12 items-start">
+            {/* Contact details */}
             <div className="space-y-6">
               {[
-                { Icon: Mail, title: "Email", content: <a href="mailto:contact@amax.com.au" className="text-sm hover:text-amber-400 transition-colors" style={{ color: "#6b9ab8" }}>contact@amax.com.au</a> },
-                { Icon: MapPin, title: "Registered Office", content: <p className="text-sm" style={{ color: "#6b9ab8" }}>Sydney, New South Wales, Australia</p> },
-                { Icon: Shield, title: "Compliance Enquiries", content: <a href="mailto:compliance@amax.com.au" className="text-sm hover:text-amber-400 transition-colors" style={{ color: "#6b9ab8" }}>compliance@amax.com.au</a> },
-              ].map(({ Icon, title, content }) => (
+                { Icon: Mail,   title: "Email",                href: "mailto:contact@amax.com.au",    label: "contact@amax.com.au" },
+                { Icon: MapPin, title: "Registered Office",    href: null,                             label: "Sydney, New South Wales, Australia" },
+                { Icon: Shield, title: "Compliance Enquiries", href: "mailto:compliance@amax.com.au",  label: "compliance@amax.com.au" },
+              ].map(({ Icon, title, href, label }) => (
                 <div key={title} className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "rgba(245,158,11,0.1)" }}>
-                    <Icon className="w-5 h-5 text-amber-400" />
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={ICON_BG}>
+                    <Icon className="w-5 h-5 text-white" />
                   </div>
                   <div>
                     <p className="font-semibold text-white mb-1">{title}</p>
-                    {content}
+                    {href
+                      ? <a href={href} className="text-sm text-white hover:text-gray-300 transition-colors">{label}</a>
+                      : <p className="text-sm text-white">{label}</p>
+                    }
                   </div>
                 </div>
               ))}
             </div>
 
-            <Card style={{ background: "#0e1f33", border: "1px solid #1a3450" }}>
+            {/* Contact form */}
+            <Card style={CARD_STYLE}>
               <CardContent className="p-7">
                 {contactSent ? (
                   <div className="text-center py-8">
-                    <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
+                    <CheckCircle2 className="w-12 h-12 text-white mx-auto mb-4" />
                     <h3 className="font-semibold text-white text-lg mb-2">Message Sent</h3>
-                    <p className="text-sm" style={{ color: "#6b9ab8" }}>Thank you for reaching out. We'll be in touch shortly.</p>
+                    <p className="text-sm text-white">Thank you for reaching out. We'll be in touch shortly.</p>
                     <Button
-                      variant="outline"
-                      className="mt-6 text-white hover:text-white hover:bg-[#152e4a]"
-                      style={{ borderColor: "#1d3a55", background: "transparent" }}
+                      className={`mt-6 ${GREY_BTN}`}
                       onClick={() => setContactSent(false)}
                     >
                       Send Another
@@ -431,11 +407,11 @@ export default function Landing() {
                 ) : (
                   <form onSubmit={handleContactSubmit} className="space-y-5">
                     <div>
-                      <Label htmlFor="contact-name" className="text-sm mb-1.5 block" style={{ color: "#a8c5d8" }}>Name</Label>
+                      <Label htmlFor="contact-name" className="text-sm text-white mb-1.5 block">Name</Label>
                       <Input
                         id="contact-name"
                         placeholder="Your full name"
-                        className="text-white placeholder:text-[#3d6080] border-0 focus-visible:ring-amber-500"
+                        className="text-white placeholder:text-white/40 border-0 focus-visible:ring-white/30"
                         style={{ background: "#071526", border: "1px solid #1d3a55" }}
                         value={contactForm.name}
                         onChange={(e) => setContactForm((f) => ({ ...f, name: e.target.value }))}
@@ -443,12 +419,12 @@ export default function Landing() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="contact-email" className="text-sm mb-1.5 block" style={{ color: "#a8c5d8" }}>Email</Label>
+                      <Label htmlFor="contact-email" className="text-sm text-white mb-1.5 block">Email</Label>
                       <Input
                         id="contact-email"
                         type="email"
                         placeholder="you@example.com"
-                        className="text-white placeholder:text-[#3d6080] border-0 focus-visible:ring-amber-500"
+                        className="text-white placeholder:text-white/40 border-0 focus-visible:ring-white/30"
                         style={{ background: "#071526", border: "1px solid #1d3a55" }}
                         value={contactForm.email}
                         onChange={(e) => setContactForm((f) => ({ ...f, email: e.target.value }))}
@@ -456,19 +432,19 @@ export default function Landing() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="contact-message" className="text-sm mb-1.5 block" style={{ color: "#a8c5d8" }}>Message</Label>
+                      <Label htmlFor="contact-message" className="text-sm text-white mb-1.5 block">Message</Label>
                       <Textarea
                         id="contact-message"
                         placeholder="How can we help you?"
                         rows={4}
-                        className="text-white placeholder:text-[#3d6080] border-0 focus-visible:ring-amber-500 resize-none"
+                        className="text-white placeholder:text-white/40 border-0 focus-visible:ring-white/30 resize-none"
                         style={{ background: "#071526", border: "1px solid #1d3a55" }}
                         value={contactForm.message}
                         onChange={(e) => setContactForm((f) => ({ ...f, message: e.target.value }))}
                         required
                       />
                     </div>
-                    <Button type="submit" className="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold">
+                    <Button type="submit" className={`w-full ${GREY_BTN}`}>
                       <Send className="w-4 h-4 mr-2" />
                       Send Message
                     </Button>
@@ -480,21 +456,19 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="bg-amber-500 py-16">
+      {/* ── CTA — black background ── */}
+      <section style={{ background: "#050a10" }} className="py-16">
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold text-slate-900 mb-4">Ready to Get Started?</h2>
-          <p className="text-slate-800 mb-8">
+          <h2 className="text-3xl font-bold text-white mb-4">Ready to Get Started?</h2>
+          <p className="text-white mb-8">
             Join AMAX and experience compliant, fast, and transparent FX exchange, digital wallet, crypto trading, and remittance — all in one platform.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/login">
-              <Button size="lg" className="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-10">
-                Sign Up Now
-              </Button>
+              <Button size="lg" className={`${GREY_BTN} px-10`}>Sign Up Now</Button>
             </Link>
             <Link href="/login">
-              <Button size="lg" variant="outline" className="border-slate-800 text-slate-900 hover:bg-amber-400 px-10">
+              <Button size="lg" variant="outline" className="px-10 text-white hover:text-white hover:bg-white/10" style={{ borderColor: "#1d3a55", background: "transparent" }}>
                 Sign In
               </Button>
             </Link>
@@ -502,41 +476,38 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer */}
+      {/* ── Footer ── */}
       <footer className="py-12" style={{ background: "#07111f", borderTop: "1px solid #152e4a" }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-7 h-7 bg-amber-500 rounded flex items-center justify-center">
+                <div className="w-7 h-7 bg-white rounded flex items-center justify-center">
                   <Coins className="w-4 h-4 text-slate-900" />
                 </div>
                 <span className="font-bold text-white text-lg">AMAX</span>
               </div>
-              <p className="text-sm leading-relaxed" style={{ color: "#4a6e88" }}>
+              <p className="text-sm text-white leading-relaxed">
                 Australia-based regulated platform for FX exchange, digital wallets, cryptocurrency trading, and cross-border remittance.
               </p>
               <p className="text-xs mt-3" style={{ color: "#2d4d65" }}>ABN: [Pending]</p>
             </div>
 
             <div>
-              <p className="font-semibold mb-3 text-sm" style={{ color: "#a8c5d8" }}>Platform</p>
-              <ul className="space-y-2 text-sm" style={{ color: "#4a6e88" }}>
-                {["#services|Services", "#how-it-works|How It Works", "#compliance|Compliance", "#about|About", "#contact|Contact"].map((item) => {
-                  const [href, label] = item.split("|");
-                  return (
-                    <li key={label}><a href={href} className="hover:text-white transition-colors">{label}</a></li>
-                  );
-                })}
+              <p className="font-semibold text-white mb-3 text-sm">Platform</p>
+              <ul className="space-y-2 text-sm text-white/60">
+                {[["#services","Services"],["#how-it-works","How It Works"],["#compliance","Compliance"],["#about","About"],["#contact","Contact"]].map(([href, label]) => (
+                  <li key={label}><a href={href} className="hover:text-white transition-colors">{label}</a></li>
+                ))}
               </ul>
             </div>
 
             <div>
-              <p className="font-semibold mb-3 text-sm" style={{ color: "#a8c5d8" }}>Legal</p>
-              <ul className="space-y-2 text-sm" style={{ color: "#4a6e88" }}>
+              <p className="font-semibold text-white mb-3 text-sm">Legal</p>
+              <ul className="space-y-2 text-sm text-white/60">
                 <li><Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-                <li><Link href="/terms" className="hover:text-white transition-colors">Terms &amp; Conditions</Link></li>
-                <li><Link href="/aml-policy" className="hover:text-white transition-colors">AML/CTF Policy</Link></li>
+                <li><Link href="/terms"           className="hover:text-white transition-colors">Terms &amp; Conditions</Link></li>
+                <li><Link href="/aml-policy"      className="hover:text-white transition-colors">AML/CTF Policy</Link></li>
               </ul>
             </div>
           </div>
