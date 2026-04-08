@@ -843,30 +843,79 @@ export default function Wallets() {
               </div>
 
               <div className="space-y-3">
-                <div className="rounded-lg border p-3 space-y-1">
-                  <p className="text-sm font-medium">Option 1 — Convert to AUD, then withdraw</p>
+                <div className="rounded-lg border p-3 space-y-2">
+                  <p className="text-sm font-medium">🔗 Option 1 — Withdraw to External Wallet Address</p>
                   <p className="text-xs text-muted-foreground">
-                    Use the Crypto Exchange to convert your {selectedWallet?.currency} to AUD. Once in your AUD wallet, you can withdraw to your bank account as usual.
+                    Send {selectedWallet?.currency} to any external wallet (Coinbase, Binance, Ledger, MetaMask, etc.). Enter your destination address below.
+                  </p>
+                  <div>
+                    <Label htmlFor="crypto-withdraw-address" className="text-xs">Destination Wallet Address</Label>
+                    <Input
+                      id="crypto-withdraw-address"
+                      placeholder={selectedWallet?.currency === 'BTC' ? '1A1zP1eP5QGefi2DMPTfTL5SLmv7Divf...' : '0x742d35Cc6634C0532925a3b8D4C9b8f...'}
+                      className="h-8 text-sm font-mono"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="crypto-withdraw-network" className="text-xs">Network</Label>
+                    <Select>
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Select network" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {selectedWallet?.currency === 'BTC' && <SelectItem value="bitcoin">Bitcoin (BTC)</SelectItem>}
+                        {(selectedWallet?.currency === 'ETH' || selectedWallet?.currency === 'USDT' || selectedWallet?.currency === 'USDC') && <SelectItem value="erc20">Ethereum (ERC-20)</SelectItem>}
+                        {(selectedWallet?.currency === 'USDT' || selectedWallet?.currency === 'USDC') && <SelectItem value="trc20">Tron (TRC-20)</SelectItem>}
+                        {selectedWallet?.currency === 'LTC' && <SelectItem value="litecoin">Litecoin (LTC)</SelectItem>}
+                        {selectedWallet?.currency === 'XRP' && <SelectItem value="xrp">XRP Ledger</SelectItem>}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
+                    ⏳ Blockchain withdrawals are reviewed by AMAX compliance before execution. Network fees apply.
                   </p>
                   <Button
-                    className="w-full mt-2 h-8 text-sm"
+                    variant="outline"
+                    className="w-full mt-1 h-8 text-sm"
+                    onClick={() => window.location.href = `mailto:info@amaxglobal.com.au?subject=Crypto Withdrawal Request - ${selectedWallet?.currency}&body=Please process my withdrawal request. Currency: ${selectedWallet?.currency}. I have entered my wallet address above.`}
+                  >
+                    Submit Withdrawal Request
+                  </Button>
+                </div>
+
+                <div className="rounded-lg border p-3 space-y-2">
+                  <p className="text-sm font-medium">🔄 Option 2 — Internal Transfer (Instant, Zero Fees)</p>
+                  <p className="text-xs text-muted-foreground">
+                    Send {selectedWallet?.currency} instantly to another AMAX user by their registered email address. No blockchain fees — settled on the AMAX internal ledger.
+                  </p>
+                  <div>
+                    <Label htmlFor="crypto-internal-email" className="text-xs">Recipient AMAX Email</Label>
+                    <Input
+                      id="crypto-internal-email"
+                      type="email"
+                      placeholder="recipient@example.com"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <Button
+                    className="w-full mt-1 h-8 text-sm"
                     onClick={() => { setWithdrawModalOpen(false); navigate('/crypto'); }}
                   >
-                    Go to Crypto Exchange
+                    Go to Crypto Exchange to Convert First
                   </Button>
                 </div>
 
                 <div className="rounded-lg border p-3 space-y-1">
-                  <p className="text-sm font-medium">Option 2 — Blockchain withdrawal to external wallet</p>
+                  <p className="text-sm font-medium">💱 Option 3 — Convert to AUD, then bank withdraw</p>
                   <p className="text-xs text-muted-foreground">
-                    To send {selectedWallet?.currency} to an external blockchain address, contact our team. We will verify and process your request securely.
+                    Use the Crypto Exchange to convert {selectedWallet?.currency} to AUD, then withdraw to your bank account via Bank Transfer or PayID.
                   </p>
                   <Button
                     variant="outline"
                     className="w-full mt-2 h-8 text-sm"
-                    onClick={() => window.location.href = `mailto:info@amaxglobal.com.au?subject=Crypto Withdrawal Request - ${selectedWallet?.currency}`}
+                    onClick={() => { setWithdrawModalOpen(false); navigate('/crypto'); }}
                   >
-                    Email us to arrange withdrawal
+                    Go to Crypto Exchange
                   </Button>
                 </div>
               </div>
@@ -887,7 +936,7 @@ export default function Wallets() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
-                    <SelectItem value="paypal">🅿️ PayPal</SelectItem>
+                    <SelectItem value="payid">⚡ PayID / NPP (AUD instant)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -906,36 +955,39 @@ export default function Wallets() {
                   </p>
                 )}
               </div>
-              {withdrawMethod === 'paypal' && (
+              {withdrawMethod === 'payid' && (
                 <div className="space-y-3">
                   <div className="p-3 bg-muted rounded-lg">
-                    <h4 className="font-medium mb-2 text-sm">🅿️ PayPal Withdrawal</h4>
+                    <h4 className="font-medium mb-2 text-sm">⚡ PayID / NPP Withdrawal</h4>
                     <div className="text-xs text-muted-foreground space-y-1">
-                      <p>• Funds sent directly to your PayPal account</p>
-                      <p>• Processing time: same day to 1 business day</p>
-                      <p>• PayPal account required</p>
-                      <p>• Standard PayPal fees may apply</p>
+                      <p>• Instant payout via Australia's NPP / Osko network</p>
+                      <p>• Settlement: seconds to minutes (business hours)</p>
+                      <p>• AUD wallets only — receive funds at your PayID</p>
+                      <p>• No fees charged by AMAX for PayID payouts</p>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div>
-                      <Label htmlFor="withdraw-paypal-email" className="text-xs">PayPal Email Address</Label>
+                      <Label htmlFor="withdraw-payid" className="text-xs">Your PayID (email or phone)</Label>
                       <Input
-                        id="withdraw-paypal-email"
-                        type="email"
-                        placeholder="you@example.com"
+                        id="withdraw-payid"
+                        type="text"
+                        placeholder="you@example.com or +61400000000"
                         className="h-8 text-sm"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="withdraw-paypal-name" className="text-xs">Account Holder Name</Label>
+                      <Label htmlFor="withdraw-payid-name" className="text-xs">Account Holder Name</Label>
                       <Input
-                        id="withdraw-paypal-name"
+                        id="withdraw-payid-name"
                         placeholder="John Chen"
                         className="h-8 text-sm"
                       />
                     </div>
                   </div>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
+                    ⏳ Withdrawal requests are reviewed by AMAX before payout. Funds will be sent once approved (typically within 1 business day).
+                  </p>
                 </div>
               )}
 

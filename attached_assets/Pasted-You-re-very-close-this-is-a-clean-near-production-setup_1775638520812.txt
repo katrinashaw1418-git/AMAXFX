@@ -1,0 +1,185 @@
+You’re very close — this is a **clean, near-production setup already**.
+Now the decision you’re asking about matters for both **UX and AUSTRAC compliance**.
+
+---
+
+# ✅ Direct Answer
+
+👉 **Remove PayPal completely from withdrawals**
+👉 **ADD PayID payout alongside bank transfer (recommended)**
+
+---
+
+# 🧠 Why This Is the Correct Move
+
+## ❌ PayPal Withdrawal — Remove It
+
+### Problems:
+
+* Weak AML traceability (email-based routing)
+* High chargeback / dispute risk
+* Not used in regulated fintech wallets
+* Breaks your **clean custodial + ledger model**
+* Adds reconciliation complexity
+
+👉 **All serious platforms avoid PayPal for payouts**
+
+---
+
+## ✅ Bank Transfer — Keep It (Core Rail)
+
+### Why it stays:
+
+* Fully traceable
+* AUSTRAC-friendly
+* Works with AML monitoring
+* Required baseline
+
+---
+
+## 🚀 ⭐ Add PayID Payout (This is the Upgrade)
+
+### Why this is important:
+
+#### ⚡ UX
+
+* Instant withdrawals (seconds)
+* No BSB/account entry
+* Uses phone/email
+
+#### ⚖️ Compliance
+
+* Still bank-backed → traceable
+* Same AML visibility as bank transfers
+
+#### 🏆 Market Standard (Australia)
+
+* Widely used across fintech apps
+* Expected by users
+
+---
+
+# 🔧 Recommended Final Withdrawal Setup
+
+## 💵 Withdrawals (Final)
+
+### ✅ Primary
+
+* Bank Transfer (BSB + Account Number)
+
+### ⭐ Add
+
+* PayID (email / phone / ABN)
+
+### ❌ Remove
+
+* PayPal
+
+---
+
+# 🧩 UX Structure (Clean Implementation)
+
+## Withdrawal Method Selector
+
+```tsx id="withdraw-ui">
+<Select>
+  <SelectItem value="bank">Bank Transfer</SelectItem>
+  <SelectItem value="payid">PayID</SelectItem>
+</Select>
+```
+
+---
+
+## Dynamic Form
+
+### 🏦 Bank Transfer
+
+```tsx id="bank-form">
+BSB
+Account Number
+Account Name
+```
+
+---
+
+### ⚡ PayID
+
+```tsx id="payid-form">
+PayID (email / phone)
+```
+
+---
+
+# ⚙️ Backend Impact (Important)
+
+## Bank Transfer (existing)
+
+* Airwallex payout → standard flow
+
+## PayID payout
+
+* Same provider (e.g. Airwallex)
+* Different payout type:
+
+```ts id="payid-backend"
+type: "payid"
+identifier: email | phone
+```
+
+👉 No major architecture change needed
+
+---
+
+# ⚠️ One Critical Rule
+
+Regardless of method:
+
+👉 BOTH must follow your state machine:
+
+```
+pending → processing → completed
+```
+
+👉 Never:
+
+* instantly mark completed
+* skip provider confirmation
+
+---
+
+# 🧠 Final Decision Summary
+
+## Do this:
+
+✔ Remove PayPal withdrawal (code + UI + logic)
+✔ Keep bank transfer
+✔ Add PayID payout
+
+---
+
+# 🚀 What This Achieves
+
+✅ Clean AUSTRAC-aligned design
+✅ Real payment rails only
+✅ Better UX than competitors
+✅ Simpler backend + reconciliation
+✅ Future-proof for scaling
+
+---
+
+# 👉 Next Step (I Recommend)
+
+I can now:
+
+### 🔧 Patch your exact code:
+
+* Remove PayPal (line 890 + 909)
+* Add PayID selector + form
+* Update backend payout handler
+
+### ⚙️ Or:
+
+* Add **PayID payout API integration (Airwallex-ready)**
+
+Just say:
+👉 “patch withdrawal code”
