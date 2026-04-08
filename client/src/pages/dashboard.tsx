@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { useFxRate } from "@/hooks/use-fx-rates";
 import {
   ArrowRightLeft, Wallet, Shield, Phone,
@@ -32,6 +32,7 @@ const CHART_CURRENCIES = [
 ];
 
 export default function Dashboard() {
+  const [, navigate] = useLocation();
   const [showAdvisorBox, setShowAdvisorBox] = useState(true);
   const [chartFrom, setChartFrom] = useState("AUD");
   const [chartTo,   setChartTo]   = useState("USD");
@@ -129,61 +130,53 @@ export default function Dashboard() {
 
       {/* ── 4 CTA Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link href="/wallets">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow border-blue-100 hover:border-blue-300 h-full">
-            <CardContent className="p-5 flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Wallet className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-gray-900">eWallet</p>
-                <p className="text-xs text-gray-500">Balances &amp; deposits</p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border-blue-100 hover:border-blue-300 h-full" onClick={() => navigate('/wallets')}>
+          <CardContent className="p-5 flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Wallet className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900">eWallet</p>
+              <p className="text-xs text-gray-500">Balances &amp; deposits</p>
+            </div>
+          </CardContent>
+        </Card>
 
-        <Link href="/fx-exchange">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow border-purple-100 hover:border-purple-300 h-full">
-            <CardContent className="p-5 flex items-center gap-3">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <ArrowRightLeft className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-gray-900">FX Exchange</p>
-                <p className="text-xs text-gray-500">Fiat currency conversion</p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border-purple-100 hover:border-purple-300 h-full" onClick={() => navigate('/fx-exchange')}>
+          <CardContent className="p-5 flex items-center gap-3">
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <ArrowRightLeft className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900">FX Exchange</p>
+              <p className="text-xs text-gray-500">Fiat currency conversion</p>
+            </div>
+          </CardContent>
+        </Card>
 
-        <Link href="/crypto">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow border-amber-100 hover:border-amber-300 h-full">
-            <CardContent className="p-5 flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Bitcoin className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-gray-900">Crypto Exchange</p>
-                <p className="text-xs text-gray-500">Digital assets (DCE) conversion</p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border-amber-100 hover:border-amber-300 h-full" onClick={() => navigate('/crypto')}>
+          <CardContent className="p-5 flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Bitcoin className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900">Crypto Exchange</p>
+              <p className="text-xs text-gray-500">Digital assets (DCE) conversion</p>
+            </div>
+          </CardContent>
+        </Card>
 
-        <Link href="/compliance">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow border-emerald-100 hover:border-emerald-300 h-full">
-            <CardContent className="p-5 flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Shield className="w-5 h-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-gray-900">Compliance</p>
-                <p className="text-xs text-gray-500">KYC &amp; documents</p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border-emerald-100 hover:border-emerald-300 h-full" onClick={() => navigate('/compliance')}>
+          <CardContent className="p-5 flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Shield className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900">Compliance</p>
+              <p className="text-xs text-gray-500">KYC &amp; documents</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* ── Balances + Recent Transactions ── */}

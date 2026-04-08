@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useWallets, usePortfolio } from "@/hooks/use-portfolio";
 import { useFxRates } from "@/hooks/use-fx-rates";
 import { CurrencyConfig } from "@/lib/types";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { Coins, Landmark, Info, Wallet, ArrowRightLeft } from "lucide-react";
 
 function CurrencyCircle({ currency, size = "md" }: { currency: string; size?: "sm" | "md" }) {
@@ -30,6 +30,7 @@ function toAud(currency: string, amount: number, fxRates: any[]): number | null 
 }
 
 export default function CurrencyBalances() {
+  const [, navigate] = useLocation();
   const { data: rawWallets, isLoading: walletsLoading } = useWallets();
   const { data: portfolio } = usePortfolio();
   const { data: fxRates } = useFxRates();
@@ -149,16 +150,12 @@ export default function CurrencyBalances() {
           )}
           {/* Action buttons */}
           <div className="flex gap-2 pt-3 border-t">
-            <Link href="/wallets" className="flex-1">
-              <Button variant="outline" size="sm" className="w-full text-xs gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50">
-                <Wallet className="w-3 h-3" /> eWallet
-              </Button>
-            </Link>
-            <Link href="/fx-exchange" className="flex-1">
-              <Button variant="outline" size="sm" className="w-full text-xs gap-1.5 border-purple-200 text-purple-700 hover:bg-purple-50">
-                <ArrowRightLeft className="w-3 h-3" /> Exchange
-              </Button>
-            </Link>
+            <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50" onClick={() => navigate('/wallets')}>
+              <Wallet className="w-3 h-3" /> eWallet
+            </Button>
+            <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5 border-purple-200 text-purple-700 hover:bg-purple-50" onClick={() => navigate('/fx-exchange')}>
+              <ArrowRightLeft className="w-3 h-3" /> Exchange
+            </Button>
           </div>
           <div className="flex gap-2 mt-1">
             <p className="flex-1 text-center text-[10px] text-gray-400">Deposit &amp; withdraw</p>
@@ -213,16 +210,12 @@ export default function CurrencyBalances() {
           )}
           {/* Action buttons */}
           <div className="flex gap-2 pt-3 border-t">
-            <Link href="/wallets" className="flex-1">
-              <Button variant="outline" size="sm" className="w-full text-xs gap-1.5 border-amber-200 text-amber-700 hover:bg-amber-50">
-                <Wallet className="w-3 h-3" /> eWallet
-              </Button>
-            </Link>
-            <Link href="/crypto" className="flex-1">
-              <Button variant="outline" size="sm" className="w-full text-xs gap-1.5 border-amber-300 text-amber-800 hover:bg-amber-50">
-                <ArrowRightLeft className="w-3 h-3" /> Exchange
-              </Button>
-            </Link>
+            <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5 border-amber-200 text-amber-700 hover:bg-amber-50" onClick={() => navigate('/wallets')}>
+              <Wallet className="w-3 h-3" /> eWallet
+            </Button>
+            <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5 border-amber-300 text-amber-800 hover:bg-amber-50" onClick={() => navigate('/crypto')}>
+              <ArrowRightLeft className="w-3 h-3" /> Exchange
+            </Button>
           </div>
           <div className="flex gap-2 mt-1">
             <p className="flex-1 text-center text-[10px] text-gray-400">Deposit &amp; withdraw</p>

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useTransactions } from "@/hooks/use-portfolio";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { ArrowRightLeft } from "lucide-react";
 
 const FIAT_TYPES   = ["exchange", "deposit", "withdrawal", "transfer"];
@@ -39,6 +39,7 @@ const typeLabel = (type: string) =>
   type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 export default function TransactionHistory() {
+  const [, navigate] = useLocation();
   const [filter, setFilter] = useState<Filter>("all");
   const { data: allTx, isLoading, error } = useTransactions(100);
 
@@ -116,9 +117,7 @@ export default function TransactionHistory() {
               {filterBtn("fiat",   "Fiat")}
               {filterBtn("crypto", "Crypto")}
             </div>
-            <Link href="/transactions">
-              <Button variant="outline" size="sm">View All</Button>
-            </Link>
+            <Button variant="outline" size="sm" onClick={() => navigate('/transactions')}>View All</Button>
           </div>
         </div>
       </CardHeader>
