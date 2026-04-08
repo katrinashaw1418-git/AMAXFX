@@ -174,7 +174,7 @@ export default function FxExchange() {
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <p className="text-slate-400 text-xs uppercase tracking-wide mb-1">Live Spot Rate</p>
-              <p className="text-2xl font-bold">
+              <p className="text-2xl font-bold text-white">
                 {rateLoading ? (
                   <span className="text-slate-400 text-base">Loading…</span>
                 ) : (
