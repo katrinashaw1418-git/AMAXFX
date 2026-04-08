@@ -17,6 +17,7 @@ import { TrendingUp, TrendingDown, Plus, Minus, ArrowUpDown, Send, Repeat, Info,
 import { Link, useLocation } from 'wouter';
 import { useFxRate } from '@/hooks/use-fx-rates';
 import { useWallets } from '@/hooks/use-portfolio';
+import RateSparkline from '@/components/fx/rate-sparkline';
 import { useVoiceNarration } from '@/hooks/use-voice-narration';
 import VoiceSettings from '@/components/voice/voice-settings';
 
@@ -135,6 +136,13 @@ function WalletValueDisplay({ wallet, displayCurrency }: { wallet: any, displayC
       </div>
     </div>
   );
+}
+
+function WalletSparkline({ fromCurrency, toCurrency }: { fromCurrency: string; toCurrency: string }) {
+  const { data: fxRate } = useFxRate(fromCurrency, toCurrency);
+  if (fromCurrency === toCurrency) return <div className="w-16 h-8" />;
+  const currentRate = fxRate ? parseFloat(fxRate.rate) : 0;
+  return <RateSparkline fromCurrency={fromCurrency} toCurrency={toCurrency} currentRate={currentRate} />;
 }
 
 export default function Wallets() {
@@ -528,6 +536,7 @@ export default function Wallets() {
                     <th className="text-left p-4 font-medium">Currency</th>
                     <th className="text-left p-4 font-medium">Balance</th>
                     <th className="text-left p-4 font-medium">Approx. Value ({displayCurrency})</th>
+                    <th className="text-center p-4 font-medium">YTD Trend</th>
                     <th className="text-right p-4 font-medium">Actions</th>
                   </tr>
                 </thead>
@@ -557,6 +566,11 @@ export default function Wallets() {
                       </td>
                       <td className="p-4">
                         <WalletValueDisplay wallet={wallet} displayCurrency={displayCurrency} />
+                      </td>
+                      <td className="p-4">
+                        <div className="flex justify-center">
+                          <WalletSparkline fromCurrency={wallet.currency} toCurrency={displayCurrency} />
+                        </div>
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex gap-1 justify-end">
