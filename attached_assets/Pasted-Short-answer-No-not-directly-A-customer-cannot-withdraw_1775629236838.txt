@@ -1,0 +1,138 @@
+Short answer: **No — not directly.**
+
+A customer **cannot withdraw digital assets (crypto/stablecoins) straight to a bank account**. There must be a **conversion step to fiat currency (e.g., AUD)** first.
+
+---
+
+# 💡 How It Actually Works
+
+## 🔁 Correct Flow (What you should implement)
+
+### Step-by-step:
+
+1. **User holds digital asset**
+
+   * e.g. USDT, BTC, ETH
+
+2. **User requests withdrawal**
+
+   * chooses “Withdraw to bank”
+
+3. **System converts crypto → fiat**
+
+   * e.g. USDT → AUD using FX rate
+
+4. **Fiat balance is credited internally**
+
+   * now held as AUD in user account
+
+5. **Bank transfer is executed**
+
+   * via:
+
+     * PayID (Australia)
+     * OSKO / NPP
+     * or traditional bank rails
+
+---
+
+# ❌ What You CANNOT Do
+
+* Send **crypto directly to a bank account**
+* Skip conversion step
+* Treat crypto like fiat in banking rails
+
+👉 Banks only accept **fiat currency**
+
+---
+
+# ⚠️ Compliance Angle (Important for AUSTRAC)
+
+If your app is in Australia:
+
+* Crypto → fiat conversion = **regulated activity**
+* Bank payout = **remittance activity**
+
+You must:
+
+* KYC the user
+* record transaction details
+* store FX rate used
+
+---
+
+# 🧾 What Your App Should Support
+
+## ✅ Supported flows
+
+* Crypto → Fiat → Bank transfer
+* Fiat deposit → Crypto purchase
+* Internal wallet balances
+
+---
+
+## 🚫 Not supported
+
+* Crypto → Bank directly
+* Bank → Crypto without onboarding/KYC
+
+---
+
+# 🧠 Architecture Mapping (for your app)
+
+Based on your system:
+
+You already have:
+
+* ✅ FX rate storage
+* ✅ transaction system
+* ✅ snapshots
+
+---
+
+## 👉 You should add:
+
+### 1. Conversion transaction
+
+```ts
+type: "conversion"
+fromAsset: "USDT"
+toAsset: "AUD"
+rateUsed: 1.52
+```
+
+---
+
+### 2. Fiat withdrawal transaction
+
+```ts
+type: "withdraw"
+asset: "AUD"
+method: "bank_transfer"
+```
+
+---
+
+# 🧾 Final Answer
+
+👉 **Can customer withdraw digital assets directly to bank?**
+❌ No
+
+👉 **Can they withdraw after conversion?**
+✅ Yes — via fiat conversion + bank transfer
+
+---
+
+# 🚀 If you want
+
+I can design your exact:
+
+👉 **“crypto → AUD → PayID withdrawal flow”**
+
+with:
+
+* backend routes
+* DB schema
+* compliance-safe logic
+
+Just say: **“design withdrawal flow”**
