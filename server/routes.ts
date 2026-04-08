@@ -2158,8 +2158,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (idem.existing) return res.json({ ...(idem.response as object), idempotent: true });
       }
 
-      const rate = await storage.getFxRate(fromCurrency, toCurrency);
-      if (!rate) return res.status(400).json({ error: "Exchange rate not available" });
+      if (fromCurrency === toCurrency) {
+        return res.status(400).json({ error: "From and To currencies must be different" });
+      }
+
+      // Look up rate directly; fall back to USD triangulation for cross-pairs not in DB
+      let rateValue: string | null = null;
+      const directRate = await storage.getFxRate(fromCurrency, toCurrency);
+      if (directRate) {
+        rateValue = directRate.rate;
+      } else {
+        // Triangulate via USD: from→USD × USD→to
+        const fromUsd = await storage.getFxRate(fromCurrency, "USD");
+        const usdTo   = await storage.getFxRate("USD", toCurrency);
+        if (fromUsd && usdTo) {
+          rateValue = new Decimal(fromUsd.rate).mul(usdTo.rate).toFixed(8);
+        }
+      }
+      if (!rateValue) return res.status(400).json({ error: "Exchange rate not available for this pair" });
+
+      const rate = directRate ?? { rate: rateValue, spread: "0.005" };
 
       // Ensure target wallet exists before entering transaction
       const existingToWallet = await storage.getWallet(userId, toCurrency);
@@ -2997,7 +3015,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // ── USD cross rates ────────────────────────────────────────────────────
       const fiatRes = await fetch(
-        "https://api.frankfurter.app/latest?from=USD&to=EUR,GBP,CAD,CNY,AUD,HKD,SGD,JPY,KRW"
+        "https://api.frankfurter.app/latest?from=USD&to=EUR,GBP,CAD,CNY,AUD,HKD,SGD,JPY,KRW,NZD"
       );
       const usdRates: Record<string, number> = {};
       if (fiatRes.ok) {
@@ -3017,7 +3035,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // ── AUD cross rates ────────────────────────────────────────────────────
       const audRes = await fetch(
-        "https://api.frankfurter.app/latest?from=AUD&to=USD,CAD,EUR,GBP,HKD,SGD,JPY,KRW,CNY"
+        "https://api.frankfurter.app/latest?from=AUD&to=USD,CAD,EUR,GBP,HKD,SGD,JPY,KRW,CNY,NZD"
       );
       const audRates: Record<string, number> = {};
       if (audRes.ok) {

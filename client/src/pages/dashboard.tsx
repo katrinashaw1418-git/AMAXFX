@@ -14,20 +14,21 @@ import CurrencyBalances from "@/components/dashboard/currency-balances";
 import TransactionHistory from "@/components/dashboard/transaction-history";
 
 const CHART_CURRENCIES = [
-  { code: "AUD",  label: "🇦🇺 AUD – Australian Dollar" },
-  { code: "USD",  label: "🇺🇸 USD – US Dollar"          },
-  { code: "EUR",  label: "🇪🇺 EUR – Euro"               },
-  { code: "GBP",  label: "🇬🇧 GBP – British Pound"      },
-  { code: "JPY",  label: "🇯🇵 JPY – Japanese Yen"       },
-  { code: "CNY",  label: "🇨🇳 CNY – Chinese Yuan"       },
-  { code: "HKD",  label: "🇭🇰 HKD – Hong Kong Dollar"   },
-  { code: "SGD",  label: "🇸🇬 SGD – Singapore Dollar"   },
-  { code: "CAD",  label: "🇨🇦 CAD – Canadian Dollar"    },
-  { code: "KRW",  label: "🇰🇷 KRW – South Korean Won"   },
-  { code: "BTC",  label: "₿  BTC – Bitcoin"             },
-  { code: "ETH",  label: "Ξ  ETH – Ethereum"            },
-  { code: "USDT", label: "💵 USDT – Tether"             },
-  { code: "USDC", label: "🪙 USDC – USD Coin"           },
+  { code: "AUD",  label: "🇦🇺 AUD – Australian Dollar"    },
+  { code: "NZD",  label: "🇳🇿 NZD – New Zealand Dollar"   },
+  { code: "USD",  label: "🇺🇸 USD – US Dollar"            },
+  { code: "EUR",  label: "🇪🇺 EUR – Euro"                 },
+  { code: "CAD",  label: "🇨🇦 CAD – Canadian Dollar"      },
+  { code: "GBP",  label: "🇬🇧 GBP – British Pound"        },
+  { code: "CNY",  label: "🇨🇳 CNY – Chinese Yuan"         },
+  { code: "HKD",  label: "🇭🇰 HKD – Hong Kong Dollar"     },
+  { code: "SGD",  label: "🇸🇬 SGD – Singapore Dollar"     },
+  { code: "JPY",  label: "🇯🇵 JPY – Japanese Yen"         },
+  { code: "KRW",  label: "🇰🇷 KRW – South Korean Won"     },
+  { code: "BTC",  label: "₿  BTC – Bitcoin"               },
+  { code: "ETH",  label: "Ξ  ETH – Ethereum"              },
+  { code: "USDT", label: "💵 USDT – Tether"               },
+  { code: "USDC", label: "🪙 USDC – USD Coin"             },
 ];
 
 export default function Dashboard() {
@@ -66,6 +67,64 @@ export default function Dashboard() {
             )}
           </div>
         )}
+      </div>
+
+      {/* ── YTD Chart ── */}
+      <div className="space-y-3">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm text-gray-700">YTD Exchange Rate Chart</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex-1 min-w-[140px]">
+                <p className="text-xs text-gray-500 mb-1">From</p>
+                <Select value={chartFrom} onValueChange={setChartFrom}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CHART_CURRENCIES.filter(c => c.code !== chartTo).map(c => (
+                      <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-end pb-1 text-gray-400 font-bold mt-5">→</div>
+              <div className="flex-1 min-w-[140px]">
+                <p className="text-xs text-gray-500 mb-1">To</p>
+                <Select value={chartTo} onValueChange={setChartTo}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CHART_CURRENCIES.filter(c => c.code !== chartFrom).map(c => (
+                      <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {!chartLoading && chartRateValue > 0 && (
+                <div className="flex items-end pb-1 mt-5">
+                  <span className="text-sm font-semibold text-gray-700 whitespace-nowrap">
+                    = {chartRateValue < 0.001
+                        ? chartRateValue.toFixed(8)
+                        : chartRateValue < 1
+                        ? chartRateValue.toFixed(6)
+                        : chartRateValue.toFixed(4)}
+                  </span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <YtdRateChart
+          fromCurrency={chartFrom}
+          toCurrency={chartTo}
+          currentRate={chartRateValue}
+          isLoading={chartLoading}
+        />
       </div>
 
       {/* ── 4 CTA Cards ── */}
@@ -127,73 +186,15 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* ── Balances + YTD Chart ── */}
+      {/* ── Balances + Recent Transactions ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
           <CurrencyBalances />
         </div>
-
-        <div className="lg:col-span-2 space-y-3">
-          {/* Chart pair selectors */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-gray-700">YTD Exchange Rate Chart</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="flex-1 min-w-[140px]">
-                  <p className="text-xs text-gray-500 mb-1">From</p>
-                  <Select value={chartFrom} onValueChange={setChartFrom}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CHART_CURRENCIES.filter(c => c.code !== chartTo).map(c => (
-                        <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-end pb-1 text-gray-400 font-bold mt-5">→</div>
-                <div className="flex-1 min-w-[140px]">
-                  <p className="text-xs text-gray-500 mb-1">To</p>
-                  <Select value={chartTo} onValueChange={setChartTo}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CHART_CURRENCIES.filter(c => c.code !== chartFrom).map(c => (
-                        <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {!chartLoading && chartRateValue > 0 && (
-                  <div className="flex items-end pb-1 mt-5">
-                    <span className="text-sm font-semibold text-gray-700 whitespace-nowrap">
-                      = {chartRateValue < 0.001
-                          ? chartRateValue.toFixed(8)
-                          : chartRateValue < 1
-                          ? chartRateValue.toFixed(6)
-                          : chartRateValue.toFixed(4)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <YtdRateChart
-            fromCurrency={chartFrom}
-            toCurrency={chartTo}
-            currentRate={chartRateValue}
-            isLoading={chartLoading}
-          />
+        <div className="lg:col-span-2">
+          <TransactionHistory />
         </div>
       </div>
-
-      {/* ── Recent Transactions ── */}
-      <TransactionHistory />
 
       {/* ── Floating Advisor Box ── */}
       {showAdvisorBox && (

@@ -121,7 +121,7 @@ function WalletValueDisplay({ wallet, displayCurrency }: { wallet: any, displayC
   );
 }
 
-const FIAT_DISPLAY_CURRENCIES = ['USD', 'AUD', 'EUR', 'GBP', 'JPY', 'CAD', 'CHF', 'HKD', 'SGD'];
+const FIAT_DISPLAY_CURRENCIES = ['AUD', 'NZD', 'USD', 'EUR', 'CAD', 'GBP', 'CNY', 'HKD', 'SGD', 'JPY', 'KRW'];
 
 function WalletSparkline({ currency, displayCurrency }: { currency: string; displayCurrency: string }) {
   const skipSparkline = currency === displayCurrency;

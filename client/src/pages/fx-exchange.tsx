@@ -17,15 +17,16 @@ import RateSparkline from "@/components/fx/rate-sparkline";
 
 const FIAT_CURRENCIES = [
   { code: "AUD",  name: "Australian Dollar",  flag: "🇦🇺" },
+  { code: "NZD",  name: "New Zealand Dollar", flag: "🇳🇿" },
   { code: "USD",  name: "US Dollar",          flag: "🇺🇸" },
-  { code: "CAD",  name: "Canadian Dollar",    flag: "🇨🇦" },
   { code: "EUR",  name: "Euro",               flag: "🇪🇺" },
+  { code: "CAD",  name: "Canadian Dollar",    flag: "🇨🇦" },
   { code: "GBP",  name: "British Pound",      flag: "🇬🇧" },
+  { code: "CNY",  name: "Chinese Yuan",       flag: "🇨🇳" },
   { code: "HKD",  name: "Hong Kong Dollar",   flag: "🇭🇰" },
   { code: "SGD",  name: "Singapore Dollar",   flag: "🇸🇬" },
   { code: "JPY",  name: "Japanese Yen",       flag: "🇯🇵" },
   { code: "KRW",  name: "South Korean Won",   flag: "🇰🇷" },
-  { code: "CNY",  name: "Chinese Yuan",       flag: "🇨🇳" },
 ];
 
 const DISPLAYED_PAIRS = [
@@ -57,7 +58,10 @@ export default function FxExchange() {
   const exchangeMutation = useMutation({
     mutationFn: async (data: { fromCurrency: string; toCurrency: string; amount: number }) => {
       const response = await apiRequest("POST", "/api/fx-exchange", data);
-      if (!response.ok) throw new Error("Exchange failed");
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || "Exchange failed");
+      }
       return response.json();
     },
     onSuccess: (data) => {
@@ -69,18 +73,26 @@ export default function FxExchange() {
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Exchange Failed",
-        description: "There was an error processing your exchange. Please try again.",
+        description: error.message || "There was an error processing your exchange. Please try again.",
         variant: "destructive",
       });
     },
   });
 
   const openConfirm = () => {
+    if (fromCurrency === toCurrency) {
+      toast({ title: "Invalid Selection", description: "From and To currencies must be different.", variant: "destructive" });
+      return;
+    }
     if (!amount || parseFloat(amount) <= 0) {
       toast({ title: "Invalid Amount", description: "Please enter a valid amount.", variant: "destructive" });
+      return;
+    }
+    if (parseFloat(amount) > fromBalance) {
+      toast({ title: "Insufficient Balance", description: `You only have ${fromBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${fromCurrency} available.`, variant: "destructive" });
       return;
     }
     setShowConfirm(true);
