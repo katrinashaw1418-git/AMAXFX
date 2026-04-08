@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, TrendingUp, ArrowLeft, CheckCircle2, KeyRound } from "lucide-react";
+import { Loader2, Coins, ArrowLeft, CheckCircle2, KeyRound } from "lucide-react";
 
 export default function ForgotPassword() {
   const [username, setUsername] = useState("");
@@ -39,8 +39,8 @@ export default function ForgotPassword() {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-slate-900" />
+            <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center">
+              <Coins className="w-5 h-5 text-slate-900" />
             </div>
             <span className="text-2xl font-bold text-white">AMAX</span>
           </div>
