@@ -1,0 +1,482 @@
+Below is a **single, end-to-end production design** that resolves all the issues you identified:
+
+* Missing deposit/withdrawal lifecycle
+* Poor PayID & bank UX
+* No reconciliation/reference system
+* Incomplete withdrawal flows
+* Lack of unified transaction state machine
+
+This is structured as a **production-grade blueprint** covering:
+
+1. System architecture (logical)
+2. Database schema (ledger + transactions)
+3. State machine (core of the fix)
+4. API specification
+5. Backend service structure
+6. Deposit & withdrawal flows (step-by-step)
+7. UI/UX requirements (what to show)
+8. Reconciliation & compliance model
+
+---
+
+# 1. 🧠 Core Concept: Unified Transaction System
+
+Everything (deposits, withdrawals, transfers) must go through a **single transaction engine** with:
+
+* A **state machine**
+* A **ledger (double-entry accounting)**
+* A **reference-based reconciliation system**
+
+---
+
+# 2. 🗄️ Database Schema (Production-Grade)
+
+## 2.1 Users
+
+```sql
+users (
+  id UUID PK,
+  email TEXT UNIQUE,
+  phone TEXT,
+  kyc_status TEXT,
+  created_at TIMESTAMP
+)
+```
+
+---
+
+## 2.2 Wallets (per user, per asset)
+
+```sql
+wallets (
+  id UUID PK,
+  user_id UUID FK,
+  asset TEXT, -- AUD, BTC, ETH, etc.
+  balance DECIMAL(36,18) DEFAULT 0,
+  locked_balance DECIMAL(36,18) DEFAULT 0,
+  created_at TIMESTAMP
+)
+```
+
+---
+
+## 2.3 Transactions (master record)
+
+```sql
+transactions (
+  id UUID PK,
+  user_id UUID,
+  type TEXT, -- DEPOSIT | WITHDRAWAL | TRANSFER | CONVERSION
+  rail TEXT, -- BANK | PAYID | CARD | CRYPTO
+  asset TEXT,
+  amount DECIMAL(36,18),
+  status TEXT, -- CREATED | PENDING | PROCESSING | COMPLETED | FAILED
+  reference_code TEXT,
+  metadata JSONB,
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+)
+```
+
+---
+
+## 2.4 Ledger Entries (double-entry accounting)
+
+```sql
+ledger_entries (
+  id UUID PK,
+  transaction_id UUID FK,
+  wallet_id UUID FK,
+  direction TEXT, -- DEBIT | CREDIT
+  amount DECIMAL(36,18),
+  created_at TIMESTAMP
+)
+```
+
+---
+
+## 2.5 Bank / PayID Details (withdrawals)
+
+```sql
+withdrawal_details (
+  id UUID PK,
+  transaction_id UUID,
+  method TEXT, -- BANK | PAYID
+  account_name TEXT,
+  bsb TEXT,
+  account_number TEXT,
+  payid TEXT
+)
+```
+
+---
+
+## 2.6 Deposit Instructions
+
+```sql
+deposit_instructions (
+  id UUID PK,
+  transaction_id UUID,
+  method TEXT,
+  reference_code TEXT,
+  payid_identifier TEXT,
+  bank_account TEXT,
+  created_at TIMESTAMP
+)
+```
+
+---
+
+# 3. 🔁 Transaction State Machine
+
+All flows must follow:
+
+```
+CREATED
+  ↓
+PENDING (awaiting user action / external funds)
+  ↓
+PROCESSING (admin/system validating)
+  ↓
+COMPLETED
+  ↓
+FAILED
+```
+
+### Transitions:
+
+* Deposit:
+
+  * CREATED → PENDING → PROCESSING → COMPLETED
+* Withdrawal:
+
+  * CREATED → PENDING REVIEW → PROCESSING → COMPLETED/FAILED
+
+---
+
+# 4. 🔌 API Specification
+
+## 4.1 Create Deposit Intent
+
+```
+POST /api/deposits
+```
+
+Response:
+
+```json
+{
+  "transactionId": "...",
+  "referenceCode": "AMAX-8F3K2",
+  "status": "PENDING",
+  "instructions": {
+    "bank": {...},
+    "payid": "deposit@amax.com"
+  }
+}
+```
+
+---
+
+## 4.2 Create Withdrawal Request
+
+```
+POST /api/withdrawals
+```
+
+```json
+{
+  "asset": "AUD",
+  "amount": 1000,
+  "method": "BANK",
+  "accountName": "...",
+  "bsb": "...",
+  "accountNumber": "..."
+}
+```
+
+---
+
+## 4.3 Internal Transfer
+
+```
+POST /api/wallet/transfer/internal
+```
+
+```json
+{
+  "asset": "BTC",
+  "amount": 0.5,
+  "recipientEmail": "user@example.com"
+}
+```
+
+---
+
+## 4.4 Transaction Status
+
+```
+GET /api/transactions/{id}
+```
+
+---
+
+## 4.5 Webhooks (Stripe)
+
+Handled via Stripe:
+
+* payment_intent.succeeded
+* payment_intent.failed
+
+---
+
+# 5. ⚙️ Backend Service Structure
+
+```
+/services
+  /wallet
+  /ledger
+  /transactions
+  /payments
+  /compliance
+
+/controllers
+  deposit.controller
+  withdrawal.controller
+  transfer.controller
+
+/jobs
+  reconcileDeposits
+  processWithdrawals
+  stripeWebhookHandler
+```
+
+---
+
+# 6. 💰 Deposit Flows (Fixed UX + Backend)
+
+## 6.1 Bank Transfer Deposit
+
+### Backend:
+
+1. User initiates deposit
+2. System generates:
+
+   * reference_code (unique)
+   * transaction record (PENDING)
+3. Store deposit instructions
+
+### UI MUST show:
+
+* Bank name
+* BSB
+* Account number
+* Account name
+* **Reference code (mandatory)**
+
+### User action:
+
+* Transfers funds externally
+
+### Reconciliation:
+
+* Admin/system matches incoming transfer using:
+
+  * reference_code
+  * amount
+  * timestamp
+
+---
+
+## 6.2 PayID Deposit
+
+### UI MUST show:
+
+* PayID identifier (email/phone)
+* Copy button
+* Instructions:
+
+  * “Send from your bank using PayID”
+  * “Include reference code”
+
+### Backend:
+
+* Transaction created (PENDING)
+* Matching via PayID metadata + reconciliation rules
+
+---
+
+## 6.3 Card Deposit via Stripe
+
+Using Stripe:
+
+* Redirect to hosted checkout
+* Webhook confirms success
+* Update transaction:
+
+  * PENDING → COMPLETED
+* Credit fiat wallet
+
+---
+
+# 7. 💸 Withdrawal Flows (Fixed UX + Backend)
+
+## 7.1 Bank Withdrawal
+
+### UI form must include:
+
+* Account name
+* BSB
+* Account number
+* Amount
+* Confirmation step
+
+### Backend:
+
+1. Validate input
+2. Check balance
+3. Create transaction (PENDING REVIEW)
+4. Lock funds (locked_balance++)
+5. Await admin/system approval
+
+---
+
+## 7.2 PayID Withdrawal
+
+### UI:
+
+* Email/phone input
+* Confirmation screen
+
+### Backend:
+
+* Same as bank withdrawal but method = PAYID
+
+---
+
+## 7.3 Crypto Withdrawals (Manual ops)
+
+* Stored as request
+* Status = PENDING REVIEW
+* Ops team executes externally
+
+---
+
+# 8. 🔄 Internal Crypto Transfer (Fixed)
+
+### Flow:
+
+1. Input recipient email
+2. Resolve userId
+3. Validate wallet balance
+4. Execute atomic ledger entries:
+
+* Debit sender wallet
+* Credit recipient wallet
+
+### Must be:
+
+* Atomic DB transaction
+* Idempotent
+* Logged in ledger_entries
+
+---
+
+# 9. 🖥️ UI/UX Requirements (Critical Fixes)
+
+## Deposits screen must show:
+
+For each method:
+
+* Instructions
+* Identifiers
+* Reference code
+* Copy buttons
+* Status panel:
+
+  * Pending
+  * Processing
+  * Completed
+
+---
+
+## Withdrawal screen must show:
+
+* Full form fields
+* Validation messages
+* Confirmation step
+* Status tracking after submission
+
+---
+
+## Transaction history must show:
+
+Each transaction:
+
+* Type
+* Amount
+* Rail
+* Status
+* Reference code
+* Timestamp
+
+---
+
+# 10. 🔐 Compliance & Audit Model
+
+To pass compliance expectations:
+
+* Every transaction has:
+
+  * Unique reference code
+  * Traceable lifecycle
+  * Immutable ledger entries
+* All funds movements are:
+
+  * Recorded
+  * Reconciled
+  * Auditable
+
+You now have:
+
+* Clear separation of:
+
+  * initiation
+  * pending
+  * settlement
+* Full traceability for AUSTRAC-style review
+
+---
+
+# ✅ Final Outcome After This Implementation
+
+Your platform will have:
+
+### Fiat
+
+* Fully compliant deposit rails
+* Clear pending → completed lifecycle
+* Proper withdrawal processing
+* PayID + bank UX fully actionable
+
+### Crypto
+
+* Internal transfers (real)
+* External withdrawals (ops-assisted)
+* Conversion path (controlled)
+
+### System
+
+* Unified ledger
+* Transaction state machine
+* Reconciliation capability
+* Audit-ready structure
+
+---
+
+If you want next step, I can help you implement this into:
+
+* **Actual backend code (Node/Express / NestJS / Python)**
+* Or **database migration scripts**
+* Or **frontend UI screens mapped to this state machine**
+* Or **admin dashboard for reconciliation & approvals**

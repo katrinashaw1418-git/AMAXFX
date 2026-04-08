@@ -114,7 +114,17 @@ const depositSchema = z.object({
 const withdrawSchema = z.object({
   currency: z.string().min(2).max(10),
   amount: z.coerce.number().positive("Amount must be positive"),
-  description: z.string().max(255).optional(),
+  description: z.string().max(500).optional(),
+  withdrawMethod: z.enum(["bank_transfer", "payid"]).optional(),
+  // Bank transfer payout details — required for compliance when method=bank_transfer
+  bankAccountName: z.string().max(120).optional(),
+  bankBsb: z.string().max(20).optional(),
+  bankAccountNumber: z.string().max(40).optional(),
+  bankSwift: z.string().max(20).optional(),
+  bankName: z.string().max(120).optional(),
+  // PayID payout details — required for compliance when method=payid
+  payid: z.string().max(120).optional(),
+  payidAccountName: z.string().max(120).optional(),
 });
 
 const investmentSchema = z.object({
@@ -2390,7 +2400,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await requireKyc(userId, storage);
       const parsedWithdraw = withdrawSchema.safeParse(req.body);
       if (!parsedWithdraw.success) return res.status(400).json({ error: parsedWithdraw.error.errors[0].message });
-      const { currency, amount: rawAmount, description } = parsedWithdraw.data;
+      const {
+        currency, amount: rawAmount, description,
+        withdrawMethod, bankAccountName, bankBsb, bankAccountNumber, bankSwift, bankName,
+        payid: payidIdentifier, payidAccountName,
+      } = parsedWithdraw.data;
       const amount = new Decimal(rawAmount);
 
       // This endpoint handles fiat wire withdrawals only.
