@@ -2,18 +2,6 @@ uploads = []
 generated = []
 
 [[outputs]]
-id = "A_dYoZcASOUpKPPwjW7X-"
-uri = "file://amax_logo.jpg"
-type = "image"
-title = "AMAX Global Logo (JPEG)"
-
-[[outputs]]
-id = "xt93E6-7gkBghAUQ15zKF"
-uri = "file://amax_global_logo.jpg"
-type = "image"
-title = "AMAX Logo (X icon)"
-
-[[outputs]]
 id = "CMMTK1EqZm2kcttJBbqjr"
 uri = "file://logo_option_A_xx.jpg"
 type = "image"
@@ -30,15 +18,3 @@ id = "jwc5YSQ9X8S786yjgHXtJ"
 uri = "file://logo_option_FX.jpg"
 type = "image"
 title = "Option FX — F + X in overlapping coins ⭐"
-
-[[outputs]]
-id = "W9CKaw89umWu04voTzqG3"
-uri = "file://logo_fx_final.jpg"
-type = "image"
-title = "AMAX FX Logo — F and X fully shown in overlapping circles"
-
-[[outputs]]
-id = "T0JHF9xpqbSqGNEFcpoVK"
-uri = "file://amax_logo_original.jpg"
-type = "image"
-title = "AMAX Logo — Original (unchanged)"
