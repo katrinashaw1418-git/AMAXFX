@@ -1579,6 +1579,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { base, target } = req.params;
 
+      // 0. Same-currency shortcut — always rate 1
+      if (base === target) {
+        return res.json({ baseCurrency: base, targetCurrency: target, rate: "1.00000000", isStale: false, rateAgeMinutes: 0 });
+      }
+
       // 1. Direct lookup
       const direct = await storage.getFxRate(base, target);
       if (direct) return res.json(withStaleness(direct));
