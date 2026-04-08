@@ -101,7 +101,9 @@ const fxExchangeSchema = z.object({
 
 const depositSchema = z.object({
   currency: z.string().min(2).max(10),
-  amount: z.coerce.number().positive("Amount must be positive"),
+  amount: z.coerce.number()
+    .positive("Amount must be positive")
+    .max(9999999, "Amount exceeds maximum single-deposit limit of 9,999,999"),
   description: z.string().max(255).optional(),
 });
 
@@ -2305,7 +2307,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(txRecord);
     } catch (error: any) {
       if (error.status) return res.status(error.status).json({ error: error.message });
-      res.status(500).json({ error: "Failed to process deposit" });
+      console.error("[deposit-error]", error?.message ?? error);
+      res.status(500).json({ error: error?.message ?? "Failed to process deposit" });
     }
   };
 
