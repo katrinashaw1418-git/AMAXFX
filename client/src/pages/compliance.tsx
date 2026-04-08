@@ -444,14 +444,14 @@ export default function Compliance() {
             </Card>
           )}
 
-          {/* All done */}
+          {/* All steps submitted — under review */}
           {!nextStep && (
-            <Card className="border-2 border-green-200 bg-green-50">
+            <Card className="border-2 border-blue-200 bg-blue-50">
               <CardContent className="p-4 flex items-center gap-3">
-                <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
+                <RefreshCw className="w-6 h-6 text-blue-500 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-green-900">KYC Verification Complete</h4>
-                  <p className="text-sm text-green-700">All steps submitted. Your account is fully verified and you have full access to AMAX Global services.</p>
+                  <h4 className="font-semibold text-blue-900">All Documents Submitted — Under Review</h4>
+                  <p className="text-sm text-blue-700">Our compliance team is reviewing your documents. This typically takes 1–2 business days. You will be notified by email once your account is approved.</p>
                 </div>
               </CardContent>
             </Card>
