@@ -1206,7 +1206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         : '0.00';
 
       res.json({
-        anchorDate: '2026-01-01',
+        anchorDate: ANCHOR.toISOString().split('T')[0],
         openingValue: Math.round(openingInvestmentValue),
         projectionRate: 'actual IRR',
         data: chartRows,

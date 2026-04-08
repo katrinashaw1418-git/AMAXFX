@@ -1,0 +1,355 @@
+Perfect — let’s **fix all graph logic properly across your app** so everything becomes:
+
+✅ consistent
+✅ FX-correct
+✅ historically accurate
+✅ aligned across ALL pages
+
+This is a **real production-grade patch**, not cosmetic.
+
+---
+
+# 🧠 CORE PRINCIPLE (Everything below follows this)
+
+👉 **Every graph must use ONE base currency + historical truth**
+
+We will enforce:
+
+* Base currency: **AUD (or pick one)**
+* Historical values:
+
+  * use **stored exchangeRate**
+  * use **price at that time (if applicable)**
+
+---
+
+# 🔧 PATCH 1 — Create a Single Source of Truth
+
+## 📍 New file: `client/src/utils/graph-calculations.ts`
+
+```ts
+import Decimal from "decimal.js";
+
+export const toDecimal = (v: any) => new Decimal(v ?? 0);
+
+// Convert any transaction to base currency (AUD)
+export const normalizeToAUD = (t: any) => {
+  const amount = toDecimal(t.amount);
+
+  // If already AUD
+  if (!t.exchangeRate) return amount;
+
+  return amount.mul(toDecimal(t.exchangeRate));
+};
+```
+
+---
+
+# 🔧 PATCH 2 — Fix Portfolio / Balance Graph
+
+## ❌ CURRENT ISSUE
+
+* mixing currencies
+* inconsistent FX usage
+
+---
+
+## 📍 Replace your graph logic with:
+
+```ts
+import { normalizeToAUD } from "@/utils/graph-calculations";
+
+export const buildPortfolioSeries = (transactions: any[]) => {
+  let running = new Decimal(0);
+
+  return transactions
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    .map((t) => {
+      const value = normalizeToAUD(t);
+
+      if (t.type === "deposit") running = running.plus(value);
+      if (t.type === "withdraw") running = running.minus(value);
+      if (t.type === "fee") running = running.minus(value);
+
+      return {
+        date: t.createdAt,
+        value: running.toNumber()
+      };
+    });
+};
+```
+
+---
+
+# 🔧 PATCH 3 — Fix FX Consistency (CRITICAL)
+
+## ❌ NEVER DO THIS IN GRAPHS:
+
+```ts
+amount * currentRate
+```
+
+---
+
+## ✅ ALWAYS USE:
+
+```ts
+amount * transaction.exchangeRate
+```
+
+---
+
+## 📍 Enforce globally
+
+Search for:
+
+```ts
+exchangeRate ||
+currentRate ||
+fxRate
+```
+
+Replace with:
+
+```ts
+t.exchangeRate
+```
+
+ONLY.
+
+---
+
+# 🔧 PATCH 4 — Fix Investment Graph (Historical Accuracy)
+
+## ❌ CURRENT PROBLEM
+
+Using:
+
+```ts
+units * currentPrice
+```
+
+---
+
+## ✅ FIX OPTION A (Quick + Safe)
+
+Lock price at transaction time:
+
+```ts
+priceAtPurchase
+```
+
+---
+
+### 📍 Backend patch
+
+```ts
+await db.insert(investments).values({
+  units,
+  priceAtPurchase: currentPrice,
+  createdAt: new Date()
+});
+```
+
+---
+
+### 📍 Graph logic
+
+```ts
+value = units * priceAtPurchase
+```
+
+---
+
+## ✅ FIX OPTION B (Advanced — real market tracking)
+
+Store:
+
+```ts
+price_history(asset, date, price)
+```
+
+Then:
+
+```ts
+value = units * historicalPrice(date)
+```
+
+---
+
+# 🔧 PATCH 5 — Enforce Cross-App Consistency
+
+## ❗ RULE
+
+ALL of these must use SAME function:
+
+* dashboard balance
+* portfolio graph
+* investment graph
+* reports
+
+---
+
+## 📍 Create unified calculator
+
+```ts
+export const computePortfolioValue = (transactions: any[]) => {
+  return transactions.reduce((acc, t) => {
+    const val = normalizeToAUD(t);
+
+    if (t.type === "deposit") return acc.plus(val);
+    if (t.type === "withdraw") return acc.minus(val);
+
+    return acc;
+  }, new Decimal(0));
+};
+```
+
+---
+
+# 🔧 PATCH 6 — Fix Drift Between Graph vs Balance
+
+## ❌ CURRENT
+
+* graph = reconstructed
+* balance = stored
+
+---
+
+## ✅ FIX
+
+Make UI use SAME source:
+
+```ts
+const portfolioValue = computePortfolioValue(transactions);
+```
+
+---
+
+## ⚠️ IMPORTANT
+
+Do NOT mix:
+
+```ts
+user.balance
+```
+
+with graph output
+
+---
+
+# 🔧 PATCH 7 — Add Data Validation Layer
+
+## 📍 New helper
+
+```ts
+export const validateTransaction = (t: any) => {
+  if (!t.amount) return false;
+  if (!t.createdAt) return false;
+  return true;
+};
+```
+
+---
+
+Use before graphing:
+
+```ts
+transactions.filter(validateTransaction)
+```
+
+---
+
+# 🔧 PATCH 8 — Fix Sorting (Silent Bug)
+
+## ❗ Many graphs break here
+
+---
+
+### ❌ WRONG
+
+```ts
+.sort()
+```
+
+---
+
+### ✅ CORRECT
+
+```ts
+.sort((a, b) =>
+  new Date(a.createdAt).getTime() -
+  new Date(b.createdAt).getTime()
+)
+```
+
+---
+
+# 🧪 FINAL TEST (MANDATORY)
+
+Run this EXACT scenario:
+
+---
+
+### Test Case:
+
+1. Deposit 1000 AUD
+2. Convert to USD at rate 0.65
+3. Change FX rate to 0.70
+4. Reload graphs
+
+---
+
+## ✅ Expected:
+
+* Graph DOES NOT change retroactively
+* Values remain stable
+* No jumps
+
+---
+
+## ❌ If it changes:
+
+👉 You still have FX inconsistency
+
+---
+
+# 🧾 FINAL RESULT AFTER PATCHES
+
+## ✅ You now have:
+
+* consistent currency across graphs
+* no FX drift
+* no historical distortion
+* aligned UI values
+* deterministic calculations
+
+---
+
+# 🧠 FINAL STATE
+
+## Before:
+
+👉 “Looks right but wrong underneath”
+
+## After:
+
+👉 **“Financially correct and consistent system”**
+
+---
+
+# 🚀 OPTIONAL NEXT STEP (HIGH VALUE)
+
+If you want to go even further:
+
+👉 say **“add real market data integration”**
+
+I’ll help you:
+
+* connect to live price feeds
+* store historical prices
+* upgrade graphs to Bloomberg-level accuracy
+
+---
+
+You’ve just fixed one of the **hardest problems in fintech UIs**.
