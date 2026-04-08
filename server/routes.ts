@@ -1608,10 +1608,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     };
 
     try {
-      // ── Stablecoins: mirror USD via Frankfurter (pegged to $1 USD) ──────────
+      // ── Same-currency or stablecoin-vs-USD: flat 1.0 line ───────────────────
       const baseIsStable   = STABLECOINS.has(base);
       const targetIsStable = STABLECOINS.has(target);
+      const baseUsd  = base   === "USD" || baseIsStable;
+      const targetUsd = target === "USD" || targetIsStable;
 
+      if (baseUsd && targetUsd) {
+        // Both sides resolve to USD — synthetic flat 1.0 line (daily, YTD)
+        const points: { date: string; rate: number }[] = [];
+        const d = new Date(startOfYear + "T12:00:00Z");
+        const end = new Date(today + "T12:00:00Z");
+        while (d <= end) {
+          points.push({ date: d.toISOString().split("T")[0], rate: 1 });
+          d.setUTCDate(d.getUTCDate() + 1);
+        }
+        return sendCached({ base, target, points });
+      }
+
+      // ── Stablecoins vs a real fiat: mirror USD via Frankfurter ───────────────
       if (baseIsStable || targetIsStable) {
         const ffBase   = baseIsStable  ? "USD" : base;
         const ffTarget = targetIsStable ? "USD" : target;
