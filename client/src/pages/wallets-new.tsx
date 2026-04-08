@@ -139,15 +139,14 @@ function WalletValueDisplay({ wallet, displayCurrency }: { wallet: any, displayC
 }
 
 const STABLECOINS = new Set(["USDT", "USDC"]);
+const FIAT_DISPLAY_CURRENCIES = ['USD', 'AUD', 'EUR', 'GBP', 'JPY', 'CAD', 'CHF', 'HKD', 'SGD'];
 
-function WalletSparkline({ currency }: { currency: string }) {
-  // Always show rate vs USD — stable reference, avoids CoinGecko rate-limit bursts
-  // when displayCurrency changes. USD wallet and stablecoins have no meaningful trend.
-  const skipSparkline = currency === "USD" || STABLECOINS.has(currency);
-  const { data: fxRate } = useFxRate(currency, "USD");
+function WalletSparkline({ currency, displayCurrency }: { currency: string; displayCurrency: string }) {
+  const skipSparkline = currency === displayCurrency || STABLECOINS.has(currency);
+  const { data: fxRate } = useFxRate(currency, displayCurrency);
   if (skipSparkline) return <div className="w-16 h-8" />;
   const currentRate = fxRate ? parseFloat(fxRate.rate) : 0;
-  return <RateSparkline fromCurrency={currency} toCurrency="USD" currentRate={currentRate} />;
+  return <RateSparkline fromCurrency={currency} toCurrency={displayCurrency} currentRate={currentRate} />;
 }
 
 export default function Wallets() {
@@ -516,7 +515,7 @@ export default function Wallets() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'HKD', 'SGD', 'BTC', 'ETH', 'USDT', 'USDC'].map(currency => {
+                  {FIAT_DISPLAY_CURRENCIES.map(currency => {
                     const config = CurrencyConfig[currency as keyof typeof CurrencyConfig];
                     return (
                       <SelectItem key={currency} value={currency}>
@@ -541,7 +540,7 @@ export default function Wallets() {
                     <th className="text-left p-4 font-medium">Currency</th>
                     <th className="text-left p-4 font-medium">Balance</th>
                     <th className="text-left p-4 font-medium">Approx. Value ({displayCurrency})</th>
-                    <th className="text-center p-4 font-medium">YTD Trend</th>
+                    <th className="text-center p-4 font-medium">YTD vs {displayCurrency}</th>
                     <th className="text-right p-4 font-medium">Actions</th>
                   </tr>
                 </thead>
@@ -574,7 +573,7 @@ export default function Wallets() {
                       </td>
                       <td className="p-4">
                         <div className="flex justify-center">
-                          <WalletSparkline currency={wallet.currency} />
+                          <WalletSparkline currency={wallet.currency} displayCurrency={displayCurrency} />
                         </div>
                       </td>
                       <td className="p-4 text-right">
