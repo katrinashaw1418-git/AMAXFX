@@ -194,7 +194,7 @@ export default function Compliance() {
   function handleView(docName: string) {
     toast({
       title: "Document Viewer",
-      description: `Contact support@amaxglobal.com.au to retrieve a copy of ${docName}.`,
+      description: `Contact info@amaxglobal.com.au to retrieve a copy of ${docName}.`,
     });
   }
 
@@ -658,7 +658,7 @@ export default function Compliance() {
               {[
                 ["1. Acceptance of Terms", "By accessing or using the AMAX Global platform, you agree to be bound by these Terms and Conditions. These terms constitute a legally binding agreement between you and AMAX Financial Pty Ltd (ABN 54 690 827 608)."],
                 ["2. Eligibility", "You must be at least 18 years of age and legally capable of entering into binding contracts to use our services."],
-                ["3. Account Responsibilities", "You are responsible for maintaining the confidentiality of your credentials and all activity under your account. Notify us immediately of any unauthorised use at support@amaxglobal.com.au."],
+                ["3. Account Responsibilities", "You are responsible for maintaining the confidentiality of your credentials and all activity under your account. Notify us immediately of any unauthorised use at info@amaxglobal.com.au."],
                 ["4. Services", "AMAX Global provides multi-currency eWallet management, foreign exchange (FX) conversion, remittance, and regulated digital currency exchange (DCE) services. AMAX Global does not provide financial advice or investment recommendations."],
                 ["5. Fees and Charges", "FX conversion: 0.5% of converted amount. Fiat withdrawals: flat fee per currency disclosed at checkout. All fees are shown before confirmation."],
                 ["6. Limitation of Liability", "AMAX Global is not liable for losses arising from market fluctuations, outages, or events beyond our reasonable control. Total liability capped at fees paid in the preceding 12 months."],
@@ -682,7 +682,7 @@ export default function Compliance() {
                 ["1. Data We Collect", "We collect personal information you provide (name, email, government ID, financial data), usage data, and technical data (IP, device, browser). Governed by the Australian Privacy Act 1988 and the APPs."],
                 ["2. How We Use Your Data", "To provide services, comply with AML/CTF Act 2006 KYC obligations, process transactions, detect fraud, and communicate updates. We do not sell your data."],
                 ["3. Data Sharing", "With AUSTRAC and regulators (as required), payment processors, identity verification providers, and cloud partners under strict data agreements."],
-                ["4. Data Retention", "Financial records retained ≥ 7 years (AML/CTF Act 2006). Deletion of non-regulatory data: privacy@amaxglobal.com.au."],
+                ["4. Data Retention", "Financial records retained ≥ 7 years (AML/CTF Act 2006). Deletion of non-regulatory data: info@amaxglobal.com.au."],
                 ["5. Your Rights", "Access and correct your personal information. Complaints to the OAIC at oaic.gov.au."],
                 ["6. Security", "AES-256 encryption at rest, TLS 1.3 in transit, MFA. Breaches reported under the Notifiable Data Breaches scheme."],
               ].map(([title, body]) => (

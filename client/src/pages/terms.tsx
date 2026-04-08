@@ -40,7 +40,7 @@ export default function Terms() {
             { title: "4. Regulated Services", body: <>AMAX is registered (or in the process of registration) with AUSTRAC as a Digital Currency Exchange (DCE) and Remittance Network Provider. All services are subject to Australian AML/CTF laws. We reserve the right to suspend or terminate access for any user who fails to meet our compliance requirements.</> },
             { title: "5. Risk Disclosure", body: <>Digital currency and foreign exchange trading involve significant financial risk. The value of digital assets can fluctuate substantially. You should not invest funds you cannot afford to lose. AMAX does not provide financial advice. You are responsible for your own investment decisions.</> },
             { title: "6. Governing Law", body: <>These Terms &amp; Conditions are governed by the laws of New South Wales, Australia. Any disputes shall be subject to the exclusive jurisdiction of the courts of New South Wales.</> },
-            { title: "7. Contact", body: <>For enquiries regarding these terms, please contact us at <a href="mailto:legal@amax.com.au" className="text-white underline hover:text-white/70">legal@amax.com.au</a>.</> },
+            { title: "7. Contact", body: <>For enquiries regarding these terms, please contact us at <a href="mailto:info@amaxglobal.com.au" className="text-white underline hover:text-white/70">info@amaxglobal.com.au</a>.</> },
           ].map(({ title, body }) => (
             <section key={title}>
               <h2 className="text-xl font-semibold text-white mb-3">{title}</h2>

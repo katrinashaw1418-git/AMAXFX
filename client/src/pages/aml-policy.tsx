@@ -41,7 +41,7 @@ export default function AmlPolicy() {
             { title: "4. Transaction Monitoring", body: <><p>AMAX monitors all transactions on an ongoing basis to detect suspicious activity. Our monitoring program includes:</p><ul className="list-disc list-inside space-y-1 mt-2 text-white/80"><li>Automated rule-based transaction monitoring</li><li>Threshold-based reporting (Threshold Transaction Reports to AUSTRAC)</li><li>Suspicious Matter Reporting (SMR) to AUSTRAC where required</li><li>International funds transfer instruction (IFTI) reporting</li></ul></> },
             { title: "5. Record Keeping", body: <>We retain records of all customer identification, transaction records, and AML/CTF program documentation for a minimum of seven (7) years, in accordance with our legislative obligations.</> },
             { title: "6. Training & Governance", body: <>Our staff and key personnel receive regular AML/CTF training. An appointed AML/CTF Compliance Officer oversees the program, ensures ongoing regulatory compliance, and manages AUSTRAC reporting obligations.</> },
-            { title: "7. Contact", body: <>For AML/CTF enquiries, please contact our Compliance team at <a href="mailto:compliance@amax.com.au" className="text-white underline hover:text-white/70">compliance@amax.com.au</a>.</> },
+            { title: "7. Contact", body: <>For AML/CTF enquiries, please contact our Compliance team at <a href="mailto:info@amaxglobal.com.au" className="text-white underline hover:text-white/70">info@amaxglobal.com.au</a>.</> },
           ].map(({ title, body }) => (
             <section key={title}>
               <h2 className="text-xl font-semibold text-white mb-3">{title}</h2>

@@ -39,7 +39,7 @@ export default function PrivacyPolicy() {
             { title: "3. How We Use Your Information", body: <><p>We use your personal information to:</p><ul className="list-disc list-inside space-y-1 mt-2 text-white/80"><li>Verify your identity and comply with KYC/AML obligations</li><li>Process transactions and provide platform services</li><li>Comply with AUSTRAC reporting requirements</li><li>Prevent fraud, money laundering, and terrorist financing</li><li>Communicate service and compliance-related updates</li></ul></> },
             { title: "4. Disclosure of Information", body: <>We may disclose your personal information to regulatory authorities (including AUSTRAC), law enforcement agencies, and third-party service providers engaged in operating the platform — only to the extent required by law or necessary to provide our services.</> },
             { title: "5. Data Security", body: <>We implement industry-standard security measures including 256-bit TLS encryption, access controls, two-factor authentication, and audit logging to protect your personal information from unauthorised access, disclosure, or misuse.</> },
-            { title: "6. Contact", body: <>For privacy-related enquiries, please contact us at <a href="mailto:privacy@amax.com.au" className="text-white underline hover:text-white/70">privacy@amax.com.au</a>.</> },
+            { title: "6. Contact", body: <>For privacy-related enquiries, please contact us at <a href="mailto:info@amaxglobal.com.au" className="text-white underline hover:text-white/70">info@amaxglobal.com.au</a>.</> },
           ].map(({ title, body }) => (
             <section key={title}>
               <h2 className="text-xl font-semibold text-white mb-3">{title}</h2>
