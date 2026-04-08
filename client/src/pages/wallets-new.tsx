@@ -131,9 +131,6 @@ function WalletSparkline({ currency, displayCurrency }: { currency: string; disp
   return <RateSparkline fromCurrency={currency} toCurrency={displayCurrency} currentRate={currentRate} />;
 }
 
-// Currencies supported by PayPal's standard merchant accounts.
-// CNY and KRW are not supported — those wallets will not show PayPal as a deposit option.
-const PAYPAL_SUPPORTED_CURRENCIES = ['AUD', 'NZD', 'USD', 'EUR', 'CAD', 'GBP', 'HKD', 'SGD', 'JPY'];
 
 export default function Wallets() {
   const { data: wallets = [], isLoading } = useWallets();
@@ -159,7 +156,7 @@ export default function Wallets() {
   const [depositMethod, setDepositMethod] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState('');
   const [payerName, setPayerName] = useState('');
-  const [paypalLoading, setPaypalLoading] = useState(false);
+  const [stripeLoading, setStripeLoading] = useState(false);
   const [payerAccountNumber, setPayerAccountNumber] = useState('');
   const [payerBsb, setPayerBsb] = useState('');
   const [, navigate] = useLocation();
@@ -179,47 +176,32 @@ export default function Wallets() {
     }
   }, [wallets, voiceSettings.autoNarrate, narrateNavigation, narrateBalance]);
 
-  // PayPal return URL handler — runs once on mount
-  // PayPal appends ?paypal=success&walletId=X&token=ORDER_TOKEN&PayerID=PAYER_ID
-  // or ?paypal=cancel when the user closes PayPal without paying.
+  // Stripe Checkout return handler — runs once on mount.
+  // Stripe redirects back with ?stripe=success&session_id=cs_xxx or ?stripe=cancel.
+  // The actual balance credit happens via Stripe webhook (server-side), not here.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const paypalStatus = params.get('paypal');
-    const orderId = params.get('token'); // PayPal uses 'token' for the order ID
-    const walletId = params.get('walletId');
+    const stripeStatus = params.get('stripe');
 
-    if (paypalStatus === 'cancel') {
-      toast({ title: "PayPal Cancelled", description: "Your PayPal deposit was not completed.", variant: "destructive" });
+    if (stripeStatus === 'cancel') {
       window.history.replaceState({}, '', '/wallets');
+      toast({
+        title: "Payment Cancelled",
+        description: "Your card payment was not completed. No funds were charged.",
+        variant: "destructive",
+      });
       return;
     }
 
-    if (paypalStatus === 'success' && orderId && walletId) {
-      // Remove params from URL immediately to prevent re-capture on refresh
+    if (stripeStatus === 'success') {
       window.history.replaceState({}, '', '/wallets');
-
-      setPaypalLoading(true);
-      apiRequest('POST', '/api/paypal/capture-order', { orderId, walletId: Number(walletId) })
-        .then(async (r) => {
-          if (!r.ok) {
-            const err = await r.json().catch(() => ({}));
-            throw new Error(err.error || 'Capture failed');
-          }
-          return r.json();
-        })
-        .then((data) => {
-          toast({
-            title: "✅ PayPal Deposit Successful",
-            description: `${data.amount} ${data.currency} has been added to your wallet.`,
-          });
-          queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
-          queryClient.invalidateQueries({ queryKey: ['/api/portfolio'] });
-          queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
-        })
-        .catch((err) => {
-          toast({ title: "PayPal Capture Failed", description: err.message, variant: "destructive" });
-        })
-        .finally(() => setPaypalLoading(false));
+      toast({
+        title: "✅ Payment Received by Stripe",
+        description: "Your card payment was successful. Funds will appear in your wallet shortly once confirmed.",
+      });
+      // Refresh transactions so the user sees the incoming credit
+      queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -271,36 +253,40 @@ export default function Wallets() {
     }
   });
 
-  // Deposit mutation
+  // Deposit mutation — used for bank_transfer and payid channels only.
+  // Card deposits go via Stripe checkout (handleStripeCheckout below).
   const depositMutation = useMutation({
-    mutationFn: async (data: { type: string; currency: string; amount: string }) => {
+    mutationFn: async (data: { type: string; currency: string; amount: string; method: string }) => {
       const response = await apiRequest("POST", "/api/wallets/deposit", data);
-      if (!response.ok) throw new Error(`Deposit failed: ${response.status}`);
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || `Deposit failed: ${response.status}`);
+      }
       return response.json();
     },
-    onSuccess: () => {
-      const successMessage = `${amount} ${selectedWallet?.currency} has been added to your wallet`;
-      
+    onSuccess: (data) => {
+      const isPending = data?.status === 'pending';
+      const successMessage = isPending
+        ? `Your ${amount} ${selectedWallet?.currency} deposit has been submitted. Funds will be credited once AMAX confirms receipt of your transfer.`
+        : `${amount} ${selectedWallet?.currency} has been added to your wallet.`;
+
       toast({
-        title: "✅ Deposit Successful",
+        title: isPending ? "⏳ Deposit Submitted" : "✅ Deposit Successful",
         description: successMessage,
       });
-      
-      // Voice narration
-      narrateSuccess(successMessage);
-      
+
+      narrateSuccess(isPending ? "Deposit submitted, awaiting confirmation" : successMessage);
+
       queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
       queryClient.invalidateQueries({ queryKey: ['/api/portfolio'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       setDepositModalOpen(false);
       setAmount('');
       setDepositMethod('');
     },
     onError: (error: any) => {
       const errorMessage = error.message || "Please try again later.";
-      
-      // Voice narration
       narrateError(`Deposit failed: ${errorMessage}`);
-      
       toast({
         title: "Deposit Failed",
         description: errorMessage,
@@ -308,6 +294,33 @@ export default function Wallets() {
       });
     }
   });
+
+  // Stripe Checkout — called for card deposits.
+  // Creates a Stripe Checkout Session and redirects to Stripe's hosted payment page.
+  // Balance is credited ONLY after Stripe fires the webhook (server-side).
+  const handleStripeCheckout = async () => {
+    if (!selectedWallet || !amount) {
+      toast({ title: "Missing Information", description: "Please enter an amount.", variant: "destructive" });
+      return;
+    }
+    setStripeLoading(true);
+    try {
+      const res = await apiRequest('POST', '/api/stripe/create-checkout-session', {
+        walletId: selectedWallet.id,
+        amount,
+        currency: selectedWallet.currency,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to start checkout');
+      }
+      const { url } = await res.json();
+      window.location.href = url;
+    } catch (err: any) {
+      toast({ title: "Card Payment Error", description: err.message, variant: "destructive" });
+      setStripeLoading(false);
+    }
+  };
 
   // Withdraw mutation
   const withdrawMutation = useMutation({
@@ -357,11 +370,18 @@ export default function Wallets() {
       return;
     }
 
+    // Card deposits are handled entirely by Stripe — this function handles bank/payid only.
+    if (depositMethod === 'card') {
+      handleStripeCheckout();
+      return;
+    }
+
     narrateTransaction('deposit', amount, selectedWallet.currency);
     depositMutation.mutate({
       type: "deposit",
       currency: selectedWallet.currency,
-      amount: amount
+      amount: amount,
+      method: depositMethod, // 'bank_transfer' | 'payid'
     });
   };
 
@@ -616,9 +636,7 @@ export default function Wallets() {
                   {selectedWallet?.walletType === 'fiat' ? (
                     <>
                       <SelectItem value="card">💳 Credit/Debit Card</SelectItem>
-                      {PAYPAL_SUPPORTED_CURRENCIES.includes(selectedWallet?.currency) && (
-                        <SelectItem value="paypal">🅿️ PayPal</SelectItem>
-                      )}
+                      <SelectItem value="payid">🏦 PayID / NPP</SelectItem>
                       <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
                     </>
                   ) : (
@@ -633,7 +651,7 @@ export default function Wallets() {
             {depositMethod && depositMethod !== 'blockchain' && (
               <div>
                 <Label htmlFor="deposit-amount">
-                  {!['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(selectedWallet?.currency) && (depositMethod === 'paypal' || depositMethod === 'bank_transfer')
+                  {!['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(selectedWallet?.currency) && (depositMethod === 'payid' || depositMethod === 'bank_transfer')
                     ? 'Amount (AUD)'
                     : `Amount (${selectedWallet?.currency || ''})`
                   }
@@ -691,64 +709,40 @@ export default function Wallets() {
                 {depositMethod === 'card' && (
                   <div className="space-y-3">
                     <div className="p-3 bg-muted rounded-lg">
-                      <h4 className="font-medium mb-2 text-sm">💳 Credit/Debit Card</h4>
+                      <h4 className="font-medium mb-2 text-sm">💳 Card Payment via Stripe</h4>
                       <div className="text-xs text-muted-foreground space-y-1">
                         <p>• Visa, Mastercard, American Express accepted</p>
-                        <p>• Instant processing</p>
-                        <p>• Fee: 2.9% + $0.30 AUD</p>
-                        <p>• Limits: $50 - $10,000 AUD per transaction</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label htmlFor="card-number" className="text-xs">Card Number</Label>
-                        <Input 
-                          id="card-number"
-                          placeholder="1234 5678 9012 3456"
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="card-expiry" className="text-xs">Expiry Date</Label>
-                        <Input 
-                          id="card-expiry"
-                          placeholder="MM/YY"
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="card-cvv" className="text-xs">CVV</Label>
-                        <Input 
-                          id="card-cvv"
-                          placeholder="123"
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="card-name" className="text-xs">Cardholder Name</Label>
-                        <Input 
-                          id="card-name"
-                          placeholder="John Doe"
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                {depositMethod === 'paypal' && (
-                  <div className="space-y-3">
-                    <div className="p-3 bg-muted rounded-lg">
-                      <h4 className="font-medium mb-2 text-sm">🅿️ PayPal Deposit</h4>
-                      <div className="text-xs text-muted-foreground space-y-1">
-                        <p>• You will be redirected to PayPal to log in and confirm</p>
-                        <p>• After approval, you are returned here automatically</p>
-                        <p>• Funds credited instantly once PayPal confirms</p>
-                        <p>• Standard PayPal fees may apply</p>
+                        <p>• Processed by Stripe — PCI DSS Level 1 certified</p>
+                        <p>• Card details entered on Stripe's secure page — never stored by AMAX</p>
+                        <p>• Fee: 2.9% + $0.30 per transaction</p>
+                        <p>• Funds credited after Stripe payment confirmation</p>
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Enter the amount above, then click <strong>Continue to PayPal</strong>. You will be redirected to PayPal's secure login page.
+                      Enter the amount above, then click <strong>Pay Securely with Card</strong> to be redirected to Stripe's hosted payment page.
+                    </p>
+                  </div>
+                )}
+                
+                {depositMethod === 'payid' && (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-muted rounded-lg">
+                      <h4 className="font-medium mb-2 text-sm">🏦 PayID / NPP Deposit</h4>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>• Instant bank transfer via Australia's NPP / Osko network</p>
+                        <p>• Available to all Australian bank account holders</p>
+                        <p>• No transfer fees — free from your banking app</p>
+                        <p>• Funds credited within 1–2 business hours of receipt</p>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-1">
+                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">Send to AMAX Global PayID:</p>
+                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">PayID:</span> info@amaxglobal.com.au</p>
+                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account Name:</span> AMAX Global Pty Ltd</p>
+                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Reference:</span> Your registered email address</p>
+                    </div>
+                    <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
+                      ⏳ Clicking Submit records your deposit request. Your balance will be credited once AMAX confirms receipt of the transfer.
                     </p>
                   </div>
                 )}
@@ -756,52 +750,47 @@ export default function Wallets() {
                 {depositMethod === 'bank_transfer' && (
                   <div className="space-y-3">
                     <div className="p-3 bg-muted rounded-lg">
-                      <h4 className="font-medium mb-2 text-sm">🏦 Bank Transfer</h4>
+                      <h4 className="font-medium mb-2 text-sm">🏦 International Bank Transfer</h4>
                       <div className="text-xs text-muted-foreground space-y-1">
-                        <p>• International transfers accepted</p>
-                        <p>• Processing time: 1-3 business days</p>
-                        <p>• Include reference number in transfer</p>
-                        <p>• SWIFT: VIRGOAU33</p>
+                        <p>• SWIFT international transfers accepted</p>
+                        <p>• Processing time: 1–3 business days</p>
+                        <p>• Include your registered email as payment reference</p>
+                        <p>• Balance credited once AMAX confirms receipt</p>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <div>
-                        <Label htmlFor="bank-name" className="text-xs">Your Name</Label>
-                        <Input 
-                          id="bank-name"
-                          placeholder="John Chen"
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="bank-bsb" className="text-xs">BSB (if Australian)</Label>
-                        <Input 
-                          id="bank-bsb"
-                          placeholder="123-456"
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="bank-account" className="text-xs">Account Number</Label>
-                        <Input 
-                          id="bank-account"
-                          placeholder="12345678"
-                          className="h-8 text-sm"
-                        />
-                      </div>
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-1">
+                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">AMAX Global Bank Details:</p>
+                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Bank:</span> Westpac Banking Corporation</p>
+                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">BSB:</span> 032-000</p>
+                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account:</span> 123456789</p>
+                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account Name:</span> AMAX Global Pty Ltd</p>
+                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">SWIFT:</span> WPACAU2S</p>
+                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Reference:</span> Your registered email address</p>
                     </div>
+                    <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
+                      ⏳ Clicking Submit records your deposit request. Your balance will be credited once AMAX confirms receipt of funds.
+                    </p>
                   </div>
                 )}
                 
                 <div className="flex space-x-2 pt-2">
-                  <Button 
-                    onClick={handleDeposit}
-                    disabled={depositMutation.isPending || !depositMethod || !amount}
-                    className="flex-1 h-8 text-sm"
-                  >
-                    {depositMutation.isPending ? "Processing..." : 
-                     !['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(selectedWallet?.currency) ? `Purchase ${selectedWallet.currency}` : "Submit Deposit Request"}
-                  </Button>
+                  {depositMethod === 'card' ? (
+                    <Button
+                      onClick={handleStripeCheckout}
+                      disabled={stripeLoading || !amount}
+                      className="flex-1 h-8 text-sm"
+                    >
+                      {stripeLoading ? "Redirecting to Stripe..." : "💳 Pay Securely with Card"}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleDeposit}
+                      disabled={depositMutation.isPending || !depositMethod || !amount}
+                      className="flex-1 h-8 text-sm"
+                    >
+                      {depositMutation.isPending ? "Submitting..." : "Submit Deposit Request"}
+                    </Button>
+                  )}
                   <Button variant="outline" className="h-8 text-sm" onClick={() => {
                     setDepositModalOpen(false);
                     setAmount("");

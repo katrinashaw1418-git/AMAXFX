@@ -1,0 +1,256 @@
+Here’s a **clean, complete list of eWallet deposit & withdrawal channels** I recommend for AMAX — aligned with **Australia (AUSTRAC), global fintech standards, and real execution rails**.
+
+I’ve grouped them into:
+
+* 💵 Fiat (cash)
+* 🪙 Crypto (digital assets)
+
+And clearly marked:
+
+* ✅ Must-have
+* ⭐ Recommended
+* ⚠️ Optional / situational
+
+---
+
+# 💵 FIAT CHANNELS
+
+## ⬇️ Deposits (Add Money)
+
+### ✅ Core Channels (You should DEFINITELY have these)
+
+### 🏦 Bank Transfer (PayID / NPP – Australia)
+
+* Instant bank transfers in Australia
+* Uses phone/email/ABN as identifier
+* Very low cost
+* Real-time confirmation
+
+👉 **Verdict: MUST HAVE (primary rail in AU)**
+
+---
+
+### 💳 Credit / Debit Cards (Visa / Mastercard)
+
+* Fast onboarding
+* High conversion
+* Works globally
+
+👉 Use: Stripe
+
+👉 **Verdict: MUST HAVE**
+
+---
+
+### 🏦 Open Banking (PayTo / Direct Debit API)
+
+* Direct bank debit via API
+* No card fees
+* Strong compliance signal
+
+👉 Use:
+
+* Airwallex
+* TrueLayer
+
+👉 **Verdict: MUST HAVE (modern fintech standard)**
+
+---
+
+## ⭐ Recommended Channels (Strong UX / growth boost)
+
+### 📱 Apple Pay / Google Pay
+
+* 1-click payments
+* Higher mobile conversion
+
+👉 Runs via Stripe
+
+👉 **Verdict: STRONGLY RECOMMENDED**
+
+---
+
+### 🌍 International Bank Transfer (SWIFT)
+
+* Needed for global users
+* Slower (1–3 days)
+
+👉 **Verdict: ADD if going international**
+
+---
+
+## ⚠️ Optional / Not Recommended as Core
+
+### 💸 PayPal
+
+* Easy UX but:
+
+  * High fees
+  * Limited control
+  * Weak for scaling fintech
+
+👉 **Verdict: OPTIONAL (not core infrastructure)**
+
+---
+
+### 🇦🇺 POLi (Legacy AU bank payments)
+
+* Declining usage
+* Not future-proof
+
+👉 **Verdict: OPTIONAL / can skip**
+
+---
+
+# ⬆️ Withdrawals (Cash Out)
+
+## ✅ Core Channels
+
+### 🏦 Bank Transfer (Local payout)
+
+* Primary withdrawal method
+* Required for compliance
+
+👉 Use:
+
+* Airwallex
+* Wise
+
+👉 **Verdict: MUST HAVE**
+
+---
+
+## ⭐ Recommended
+
+### 🌍 International Withdrawals (SWIFT / Wise)
+
+* Needed for global users
+
+👉 **Verdict: ADD if international expansion**
+
+---
+
+## ❌ Not Recommended
+
+* PayPal withdrawals (adds complexity + fees)
+* Card refunds as a withdrawal method (limited use case)
+
+---
+
+# 🪙 CRYPTO CHANNELS
+
+## ⬇️ Deposits
+
+### ✅ Blockchain Transfers (Standard)
+
+* User sends crypto to wallet address
+* Requires:
+
+  * Address per user
+  * Network selection (ERC20/TRC20/etc.)
+
+👉 Use:
+
+* Fireblocks
+
+👉 **Verdict: MUST HAVE**
+
+---
+
+## ⭐ Recommended Additions
+
+### 🔄 Crypto On-Ramp (Buy crypto with fiat)
+
+* Users buy crypto directly
+* No need to leave app
+
+👉 Providers:
+
+* MoonPay
+* Banxa
+* Transak
+
+👉 **Verdict: HIGHLY RECOMMENDED**
+
+---
+
+## ⬆️ Crypto Withdrawals
+
+### ✅ External Wallet Transfers
+
+* User enters wallet address
+* You send blockchain transaction
+
+👉 **Verdict: MUST HAVE**
+
+---
+
+## ⭐ Internal Transfers (Email / Username)
+
+### 📧 Internal Ledger Transfers
+
+* Instant
+* No blockchain fees
+
+👉 NOT blockchain
+👉 Works only inside your system
+
+👉 **Verdict: STRONGLY RECOMMENDED**
+
+---
+
+# 🧠 FINAL RECOMMENDED STACK (AMAX)
+
+## 💵 Fiat
+
+### Deposits:
+
+* ✅ PayID / NPP (Australia)
+* ✅ Cards (Stripe)
+* ✅ Open Banking (PayTo)
+* ⭐ Apple Pay / Google Pay
+* ⭐ SWIFT (if global)
+
+### Withdrawals:
+
+* ✅ Bank transfer (Airwallex/Wise)
+* ⭐ International payouts
+
+---
+
+## 🪙 Crypto
+
+### Deposits:
+
+* ✅ Blockchain transfers
+* ⭐ On-ramp (MoonPay/Banxa)
+
+### Withdrawals:
+
+* ✅ External wallet transfer
+* ⭐ Internal (email/username)
+
+---
+
+# ⚖️ Compliance Alignment (AUSTRAC)
+
+With this setup:
+
+✅ Real fund movement
+✅ Traceable transactions
+✅ Proper audit trail
+✅ Works with AML monitoring
+
+👉 This is **aligned with AUSTRAC expectations**
+
+---
+
+# 🚀 If You Want Next Level
+
+I can now:
+
+* Map each channel → **exact API endpoints**
+* Design **UI flow for each payment method**
+* Or build **full payment orchestration layer**
+
+Just say 👍

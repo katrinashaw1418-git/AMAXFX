@@ -1,6 +1,7 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { createHash, randomBytes } from "crypto";
+import Stripe from "stripe";
 import { z } from "zod";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { and, eq, sql } from "drizzle-orm";
@@ -106,6 +107,8 @@ const depositSchema = z.object({
     .positive("Amount must be positive")
     .max(9999999, "Amount exceeds maximum single-deposit limit of 9,999,999"),
   description: z.string().max(255).optional(),
+  // Payment channel: bank_transfer | payid — card deposits go via Stripe, not this route.
+  method: z.enum(["bank_transfer", "payid"]).optional(),
 });
 
 const withdrawSchema = z.object({
@@ -2303,8 +2306,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await requireKyc(userId, storage);
       const parsedDeposit = depositSchema.safeParse(req.body);
       if (!parsedDeposit.success) return res.status(400).json({ error: parsedDeposit.error.errors[0].message });
-      const { currency, amount: rawAmount, description } = parsedDeposit.data;
+      const { currency, amount: rawAmount, description, method } = parsedDeposit.data;
       const amount = new Decimal(rawAmount);
+
+      // Card deposits must use the Stripe checkout route — never this handler.
+      // Accepting card deposits here would credit balances without real payment confirmation.
+      if ((method as string) === "card") {
+        return res.status(400).json({
+          error: "Card deposits must use the Stripe checkout flow. Use POST /api/stripe/create-checkout-session.",
+        });
+      }
+
+      // Bank transfer and PayID deposits are pending until AMAX confirms receipt.
+      // Balance is NOT credited immediately — only credited by admin confirmation
+      // or banking webhook (e.g. Airwallex/Monoova NPP webhook in production).
+      const isPendingChannel = method === "bank_transfer" || method === "payid";
 
       const idemKey = req.headers["idempotency-key"] as string | undefined;
       const payloadHash = hashPayload(req.body);
@@ -2322,17 +2338,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .for("update");
         if (!wallet) throw Object.assign(new Error("Wallet not found"), { status: 404 });
 
-        await tx.update(wallets).set({
-          balance: new Decimal(wallet.balance).plus(amount).toFixed(8),
-          availableBalance: new Decimal(wallet.availableBalance).plus(amount).toFixed(8),
-        }).where(eq(wallets.id, wallet.id));
+        // Only credit balance immediately for confirmed channels (not bank/PayID).
+        if (!isPendingChannel) {
+          await tx.update(wallets).set({
+            balance: new Decimal(wallet.balance).plus(amount).toFixed(8),
+            availableBalance: new Decimal(wallet.availableBalance).plus(amount).toFixed(8),
+          }).where(eq(wallets.id, wallet.id));
+        }
+
+        const channelLabel = method === "bank_transfer"
+          ? "Bank Transfer"
+          : method === "payid"
+          ? "PayID"
+          : "Transfer";
 
         [txRecord] = await tx.insert(transactions).values({
           userId, type: "deposit", fromCurrency: null, toCurrency: currency,
           amount: amount.toFixed(8), fee: "0.00000000", exchangeRate: null,
-          status: "completed", settlementStatus: "internal_only",
-          description: description || `${currency} Deposit`,
-          sourceExchange: null, blockchainTxHash: null,
+          status: isPendingChannel ? "pending" : "completed",
+          settlementStatus: isPendingChannel ? "awaiting_bank_confirmation" : "internal_only",
+          description: description || `${currency} ${channelLabel} Deposit`,
+          sourceExchange: method ?? null, blockchainTxHash: null,
           assetType: classifyAssetType(null, currency),
           direction: "in",
           riskFlag: false,
@@ -2342,7 +2368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (idemKey) await saveIdempotentResponse(userId, "/api/deposit", idemKey, payloadHash, txRecord);
-      await writeAuditLog(userId, "deposit", "transaction", String(txRecord?.id), { currency, amount: rawAmount }, req.ip || null);
+      await writeAuditLog(userId, "deposit", "transaction", String(txRecord?.id), { currency, amount: rawAmount, method }, req.ip || null);
       res.json(txRecord);
     } catch (error: any) {
       if (error.status) return res.status(error.status).json({ error: error.message });
@@ -3065,6 +3091,178 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to reset password" });
     }
+  });
+
+  // ---------------------------------------------------------------------------
+  // Stripe — Real card payment processing via Stripe Checkout
+  // Flow: Frontend calls create-checkout-session → redirects to Stripe hosted page
+  //       → Stripe redirects back → webhook fires → balance credited
+  // Requires env: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+  // Zero-decimal currencies (JPY, KRW): amount passed as whole units.
+  // ---------------------------------------------------------------------------
+
+  // Helper: currencies that Stripe treats as zero-decimal (no cents)
+  const STRIPE_ZERO_DECIMAL = new Set(["JPY", "KRW", "BIF", "CLP", "GNF", "ISK", "MGA", "PYG", "RWF", "UGX", "VND", "XAF", "XOF", "XPF"]);
+
+  function getStripeClient(): Stripe {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) throw Object.assign(new Error("Stripe is not configured — STRIPE_SECRET_KEY missing"), { status: 503 });
+    return new Stripe(key, { apiVersion: "2025-02-24.acacia" });
+  }
+
+  // POST /api/stripe/create-checkout-session
+  // Body: { walletId: number, amount: string, currency: string }
+  // Returns: { sessionId, url }
+  app.post("/api/stripe/create-checkout-session", requireAuth, async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      const { walletId, amount, currency } = req.body;
+      if (!walletId || !amount || !currency) {
+        return res.status(400).json({ error: "walletId, amount and currency are required" });
+      }
+
+      const parsedAmount = parseFloat(amount);
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        return res.status(400).json({ error: "Invalid amount" });
+      }
+
+      // Verify the wallet belongs to this user
+      const [wallet] = await db.select().from(wallets)
+        .where(and(eq(wallets.id, Number(walletId)), eq(wallets.userId, userId)));
+      if (!wallet) return res.status(404).json({ error: "Wallet not found" });
+
+      const stripe = getStripeClient();
+      const appDomain = process.env.REPLIT_DOMAINS
+        ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
+        : "http://localhost:5000";
+
+      // Convert amount to smallest currency unit
+      const unitAmount = STRIPE_ZERO_DECIMAL.has(currency.toUpperCase())
+        ? Math.round(parsedAmount)
+        : Math.round(parsedAmount * 100);
+
+      const session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price_data: {
+              currency: currency.toLowerCase(),
+              product_data: {
+                name: `AMAX Global ${currency} Wallet Deposit`,
+                description: `Deposit funds into your AMAX ${currency} wallet`,
+              },
+              unit_amount: unitAmount,
+            },
+            quantity: 1,
+          },
+        ],
+        metadata: {
+          walletId: String(walletId),
+          userId: String(userId),
+          currency,
+          amountDecimal: amount,
+        },
+        success_url: `${appDomain}/wallets?stripe=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${appDomain}/wallets?stripe=cancel`,
+        billing_address_collection: "auto",
+        customer_email: req.body.email || undefined,
+      });
+
+      res.json({ sessionId: session.id, url: session.url });
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
+      console.error("[stripe-create-session]", error?.message ?? error);
+      res.status(500).json({ error: "Failed to create Stripe checkout session" });
+    }
+  });
+
+  // POST /api/stripe/webhook
+  // Stripe posts events here; body is raw Buffer (set up in server/index.ts)
+  // Handles: checkout.session.completed → credit wallet balance
+  app.post("/api/stripe/webhook", async (req: Request, res: any) => {
+    const sig = req.headers["stripe-signature"];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+      console.error("[stripe-webhook] STRIPE_WEBHOOK_SECRET not set");
+      return res.status(503).json({ error: "Webhook not configured" });
+    }
+
+    let event: Stripe.Event;
+    try {
+      const stripe = getStripeClient();
+      event = stripe.webhooks.constructEvent(req.body as Buffer, sig as string, webhookSecret);
+    } catch (err: any) {
+      console.error("[stripe-webhook] signature verification failed:", err.message);
+      return res.status(400).json({ error: `Webhook signature error: ${err.message}` });
+    }
+
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
+
+      // Only process if payment was actually collected (not just authorised)
+      if (session.payment_status !== "paid") {
+        return res.json({ received: true, skipped: "not paid" });
+      }
+
+      const { walletId, userId, currency, amountDecimal } = session.metadata ?? {};
+      if (!walletId || !userId || !currency || !amountDecimal) {
+        console.error("[stripe-webhook] missing metadata on session", session.id);
+        return res.status(400).json({ error: "Missing metadata" });
+      }
+
+      const amount = new Decimal(amountDecimal);
+
+      try {
+        let txRecord: any;
+        await db.transaction(async (tx) => {
+          await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+          const [wallet] = await tx.select().from(wallets)
+            .where(and(eq(wallets.id, Number(walletId)), eq(wallets.userId, Number(userId))))
+            .for("update");
+          if (!wallet) throw new Error(`Wallet ${walletId} not found for userId ${userId}`);
+
+          await tx.update(wallets).set({
+            balance: new Decimal(wallet.balance).plus(amount).toFixed(8),
+            availableBalance: new Decimal(wallet.availableBalance).plus(amount).toFixed(8),
+          }).where(eq(wallets.id, wallet.id));
+
+          [txRecord] = await tx.insert(transactions).values({
+            userId: Number(userId),
+            type: "deposit",
+            fromCurrency: null,
+            toCurrency: currency,
+            amount: amount.toFixed(8),
+            fee: "0.00000000",
+            exchangeRate: null,
+            status: "completed",
+            settlementStatus: "stripe_card",
+            description: `${currency} Deposit via Card (Stripe ${session.id})`,
+            sourceExchange: "stripe",
+            blockchainTxHash: null,
+            assetType: "fiat",
+            direction: "in",
+            riskFlag: false,
+            reviewStatus: "clear",
+            reviewNotes: null,
+          }).returning();
+        });
+
+        await writeAuditLog(
+          Number(userId), "stripe_deposit", "transaction", String(txRecord?.id),
+          { currency, amount: amountDecimal, stripeSessionId: session.id },
+          null,
+        );
+
+        console.log(`[stripe-webhook] credited ${amount} ${currency} to wallet ${walletId} (session ${session.id})`);
+      } catch (err: any) {
+        console.error("[stripe-webhook] failed to credit wallet:", err.message);
+        return res.status(500).json({ error: "Failed to credit wallet" });
+      }
+    }
+
+    res.json({ received: true });
   });
 
   // ---------------------------------------------------------------------------

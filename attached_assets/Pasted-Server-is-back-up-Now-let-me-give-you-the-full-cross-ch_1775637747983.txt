@@ -1,0 +1,35 @@
+Server is back up. Now let me give you the full cross-checked update list before any code changes.
+
+Update List — Cross-checked against your research docs
+What's currently in the app (after last session)
+Channel	Current State	Issue
+Fiat deposit: Card	✅	Fine
+Fiat deposit: PayPal	⚠️ Partially built	Redirect button incomplete — currently calls standard deposit instead of PayPal redirect
+Fiat deposit: Bank Transfer	✅	Fine
+Fiat withdrawal: Bank Transfer	✅	Correct
+Crypto deposit: Blockchain	✅	Correct
+Crypto withdrawal: "Convert via FX" + "Email us"	❌	Wrong naming — not real mechanisms
+Proposed Changes (awaiting your approval)
+Change 1 — Replace PayPal → PayID on deposits
+All 3 of your research documents agree: PayPal is not a standard rail for regulated fintech. It creates chargeback exposure and AML tracing gaps. PayID/NPP is the Australian standard (used by Wise, Revolut, Airwallex, every AU fintech).
+
+Remove: PayPal deposit option + all backend PayPal routes (added last session, unused, no credentials)
+Remove: paypalLoading state, PayPal useEffect, PAYPAL_SUPPORTED_CURRENCIES constant
+Add: PayID — shows AMAX's PayID address, required reference number, and AUD amount field
+Change 2 — Fix crypto withdrawal terminology
+The research is clear: "Email blockchain" is not a real mechanism, and "Crypto exchange withdrawal" is misleading.
+
+Remove: "Convert via FX Exchange" info panel (this is about conversion, not withdrawal)
+Remove: "Email us for blockchain" panel (not a real rail)
+Replace with: "Withdraw to External Wallet Address" — user enters a wallet address, standard across Coinbase/Binance/Kraken
+Add: "Internal Transfer" option — user enters another AMAX user's email (internal ledger, instant, no gas fees)
+Change 3 — Fix the deposit amount label condition
+A minor bug left over — the label condition was updated to check for paypal but now needs to check for payid instead.
+
+What is NOT changing
+Credit/Debit card deposit — stays
+Bank transfer deposit + withdrawal — stays
+Crypto deposit via blockchain — stays
+KYC, auth, compliance flows — untouched
+All backend financial logic — untouched
+That's the full list. Do you approve these 3 changes? If yes I'll implement them all at once.
