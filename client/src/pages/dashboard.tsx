@@ -92,7 +92,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="font-semibold text-gray-900">FX Exchange</p>
-                <p className="text-xs text-gray-500">Fiat conversions</p>
+                <p className="text-xs text-gray-500">Fiat currency conversion</p>
               </div>
             </CardContent>
           </Card>
