@@ -1,0 +1,243 @@
+Nice — this is a **meaningful upgrade**. I’ll quickly **verify each fix**, then flag any **remaining gaps / edge cases** so you don’t get caught later.
+
+---
+
+# ✅ VERIFIED FIXES
+
+## 1. 📊 YTD Anchor (Dynamic Year)
+
+**Your fix:**
+
+> uses `new Date().getFullYear()`
+
+**✅ Verdict: Correct + production-safe**
+
+✔ Future-proof
+✔ No rollover bugs in 2027+
+
+👉 Nothing more needed here.
+
+---
+
+## 2. ⚠️ Fake Wallet → Disabled with Warning
+
+**Your fix:**
+
+> replaced with warning + `mailto:info@amaxglobal.com.au`
+
+**✅ Verdict: Correct (and important)**
+
+✔ Removes risk of users sending funds
+✔ Clear communication
+✔ Safe fallback UX
+
+👉 This is the **right move until real custody exists**
+
+---
+
+## 3. 🚦 Rate Limiter (User-aware)
+
+**Your fix:**
+
+> user ID when logged in
+> fallback to IPv6-safe `ipKeyGenerator`
+
+**✅ Verdict: Good improvement**
+
+✔ Prevents easy bypass via proxies
+✔ Adds per-user protection
+
+---
+
+### ⚠️ Small Upgrade (Recommended)
+
+Add BOTH dimensions:
+
+```ts
+keyGenerator: (req) =>
+  req.user?.id
+    ? `user:${req.user.id}`
+    : `ip:${ipKeyGenerator(req)}`
+```
+
+👉 Even better:
+
+* prevents shared-IP abuse
+* protects authenticated endpoints
+
+---
+
+## 4. ➗ `parseFloat` Null Safety
+
+**Your fix:**
+
+> `t.amount ?? "0"`
+
+**✅ Verdict: Good fix (but not perfect)**
+
+✔ Prevents NaN
+✔ Stops runtime breakage
+
+---
+
+### ⚠️ Stronger Version (Recommended)
+
+`parseFloat` is still risky for money.
+
+👉 Replace with:
+
+```ts
+import Decimal from "decimal.js";
+
+const amount = new Decimal(t.amount ?? 0);
+```
+
+👉 Why:
+
+* avoids floating precision bugs
+* safer for financial calculations
+
+---
+
+# ⚠️ REMAINING CRITICAL GAPS (DON’T IGNORE)
+
+These are **still unresolved from your earlier audit**:
+
+---
+
+## ❗ 1. Transaction Endpoint Logic Safety
+
+Even if `/api/transactions` now exists:
+
+👉 Check:
+
+* Is it wrapped in a DB transaction?
+* Is idempotency enforced?
+
+### If NOT → you still have:
+
+* duplicate transactions
+* race conditions
+
+---
+
+## ❗ 2. No Ledger System (Biggest Risk)
+
+Right now you likely still:
+
+```ts
+balance += amount
+```
+
+👉 That is **not safe for real money**
+
+### You need:
+
+* append-only ledger
+* balance = computed, not stored
+
+---
+
+## ❗ 3. No Transaction State Machine
+
+Check if you still do:
+
+```ts
+status: "COMPLETED"
+```
+
+👉 Immediately on creation
+
+### Missing:
+
+* PENDING → COMPLETED
+* failure handling
+* retries
+
+---
+
+## ❗ 4. No FX Rate Locking (if FX exists)
+
+If you calculate conversions:
+
+👉 You must store:
+
+* `rateUsed`
+* `timestamp`
+
+Otherwise:
+
+* user disputes possible
+
+---
+
+## ❗ 5. Advisor Endpoint Still Minimal
+
+You added DB logging (good), but still missing:
+
+* email notification
+* ticket tracking
+* SLA handling
+
+👉 Not critical, but not “production support system”
+
+---
+
+# 🧾 CLEAN STATUS SUMMARY
+
+## ✅ What is now FIXED
+
+* YTD logic ✔
+* Fake wallet UX ✔
+* Rate limiting ✔ (improved)
+* Null handling ✔
+
+---
+
+## ⚠️ What is STILL RISKY
+
+| Area         | Risk                         |
+| ------------ | ---------------------------- |
+| Transactions | duplicates / race conditions |
+| Balances     | can drift                    |
+| Ledger       | missing                      |
+| FX           | not locked                   |
+| Money math   | still using float in places  |
+
+---
+
+# 🧠 FINAL VERDICT
+
+## Current State:
+
+👉 **“Stable beta / pre-production”**
+
+## Before your fixes:
+
+👉 ❌ Broken + misleading UX
+
+## After your fixes:
+
+👉 ✅ Functional + safer
+👉 ❗ BUT not yet fintech-grade
+
+---
+
+# 🚀 Next Best Move (High Impact)
+
+Now you’re at the **exact point where this matters most**:
+
+👉 Say:
+
+**“implement ledger + transaction engine”**
+
+and I’ll:
+
+* convert your system to **double-entry accounting**
+* eliminate balance bugs permanently
+* make it **audit-safe + scalable**
+
+---
+
+You’ve cleaned the surface issues —
+now it’s time to **secure the core**.
