@@ -568,7 +568,7 @@ export default function Wallets() {
                   {selectedWallet?.walletType === 'fiat' ? (
                     <>
                       <SelectItem value="card">💳 Credit/Debit Card</SelectItem>
-                      <SelectItem value="payid">📱 PayID (Australia Only)</SelectItem>
+                      <SelectItem value="paypal">🅿️ PayPal</SelectItem>
                       <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
                     </>
                   ) : (
@@ -583,7 +583,7 @@ export default function Wallets() {
             {depositMethod && depositMethod !== 'blockchain' && (
               <div>
                 <Label htmlFor="deposit-amount">
-                  {!['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(selectedWallet?.currency) && (depositMethod === 'payid' || depositMethod === 'bank_transfer')
+                  {!['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(selectedWallet?.currency) && (depositMethod === 'paypal' || depositMethod === 'bank_transfer')
                     ? 'Amount (AUD)'
                     : `Amount (${selectedWallet?.currency || ''})`
                   }
@@ -686,30 +686,31 @@ export default function Wallets() {
                   </div>
                 )}
                 
-                {depositMethod === 'payid' && (
+                {depositMethod === 'paypal' && (
                   <div className="space-y-3">
                     <div className="p-3 bg-muted rounded-lg">
-                      <h4 className="font-medium mb-2 text-sm">📱 PayID (Australia Only)</h4>
+                      <h4 className="font-medium mb-2 text-sm">🅿️ PayPal Deposit</h4>
                       <div className="text-xs text-muted-foreground space-y-1">
-                        <p>• Available in Australia only</p>
-                        <p>• Instant transfers via NPP</p>
-                        <p>• Use your email or mobile number</p>
-                        <p>• No fees for transfers</p>
+                        <p>• Accepted worldwide</p>
+                        <p>• Fast processing — typically same day</p>
+                        <p>• PayPal account required</p>
+                        <p>• Standard PayPal fees may apply</p>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <div>
-                        <Label htmlFor="payid-identifier" className="text-xs">Your PayID</Label>
-                        <Input 
-                          id="payid-identifier"
-                          placeholder="your.email@example.com or +61400000000"
+                        <Label htmlFor="paypal-email" className="text-xs">Your PayPal Email</Label>
+                        <Input
+                          id="paypal-email"
+                          type="email"
+                          placeholder="you@example.com"
                           className="h-8 text-sm"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="payid-name" className="text-xs">Full Name</Label>
-                        <Input 
-                          id="payid-name"
+                        <Label htmlFor="paypal-name" className="text-xs">Account Holder Name</Label>
+                        <Input
+                          id="paypal-name"
                           placeholder="John Chen"
                           className="h-8 text-sm"
                         />
@@ -863,6 +864,7 @@ export default function Wallets() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
+                    <SelectItem value="paypal">🅿️ PayPal</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -881,43 +883,78 @@ export default function Wallets() {
                   </p>
                 )}
               </div>
-              <div className="space-y-3">
-                <div className="p-3 bg-muted rounded-lg">
-                  <h4 className="font-medium mb-2 text-sm">🏦 Bank Transfer Instructions</h4>
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    <p>• Funds transferred to your registered bank account</p>
-                    <p>• Processing time: 1-3 business days</p>
-                    <p>• Withdrawal fee applies (see fee schedule)</p>
-                    <p>• Please ensure your bank details are up to date</p>
+              {withdrawMethod === 'paypal' && (
+                <div className="space-y-3">
+                  <div className="p-3 bg-muted rounded-lg">
+                    <h4 className="font-medium mb-2 text-sm">🅿️ PayPal Withdrawal</h4>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>• Funds sent directly to your PayPal account</p>
+                      <p>• Processing time: same day to 1 business day</p>
+                      <p>• PayPal account required</p>
+                      <p>• Standard PayPal fees may apply</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div>
+                      <Label htmlFor="withdraw-paypal-email" className="text-xs">PayPal Email Address</Label>
+                      <Input
+                        id="withdraw-paypal-email"
+                        type="email"
+                        placeholder="you@example.com"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="withdraw-paypal-name" className="text-xs">Account Holder Name</Label>
+                      <Input
+                        id="withdraw-paypal-name"
+                        placeholder="John Chen"
+                        className="h-8 text-sm"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <div>
-                    <Label htmlFor="withdraw-bank-name" className="text-xs">Bank Account Holder Name</Label>
-                    <Input
-                      id="withdraw-bank-name"
-                      placeholder="John Chen"
-                      className="h-8 text-sm"
-                    />
+              )}
+
+              {withdrawMethod === 'bank_transfer' && (
+                <div className="space-y-3">
+                  <div className="p-3 bg-muted rounded-lg">
+                    <h4 className="font-medium mb-2 text-sm">🏦 Bank Transfer Instructions</h4>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>• Funds transferred to your registered bank account</p>
+                      <p>• Processing time: 1-3 business days</p>
+                      <p>• Withdrawal fee applies (see fee schedule)</p>
+                      <p>• Please ensure your bank details are up to date</p>
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="withdraw-bsb" className="text-xs">BSB (if Australian)</Label>
-                    <Input
-                      id="withdraw-bsb"
-                      placeholder="123-456"
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="withdraw-account-number" className="text-xs">Account Number</Label>
-                    <Input
-                      id="withdraw-account-number"
-                      placeholder="12345678"
-                      className="h-8 text-sm"
-                    />
+                  <div className="space-y-2">
+                    <div>
+                      <Label htmlFor="withdraw-bank-name" className="text-xs">Bank Account Holder Name</Label>
+                      <Input
+                        id="withdraw-bank-name"
+                        placeholder="John Chen"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="withdraw-bsb" className="text-xs">BSB (if Australian)</Label>
+                      <Input
+                        id="withdraw-bsb"
+                        placeholder="123-456"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="withdraw-account-number" className="text-xs">Account Number</Label>
+                      <Input
+                        id="withdraw-account-number"
+                        placeholder="12345678"
+                        className="h-8 text-sm"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
               <div className="flex space-x-2 pt-2">
                 <Button
                   onClick={handleWithdraw}
