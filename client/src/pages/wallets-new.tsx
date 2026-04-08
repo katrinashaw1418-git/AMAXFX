@@ -138,11 +138,10 @@ function WalletValueDisplay({ wallet, displayCurrency }: { wallet: any, displayC
   );
 }
 
-const STABLECOINS = new Set(["USDT", "USDC"]);
 const FIAT_DISPLAY_CURRENCIES = ['USD', 'AUD', 'EUR', 'GBP', 'JPY', 'CAD', 'CHF', 'HKD', 'SGD'];
 
 function WalletSparkline({ currency, displayCurrency }: { currency: string; displayCurrency: string }) {
-  const skipSparkline = currency === displayCurrency || STABLECOINS.has(currency);
+  const skipSparkline = currency === displayCurrency;
   const { data: fxRate } = useFxRate(currency, displayCurrency);
   if (skipSparkline) return <div className="w-16 h-8" />;
   const currentRate = fxRate ? parseFloat(fxRate.rate) : 0;
