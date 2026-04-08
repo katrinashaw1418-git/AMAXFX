@@ -1,0 +1,290 @@
+Here’s a **clean, production-grade list of eWallet deposit & withdrawal channels** — aligned with:
+
+* 🇦🇺 Australian market (AUSTRAC + real rails)
+* 🏦 What serious platforms actually use (Wise, Coinbase, Revolut, etc.)
+* ⚙️ What your AMAX architecture can realistically support
+
+---
+
+# 💳 FIAT CHANNELS (AUD / USD)
+
+## ✅ DEPOSIT CHANNELS (RECOMMENDED)
+
+### 🏦 1. Bank Transfer (NPP / PayID)
+
+![Image](https://help.tab.com.au/content/dam/help-centre/articles/payid/payid-2.png)
+
+![Image](https://cdn.prod.website-files.com/667669fd6ecdeb037edd6b3e/687f14164fbfa59de7b7ef4f_Thumbnails%20new%20blogs%20%2813%29.png)
+
+![Image](https://www.nab.com.au/help-support/personal-banking/manage-payments-transfers/confirm-payee/_jcr_content/root/responsivegrid_4/section_container/responsivegrid/segmented_control/item_1740608633566/image.coreimg.jpeg/1746079001444/confirmation-of-payee-match-outcome-1500-3968.jpeg)
+
+![Image](https://beconnected.esafety.gov.au/pluginfile.php/65724/mod_resource/content/1/t27_c4_a1_p8.png)
+
+* Instant or near-instant in Australia
+* Low cost
+* **Core funding rail (must have)**
+* Works via:
+
+  * PayID (email/phone)
+  * BSB + Account
+
+👉 **Status: REQUIRED**
+
+---
+
+### 💳 2. Card Payments (Visa / Mastercard)
+
+![Image](https://b.stripecdn.com/docs-statics-srv/assets/checkout-card-brand-choice-full-page.9cf891dfb55abcdc9ae9046ea15bc054.png)
+
+![Image](https://cdn.prod.website-files.com/5eff9c5e4dba181f8aa2d1e0/614de1402d6a144689fb0d81_credit_card_payment_form.jpeg)
+
+![Image](https://www.visa.com.au/content/dam/VCOM/global/products/images/click-to-pay-order-summary-in-online-checkout-mobile-800x450.jpg)
+
+![Image](https://miro.medium.com/v2/resize%3Afit%3A1400/1%2A0Hp5j31Uzx2lcG3iqHLSoA.png)
+
+* Instant funding
+* Higher fees
+* Good for onboarding users quickly
+
+👉 Implement via:
+
+* Stripe
+
+👉 **Status: REQUIRED (for UX)**
+
+---
+
+### 📲 3. PayTo (Australia – NEW STANDARD)
+
+![Image](https://s3.ap-southeast-2.amazonaws.com/travlr.com/cms/prod/Default/PayTo%20Landing%20Page/Help-Centre_7-How-do-I-reauthorise-PayTo-agreement-after-the-merchant-made-changes.jpg)
+
+![Image](https://help.online.anz.com/hc/article_attachments/36344841106841)
+
+![Image](https://www.hellozai.com/hubfs/How%20to%20prepare%20for%20PayTo%20and%20set%20you%20and%20your%20company%20up%20for%20success.png)
+
+![Image](https://s3.ap-southeast-2.amazonaws.com/travlr.com/cms/prod/Default/PayTo%20Landing%20Page/Help-Centre_6-How-do-I-pause-a-PayTo-agreement_.jpg)
+
+* Real-time bank debit (like direct debit but instant)
+* Strong future replacement for direct debit
+
+👉 Works via:
+
+* Monoova
+* Cuscal
+
+👉 **Status: STRONGLY RECOMMENDED (future-proof)**
+
+---
+
+### 🏦 4. Direct Bank Transfer (Manual / BSB + Account)
+
+* Slower (same day / next day)
+* Backup option if PayID fails
+
+👉 **Status: OPTIONAL BACKUP**
+
+---
+
+## ❌ REMOVE / DO NOT USE
+
+### ❌ PayPal
+
+* Not used in serious fintech wallets
+* Chargeback risk
+* Poor AML traceability
+* Breaks clean ledger model
+
+👉 **Status: REMOVE**
+
+---
+
+# 💸 FIAT WITHDRAWAL CHANNELS
+
+## ✅ 1. Bank Transfer (NPP / PayID / OSKO)
+
+![Image](https://help.online.anz.com/hc/article_attachments/38458193016985)
+
+![Image](https://help.tab.com.au/content/dam/help-centre/articles/payid/payid-2.png)
+
+![Image](https://cdn.prod.website-files.com/64199d190fc7afa82666d89c/670291e7e24c2ee00d73bddd_Instant%20Bank%20Payments.svg)
+
+![Image](https://cdn.dribbble.com/userupload/43545200/file/original-354b5264f07d5f30aca2a830ea27233d.png?crop=0x0-3201x2401\&format=webp\&resize=400x300\&vertical=center)
+
+* Primary withdrawal method
+* Fast (instant to same day)
+* Fully traceable
+
+👉 via:
+
+* Monoova
+* Cuscal
+
+👉 **Status: REQUIRED**
+
+---
+
+## ❌ DO NOT ADD
+
+* ❌ Card withdrawals
+* ❌ PayPal withdrawals
+
+👉 Not standard in regulated eWallets
+
+---
+
+# 🪙 CRYPTO CHANNELS
+
+---
+
+## ✅ CRYPTO DEPOSIT CHANNELS
+
+### 🔗 1. Blockchain Deposit (Wallet Address)
+
+![Image](https://www.researchgate.net/profile/Andrey-Averin/publication/347554760/figure/fig1/AS%3A972249565773824%401608813768917/Exemple-QR-code-Bitcoin-BTC-address_Q320.jpg)
+
+![Image](https://bitcoin.design/assets/images/guide/glossary/address/address-valid.png)
+
+![Image](https://zendwallet.com/deposit-eth-step-2.png)
+
+![Image](https://sanity-proxy-v2.phantom.app/images/3nm6d03a/production/919354cbf3337f4e4943d965ffbdddb9b6900ea7-1920x1080.png)
+
+* User sends crypto to wallet address
+* Standard across all exchanges
+
+👉 via:
+
+* Fireblocks
+
+👉 **Status: REQUIRED**
+
+---
+
+### 🔄 2. Internal Transfer (User-to-User)
+
+* Instant (no gas fee)
+* Only within your platform
+
+👉 **Status: OPTIONAL (but valuable later)**
+
+---
+
+## ❌ REMOVE
+
+* ❌ “Email blockchain”
+* ❌ “Exchange transfer”
+
+👉 These are **not real settlement channels**
+
+---
+
+## ✅ CRYPTO WITHDRAWAL CHANNELS
+
+### 🔗 1. Blockchain Withdrawal (Standard)
+
+![Image](https://cdn.dribbble.com/userupload/43198882/file/original-0eb9079c49bfef2d9cb6f6d334151e06.png?resize=400x0)
+
+![Image](https://help.blockstream.com/hc/article_attachments/47472856454553)
+
+![Image](https://api.cryptocloud.plus/media//articles/img_1738162256.825456.jpg)
+
+![Image](https://zendwallet.com/withdraw-eth-step-1.png)
+
+* Send to external wallet address
+* Requires:
+
+  * address
+  * network
+  * (optional memo/tag)
+
+👉 via:
+
+* Fireblocks
+
+👉 **Status: REQUIRED**
+
+---
+
+### 🔄 2. Internal Transfer
+
+* Instant transfer between users
+* No blockchain fee
+
+👉 **Status: OPTIONAL**
+
+---
+
+# 🧠 FINAL CHANNEL MATRIX (YOUR TARGET DESIGN)
+
+## 💳 Fiat
+
+| Type       | Channel                    | Status        |
+| ---------- | -------------------------- | ------------- |
+| Deposit    | PayID / NPP                | ✅ REQUIRED    |
+| Deposit    | Card (Stripe)              | ✅ REQUIRED    |
+| Deposit    | PayTo                      | ✅ RECOMMENDED |
+| Deposit    | Bank Transfer (manual)     | 🟡 OPTIONAL   |
+| Deposit    | PayPal                     | ❌ REMOVE      |
+| Withdrawal | Bank Transfer (PayID/OSKO) | ✅ REQUIRED    |
+
+---
+
+## 🪙 Crypto
+
+| Type       | Channel            | Status      |
+| ---------- | ------------------ | ----------- |
+| Deposit    | Blockchain address | ✅ REQUIRED  |
+| Deposit    | Internal transfer  | 🟡 OPTIONAL |
+| Withdrawal | Blockchain address | ✅ REQUIRED  |
+| Withdrawal | Internal transfer  | 🟡 OPTIONAL |
+| Withdrawal | Email / exchange   | ❌ REMOVE    |
+
+---
+
+# 🚀 KEY DESIGN PRINCIPLE
+
+> Every channel must map to a **real external execution system**
+
+---
+
+## ✅ Good Channels
+
+* Bank APIs → real money moves
+* Stripe → real card settlement
+* Fireblocks → real blockchain transactions
+
+## ❌ Bad Channels
+
+* UI-only transfers
+* Fake “completed” states
+* Anything without external confirmation
+
+---
+
+# 🔥 FINAL ADVICE (VERY IMPORTANT)
+
+If you implement ONLY this channel set:
+
+👉 You will be:
+
+* aligned with market standards
+* compatible with AUSTRAC expectations
+* technically scalable
+
+If you keep PayPal / fake channels:
+
+👉 You will:
+
+* fail compliance review
+* confuse users
+* break settlement integrity
+
+---
+
+## If you want next step:
+
+I can design:
+
+👉 **Exact UI/UX flow per channel (screen-by-screen)**
+👉 **OR full funds flow diagram for AUSTRAC submission**
+
+Just tell me 👍

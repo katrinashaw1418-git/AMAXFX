@@ -1,0 +1,276 @@
+Here’s a **clean, complete list of all eWallet deposit & withdrawal channels** I recommend — structured the way real platforms like Wise, Revolut, and Coinbase actually operate.
+
+I’ll separate **Fiat vs Crypto**, and clearly mark what is **core (must-have)** vs **optional (strategic)**.
+
+---
+
+# 💰 1. FIAT CHANNELS
+
+## 🟢 DEPOSITS (FIAT)
+
+### ✅ Core (must-have)
+
+1. **Bank Transfer (Local + SWIFT)**
+
+* Domestic bank transfer (BSB/account in Australia)
+* International SWIFT transfers
+
+👉 Backbone of all platforms
+
+---
+
+2. **Real-Time Payments (Australia)**
+
+* New Payments Platform (PayID / Osko)
+
+👉 Critical in Australia:
+
+* Instant settlement
+* Low cost
+* User expectation
+
+---
+
+3. **Card Payments (Credit/Debit)**
+
+* Via Stripe or Adyen
+
+👉 Use cases:
+
+* Fast onboarding
+* Retail users
+
+---
+
+### 🟡 Optional (recommended)
+
+4. **Open Banking / Direct Debit**
+
+* Bank account linking + pull payments
+
+👉 Benefits:
+
+* Lower fees than cards
+* Better fraud control
+
+---
+
+5. **PayPal**
+
+* PayPal
+
+⚠️ Use carefully:
+
+* High fees
+* Chargeback risk
+
+👉 Only as **secondary option**
+
+---
+
+---
+
+## 🔴 WITHDRAWALS (FIAT)
+
+### ✅ Core (must-have)
+
+1. **Bank Transfer (Domestic + SWIFT)**
+
+* Standard withdrawal method
+* Required for compliance
+
+---
+
+2. **Real-Time Payouts (PayID / Osko)**
+
+* New Payments Platform
+
+👉 Instant withdrawals (strong UX advantage)
+
+---
+
+### 🟡 Optional
+
+3. **Card Payouts**
+
+* Reverse to card (limited availability)
+
+---
+
+4. **Open Banking Push**
+
+* Direct payout via API-connected banks
+
+---
+
+---
+
+# 🪙 2. CRYPTO CHANNELS
+
+## 🟢 DEPOSITS (CRYPTO)
+
+### ✅ Core (must-have)
+
+1. **Blockchain Transfer (On-chain)**
+
+* BTC, ETH, stablecoins
+
+👉 Standard across:
+
+* Binance
+* Coinbase
+
+---
+
+### 🟡 Recommended upgrades
+
+2. **Layer 2 Networks**
+
+* Faster + cheaper:
+
+  * Polygon
+  * Arbitrum
+
+👉 Reduces gas fees significantly
+
+---
+
+3. **Stablecoin Rails**
+
+* USDT / USDC
+
+👉 Used as:
+
+* Settlement layer
+* FX bridge
+
+---
+
+---
+
+## 🔴 WITHDRAWALS (CRYPTO)
+
+### ✅ Core (must-have)
+
+1. **Wallet Address Withdrawal**
+
+* User inputs external address
+* Executed via custody provider (e.g. Fireblocks)
+
+---
+
+2. **Exchange Withdrawal (API-based)**
+
+* Send directly to:
+
+  * Binance
+  * Coinbase
+
+👉 Improves UX for traders
+
+---
+
+### 🟡 Recommended
+
+3. **Internal Transfers (OFF-CHAIN)**
+
+* User → user inside AMAX
+* Instant, zero fee
+
+👉 This is **critical for scale**
+
+---
+
+4. **Layer 2 Withdrawals**
+
+* Lower cost alternative to mainnet
+
+---
+
+---
+
+# 🔁 3. WHAT YOU SHOULD REMOVE / FIX
+
+### ❌ “Email blockchain withdrawal”
+
+* Not an industry standard
+* Confusing UX
+* Replace with:
+
+  * Wallet address
+  * Internal transfer
+
+---
+
+# 🧩 4. FINAL CHANNEL MATRIX (CLEAN VIEW)
+
+## Fiat
+
+| Function   | Channel             | Priority       |
+| ---------- | ------------------- | -------------- |
+| Deposit    | Bank transfer       | ✅ Core         |
+| Deposit    | PayID (NPP)         | ✅ Core         |
+| Deposit    | Card (Stripe/Adyen) | ✅ Core         |
+| Deposit    | Open banking        | 🟡 Recommended |
+| Deposit    | PayPal              | 🟡 Optional    |
+| Withdrawal | Bank transfer       | ✅ Core         |
+| Withdrawal | PayID               | ✅ Core         |
+| Withdrawal | Card payout         | 🟡 Optional    |
+
+---
+
+## Crypto
+
+| Function   | Channel               | Priority            |
+| ---------- | --------------------- | ------------------- |
+| Deposit    | Blockchain (on-chain) | ✅ Core              |
+| Deposit    | Layer 2 networks      | 🟡 Recommended      |
+| Deposit    | Stablecoins           | 🟡 Recommended      |
+| Withdrawal | Wallet address        | ✅ Core              |
+| Withdrawal | Exchange integration  | ✅ Core              |
+| Withdrawal | Internal transfer     | 🟡 Critical upgrade |
+| Withdrawal | Layer 2               | 🟡 Recommended      |
+
+---
+
+# ⚖️ 5. REGULATORY IMPACT (IMPORTANT)
+
+Under AUSTRAC:
+
+* Fiat rails → Remittance implications
+* Crypto rails → Digital Currency Exchange (DCE)
+
+👉 Channels themselves are fine
+👉 **Execution + control layer determines regulation**
+
+---
+
+# 🔥 FINAL STRATEGIC VIEW
+
+If you implement this exact channel set:
+
+### ✅ You match market leaders
+
+* Full fiat coverage
+* Full crypto coverage
+* Real execution capability
+
+---
+
+### ⚠️ The real differentiator becomes:
+
+* Speed (PayID + internal transfers)
+* Cost (Layer 2 + stablecoins)
+* Compliance (clean partner model)
+
+---
+
+# 👉 If you want next
+
+I can:
+
+* Rank these channels by **cost + margin impact**
+* Or design **fee structure (how AMAX actually makes money)**
+* Or map **which providers connect to each channel**
+
+Just tell me 👍
