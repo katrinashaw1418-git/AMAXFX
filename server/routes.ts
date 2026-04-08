@@ -1568,6 +1568,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const fxHistoryCache = new Map<string, { ts: number; data: unknown }>();
   const FX_HISTORY_TTL_MS = 60 * 60 * 1000; // 1 hour
 
+  // Per-coin CoinGecko USD prices cache + global serial queue
+  // CoinGecko free tier rate-limits concurrent requests.
+  // We guarantee at most ONE CoinGecko HTTP request is in-flight at any time
+  // using a serial promise chain, plus per-coin in-flight deduplication so
+  // multiple requests for the same coin share the same result.
+  const cryptoUsdPricesCache = new Map<string, { ts: number; prices: Map<string, number> }>();
+  const cryptoUsdInFlight = new Map<string, Promise<Map<string, number>>>();
+  const CRYPTO_USD_TTL_MS = 60 * 60 * 1000; // 1 hour
+  let coinGeckoQueue: Promise<unknown> = Promise.resolve();
+
+  // Enqueue fn so CoinGecko calls never overlap
+  function serialCoinGecko<T>(fn: () => Promise<T>): Promise<T> {
+    const next = coinGeckoQueue.then(fn, fn);
+    coinGeckoQueue = next.then(() => {}, () => {});
+    return next;
+  }
+
+  async function getCoinGeckoUsdPrices(
+    coinId: string,
+    startOfYear: string,
+    today: string,
+    dayCount: number,
+    fetchCoinGecko: (url: string) => Promise<Response>
+  ): Promise<Map<string, number>> {
+    // 1. Serve from cache if fresh
+    const cached = cryptoUsdPricesCache.get(coinId);
+    if (cached && Date.now() - cached.ts < CRYPTO_USD_TTL_MS) return cached.prices;
+
+    // 2. Deduplicate concurrent requests for the same coin
+    const inFlight = cryptoUsdInFlight.get(coinId);
+    if (inFlight) return inFlight;
+
+    // 3. Enqueue the actual CoinGecko request (serial — no two HTTP calls overlap)
+    const promise = serialCoinGecko(async (): Promise<Map<string, number>> => {
+      // Re-check cache inside the queue in case another request populated it while waiting
+      const recheck = cryptoUsdPricesCache.get(coinId);
+      if (recheck && Date.now() - recheck.ts < CRYPTO_USD_TTL_MS) {
+        cryptoUsdInFlight.delete(coinId);
+        return recheck.prices;
+      }
+
+      try {
+        const cgRes = await fetchCoinGecko(
+          `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${dayCount}&interval=daily`
+        );
+        if (!cgRes.ok) return new Map();
+        const cgData = await cgRes.json() as { prices: [number, number][] };
+        const map = new Map<string, number>();
+        for (const [ts, price] of cgData.prices) {
+          const date = new Date(ts).toISOString().split("T")[0];
+          if (date >= startOfYear && date <= today) map.set(date, price);
+        }
+        cryptoUsdPricesCache.set(coinId, { ts: Date.now(), prices: map });
+        return map;
+      } finally {
+        cryptoUsdInFlight.delete(coinId);
+      }
+    });
+
+    cryptoUsdInFlight.set(coinId, promise);
+    return promise;
+  }
+
   // YTD historical FX rate data — real market data
   // Fiat pairs: Frankfurter.app (ECB data, same source as live rates)
   // Crypto pairs: CoinGecko free API
@@ -1648,21 +1711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cryptoBase   = CRYPTO_IDS[base];
       const cryptoTarget = CRYPTO_IDS[target];
 
-      // Helper: fetch BTC/USD or ETH/USD daily prices from CoinGecko (vs usd always)
-      async function fetchCryptoUsdPrices(coinId: string): Promise<Map<string, number>> {
-        const dayCount = Math.ceil((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (1000 * 60 * 60 * 24)) + 1;
-        const cgRes = await fetchCoinGecko(
-          `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${dayCount}&interval=daily`
-        );
-        if (!cgRes.ok) return new Map();
-        const cgData = await cgRes.json() as { prices: [number, number][] };
-        const map = new Map<string, number>();
-        for (const [ts, price] of cgData.prices) {
-          const date = new Date(ts).toISOString().split("T")[0];
-          if (date >= startOfYear && date <= today) map.set(date, price);
-        }
-        return map;
-      }
+      const dayCount = Math.ceil((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
       // Helper: fetch daily Frankfurter USD→fiatTarget rates
       async function fetchUsdToFiatSeries(fiatTarget: string): Promise<Map<string, number>> {
@@ -1705,7 +1754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Crypto as base (BTC/AUD, ETH/AUD, BTC/USD, ETH/USD, BTC/EUR…)
       if (cryptoBase) {
         const [cryptoUsd, usdToTarget] = await Promise.all([
-          fetchCryptoUsdPrices(cryptoBase),
+          getCoinGeckoUsdPrices(cryptoBase, startOfYear, today, dayCount, fetchCoinGecko),
           fetchUsdToFiatSeries(target),
         ]);
         if (cryptoUsd.size === 0) return res.status(502).json({ error: "CoinGecko unavailable" });
@@ -1722,7 +1771,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Crypto as target (USD/BTC, AUD/BTC, EUR/BTC, etc.) — invert
       if (cryptoTarget) {
         const [cryptoUsd, usdToBase] = await Promise.all([
-          fetchCryptoUsdPrices(cryptoTarget),
+          getCoinGeckoUsdPrices(cryptoTarget, startOfYear, today, dayCount, fetchCoinGecko),
           fetchUsdToFiatSeries(base),
         ]);
         if (cryptoUsd.size === 0) return res.status(502).json({ error: "CoinGecko unavailable" });
