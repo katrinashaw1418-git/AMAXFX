@@ -74,7 +74,10 @@ export default function Crypto() {
   const exchangeMutation = useMutation({
     mutationFn: async (data: { fromCurrency: string; toCurrency: string; amount: number }) => {
       const res = await apiRequest("POST", "/api/fx-exchange", data);
-      if (!res.ok) throw new Error("Exchange failed");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Exchange failed");
+      }
       return res.json();
     },
     onSuccess: (data) => {
@@ -86,18 +89,26 @@ export default function Crypto() {
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Exchange Failed",
-        description: "There was an error processing your exchange. Please try again.",
+        description: error.message || "There was an error processing your exchange. Please try again.",
         variant: "destructive",
       });
     },
   });
 
   const openConfirm = () => {
+    if (fromCurrency === toCurrency) {
+      toast({ title: "Invalid Selection", description: "From and To assets must be different.", variant: "destructive" });
+      return;
+    }
     if (!amount || parseFloat(amount) <= 0) {
       toast({ title: "Invalid Amount", description: "Please enter a valid amount.", variant: "destructive" });
+      return;
+    }
+    if (parseFloat(amount) > fromBalance) {
+      toast({ title: "Insufficient Balance", description: `You only have ${fromBalance.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${fromCurrency} available.`, variant: "destructive" });
       return;
     }
     setShowConfirm(true);

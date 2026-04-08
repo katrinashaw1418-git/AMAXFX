@@ -636,6 +636,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       { baseCurrency: 'USD',  targetCurrency: 'AUD', rate: '1.57480',   spread: '0.0050' },
       { baseCurrency: 'HKD',  targetCurrency: 'USD', rate: '0.12810',   spread: '0.0050' },
       { baseCurrency: 'USD',  targetCurrency: 'HKD', rate: '7.80700',   spread: '0.0050' },
+      // NZD — seeded as fallback; overwritten by Frankfurter on first refresh
+      { baseCurrency: 'NZD',  targetCurrency: 'USD', rate: '0.58800',   spread: '0.0050' },
+      { baseCurrency: 'USD',  targetCurrency: 'NZD', rate: '1.70068',   spread: '0.0050' },
+      { baseCurrency: 'AUD',  targetCurrency: 'NZD', rate: '1.07800',   spread: '0.0050' },
+      { baseCurrency: 'NZD',  targetCurrency: 'AUD', rate: '0.92764',   spread: '0.0050' },
       // AUD cross rates
       { baseCurrency: 'AUD',  targetCurrency: 'CAD', rate: '0.89500',   spread: '0.0050' },
       { baseCurrency: 'CAD',  targetCurrency: 'AUD', rate: '1.11700',   spread: '0.0050' },
@@ -3012,8 +3017,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Fails silently on network errors — existing DB rates are kept as fallback.
   // ---------------------------------------------------------------------------
   async function refreshFxRates(): Promise<void> {
+    // Helper: upsert a rate pair — INSERT if not exists, UPDATE if exists.
+    // Needed because fx_rates has no unique constraint, so ON CONFLICT can't be used.
+    async function upsertRate(base: string, target: string, rateStr: string, spread = '0.0050') {
+      const exists = await storage.getFxRate(base, target);
+      if (exists) {
+        await db.execute(sql`UPDATE fx_rates SET rate = ${rateStr}, updated_at = NOW() WHERE base_currency = ${base} AND target_currency = ${target}`).catch(() => {});
+      } else {
+        await db.execute(sql`INSERT INTO fx_rates (base_currency, target_currency, rate, spread, updated_at) VALUES (${base}, ${target}, ${rateStr}, ${spread}, NOW())`).catch(() => {});
+      }
+    }
+
     try {
-      // ── USD cross rates ────────────────────────────────────────────────────
+      // ── USD cross rates (ECB via Frankfurter — real market data, daily) ────
       const fiatRes = await fetch(
         "https://api.frankfurter.app/latest?from=USD&to=EUR,GBP,CAD,CNY,AUD,HKD,SGD,JPY,KRW,NZD"
       );
@@ -3022,18 +3038,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const fiatData = await fiatRes.json() as { rates: Record<string, number> };
         for (const [currency, rate] of Object.entries(fiatData.rates)) {
           usdRates[currency] = rate;
-          const rateStr = rate.toFixed(8);
-          const inverseStr = (1 / rate).toFixed(8);
-          await db.execute(
-            sql`UPDATE fx_rates SET rate = ${rateStr}, updated_at = NOW() WHERE base_currency = 'USD' AND target_currency = ${currency}`
-          ).catch(() => {});
-          await db.execute(
-            sql`UPDATE fx_rates SET rate = ${inverseStr}, updated_at = NOW() WHERE base_currency = ${currency} AND target_currency = 'USD'`
-          ).catch(() => {});
+          await upsertRate('USD', currency, rate.toFixed(8));
+          await upsertRate(currency, 'USD', (1 / rate).toFixed(8));
         }
       }
 
-      // ── AUD cross rates ────────────────────────────────────────────────────
+      // ── AUD cross rates (ECB via Frankfurter — real market data, daily) ────
       const audRes = await fetch(
         "https://api.frankfurter.app/latest?from=AUD&to=USD,CAD,EUR,GBP,HKD,SGD,JPY,KRW,CNY,NZD"
       );
@@ -3042,74 +3052,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const audData = await audRes.json() as { rates: Record<string, number> };
         for (const [currency, rate] of Object.entries(audData.rates)) {
           audRates[currency] = rate;
-          const rateStr = rate.toFixed(8);
-          const inverseStr = (1 / rate).toFixed(8);
-          await db.execute(
-            sql`UPDATE fx_rates SET rate = ${rateStr}, updated_at = NOW() WHERE base_currency = 'AUD' AND target_currency = ${currency}`
-          ).catch(() => {});
-          await db.execute(
-            sql`UPDATE fx_rates SET rate = ${inverseStr}, updated_at = NOW() WHERE base_currency = ${currency} AND target_currency = 'AUD'`
-          ).catch(() => {});
+          await upsertRate('AUD', currency, rate.toFixed(8));
+          await upsertRate(currency, 'AUD', (1 / rate).toFixed(8));
         }
       }
 
-      // ── Stablecoins (USDT, USDC pegged ~$1 USD) ───────────────────────────
+      // ── Stablecoins (USDT, USDC pegged 1:1 to USD) ────────────────────────
       const audUsd = audRates['USD'] || 0;
       if (audUsd > 0) {
-        const usdPerAud = audUsd;           // how many USD per 1 AUD
-        const audPerUsd = 1 / audUsd;       // how many AUD per 1 USD (= USDT/USDC rate)
+        const audPerUsd = 1 / audUsd;
         for (const stable of ["USDT", "USDC"]) {
-          await db.execute(
-            sql`UPDATE fx_rates SET rate = ${audPerUsd.toFixed(8)}, updated_at = NOW() WHERE base_currency = ${stable} AND target_currency = 'AUD'`
-          ).catch(() => {});
-          await db.execute(
-            sql`UPDATE fx_rates SET rate = ${usdPerAud.toFixed(8)}, updated_at = NOW() WHERE base_currency = 'AUD' AND target_currency = ${stable}`
-          ).catch(() => {});
-          // Stablecoins vs USD — maintain the 1:1 peg row (update if exists, insert if not)
-          const stableUsdExists = await storage.getFxRate(stable, "USD");
-          if (stableUsdExists) {
-            await db.execute(
-              sql`UPDATE fx_rates SET rate = '1.00000000', updated_at = NOW() WHERE base_currency = ${stable} AND target_currency = 'USD'`
-            ).catch(() => {});
-          } else {
-            await db.execute(
-              sql`INSERT INTO fx_rates (base_currency, target_currency, rate, spread, updated_at) VALUES (${stable}, 'USD', '1.00000000', '0.0010', NOW())`
-            ).catch(() => {});
-          }
-          const usdStableExists = await storage.getFxRate("USD", stable);
-          if (usdStableExists) {
-            await db.execute(
-              sql`UPDATE fx_rates SET rate = '1.00000000', updated_at = NOW() WHERE base_currency = 'USD' AND target_currency = ${stable}`
-            ).catch(() => {});
-          } else {
-            await db.execute(
-              sql`INSERT INTO fx_rates (base_currency, target_currency, rate, spread, updated_at) VALUES ('USD', ${stable}, '1.00000000', '0.0010', NOW())`
-            ).catch(() => {});
-          }
+          await upsertRate(stable, 'AUD', audPerUsd.toFixed(8));
+          await upsertRate('AUD', stable, audUsd.toFixed(8));
+          await upsertRate(stable, 'USD', '1.00000000', '0.0010');
+          await upsertRate('USD', stable, '1.00000000', '0.0010');
         }
       }
 
-      // ── Crypto pairs ───────────────────────────────────────────────────────
+      // ── Crypto pairs (Coinbase spot — real market data, ~15 min) ──────────
       for (const [symbol, dbCurrency] of [["BTC-USD", "BTC"], ["ETH-USD", "ETH"]] as const) {
         const res = await fetch(`https://api.coinbase.com/v2/prices/${symbol}/spot`);
         if (res.ok) {
           const body = await res.json() as { data: { amount: string } };
           const priceUsd = parseFloat(body.data.amount);
           if (isFinite(priceUsd) && priceUsd > 0) {
-            await db.execute(
-              sql`UPDATE fx_rates SET rate = ${priceUsd.toFixed(8)}, updated_at = NOW() WHERE base_currency = ${dbCurrency} AND target_currency = 'USD'`
-            ).catch(() => {});
+            await upsertRate(dbCurrency, 'USD', priceUsd.toFixed(8));
             // Derive AUD price and inverse
             if (audUsd > 0) {
               const priceAud = priceUsd / audUsd;
-              await db.execute(
-                sql`UPDATE fx_rates SET rate = ${priceAud.toFixed(8)}, updated_at = NOW() WHERE base_currency = ${dbCurrency} AND target_currency = 'AUD'`
-              ).catch(() => {});
-              // AUD/crypto inverse (e.g. AUD/BTC)
-              const audPerCrypto = 1 / priceAud;
-              await db.execute(
-                sql`UPDATE fx_rates SET rate = ${audPerCrypto.toFixed(10)}, updated_at = NOW() WHERE base_currency = 'AUD' AND target_currency = ${dbCurrency}`
-              ).catch(() => {});
+              await upsertRate(dbCurrency, 'AUD', priceAud.toFixed(8));
+              await upsertRate('AUD', dbCurrency, (1 / priceAud).toFixed(10));
             }
           }
         }
