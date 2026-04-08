@@ -3068,6 +3068,192 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ---------------------------------------------------------------------------
+  // PayPal Orders API — deposit only
+  // Requires env: PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET
+  // Set PAYPAL_ENV=production to switch from sandbox to live.
+  // Supported currencies (PayPal merchant subset of app's 11 fiats):
+  //   AUD NZD USD EUR CAD GBP HKD SGD JPY
+  // CNY and KRW are NOT supported by PayPal standard merchant accounts.
+  // ---------------------------------------------------------------------------
+  const PAYPAL_BASE =
+    process.env.PAYPAL_ENV === "production"
+      ? "https://api-m.paypal.com"
+      : "https://api-m.sandbox.paypal.com";
+
+  async function getPayPalAccessToken(): Promise<string> {
+    const clientId = process.env.PAYPAL_CLIENT_ID;
+    const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      throw Object.assign(new Error("PayPal credentials not configured"), { status: 503 });
+    }
+    const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+    const res = await fetch(`${PAYPAL_BASE}/v1/oauth2/token`, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${credentials}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "grant_type=client_credentials",
+    });
+    if (!res.ok) throw Object.assign(new Error("PayPal auth failed"), { status: 502 });
+    const data: any = await res.json();
+    return data.access_token;
+  }
+
+  // POST /api/paypal/create-order
+  // Body: { walletId: number, amount: string, currency: string }
+  // Returns: { approvalUrl: string, orderId: string }
+  app.post("/api/paypal/create-order", requireAuth, async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      const { walletId, amount, currency } = req.body;
+      if (!walletId || !amount || !currency) {
+        return res.status(400).json({ error: "walletId, amount and currency are required" });
+      }
+
+      const appDomain = process.env.REPLIT_DOMAINS
+        ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
+        : "http://localhost:5000";
+
+      const accessToken = await getPayPalAccessToken();
+
+      // JPY has 0 decimal places; all others use 2
+      const decimalPlaces = currency === "JPY" ? 0 : 2;
+      const formattedAmount = parseFloat(amount).toFixed(decimalPlaces);
+
+      const orderBody = {
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            amount: { currency_code: currency, value: formattedAmount },
+            custom_id: `amax:wallet:${walletId}:user:${userId}`,
+            description: `AMAX Global ${currency} Deposit`,
+          },
+        ],
+        application_context: {
+          brand_name: "AMAX Global",
+          landing_page: "LOGIN",
+          user_action: "PAY_NOW",
+          return_url: `${appDomain}/wallets?paypal=success&walletId=${walletId}`,
+          cancel_url: `${appDomain}/wallets?paypal=cancel`,
+        },
+      };
+
+      const orderRes = await fetch(`${PAYPAL_BASE}/v2/checkout/orders`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderBody),
+      });
+
+      if (!orderRes.ok) {
+        const err: any = await orderRes.json();
+        console.error("[paypal-create-order]", err);
+        return res.status(502).json({ error: "PayPal order creation failed", details: err });
+      }
+
+      const order: any = await orderRes.json();
+      const approvalUrl = order.links?.find((l: any) => l.rel === "approve")?.href;
+      if (!approvalUrl) return res.status(502).json({ error: "No PayPal approval URL returned" });
+
+      res.json({ approvalUrl, orderId: order.id });
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
+      console.error("[paypal-create-order-error]", error?.message ?? error);
+      res.status(500).json({ error: "Failed to create PayPal order" });
+    }
+  });
+
+  // POST /api/paypal/capture-order
+  // Body: { orderId: string, walletId: number }
+  // Captures the approved PayPal order and credits the wallet.
+  app.post("/api/paypal/capture-order", requireAuth, async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      const { orderId, walletId } = req.body;
+      if (!orderId || !walletId) {
+        return res.status(400).json({ error: "orderId and walletId are required" });
+      }
+
+      const accessToken = await getPayPalAccessToken();
+      const captureRes = await fetch(`${PAYPAL_BASE}/v2/checkout/orders/${orderId}/capture`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!captureRes.ok) {
+        const err: any = await captureRes.json();
+        // INSTRUMENT_DECLINED is a user PayPal error, not a server error
+        const status = err?.details?.[0]?.issue === "INSTRUMENT_DECLINED" ? 400 : 502;
+        return res.status(status).json({ error: err?.details?.[0]?.description ?? "PayPal capture failed" });
+      }
+
+      const capture: any = await captureRes.json();
+      if (capture.status !== "COMPLETED") {
+        return res.status(400).json({ error: `PayPal order status: ${capture.status}` });
+      }
+
+      const capturedUnit = capture.purchase_units?.[0];
+      const capturedAmt = capturedUnit?.payments?.captures?.[0]?.amount;
+      if (!capturedAmt) return res.status(502).json({ error: "Could not parse captured amount from PayPal" });
+
+      const amount = new Decimal(capturedAmt.value);
+      const currency = capturedAmt.currency_code;
+
+      let txRecord: any;
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+        const [wallet] = await tx.select().from(wallets)
+          .where(and(eq(wallets.id, Number(walletId)), eq(wallets.userId, userId)))
+          .for("update");
+        if (!wallet) throw Object.assign(new Error("Wallet not found or does not belong to user"), { status: 404 });
+
+        await tx.update(wallets).set({
+          balance: new Decimal(wallet.balance).plus(amount).toFixed(8),
+          availableBalance: new Decimal(wallet.availableBalance).plus(amount).toFixed(8),
+        }).where(eq(wallets.id, wallet.id));
+
+        [txRecord] = await tx.insert(transactions).values({
+          userId,
+          type: "deposit",
+          fromCurrency: null,
+          toCurrency: currency,
+          amount: amount.toFixed(8),
+          fee: "0.00000000",
+          exchangeRate: null,
+          status: "completed",
+          settlementStatus: "paypal",
+          description: `${currency} Deposit via PayPal (${orderId})`,
+          sourceExchange: "paypal",
+          blockchainTxHash: null,
+          assetType: "fiat",
+          direction: "in",
+          riskFlag: false,
+          reviewStatus: "clear",
+          reviewNotes: null,
+        }).returning();
+      });
+
+      await writeAuditLog(
+        userId, "paypal_deposit", "transaction", String(txRecord?.id),
+        { currency, amount: capturedAmt.value, orderId },
+        req.ip || null,
+      );
+
+      res.json({ success: true, amount: capturedAmt.value, currency, transactionId: txRecord?.id });
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
+      console.error("[paypal-capture-error]", error?.message ?? error);
+      res.status(500).json({ error: "Failed to capture PayPal payment" });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
   // Live FX Rate Refresh
   // Uses two free, key-free public APIs to keep rates current:
   //   • frankfurter.app  — ECB fiat rates (EUR, GBP, CAD, CNY vs USD)

@@ -131,6 +131,10 @@ function WalletSparkline({ currency, displayCurrency }: { currency: string; disp
   return <RateSparkline fromCurrency={currency} toCurrency={displayCurrency} currentRate={currentRate} />;
 }
 
+// Currencies supported by PayPal's standard merchant accounts.
+// CNY and KRW are not supported — those wallets will not show PayPal as a deposit option.
+const PAYPAL_SUPPORTED_CURRENCIES = ['AUD', 'NZD', 'USD', 'EUR', 'CAD', 'GBP', 'HKD', 'SGD', 'JPY'];
+
 export default function Wallets() {
   const { data: wallets = [], isLoading } = useWallets();
   const [toCurrency, setToCurrency] = useState('');
@@ -154,8 +158,8 @@ export default function Wallets() {
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [depositMethod, setDepositMethod] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState('');
-  const [payerPayId, setPayerPayId] = useState('');
   const [payerName, setPayerName] = useState('');
+  const [paypalLoading, setPaypalLoading] = useState(false);
   const [payerAccountNumber, setPayerAccountNumber] = useState('');
   const [payerBsb, setPayerBsb] = useState('');
   const [, navigate] = useLocation();
@@ -174,7 +178,51 @@ export default function Wallets() {
       }, 500);
     }
   }, [wallets, voiceSettings.autoNarrate, narrateNavigation, narrateBalance]);
-  
+
+  // PayPal return URL handler — runs once on mount
+  // PayPal appends ?paypal=success&walletId=X&token=ORDER_TOKEN&PayerID=PAYER_ID
+  // or ?paypal=cancel when the user closes PayPal without paying.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paypalStatus = params.get('paypal');
+    const orderId = params.get('token'); // PayPal uses 'token' for the order ID
+    const walletId = params.get('walletId');
+
+    if (paypalStatus === 'cancel') {
+      toast({ title: "PayPal Cancelled", description: "Your PayPal deposit was not completed.", variant: "destructive" });
+      window.history.replaceState({}, '', '/wallets');
+      return;
+    }
+
+    if (paypalStatus === 'success' && orderId && walletId) {
+      // Remove params from URL immediately to prevent re-capture on refresh
+      window.history.replaceState({}, '', '/wallets');
+
+      setPaypalLoading(true);
+      apiRequest('POST', '/api/paypal/capture-order', { orderId, walletId: Number(walletId) })
+        .then(async (r) => {
+          if (!r.ok) {
+            const err = await r.json().catch(() => ({}));
+            throw new Error(err.error || 'Capture failed');
+          }
+          return r.json();
+        })
+        .then((data) => {
+          toast({
+            title: "✅ PayPal Deposit Successful",
+            description: `${data.amount} ${data.currency} has been added to your wallet.`,
+          });
+          queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/portfolio'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+        })
+        .catch((err) => {
+          toast({ title: "PayPal Capture Failed", description: err.message, variant: "destructive" });
+        })
+        .finally(() => setPaypalLoading(false));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const transferMutation = useMutation({
     mutationFn: async (data: { fromCurrency: string; toCurrency: string; amount: number }) => {
@@ -568,7 +616,9 @@ export default function Wallets() {
                   {selectedWallet?.walletType === 'fiat' ? (
                     <>
                       <SelectItem value="card">💳 Credit/Debit Card</SelectItem>
-                      <SelectItem value="paypal">🅿️ PayPal</SelectItem>
+                      {PAYPAL_SUPPORTED_CURRENCIES.includes(selectedWallet?.currency) && (
+                        <SelectItem value="paypal">🅿️ PayPal</SelectItem>
+                      )}
                       <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
                     </>
                   ) : (
@@ -691,31 +741,15 @@ export default function Wallets() {
                     <div className="p-3 bg-muted rounded-lg">
                       <h4 className="font-medium mb-2 text-sm">🅿️ PayPal Deposit</h4>
                       <div className="text-xs text-muted-foreground space-y-1">
-                        <p>• Accepted worldwide</p>
-                        <p>• Fast processing — typically same day</p>
-                        <p>• PayPal account required</p>
+                        <p>• You will be redirected to PayPal to log in and confirm</p>
+                        <p>• After approval, you are returned here automatically</p>
+                        <p>• Funds credited instantly once PayPal confirms</p>
                         <p>• Standard PayPal fees may apply</p>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <div>
-                        <Label htmlFor="paypal-email" className="text-xs">Your PayPal Email</Label>
-                        <Input
-                          id="paypal-email"
-                          type="email"
-                          placeholder="you@example.com"
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="paypal-name" className="text-xs">Account Holder Name</Label>
-                        <Input
-                          id="paypal-name"
-                          placeholder="John Chen"
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Enter the amount above, then click <strong>Continue to PayPal</strong>. You will be redirected to PayPal's secure login page.
+                    </p>
                   </div>
                 )}
                 
