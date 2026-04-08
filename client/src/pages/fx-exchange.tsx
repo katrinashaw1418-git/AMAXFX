@@ -36,17 +36,6 @@ function formatRateAge(minutes: number | null | undefined): string {
   return `${minutes} min ago`;
 }
 
-const DISPLAYED_PAIRS = [
-  { base: "AUD", target: "USD" },
-  { base: "AUD", target: "CAD" },
-  { base: "AUD", target: "EUR" },
-  { base: "AUD", target: "GBP" },
-  { base: "AUD", target: "HKD" },
-  { base: "AUD", target: "SGD" },
-  { base: "AUD", target: "JPY" },
-  { base: "AUD", target: "KRW" },
-  { base: "AUD", target: "CNY" },
-];
 
 export default function FxExchange() {
   const [fromCurrency, setFromCurrency] = useState("AUD");
@@ -61,6 +50,10 @@ export default function FxExchange() {
   const { data: wallets = [] }                      = useWallets();
   const { data: fxRates, isLoading: ratesLoading }  = useFxRates();
   const { data: fxRate,  isLoading: rateLoading }   = useFxRate(fromCurrency, toCurrency);
+
+  const displayedPairs = FIAT_CURRENCIES
+    .filter(c => c.code !== fromCurrency)
+    .map(c => ({ base: fromCurrency, target: c.code }));
 
   const exchangeMutation = useMutation({
     mutationFn: async (data: { fromCurrency: string; toCurrency: string; amount: number }) => {
@@ -294,19 +287,21 @@ export default function FxExchange() {
         <div>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Fiat Exchange Rates</CardTitle>
-              <p className="text-xs text-gray-500">Click a pair to view its chart</p>
+              <CardTitle className="text-sm">
+                {FIAT_CURRENCIES.find(c => c.code === fromCurrency)?.flag} {fromCurrency} Exchange Rates
+              </CardTitle>
+              <p className="text-xs text-gray-500">Click a pair to select it above</p>
             </CardHeader>
             <CardContent>
               <div className="space-y-1">
                 {ratesLoading ? (
                   <p className="text-sm text-gray-400 text-center py-4">Loading rates…</p>
                 ) : (
-                  DISPLAYED_PAIRS.map(({ base, target }) => {
-                    const rate      = fxRates?.find((r: any) => r.baseCurrency === base && r.targetCurrency === target);
+                  displayedPairs.map(({ base, target }) => {
+                    const rate      = (fxRates as any[])?.find((r: any) => r.baseCurrency === base && r.targetCurrency === target);
                     const rateValue = rate ? parseFloat(rate.rate) : null;
-                    const isSelected = fromCurrency === base && toCurrency === target;
-                    const baseMeta  = FIAT_CURRENCIES.find(c => c.code === base);
+                    const isSelected = toCurrency === target;
+                    const targetMeta = FIAT_CURRENCIES.find(c => c.code === target);
 
                     return (
                       <div
@@ -314,23 +309,23 @@ export default function FxExchange() {
                         className={`flex items-center gap-2 p-2.5 rounded-lg cursor-pointer transition-colors border ${
                           isSelected ? "bg-amber-50 border-amber-300" : "bg-gray-50 border-transparent hover:bg-gray-100"
                         }`}
-                        onClick={() => { setFromCurrency(base); setToCurrency(target); }}
+                        onClick={() => setToCurrency(target)}
                       >
                         <div className="flex-1 min-w-0">
                           <p className={`font-semibold text-xs ${isSelected ? "text-amber-700" : "text-gray-800"}`}>
-                            {baseMeta?.flag} {base}/{target}
+                            {targetMeta?.flag} {base}/{target}
                           </p>
-                          <p className="text-xs text-gray-400 truncate">{baseMeta?.name}</p>
+                          <p className="text-xs text-gray-400 truncate">{targetMeta?.name}</p>
                         </div>
                         <div className="flex-shrink-0">
-                          {rateValue && <RateSparkline fromCurrency={base} toCurrency={target} currentRate={rateValue} />}
+                          {rateValue != null && <RateSparkline fromCurrency={base} toCurrency={target} currentRate={rateValue} />}
                         </div>
                         <div className="text-right flex-shrink-0">
                           {rateValue !== null ? (
                             <>
                               <p className="font-bold text-sm text-gray-900">{rateValue.toFixed(4)}</p>
                               <span className={`text-xs ${rate?.isStale ? "text-amber-600" : "text-green-600"}`}>
-                                {rate?.isStale ? `⚠ ${rate.rateAgeMinutes}m` : rate?.rateAgeMinutes != null ? `${rate.rateAgeMinutes}m` : "Live"}
+                                {rate?.isStale ? `⚠ ${rate.rateAgeMinutes}m` : rate?.rateAgeMinutes != null ? formatRateAge(rate.rateAgeMinutes) : "Live"}
                               </span>
                             </>
                           ) : <span className="text-xs text-gray-300">—</span>}
