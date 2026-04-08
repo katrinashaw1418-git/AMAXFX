@@ -805,29 +805,45 @@ export default function Wallets() {
               </div>
 
               {depositSubmitted.method === 'payid' && (
-                <div className="p-3 bg-muted rounded-lg space-y-1">
-                  <p className="text-xs font-semibold">Send to AMAX PayID:</p>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs">{depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au'}</p>
-                    <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText(depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au'); toast({ title: "Copied" }); }}>Copy</Button>
+                <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
+                  <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">⚡ Send to AMAX PayID:</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">PayID Address</p>
+                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 break-all">{depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au'}</p>
+                    </div>
+                    <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText(depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au'); toast({ title: "PayID Copied", description: depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au' }); }}>Copy</Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">Account Name: {depositInstructions?.payid.accountName ?? 'AMAX Global Pty Ltd'}</p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300"><span className="font-medium">Account Name:</span> {depositInstructions?.payid.accountName ?? 'AMAX Global Pty Ltd'}</p>
                 </div>
               )}
 
               {depositSubmitted.method === 'bank_transfer' && (
-                <div className="p-3 bg-muted rounded-lg space-y-1">
-                  <p className="text-xs font-semibold">Transfer to AMAX Bank Account:</p>
-                  <p className="text-xs">Bank: {depositInstructions?.bank.bank ?? 'Westpac Banking Corporation'}</p>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs">BSB: {depositInstructions?.bank.bsb ?? '032-000'}</p>
-                    <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText((depositInstructions?.bank.bsb ?? '032-000').replace(/-/g,'')); toast({ title: "Copied" }); }}>Copy</Button>
+                <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
+                  <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">🏦 Transfer to AMAX Bank Account:</p>
+                  <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Bank:</span> {depositInstructions?.bank.bank ?? 'Westpac Banking Corporation'}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">BSB</p>
+                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{depositInstructions?.bank.bsb ?? '032-000'}</p>
+                    </div>
+                    <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText((depositInstructions?.bank.bsb ?? '032-000').replace(/-/g,'')); toast({ title: "BSB Copied" }); }}>Copy</Button>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs">Account: {depositInstructions?.bank.account ?? '123456789'}</p>
-                    <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.account ?? '123456789'); toast({ title: "Copied" }); }}>Copy</Button>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">Account Number</p>
+                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{depositInstructions?.bank.account ?? '123456789'}</p>
+                    </div>
+                    <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.account ?? '123456789'); toast({ title: "Account Copied" }); }}>Copy</Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">Account Name: {depositInstructions?.bank.accountName ?? 'AMAX Global Pty Ltd'} · SWIFT: {depositInstructions?.bank.swift ?? 'WPACAU2S'}</p>
+                  <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account Name:</span> {depositInstructions?.bank.accountName ?? 'AMAX Global Pty Ltd'}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">SWIFT / BIC</p>
+                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{depositInstructions?.bank.swift ?? 'WPACAU2S'}</p>
+                    </div>
+                    <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.swift ?? 'WPACAU2S'); toast({ title: "SWIFT Copied" }); }}>Copy</Button>
+                  </div>
                 </div>
               )}
 
@@ -992,25 +1008,40 @@ export default function Wallets() {
                       </div>
                     </div>
                     <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
-                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">Send to AMAX Global PayID:</p>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">PayID:</span> {depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au'}</p>
-                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText(depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au'); toast({ title: "Copied", description: "PayID copied to clipboard" }); }}>Copy</Button>
+                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">⚡ Send to AMAX Global PayID:</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">PayID Address</p>
+                          <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 break-all">{depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au'}</p>
+                        </div>
+                        <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText(depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au'); toast({ title: "PayID Copied", description: depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au' }); }}>Copy</Button>
                       </div>
                       <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account Name:</span> {depositInstructions?.payid.accountName ?? 'AMAX Global Pty Ltd'}</p>
-                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 pt-1 border-t border-blue-200 dark:border-blue-700">Or pay by BSB (manual transfer fallback):</p>
-                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Bank:</span> {depositInstructions?.bank.bank ?? 'Westpac Banking Corporation'}</p>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">BSB:</span> {depositInstructions?.bank.bsb ?? '032-000'}</p>
-                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText((depositInstructions?.bank.bsb ?? '032-000').replace(/-/g,'')); toast({ title: "Copied" }); }}>Copy</Button>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account:</span> {depositInstructions?.bank.account ?? '123456789'}</p>
-                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.account ?? '123456789'); toast({ title: "Copied" }); }}>Copy</Button>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">SWIFT:</span> {depositInstructions?.bank.swift ?? 'WPACAU2S'}</p>
-                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.swift ?? 'WPACAU2S'); toast({ title: "Copied" }); }}>Copy</Button>
+                      <div className="pt-1 border-t border-blue-200 dark:border-blue-700 space-y-2">
+                        <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">Or pay by BSB (manual fallback):</p>
+                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Bank:</span> {depositInstructions?.bank.bank ?? 'Westpac Banking Corporation'}</p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">BSB</p>
+                            <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{depositInstructions?.bank.bsb ?? '032-000'}</p>
+                          </div>
+                          <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText((depositInstructions?.bank.bsb ?? '032-000').replace(/-/g,'')); toast({ title: "BSB Copied" }); }}>Copy</Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">Account Number</p>
+                            <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{depositInstructions?.bank.account ?? '123456789'}</p>
+                          </div>
+                          <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.account ?? '123456789'); toast({ title: "Account Copied" }); }}>Copy</Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">SWIFT / BIC</p>
+                            <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{depositInstructions?.bank.swift ?? 'WPACAU2S'}</p>
+                          </div>
+                          <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.swift ?? 'WPACAU2S'); toast({ title: "SWIFT Copied" }); }}>Copy</Button>
+                        </div>
+                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account Name:</span> {depositInstructions?.bank.accountName ?? 'AMAX Global Pty Ltd'}</p>
                       </div>
                     </div>
                     <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
@@ -1030,21 +1061,30 @@ export default function Wallets() {
                         <p>• Balance credited once AMAX confirms receipt</p>
                       </div>
                     </div>
-                    <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-1">
-                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">AMAX Global Bank Details:</p>
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
+                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">🏦 AMAX Global Bank Details:</p>
                       <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Bank:</span> {depositInstructions?.bank.bank ?? 'Westpac Banking Corporation'}</p>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">BSB:</span> {depositInstructions?.bank.bsb ?? '032-000'}</p>
-                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText((depositInstructions?.bank.bsb ?? '032-000').replace(/-/g,'')); toast({ title: "Copied", description: "BSB copied" }); }}>Copy</Button>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">BSB</p>
+                          <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{depositInstructions?.bank.bsb ?? '032-000'}</p>
+                        </div>
+                        <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText((depositInstructions?.bank.bsb ?? '032-000').replace(/-/g,'')); toast({ title: "BSB Copied" }); }}>Copy</Button>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account:</span> {depositInstructions?.bank.account ?? '123456789'}</p>
-                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.account ?? '123456789'); toast({ title: "Copied", description: "Account number copied" }); }}>Copy</Button>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">Account Number</p>
+                          <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{depositInstructions?.bank.account ?? '123456789'}</p>
+                        </div>
+                        <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.account ?? '123456789'); toast({ title: "Account Copied" }); }}>Copy</Button>
                       </div>
                       <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account Name:</span> {depositInstructions?.bank.accountName ?? 'AMAX Global Pty Ltd'}</p>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">SWIFT:</span> {depositInstructions?.bank.swift ?? 'WPACAU2S'}</p>
-                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.swift ?? 'WPACAU2S'); toast({ title: "Copied" }); }}>Copy</Button>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">SWIFT / BIC</p>
+                          <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{depositInstructions?.bank.swift ?? 'WPACAU2S'}</p>
+                        </div>
+                        <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.swift ?? 'WPACAU2S'); toast({ title: "SWIFT Copied" }); }}>Copy</Button>
                       </div>
                     </div>
                     <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
