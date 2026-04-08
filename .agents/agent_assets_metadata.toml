@@ -1,20 +1,3 @@
 uploads = []
 generated = []
-
-[[outputs]]
-id = "CMMTK1EqZm2kcttJBbqjr"
-uri = "file://logo_option_A_xx.jpg"
-type = "image"
-title = "Option A — Both circles with X"
-
-[[outputs]]
-id = "ous_6sTljepMSewRhDrdv"
-uri = "file://logo_option_B_xy.jpg"
-type = "image"
-title = "Option B — X and Y (FX theme) ⭐ Recommended"
-
-[[outputs]]
-id = "jwc5YSQ9X8S786yjgHXtJ"
-uri = "file://logo_option_FX.jpg"
-type = "image"
-title = "Option FX — F + X in overlapping coins ⭐"
+outputs = []
