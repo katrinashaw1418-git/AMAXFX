@@ -110,46 +110,47 @@ export default function Compliance() {
       dateOfBirth: piiDob,
       nationality: piiNationality,
       phoneNumber: piiPhone,
-      pepDeclaration: piiPep,
+      // piiPep checked = user CONFIRMS they are NOT a PEP → store false (not a PEP)
+      // piiPep unchecked = user has NOT confirmed non-PEP status → store true (flag for ECDD review)
+      pepDeclaration: !piiPep,
       sanctionsDeclaration: piiSanctions,
       consentDeclaration: piiConsent,
     });
   }
 
   // ── derive step statuses dynamically ──────────────────────────────────────
-  // Step 1: always completed (pre-verified)
-  // Step 2: in_progress → under_review once file uploaded
-  // Step 3: pending until step 2 uploaded, then in_progress → under_review once uploaded
-  // Step 4: pending until step 3 uploaded, then in_progress → completed once risk submitted
+  // Step 2: always completed (pre-verified photo ID)
+  // Step 3: in_progress → under_review once file uploaded
+  // Step 4: pending until step 3 uploaded, then in_progress → under_review once uploaded
+  // Step 5: pending until step 4 uploaded, then in_progress → completed once risk submitted
   const stepStatuses = useMemo((): Record<number, StepStatus> => {
-    const s2 = stepFiles[2] ? "under_review" : "in_progress";
-    const s3 = !stepFiles[2]
+    const s3 = stepFiles[3] ? "under_review" : "in_progress";
+    const s4 = !stepFiles[3]
       ? "pending"
-      : stepFiles[3]
+      : stepFiles[4]
       ? "under_review"
       : "in_progress";
-    const s4 = !stepFiles[3]
+    const s5 = !stepFiles[4]
       ? "pending"
       : riskSubmitted
       ? "completed"
       : "in_progress";
-    return { 1: "completed", 2: s2, 3: s3, 4: s4 };
+    return { 2: "completed", 3: s3, 4: s4, 5: s5 };
   }, [stepFiles, riskSubmitted]);
 
   // derive current active step (first non-completed step)
   const currentStepId = useMemo(() => {
-    for (const id of [1, 2, 3, 4]) {
+    for (const id of [2, 3, 4, 5]) {
       if (stepStatuses[id] !== "completed" && stepStatuses[id] !== "under_review") return id;
     }
-    return 4;
+    return 5;
   }, [stepStatuses]);
 
   // derive KYC completion %
   const kycPct = useMemo(() => {
-    const weights: Record<number, number> = { 1: 25, 2: 25, 3: 25, 4: 25 };
-    let total = 25; // step 1 always done
-    if (stepFiles[2])   total += 25;
+    let total = 25; // step 2 always done
     if (stepFiles[3])   total += 25;
+    if (stepFiles[4])   total += 25;
     if (riskSubmitted)  total += 25;
     return total;
   }, [stepFiles, riskSubmitted]);
@@ -157,8 +158,8 @@ export default function Compliance() {
   // derive doc verification %
   const docPct = useMemo(() => {
     let done = 2; // passport (approved) + utility bill (under_review) = 2 of 4
-    if (stepFiles[2] || docUploads[3]) done = Math.min(4, done + 1);
-    if (stepFiles[3] || docUploads[4]) done = Math.min(4, done + 1);
+    if (stepFiles[3] || docUploads[3]) done = Math.min(4, done + 1);
+    if (stepFiles[4] || docUploads[4]) done = Math.min(4, done + 1);
     return Math.round((done / 4) * 100);
   }, [stepFiles, docUploads]);
 
@@ -184,28 +185,28 @@ export default function Compliance() {
   // ── step definitions ───────────────────────────────────────────────────────
   const kycStepDefs = [
     {
-      id: 1,
+      id: 2,
       title: "Identity Verification",
       icon: User,
       baseDescription: "Government-issued photo ID verified",
       uploadId: undefined as string | undefined,
     },
     {
-      id: 2,
+      id: 3,
       title: "Address Verification",
       icon: MapPin,
       baseDescription: "Upload a recent utility bill, bank statement, or government letter (dated within 3 months)",
       uploadId: "kyc-address",
     },
     {
-      id: 3,
+      id: 4,
       title: "Source of Funds",
       icon: CreditCard,
       baseDescription: "Upload payslips, tax returns, or a letter from your employer",
       uploadId: "kyc-funds",
     },
     {
-      id: 4,
+      id: 5,
       title: "Risk Assessment",
       icon: Shield,
       baseDescription: "Complete the risk questionnaire",
@@ -273,7 +274,7 @@ export default function Compliance() {
     setRiskSubmitted(true);
     toast({
       title: "Risk Assessment Submitted",
-      description: "Your risk profile has been recorded. KYC Step 4 is now complete.",
+      description: "Your risk profile has been recorded. KYC Step 5 is now complete.",
     });
   }
 
@@ -354,7 +355,7 @@ export default function Compliance() {
         {/* ── KYC Status Tab ── */}
         <TabsContent value="kyc" className="space-y-4">
 
-          {/* ── Step 0: Personal Information (mandatory first step) ── */}
+          {/* ── Step 1: Personal Information (mandatory first step) ── */}
           {kycProfile?.kycProfileComplete ? (
             <div className="flex items-start gap-4 p-4 border rounded-xl border-green-200 bg-green-50">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-600">
@@ -362,7 +363,7 @@ export default function Compliance() {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs text-gray-400 font-medium">Step 0</span>
+                  <span className="text-xs text-gray-400 font-medium">Step 1</span>
                   <h3 className="font-semibold text-gray-900">Personal Information</h3>
                   <Badge className="bg-green-100 text-green-800">Completed</Badge>
                 </div>
@@ -375,15 +376,15 @@ export default function Compliance() {
               <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
             </div>
           ) : (
-            <Card className="border-2 border-amber-400">
+            <Card className="border-2 border-blue-400">
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
                     <User className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <CardTitle className="text-base">Step 0 — Personal Information</CardTitle>
-                    <p className="text-xs text-amber-700 mt-0.5">Required before document upload — AML/CTF Act 2006, AUSTRAC CDD requirements</p>
+                    <CardTitle className="text-base">Step 1 — Personal Information</CardTitle>
+                    <p className="text-xs text-blue-700 mt-0.5">Required before document upload — AML/CTF Act 2006, AUSTRAC CDD requirements</p>
                   </div>
                 </div>
               </CardHeader>
@@ -437,26 +438,11 @@ export default function Compliance() {
                   </div>
                 </div>
 
-                {/* PEP Declaration */}
+                {/* Declarations */}
                 <div className="rounded-lg border p-4 space-y-3 bg-slate-50">
                   <h4 className="text-sm font-semibold">Mandatory Declarations</h4>
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="pii-pep"
-                      checked={piiPep}
-                      onCheckedChange={v => setPiiPep(Boolean(v))}
-                    />
-                    <div>
-                      <Label htmlFor="pii-pep" className="text-sm font-medium cursor-pointer">
-                        Politically Exposed Person (PEP) Declaration
-                      </Label>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        I declare that I am, or am a close associate of, a domestic or foreign politically exposed person
-                        (current or former senior government official, politician, military officer, or international organisation executive).
-                        Check this box if this applies to you. If unsure, leave unchecked.
-                      </p>
-                    </div>
-                  </div>
+
+                  {/* 1. Sanctions */}
                   <div className="flex items-start gap-3">
                     <Checkbox
                       id="pii-sanctions"
@@ -475,6 +461,28 @@ export default function Compliance() {
                       </p>
                     </div>
                   </div>
+
+                  {/* 2. PEP — "I am NOT" confirmation */}
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="pii-pep"
+                      checked={piiPep}
+                      onCheckedChange={v => setPiiPep(Boolean(v))}
+                    />
+                    <div>
+                      <Label htmlFor="pii-pep" className="text-sm font-medium cursor-pointer">
+                        Politically Exposed Person (PEP) Confirmation
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        I confirm that I am <strong>not</strong> a politically exposed person and am <strong>not</strong> a close associate
+                        of a domestic or foreign politically exposed person (including current or former senior government officials,
+                        politicians, military officers, or international organisation executives).
+                        Leave unchecked if you are, or may be, a PEP — AMAX will contact you to complete enhanced verification.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 3. Consent */}
                   <div className="flex items-start gap-3">
                     <Checkbox
                       id="pii-consent"
@@ -495,7 +503,7 @@ export default function Compliance() {
                 </div>
 
                 <Button
-                  className="w-full bg-amber-600 hover:bg-amber-700"
+                  className="w-full bg-blue-600 hover:bg-blue-700"
                   disabled={profileMutation.isPending}
                   onClick={handleProfileSubmit}
                 >
@@ -596,7 +604,7 @@ export default function Compliance() {
                             onChange={(e) => handleKycUpload(def.id, def.title, e)}
                           />
                         </label>
-                      ) : def.id === 4 && status === "in_progress" ? (
+                      ) : def.id === 5 && status === "in_progress" ? (
                         <Button size="sm" onClick={() => setActiveTab("risk")}>
                           Start <ChevronRight className="w-3 h-3 ml-1" />
                         </Button>
@@ -613,18 +621,18 @@ export default function Compliance() {
           {/* Dynamic next-step prompt */}
           {nextStep && (
             <Card className={`border-2 ${
-              nextStep.id === 4 ? "border-purple-200 bg-purple-50" : "border-blue-200 bg-blue-50"
+              nextStep.id === 5 ? "border-purple-200 bg-purple-50" : "border-blue-200 bg-blue-50"
             }`}>
               <CardContent className="p-4 flex items-start gap-3">
-                <Shield className={`w-5 h-5 mt-0.5 flex-shrink-0 ${nextStep.id === 4 ? "text-purple-600" : "text-blue-600"}`} />
+                <Shield className={`w-5 h-5 mt-0.5 flex-shrink-0 ${nextStep.id === 5 ? "text-purple-600" : "text-blue-600"}`} />
                 <div className="flex-1">
-                  <h4 className={`font-semibold mb-1 ${nextStep.id === 4 ? "text-purple-900" : "text-blue-900"}`}>
+                  <h4 className={`font-semibold mb-1 ${nextStep.id === 5 ? "text-purple-900" : "text-blue-900"}`}>
                     Next: {nextStep.title}
                   </h4>
-                  <p className={`text-sm mb-3 ${nextStep.id === 4 ? "text-purple-700" : "text-blue-700"}`}>
-                    {nextStep.id === 2 && "Upload a utility bill, bank statement, or government letter dated within the last 3 months showing your full name and address."}
-                    {nextStep.id === 3 && "Upload a recent payslip, tax return, or employer letter confirming your income and source of funds."}
-                    {nextStep.id === 4 && "You're almost there! Complete the short risk assessment questionnaire to finish your KYC verification."}
+                  <p className={`text-sm mb-3 ${nextStep.id === 5 ? "text-purple-700" : "text-blue-700"}`}>
+                    {nextStep.id === 3 && "Upload a utility bill, bank statement, or government letter dated within the last 3 months showing your full name and address."}
+                    {nextStep.id === 4 && "Upload a recent payslip, tax return, or employer letter confirming your income and source of funds."}
+                    {nextStep.id === 5 && "You're almost there! Complete the short risk assessment questionnaire to finish your KYC verification."}
                     {" "}Accepted formats: PDF, JPG, PNG, HEIC — max 10 MB.
                   </p>
                   <div className="flex gap-2 flex-wrap">
@@ -691,8 +699,8 @@ export default function Compliance() {
                         {doc.uploadDate && <span>Uploaded {new Date(doc.uploadDate).toLocaleDateString()}</span>}
                         {doc.size       && <span>{doc.size}</span>}
                         {docUploads[doc.id] && <span className="text-blue-600">✓ {docUploads[doc.id]}</span>}
-                        {(doc.id === 3 && stepFiles[2]) && <span className="text-blue-600">✓ {stepFiles[2]}</span>}
-                        {(doc.id === 4 && stepFiles[3]) && <span className="text-blue-600">✓ {stepFiles[3]}</span>}
+                        {(doc.id === 3 && stepFiles[3]) && <span className="text-blue-600">✓ {stepFiles[3]}</span>}
+                        {(doc.id === 4 && stepFiles[4]) && <span className="text-blue-600">✓ {stepFiles[4]}</span>}
                       </div>
                     </div>
                   </div>
@@ -754,7 +762,7 @@ export default function Compliance() {
           <Card>
             <CardHeader>
               <CardTitle>Risk Assessment Questionnaire</CardTitle>
-              <p className="text-sm text-gray-500">Required to complete KYC Step 4. All fields marked * are required.</p>
+              <p className="text-sm text-gray-500">Required to complete KYC Step 5. All fields marked * are required.</p>
             </CardHeader>
             <CardContent className="space-y-5">
               {riskSubmitted ? (
@@ -762,7 +770,7 @@ export default function Compliance() {
                   <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
                   <div>
                     <h4 className="font-semibold text-green-900">Risk Assessment Complete</h4>
-                    <p className="text-sm text-green-700">Your risk profile has been recorded and KYC Step 4 is now marked complete.</p>
+                    <p className="text-sm text-green-700">Your risk profile has been recorded and KYC Step 5 is now marked complete.</p>
                   </div>
                 </div>
               ) : (
