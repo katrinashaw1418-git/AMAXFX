@@ -15,6 +15,7 @@ import {
   auditLogs,
   passwordResetTokens,
   users,
+  advisorMessages,
 } from "@shared/schema";
 import {
   requireAuth,
@@ -2958,17 +2959,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/advisor/contact", async (req, res) => {
     try {
       const { message } = req.body;
-      
-      if (!message) {
+      if (!message || typeof message !== "string" || message.trim().length === 0) {
         return res.status(400).json({ error: "Message is required" });
       }
 
-      // In a real implementation, this would send an email or create a ticket
-      // For demo, we'll just return success
-      res.json({ 
-        success: true, 
-        message: "Your message has been sent to your wealth planner",
-        timestamp: new Date().toISOString()
+      // Resolve authenticated user if available (not required)
+      let userId: number | null = null;
+      let userEmail: string | null = null;
+      try {
+        const auth = requireAuth(req);
+        userId = auth.userId;
+        const [userRow] = await db.select({ email: users.email }).from(users).where(eq(users.id, userId));
+        userEmail = userRow?.email ?? null;
+      } catch {
+        // unauthenticated — still store the message for audit trail
+      }
+
+      await db.insert(advisorMessages).values({
+        userId: userId ?? undefined,
+        message: message.trim(),
+        userEmail: userEmail ?? undefined,
+      });
+
+      await writeAuditLog(userId ?? 0, "advisor_contact", "advisor_messages", null, { messageLength: message.trim().length }, req.ip || null);
+
+      res.json({
+        success: true,
+        message: "Your message has been received. Your wealth planner will contact you within 24 hours.",
+        timestamp: new Date().toISOString(),
       });
     } catch (error: any) {
       if (error.status) return res.status(error.status).json({ error: error.message });

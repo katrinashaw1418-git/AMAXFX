@@ -565,7 +565,7 @@ export default function Wallets() {
                   <SelectValue placeholder="Select deposit method" />
                 </SelectTrigger>
                 <SelectContent>
-                  {['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(selectedWallet?.currency) ? (
+                  {selectedWallet?.walletType === 'fiat' ? (
                     <>
                       <SelectItem value="card">💳 Credit/Debit Card</SelectItem>
                       <SelectItem value="payid">📱 PayID (Australia Only)</SelectItem>
@@ -574,9 +574,6 @@ export default function Wallets() {
                   ) : (
                     <>
                       <SelectItem value="blockchain">🔗 Blockchain Transfer</SelectItem>
-                      <SelectItem value="card">💳 Credit/Debit Card</SelectItem>
-                      <SelectItem value="payid">📱 PayID (Buy with AUD)</SelectItem>
-                      <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
                     </>
                   )}
                 </SelectContent>
@@ -803,83 +800,138 @@ export default function Wallets() {
               Withdraw funds from your {selectedWallet?.currency} wallet
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="withdraw-method">Withdrawal Method</Label>
-              <Select value={withdrawMethod} onValueChange={setWithdrawMethod}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select withdrawal method" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
-                </SelectContent>
-              </Select>
+
+          {/* ── CRYPTO WALLET — cannot withdraw directly to bank ── */}
+          {selectedWallet?.walletType === 'crypto' ? (
+            <div className="space-y-4 py-2">
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-2">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-amber-600 text-sm font-bold">!</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-amber-900">Digital assets cannot be withdrawn directly to a bank account</p>
+                    <p className="text-sm text-amber-800 mt-1">
+                      {selectedWallet?.currency} must be converted to a fiat currency first, then withdrawn via bank transfer.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="text-sm font-medium">Option 1 — Convert to AUD, then withdraw</p>
+                  <p className="text-xs text-muted-foreground">
+                    Use the Crypto Exchange to convert your {selectedWallet?.currency} to AUD. Once in your AUD wallet, you can withdraw to your bank account as usual.
+                  </p>
+                  <Button
+                    className="w-full mt-2 h-8 text-sm"
+                    onClick={() => { setWithdrawModalOpen(false); navigate('/crypto'); }}
+                  >
+                    Go to Crypto Exchange
+                  </Button>
+                </div>
+
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="text-sm font-medium">Option 2 — Blockchain withdrawal to external wallet</p>
+                  <p className="text-xs text-muted-foreground">
+                    To send {selectedWallet?.currency} to an external blockchain address, contact our team. We will verify and process your request securely.
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="w-full mt-2 h-8 text-sm"
+                    onClick={() => window.location.href = `mailto:info@amaxglobal.com.au?subject=Crypto Withdrawal Request - ${selectedWallet?.currency}`}
+                  >
+                    Email us to arrange withdrawal
+                  </Button>
+                </div>
+              </div>
+
+              <Button variant="outline" className="w-full h-8 text-sm" onClick={() => setWithdrawModalOpen(false)}>
+                Close
+              </Button>
             </div>
-            <div>
-              <Label htmlFor="withdraw-amount">Amount</Label>
-              <Input
-                id="withdraw-amount"
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Enter amount"
-              />
-              {selectedWallet && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Available: {selectedWallet.availableBalance} {selectedWallet.currency}
-                </p>
-              )}
-            </div>
+
+          ) : (
+            /* ── FIAT WALLET — standard bank transfer ── */
             <div className="space-y-3">
-              <div className="p-3 bg-muted rounded-lg">
-                <h4 className="font-medium mb-2 text-sm">🏦 Bank Transfer Instructions</h4>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p>• Funds transferred to your registered bank account</p>
-                  <p>• Processing time: 1-3 business days</p>
-                  <p>• Withdrawal fee: $25.00</p>
-                  <p>• Please ensure your bank details are up to date</p>
+              <div>
+                <Label htmlFor="withdraw-method">Withdrawal Method</Label>
+                <Select value={withdrawMethod} onValueChange={setWithdrawMethod}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select withdrawal method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="withdraw-amount">Amount</Label>
+                <Input
+                  id="withdraw-amount"
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="Enter amount"
+                />
+                {selectedWallet && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Available: {selectedWallet.availableBalance} {selectedWallet.currency}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-3">
+                <div className="p-3 bg-muted rounded-lg">
+                  <h4 className="font-medium mb-2 text-sm">🏦 Bank Transfer Instructions</h4>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>• Funds transferred to your registered bank account</p>
+                    <p>• Processing time: 1-3 business days</p>
+                    <p>• Withdrawal fee applies (see fee schedule)</p>
+                    <p>• Please ensure your bank details are up to date</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <Label htmlFor="withdraw-bank-name" className="text-xs">Bank Account Holder Name</Label>
+                    <Input
+                      id="withdraw-bank-name"
+                      placeholder="John Chen"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="withdraw-bsb" className="text-xs">BSB (if Australian)</Label>
+                    <Input
+                      id="withdraw-bsb"
+                      placeholder="123-456"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="withdraw-account-number" className="text-xs">Account Number</Label>
+                    <Input
+                      id="withdraw-account-number"
+                      placeholder="12345678"
+                      className="h-8 text-sm"
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="space-y-2">
-                <div>
-                  <Label htmlFor="withdraw-bank-name" className="text-xs">Bank Account Holder Name</Label>
-                  <Input 
-                    id="withdraw-bank-name"
-                    placeholder="John Chen"
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="withdraw-bsb" className="text-xs">BSB (if Australian)</Label>
-                  <Input 
-                    id="withdraw-bsb"
-                    placeholder="123-456"
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="withdraw-account-number" className="text-xs">Account Number</Label>
-                  <Input 
-                    id="withdraw-account-number"
-                    placeholder="12345678"
-                    className="h-8 text-sm"
-                  />
-                </div>
+              <div className="flex space-x-2 pt-2">
+                <Button
+                  onClick={handleWithdraw}
+                  disabled={withdrawMutation.isPending}
+                  className="flex-1 h-8 text-sm"
+                >
+                  {withdrawMutation.isPending ? "Processing..." : "Confirm Withdrawal"}
+                </Button>
+                <Button variant="outline" className="h-8 text-sm" onClick={() => setWithdrawModalOpen(false)}>
+                  Cancel
+                </Button>
               </div>
             </div>
-            <div className="flex space-x-2 pt-2">
-              <Button 
-                onClick={handleWithdraw}
-                disabled={withdrawMutation.isPending}
-                className="flex-1 h-8 text-sm"
-              >
-                {withdrawMutation.isPending ? "Processing..." : "Confirm Withdrawal"}
-              </Button>
-              <Button variant="outline" className="h-8 text-sm" onClick={() => setWithdrawModalOpen(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
 

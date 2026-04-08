@@ -259,6 +259,17 @@ export type AuditLog = typeof auditLogs.$inferSelect;
 export type AmlFlag = typeof amlFlags.$inferSelect;
 export type InsertAmlFlag = z.infer<typeof insertAmlFlagSchema>;
 
+// Advisor contact messages — written on every submission for full audit trail
+export const advisorMessages = pgTable("advisor_messages", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  message: text("message").notNull(),
+  userEmail: text("user_email"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type AdvisorMessage = typeof advisorMessages.$inferSelect;
+
 // Password reset tokens — ephemeral, expire after 1 hour, single-use
 export const passwordResetTokens = pgTable("password_reset_tokens", {
   id: serial("id").primaryKey(),
