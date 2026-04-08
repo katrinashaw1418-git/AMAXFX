@@ -2463,8 +2463,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const available = new Decimal(wallet.availableBalance);
         if (available.lt(totalDeduction)) throw Object.assign(new Error("Insufficient balance"), { status: 400 });
 
+        // Reserve funds: only deduct availableBalance now (shows user funds are spoken for).
+        // The actual balance will be reduced by the admin /complete-withdrawal endpoint
+        // once the payout is confirmed. This avoids balance going negative prematurely
+        // and allows refunds on failure without double-crediting.
         await tx.update(wallets).set({
-          balance: new Decimal(wallet.balance).minus(totalDeduction).toFixed(8),
           availableBalance: available.minus(totalDeduction).toFixed(8),
         }).where(eq(wallets.id, wallet.id));
 
@@ -3299,6 +3302,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // GET /api/deposit/instructions
+  // Returns AMAX bank/PayID settlement instructions from server environment config.
+  // Centralises all payment identifiers so they never appear hardcoded in the frontend.
+  app.get("/api/deposit/instructions", (_req: Request, res: any) => {
+    res.json({
+      payid: {
+        identifier: process.env.AMAX_PAYID ?? "info@amaxglobal.com.au",
+        accountName: "AMAX Global Pty Ltd",
+      },
+      bank: {
+        bank: process.env.AMAX_BANK_NAME ?? "Westpac Banking Corporation",
+        bsb: process.env.AMAX_BSB ?? "032-000",
+        account: process.env.AMAX_ACCOUNT_NUMBER ?? "123456789",
+        accountName: "AMAX Global Pty Ltd",
+        swift: process.env.AMAX_SWIFT ?? "WPACAU2S",
+      },
+    });
+  });
+
   // POST /api/stripe/create-checkout-session
   // Body: { walletId: number, amount: string, currency: string }
   // Returns: { sessionId, url }
@@ -3790,7 +3812,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/admin/transactions/:id/complete-withdrawal
-  // Marks a pending withdrawal as completed (balance already deducted at submission).
+  // Marks a pending withdrawal as completed. Now also reduces the actual balance
+  // (funds were reserved in availableBalance at submission time).
   app.post("/api/admin/transactions/:id/complete-withdrawal", async (req: Request, res: any) => {
     if (!requireAdminKey(req, res)) return;
     try {
@@ -3800,9 +3823,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (txRow.type !== "withdrawal") return res.status(400).json({ error: "Not a withdrawal transaction" });
       if (txRow.status === "completed") return res.status(409).json({ error: "Already completed" });
 
-      await db.update(transactions).set({ status: "completed", settlementStatus: "paid_out" })
-        .where(eq(transactions.id, txId));
-      res.json({ success: true, message: "Withdrawal marked completed" });
+      const currency = txRow.fromCurrency!;
+      const deductAmount = new Decimal(txRow.amount).plus(new Decimal(txRow.fee ?? "0"));
+
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+        const [wallet] = await tx.select().from(wallets)
+          .where(and(eq(wallets.userId, txRow.userId!), eq(wallets.currency, currency)))
+          .for("update");
+        if (wallet) {
+          await tx.update(wallets).set({
+            balance: new Decimal(wallet.balance).minus(deductAmount).toFixed(8),
+          }).where(eq(wallets.id, wallet.id));
+        }
+        await tx.update(transactions).set({ status: "completed", settlementStatus: "paid_out" })
+          .where(eq(transactions.id, txId));
+      });
+      res.json({ success: true, message: "Withdrawal completed and balance finalised" });
     } catch (err: any) {
       res.status(500).json({ error: err.message ?? "Failed to complete withdrawal" });
     }
@@ -3821,7 +3858,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await db.transaction(async (tx) => {
         await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
         if (txRow.type === "withdrawal") {
-          // Refund the reserved amount + fee back to the wallet
+          // Refund: availableBalance was reduced at submission but balance was NOT.
+          // Only restore availableBalance to release the reservation.
           const refundAmount = new Decimal(txRow.amount).plus(new Decimal(txRow.fee ?? "0"));
           const currency = txRow.fromCurrency!;
           const [wallet] = await tx.select().from(wallets)
@@ -3829,7 +3867,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .for("update");
           if (wallet) {
             await tx.update(wallets).set({
-              balance: new Decimal(wallet.balance).plus(refundAmount).toFixed(8),
               availableBalance: new Decimal(wallet.availableBalance).plus(refundAmount).toFixed(8),
             }).where(eq(wallets.id, wallet.id));
           }

@@ -174,6 +174,19 @@ export default function Wallets() {
   const { data: stripeStatus } = useQuery<{ configured: boolean; publishableKey: string | null }>({
     queryKey: ['/api/stripe/status'],
   });
+
+  const { data: depositInstructions } = useQuery<{
+    payid: { identifier: string; accountName: string };
+    bank: { bank: string; bsb: string; account: string; accountName: string; swift: string };
+  }>({
+    queryKey: ['/api/deposit/instructions'],
+  });
+
+  const { data: pendingTransactions } = useQuery<any[]>({
+    queryKey: ['/api/transactions'],
+    select: (txns) => txns.filter((t) => t.status === 'pending'),
+  });
+
   const [, navigate] = useLocation();
   const { toast } = useToast();
   
@@ -709,6 +722,59 @@ export default function Wallets() {
       </Card>
 
 
+      {/* Pending Transactions Panel */}
+      {pendingTransactions && pendingTransactions.length > 0 && (
+        <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/20">
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="text-sm font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              Pending Transactions ({pendingTransactions.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-3">
+            <div className="space-y-2">
+              {pendingTransactions.map((tx: any) => {
+                let meta: any = {};
+                try { meta = JSON.parse(tx.description ?? '{}'); } catch { /* ignore */ }
+                const isDeposit = tx.type === 'deposit';
+                const isWithdrawal = tx.type === 'withdrawal';
+                const ref = meta.referenceCode ?? tx.referenceId ?? `#${tx.id}`;
+                const method = meta.method ?? (isDeposit ? 'bank_transfer' : '');
+                const amount = parseFloat(tx.amount ?? 0).toLocaleString('en-AU', { maximumFractionDigits: 8 });
+                const currency = isDeposit ? tx.toCurrency ?? tx.fromCurrency : tx.fromCurrency;
+                const date = tx.createdAt ? new Date(tx.createdAt).toLocaleDateString('en-AU', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+
+                return (
+                  <div key={tx.id} className="flex items-start justify-between bg-white dark:bg-zinc-900 border border-amber-100 dark:border-amber-900 rounded-lg px-3 py-2 text-xs">
+                    <div className="space-y-0.5 flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`font-semibold ${isDeposit ? 'text-green-700 dark:text-green-400' : isWithdrawal ? 'text-red-700 dark:text-red-400' : 'text-blue-700 dark:text-blue-400'}`}>
+                          {isDeposit ? '↓ Deposit' : isWithdrawal ? '↑ Withdrawal' : '⇄ Transfer'}
+                        </span>
+                        <span className="text-muted-foreground capitalize">{method.replace(/_/g,' ')}</span>
+                        <span className="ml-auto text-amber-700 dark:text-amber-400 font-medium bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded text-[10px]">Pending</span>
+                      </div>
+                      <div className="text-muted-foreground truncate">
+                        <span className="font-medium text-foreground">{amount} {currency}</span>
+                        {ref && <> · Ref: <span className="font-mono">{ref}</span></>}
+                      </div>
+                      {date && <div className="text-[10px] text-muted-foreground">{date}</div>}
+                      {isWithdrawal && meta.accountNumber && (
+                        <div className="text-muted-foreground">To: {meta.accountName ?? ''} {meta.bsb ? `BSB ${meta.bsb}` : ''} {meta.accountNumber}</div>
+                      )}
+                      {isWithdrawal && meta.payid && (
+                        <div className="text-muted-foreground">To PayID: {meta.payid} ({meta.accountName ?? ''})</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-2">Pending transactions are visible here until AMAX confirms and processes them. Contact info@amaxglobal.com.au for queries.</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Deposit Modal */}
       <Dialog open={depositModalOpen} onOpenChange={(open) => { setDepositModalOpen(open); if (!open) { setDepositSubmitted(null); setCardClientSecret(null); setAmount(''); setDepositMethod(''); } }}>
         <DialogContent className="sm:max-w-[450px] max-h-[80vh] overflow-y-auto p-4">
@@ -742,26 +808,26 @@ export default function Wallets() {
                 <div className="p-3 bg-muted rounded-lg space-y-1">
                   <p className="text-xs font-semibold">Send to AMAX PayID:</p>
                   <div className="flex items-center justify-between">
-                    <p className="text-xs">info@amaxglobal.com.au</p>
-                    <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText('info@amaxglobal.com.au'); toast({ title: "Copied" }); }}>Copy</Button>
+                    <p className="text-xs">{depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au'}</p>
+                    <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText(depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au'); toast({ title: "Copied" }); }}>Copy</Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">Account Name: AMAX Global Pty Ltd</p>
+                  <p className="text-xs text-muted-foreground">Account Name: {depositInstructions?.payid.accountName ?? 'AMAX Global Pty Ltd'}</p>
                 </div>
               )}
 
               {depositSubmitted.method === 'bank_transfer' && (
                 <div className="p-3 bg-muted rounded-lg space-y-1">
                   <p className="text-xs font-semibold">Transfer to AMAX Bank Account:</p>
-                  <p className="text-xs">Bank: Westpac Banking Corporation</p>
+                  <p className="text-xs">Bank: {depositInstructions?.bank.bank ?? 'Westpac Banking Corporation'}</p>
                   <div className="flex items-center justify-between">
-                    <p className="text-xs">BSB: 032-000</p>
-                    <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText('032000'); toast({ title: "Copied" }); }}>Copy</Button>
+                    <p className="text-xs">BSB: {depositInstructions?.bank.bsb ?? '032-000'}</p>
+                    <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText((depositInstructions?.bank.bsb ?? '032-000').replace(/-/g,'')); toast({ title: "Copied" }); }}>Copy</Button>
                   </div>
                   <div className="flex items-center justify-between">
-                    <p className="text-xs">Account: 123456789</p>
-                    <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText('123456789'); toast({ title: "Copied" }); }}>Copy</Button>
+                    <p className="text-xs">Account: {depositInstructions?.bank.account ?? '123456789'}</p>
+                    <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.account ?? '123456789'); toast({ title: "Copied" }); }}>Copy</Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">Account Name: AMAX Global Pty Ltd · SWIFT: WPACAU2S</p>
+                  <p className="text-xs text-muted-foreground">Account Name: {depositInstructions?.bank.accountName ?? 'AMAX Global Pty Ltd'} · SWIFT: {depositInstructions?.bank.swift ?? 'WPACAU2S'}</p>
                 </div>
               )}
 
@@ -928,15 +994,24 @@ export default function Wallets() {
                     <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
                       <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">Send to AMAX Global PayID:</p>
                       <div className="flex items-center justify-between">
-                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">PayID:</span> info@amaxglobal.com.au</p>
-                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText('info@amaxglobal.com.au'); toast({ title: "Copied", description: "PayID copied to clipboard" }); }}>Copy</Button>
+                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">PayID:</span> {depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au'}</p>
+                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText(depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au'); toast({ title: "Copied", description: "PayID copied to clipboard" }); }}>Copy</Button>
                       </div>
-                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account Name:</span> AMAX Global Pty Ltd</p>
+                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account Name:</span> {depositInstructions?.payid.accountName ?? 'AMAX Global Pty Ltd'}</p>
                       <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 pt-1 border-t border-blue-200 dark:border-blue-700">Or pay by BSB (manual transfer fallback):</p>
-                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Bank:</span> Westpac Banking Corporation</p>
-                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">BSB:</span> 032-000</p>
-                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account:</span> 123456789</p>
-                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">SWIFT:</span> WPACAU2S</p>
+                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Bank:</span> {depositInstructions?.bank.bank ?? 'Westpac Banking Corporation'}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">BSB:</span> {depositInstructions?.bank.bsb ?? '032-000'}</p>
+                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText((depositInstructions?.bank.bsb ?? '032-000').replace(/-/g,'')); toast({ title: "Copied" }); }}>Copy</Button>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account:</span> {depositInstructions?.bank.account ?? '123456789'}</p>
+                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.account ?? '123456789'); toast({ title: "Copied" }); }}>Copy</Button>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">SWIFT:</span> {depositInstructions?.bank.swift ?? 'WPACAU2S'}</p>
+                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.swift ?? 'WPACAU2S'); toast({ title: "Copied" }); }}>Copy</Button>
+                      </div>
                     </div>
                     <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
                       ⏳ Click Submit to record your deposit. A unique reference code will be generated — include it with your transfer so AMAX can match your payment.
@@ -957,17 +1032,20 @@ export default function Wallets() {
                     </div>
                     <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-1">
                       <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">AMAX Global Bank Details:</p>
-                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Bank:</span> Westpac Banking Corporation</p>
+                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Bank:</span> {depositInstructions?.bank.bank ?? 'Westpac Banking Corporation'}</p>
                       <div className="flex items-center justify-between">
-                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">BSB:</span> 032-000</p>
-                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText('032000'); toast({ title: "Copied", description: "BSB copied" }); }}>Copy</Button>
+                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">BSB:</span> {depositInstructions?.bank.bsb ?? '032-000'}</p>
+                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText((depositInstructions?.bank.bsb ?? '032-000').replace(/-/g,'')); toast({ title: "Copied", description: "BSB copied" }); }}>Copy</Button>
                       </div>
                       <div className="flex items-center justify-between">
-                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account:</span> 123456789</p>
-                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText('123456789'); toast({ title: "Copied", description: "Account number copied" }); }}>Copy</Button>
+                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account:</span> {depositInstructions?.bank.account ?? '123456789'}</p>
+                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.account ?? '123456789'); toast({ title: "Copied", description: "Account number copied" }); }}>Copy</Button>
                       </div>
-                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account Name:</span> AMAX Global Pty Ltd</p>
-                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">SWIFT:</span> WPACAU2S</p>
+                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account Name:</span> {depositInstructions?.bank.accountName ?? 'AMAX Global Pty Ltd'}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">SWIFT:</span> {depositInstructions?.bank.swift ?? 'WPACAU2S'}</p>
+                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.swift ?? 'WPACAU2S'); toast({ title: "Copied" }); }}>Copy</Button>
+                      </div>
                     </div>
                     <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
                       ⏳ Click Submit to record your deposit. A unique reference code will be generated — include it in your bank transfer description so AMAX can identify your payment.
