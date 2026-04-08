@@ -554,6 +554,22 @@ async function saveActualSnapshot(userId: number): Promise<void> {
 type SnapshotSource = "actual" | "historical_estimate";
 
 // Create a single snapshot for one day — skips if one already exists for that day
+// Sanitize snapshots loaded from DB — drop any rows with invalid totalValue.
+// Guards charts against bad historical data that predates the write-side guard.
+function sanitizeSnapshots(snapshots: any[], context: string): any[] {
+  return snapshots.filter((s) => {
+    const v = parseFloat(s.totalValue ?? "");
+    if (!Number.isFinite(v) || v < 0) {
+      console.error("[snapshot-invalid] Skipping bad snapshot in", context, {
+        id: s.id, userId: s.userId,
+        date: s.snapshotDate, totalValue: s.totalValue,
+      });
+      return false;
+    }
+    return true;
+  });
+}
+
 async function createSnapshotForDay(
   userId: number,
   snapshotDate: Date,
@@ -566,6 +582,17 @@ async function createSnapshotForDay(
   const existingForDay = await storage.getPortfolioSnapshots(userId, dayStart, dayEnd);
   if (existingForDay.length > 0) return; // already have one for this day
   const totals = await calculatePortfolioTotalsAtDate(userId, snapshotDate);
+
+  // Guard: reject snapshots with invalid totals before writing to DB
+  if (!Number.isFinite(totals.totalValue) || totals.totalValue < 0) {
+    console.error("[snapshot-invalid] Refusing to write invalid snapshot", {
+      userId,
+      snapshotDate: snapshotDate.toISOString().split("T")[0],
+      totalValue: totals.totalValue,
+    });
+    return;
+  }
+
   await storage.createPortfolioSnapshot({
     userId,
     snapshotDate,
@@ -1009,7 +1036,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await backfillPortfolioHistory(userId, anchor, today);
 
       // All historical points come from snapshots only — no wallet balance reconstruction
-      const snapshots = await storage.getPortfolioSnapshots(userId, anchor, today);
+      const snapshots = sanitizeSnapshots(
+        await storage.getPortfolioSnapshots(userId, anchor, today),
+        "performance-chart"
+      );
       const sortedSnapshots = [...snapshots].sort(
         (a: any, b: any) =>
           new Date(a.snapshotDate).getTime() - new Date(b.snapshotDate).getTime()
@@ -1169,7 +1199,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Historical line: real snapshot investment values, bucketed by month
-      const snapshots = await storage.getPortfolioSnapshots(userId, ANCHOR, today);
+      const snapshots = sanitizeSnapshots(
+        await storage.getPortfolioSnapshots(userId, ANCHOR, today),
+        "investment-ytd"
+      );
       const historyByMonth = new Map<string, number>();
       for (const s of snapshots) {
         const d = new Date(s.snapshotDate);
@@ -1295,7 +1328,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const now = new Date();
       const yearStart = new Date(now.getFullYear(), 0, 1);
       yearStart.setHours(0, 0, 0, 0);
-      const snapshots = await storage.getPortfolioSnapshots(userId, yearStart, now);
+      const snapshots = sanitizeSnapshots(
+        await storage.getPortfolioSnapshots(userId, yearStart, now),
+        "portfolio-summary"
+      );
       const sorted = [...snapshots].sort(
         (a: any, b: any) => new Date(a.snapshotDate).getTime() - new Date(b.snapshotDate).getTime()
       );
