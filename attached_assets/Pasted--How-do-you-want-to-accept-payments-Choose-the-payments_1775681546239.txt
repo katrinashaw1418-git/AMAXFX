@@ -1,0 +1,2017 @@
+
+How do you want to accept payments?
+Choose the payments integration that works best for your business. Compare payment integrations
+Shareable payment links
+Shareable payment links
+Create a reusable link to sell products or services wherever you reach customers—email, SMS, social media, or your own website.
+Prebuilt checkout form
+Prebuilt checkout form
+Embed a conversion-optimized, customizable payment form on your site or redirect to a Stripe-hosted page.
+Custom payment flow
+Custom payment flow
+Build a custom payment flow using individual UI components for complete control over the checkout experience.
+ on stripe I am trying to set up card payment, what shall I choose for amax global fx remittance
+
+Show more
+3:23 AM
+For a remittance/FX transfer business like AMAX Global, here's what I'd recommend:
+
+Choose "Custom payment flow"
+
+Here's why each option doesn't fit as well:
+
+Shareable payment links — designed for simple product/service sales. Remittance involves variable amounts, recipient details, FX rates, and compliance data collection. Too basic.
+Prebuilt checkout form (Stripe Checkout) — better, but you get limited control over the UI. You can't easily capture remittance-specific fields (recipient bank details, destination country, purpose of transfer) or display live FX rates inline.
+Why Custom payment flow is right for remittance:
+
+Variable send/receive amounts — you need to show the FX calculation dynamically as the customer types
+Compliance fields — remittance requires collecting sender/recipient identity, purpose of funds, etc. You need full form control
+Multi-step flow — typically: enter amount → see FX rate → enter recipient details → confirm → pay. A custom flow handles this naturally
+Stripe Elements — the underlying UI components (card input, etc.) are still PCI-compliant, but you control the surrounding experience completely
+Practically, this means using Stripe Elements (specifically the Payment Element or Card Element) embedded in your React/Next.js frontend, with a server-side Payment Intent created via the Stripe API when the user confirms the transaction.
+
+Would you like help setting up the Stripe integration for the AMAX remittance flow specifically — including the Payment Intent creation and webhook handling?
+
+Add a product
+Close preview
+Name (required)
+Name of the product or service, visible to customers.
+Name is required.
+Description
+Appears at checkout, on the customer portal, and in quotes.
+Image
+Appears at checkout. JPEG, PNG, or WEBP under 2MB.
+Upload
+More options
+Pricing
+Recurring
+One-off
+Amount (required)
+AUD
+More pricing options
+
+Show more
+3:24 AM
+For AMAX Global FX Remittance, here's how to fill this in:
+
+Name: International Money Transfer (or more specific e.g. AUD → PHP Transfer)
+
+Description: Something like: Fast, secure international remittance. Competitive FX rates with same-day or next-day delivery.
+
+Image: Your AMAX logo — keep it under 2MB as a PNG
+
+Pricing — choose "One-off" (not Recurring)
+
+Remittance is a per-transaction service, not a subscription. Each transfer is a discrete payment.
+
+Amount: This is the tricky part for FX remittance —
+
+If you charge a flat fee (e.g. $5 AUD service fee), set that fixed amount here
+If the amount varies per transaction (customer sends $200, $500, $1,000 etc.), you should NOT set a fixed price here. Instead, leave pricing flexible or use the Stripe API to create a dynamic Payment Intent for the exact send amount at the time of transaction
+My recommendation for AMAX: Use a dynamic amount via the API rather than a fixed product price, because each remittance will be a different value. The "product" in Stripe is more useful for your records/reporting than for driving the actual charge amount.
+
+Do you want help structuring whether AMAX charges a flat fee, a percentage margin baked into the FX spread, or both? That will determine how you configure the Stripe charge amount.
+
+SHALL I CHARGE A PERCENTAGE OR WHAT HOW TO DO THAT rice
+Amount (required)
+AUD
+Choose a currency…
+This price won’t automatically update if exchange rate changes.
+Advanced
+Price description
+Use to organize your prices. Not shown to customers.
+Lookup key
+Lookup keys make it easier to manage and make future pricing changes by using a unique key (e.g., standard_monthly) for each price, enabling easy querying and retrieval of specific prices. Lookup keys should be unique across all prices in your account.
+
+Show more
+3:49 AM
+For a remittance business, here's the honest answer:
+
+Don't use Stripe's product pricing for the transfer amount at all.
+
+Here's why and what to do instead:
+
+How remittance businesses typically charge:
+
+Option 1 — Flat fee (simplest) e.g. $5 AUD per transfer, regardless of amount sent
+
+Option 2 — Percentage fee e.g. 1.5% of the send amount — but Stripe's product setup doesn't do "charge X% of whatever the customer enters." You'd have to calculate it in your code.
+
+Option 3 — FX spread (most common for remittance) You buy USD/PHP/etc. at the real rate, but quote the customer a slightly worse rate. Your margin is baked into the exchange rate, not shown as a fee. Zero visible charge.
+
+Option 4 — Flat fee + spread combined Most competitive remittance businesses (like Wise, Western Union) do this.
+
+What to actually do in Stripe:
+
+Skip setting a fixed price in the product dashboard. Instead:
+
+Customer enters send amount on your site
+Your backend calculates: send amount + fee (flat or %)
+Create a Payment Intent via Stripe API for that exact calculated total in AUD
+Customer pays that dynamic amount
+The Stripe "product" just sits in the background for reporting.
+
+For AMAX starting out, I'd suggest a simple flat fee of $4–$6 AUD per transfer. Easy to explain, easy to implement, no complex percentage logic needed upfront.
+
+Want help writing the backend code to create a dynamic Payment Intent?
+
+Option 4 — Flat fee + spread combined Most competitive remittance businesses (like Wise, Western Union) do this. SHALL I DO THIS
+
+3:52 AM
+Yes, absolutely — Option 4 is the right choice for AMAX. Here's the full picture to help you decide:
+
+Why Option 4 makes sense for AMAX
+
+The flat fee covers your fixed costs:
+
+Stripe processing fee (~1.7% + $0.30 AUD for domestic cards)
+Your operational cost per transaction
+Gives customers a clear, visible charge they expect
+The FX spread is your actual profit margin:
+
+You quote customer a rate slightly worse than the mid-market rate
+e.g. Mid-market AUD/PHP = 35.00, you quote 34.20
+On a $1,000 AUD transfer that's ~$80 AUD margin, invisible to the customer
+What a typical AMAX transaction would look like:
+
+Item	Example
+Customer sends	$1,000 AUD
+Your flat fee	$4.99 AUD
+Stripe takes	~$17.30 AUD
+Customer total	$1,004.99 AUD
+Customer receives	PHP 34,200 (not 35,000)
+Your FX spread profit	~$80 AUD equivalent
+The honest risk to know upfront:
+
+FX rates move constantly. If you quote a rate and the customer takes 10 minutes to pay, the rate may have shifted against you. You'll need to either:
+
+Lock the rate for a short window (e.g. 10 minutes), or
+Refresh the rate if the session expires before payment
+Want me to help you build out the rate engine and fee structure for AMAX specifically — including which live FX API to use?
+
+HOW TO FILL THE FORM
+
+3:52 AM
+Here's exactly how to fill the Stripe "Add a product" form for AMAX:
+
+Name (required)
+
+International Money Transfer
+Description
+
+Fast and secure international remittance with competitive FX rates. Flat fee applies per transfer.
+Image Upload your AMAX logo if you have one, otherwise skip for now.
+
+Pricing
+
+Select One-off (not Recurring)
+Currency: AUD
+Amount: Enter 4.99 (your flat fee only — NOT the transfer amount)
+The transfer amount itself will be handled dynamically in your code. This product in Stripe just represents your service fee.
+
+Advanced fields
+
+Price description: Flat transfer fee per transaction
+Lookup key: amax_transfer_fee_aud
+Then click Save — that's it for the product setup.
+
+Important: After this, when a customer does a transfer of say $1,000 AUD, your backend will create a Payment Intent for $1,004.99 (transfer amount + this fee). The $4.99 product you just created is just for your records and invoicing — Stripe won't automatically add it to anything.
+
+Want to move on to setting up the actual payment page/form next?
+
+BUT THEY HAVE GIVEN ME A PUBLIC AND SECRET KEY
+
+3:54 AM
+Yes! Those keys are how your website/app talks to Stripe. Here's what they are and what to do with them:
+
+Public Key (Publishable Key)
+
+Starts with pk_test_... (test) or pk_live_... (live)
+Goes in your frontend code (React, HTML etc.)
+Safe to expose — it can't process charges alone
+Used to: load Stripe Elements (the card input form)
+Secret Key
+
+Starts with sk_test_... (test) or sk_live_... (live)
+Goes in your backend/server only (Node.js, Python etc.)
+Never expose this publicly — anyone with this key can charge cards and access your Stripe account
+Used to: create Payment Intents, confirm payments
+Where do you put them?
+
+In your project, create a .env file:
+
+STRIPE_PUBLIC_KEY=pk_test_xxxxxxxxxxxxxxxx
+STRIPE_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxx
+The basic flow for AMAX:
+
+Customer enters amount + details
+        ↓
+Frontend calls your backend
+        ↓
+Backend uses SECRET KEY → creates Payment Intent → returns client_secret
+        ↓
+Frontend uses PUBLIC KEY → Stripe Elements → customer enters card
+        ↓
+Payment confirmed → Stripe webhook notifies your backend
+What tech stack are you building AMAX on? React frontend? Do you have a backend set up (Node.js, Python etc.)? That will determine exactly where to plug these keys in.
+
+HOW TO FILLE THE FORM
+
+3:54 AM
+Here's exactly what to fill in the Stripe form right now:
+
+Name (required)
+
+International Money Transfer
+Description
+
+Secure international remittance with competitive FX rates
+Image — skip for now
+
+Pricing
+
+Click One-off
+Currency → search and select AUD
+Amount → type 4.99
+Advanced (click to expand)
+
+Price description → Transfer service fee
+Lookup key → amax_transfer_fee
+Then hit Save.
+
+That's the whole form done. Do you want to move to the next step — which is integrating your public and secret keys into your payment page?
+
+DO I NEED TO REGISTER TAX ON STROP TO COLLECT TAX AUTOMATICALLY
+
+4:11 AM
+For AMAX Global FX Remittance — no, you do not need to register tax on Stripe.
+
+Here's why:
+
+Money transfer / remittance services are INPUT-TAXED under Australian GST law
+
+Financial services including currency exchange and remittance are not subject to GST
+You do not charge GST to your customers on the transfer fee
+This is under Division 40 of the GST Act — financial supplies are input taxed
+So in Stripe:
+
+Leave tax registration off
+Do not enable Stripe Tax for your transfer fee product
+Do not add any tax rate to your $4.99 fee
+What this means practically:
+
+Answer
+Charge GST on $4.99 fee?	❌ No
+Charge GST on FX spread?	❌ No
+Register for Stripe Tax?	❌ Not needed
+Still need an ABN?	✅ Yes
+Still lodge BAS?	✅ Yes, but reporting input-taxed supplies
+One caveat — confirm this with your accountant since AMAX may have other taxable supplies depending on your full service offering. But for pure remittance, you're input-taxed.
+
+Want to move on to the next Stripe setup step?
+
+Currency
+AUD - Australian Dollar
+Selecting a new currency will clear all items from the invoice.
+Items
+Add single, one-time items or products from your product catalog to this invoice.
+International Money Transfer × 1
+$4.99
+Add item
+Add shipping
+Select a coupon…
+Add another coupon
+Collect tax automatically
+Add tax manually
+Payment collection
+Request payment
+Create an invoice requesting payment on a specific date
+Due in 30 days
+This invoice will be due 30 days after the invoice is finalized or sent (May 8, 2026 if sent today).
+CardKlarnaLink
+Manage payment methods
+Autocharge customer
+Automatically charge a payment method on file
+Additional options
+Customize your invoice with additional fields to better suit your business needs and compliance requirements. Learn more
+Template
+Select a template...
+Memo
+Footer
+Custom fields
+Tax ID
+PDF page size
+Letter
+Letter FILL THIS FORM
+
+Show more
+4:13 AM
+Here's exactly how to fill this invoice form:
+
+Currency ✅ AUD — already correct, leave it
+
+Items ✅ International Money Transfer × 1 — $4.99 already added, good
+
+Tax
+
+Click "Add tax manually"
+Do not click "Collect tax automatically"
+When it asks for a rate, enter 0% or leave blank
+Reason: remittance is input-taxed, no GST applies
+Payment Collection
+
+Select "Request payment"
+Due date: change from "Due in 30 days" to "Due immediately"
+Remittance is not a credit service — customer pays before transfer happens
+Payment Methods
+
+Keep Card ✅
+Keep Link ✅ (Stripe's saved payment feature, good for repeat customers)
+Klarna — turn this off ❌ (buy now pay later is not appropriate for remittance)
+Additional Options
+
+Memo: Thank you for using AMAX Global FX Remittance. Transfer will be processed upon payment confirmation.
+Footer: AMAX Global | ABN: XX XXX XXX XXX | support@amaxglobal.com.au
+Custom fields: Add Purpose of Transfer — required for AML compliance
+Tax ID: Leave blank
+PDF page size: Leave as Letter
+Then hit Send Invoice.
+
+Want help setting up the next step — the actual card payment integration using your API keys?
+
+International Money Transfer × 1
+$4.99
+Add item
+Add shipping
+Select a coupon…
+Add another coupon
+Collect tax automatically
+Select a tax rate…
+Add another tax
+Payment collection
+Request payment
+Create an invoice requesting payment on a specific date
+Due today
+This invoice will be due on the day it is finalized or sent (April 8, 2026 if sent today).
+CardKlarnaLink
+Manage payment methods
+Autocharge customer
+Automatically charge a payment method on file
+Additional options
+Customize your invoice with additional fields to better suit your business needs and compliance requirements. Learn more
+Template
+Select a template...
+Memo
+Footer
+Custom fields
+Tax ID
+PDF page size
+Letter
+Letter
+
+Show more
+4:14 AM
+Perfect, you've already updated to "Due today" ✅. Here's the final fill for everything remaining:
+
+Tax
+
+Leave "Select a tax rate" blank — do not add anything
+No GST on remittance
+Payment Methods
+
+Card ✅ keep
+Link ✅ keep
+Klarna ❌ click to turn off
+Memo
+
+Thank you for choosing AMAX Global FX Remittance. Your transfer will be processed immediately upon payment confirmation.
+Footer
+
+AMAX Global | ABN: XX XXX XXX XXX | support@amaxglobal.com.au
+(replace with your real ABN and email)
+
+Custom Fields Click "Add custom field" and add:
+
+Field Name	Value
+Purpose of Transfer	e.g. Family Support
+Destination Country	e.g. Philippines
+Tax ID — leave blank
+
+PDF Page Size — leave as Letter
+
+Template — leave as default for now
+
+That's it — ready to send. 🎉
+
+Do you have a customer to send this first invoice to, or do you want to test it with a Stripe test card first?
+
+Payment collection
+Request payment
+Create an invoice requesting payment on a specific date
+Due today
+This invoice will be due on the day it is finalized or sent (April 8, 2026 if sent today).
+Australia BECS Direct DebitCardKlarnaLinkPayToWeChat Pay
+Manage payment methods
+Autocharge customer
+Automatically charge a payment method on file
+
+4:23 AM
+For AMAX Global FX Remittance, here's what to turn on and off:
+
+✅ Keep ON
+
+Method	Why
+Card	Essential — Visa/Mastercard, most customers will use this
+Link	Stripe's saved payment, good for repeat customers
+PayTo	✅ Yes — Australian bank-to-bank, low fee, good for large transfers
+❌ Turn OFF
+
+Method	Why
+Klarna	Buy now pay later — not appropriate for remittance, you need funds upfront
+BECS Direct Debit	Takes 3-5 business days to clear — too slow for remittance, you need instant confirmation
+WeChat Pay	Only relevant if your customers are specifically Chinese community — turn off for now, can revisit later
+Autocharge customer
+
+Leave off for now
+Only turn on when you have returning customers with saved payment methods
+Summary — your final selection:
+
+✅ Card
+✅ Link
+✅ PayTo
+❌ BECS Direct Debit
+❌ Klarna
+❌ WeChat Pay
+Want to proceed to sending the invoice or setting up the live payment page next?
+
+Items
+Add single, one-time items or products from your product catalog to this invoice.
+International Money Transfer × 1
+$4.99
+Add item
+Add shipping
+Select a coupon…
+Add another coupon
+Collect tax automatically
+Add tax manually
+Payment collection
+Request payment
+Create an invoice requesting payment on a specific date
+Due today
+This invoice will be due on the day it is finalized or sent (April 8, 2026 if sent today).
+CardLinkPayToWeChat Pay
+Manage payment methods
+Autocharge customer
+Automatically charge a payment method on file
+Additional options
+Customize your invoice with additional fields to better suit your business needs and compliance requirements. Learn more
+Template
+Select a template...
+Memo
+Footer
+Custom fields
+Tax ID
+PDF page size
+Letter
+Letter FILL THE FORM
+
+Show more
+4:24 AM
+Here is the complete fill for everything:
+
+Items ✅ already done — International Money Transfer × 1 $4.99
+
+Tax — click "Add tax manually" → leave rate blank / 0% — no GST on remittance
+
+Payment Methods
+
+✅ Card — keep
+✅ Link — keep
+✅ PayTo — keep
+❌ WeChat Pay — turn off
+Due Today ✅ already correct
+
+Autocharge — leave OFF
+
+Additional Options:
+
+Template
+
+Leave as default
+Memo
+
+Thank you for choosing AMAX Global FX Remittance. 
+Your transfer will be processed immediately upon 
+payment confirmation.
+Footer
+
+AMAX Global | ABN: XX XXX XXX XXX | support@amaxglobal.com.au
+Custom Fields — click Add and enter:
+
+Name	Value
+Purpose of Transfer	Family Support
+Destination Country	Philippines
+Tax ID — leave blank
+
+PDF Page Size — leave as Letter
+
+You are ready to hit Send. ✅
+
+Shall I help you send a test invoice to yourself first before sending to a real customer?
+
+CAN I ACCEPT WECHAT FROM CHINA IF THEY WANT TO USE MY SERVICE
+
+4:25 AM
+Yes, absolutely! If you have Chinese customers, WeChat Pay is a great idea to turn ON. Here's the full picture:
+
+Who uses WeChat Pay:
+
+Mainland Chinese customers
+Chinese international students in Australia
+Chinese migrants sending money back to China/Asia
+Chinese businesses
+For AMAX this makes business sense if:
+
+You offer AUD → CNY transfers
+You service the Chinese community in Australia
+You want to differentiate from competitors
+Requirements to accept WeChat Pay on Stripe:
+
+Requirement	Detail
+Stripe account verified	✅ you already have this
+Business must be registered	✅ ABN required
+Customer must have WeChat Pay set up	Their responsibility
+Currency	AUD supported ✅
+Settlement	Stripe settles to your AUD bank account
+Limitations to know:
+
+WeChat Pay transactions cannot be saved for autocharge
+Refunds can take 5-10 days back to customer
+Stripe charges slightly higher fee for WeChat Pay (~2-3%)
+My recommendation for AMAX:
+
+If you plan to serve the Chinese-Australian community — turn WeChat Pay ON. It could be a significant competitive advantage over other remittance providers who only accept cards.
+
+Do you have Chinese customers in mind, or are you primarily targeting another community first?
+
+Payment collection
+Request payment
+Create an invoice requesting payment on a specific date
+Autocharge customer
+Automatically charge a payment method on file
+Add card
+Schedule charge date
+Additional options
+Customize your invoice with additional fields to better suit your business needs and compliance requirements. Learn more
+
+4:30 AM
+For AMAX remittance, here's what to do on this screen:
+
+Request Payment ✅
+
+Keep this selected — customer pays when they receive the invoice
+Autocharge Customer — leave OFF
+
+You don't have a saved card on file for this customer yet
+Only use this for returning customers later
+Add Card — skip for now
+
+Leave blank unless the customer has already given you their card details directly
+Schedule Charge Date — leave blank
+
+Remittance must be paid immediately, not scheduled
+Additional Options — click to expand and fill:
+
+Memo
+
+Thank you for choosing AMAX Global FX Remittance.
+Your transfer will be processed immediately upon
+payment confirmation.
+Footer
+
+AMAX Global | ABN: XX XXX XXX XXX | support@amaxglobal.com.au
+Custom Fields:
+
+Name	Value
+Purpose of Transfer	Family Support
+Destination Country	Philippines
+You are now ready to finalise and send the invoice ✅
+
+One important question — do you have a customer's email address to send this first invoice to, or do you want to test it by sending to your own email first?
+
+Credit or debit card
+Link
+PayTo
+WeChat Pay CAN I USE THIS ON REMITTANCE
+
+4:42 AM
+Yes! All four are perfectly valid for remittance. Here's a quick breakdown for AMAX:
+
+Credit or Debit Card ✅ Best option
+
+Instant payment confirmation
+Works for everyone
+Visa / Mastercard accepted
+Stripe fee: ~1.7% + $0.30 AUD
+Process transfer immediately after payment
+Link ✅ Good for repeat customers
+
+Stripe's saved payment feature
+Customer saves card/bank once, pays faster next time
+Great for customers who send money regularly
+No extra fee on top of card fee
+PayTo ✅ Great for large transfers
+
+Australian bank account direct debit
+Lower fee than card
+Good for customers sending $500, $1,000, $2,000+
+Near real-time for most Australian banks
+Requires customer to approve via their banking app first
+WeChat Pay ✅ Great for Chinese customers
+
+Essential if targeting Chinese-Australian community
+Customer pays from their WeChat wallet
+Stripe settles AUD to your account
+Slightly higher fee ~2-3%
+My recommendation — turn ALL FOUR ON ✅
+
+More payment options = less abandoned transactions = more revenue for AMAX
+
+The more ways customers can pay you, the better for a remittance business targeting diverse communities in Australia.
+
+Are you ready to send the invoice now?
+
+Skip to content
+1. Settings
+2. Payments
+Payment methods
+Review transactionCreate an experiment
+Stripe will display payment methods dynamically based on order amount, currency, and your configuration. Changes will affect Checkout, Payment Links, and Elements. You can also apply custom targeting rules to individual payment methods or create multiple configurations. Learn more about pricing and integration options.
+All
+21
+Enabled
+10
+Disabled
+11
+Requires action
+0
+Payment method nameTypePopular inRecurring payments
+
+Payment method
+
+Type
+Popular in
+Cards
+Enabled
+Cards
+All regions
+Cartes Bancaires
+Enabled
+Cards
+France
+Alipay
+Enabled
+Wallet
+China
+Apple Pay
+Enabled
+Wallet
+All regions
+Google Pay
+Enabled
+Wallet
+All regions
+Link
+Enabled
+Wallet
+All regions
+MB WAY
+Disabled
+Wallet
+Portugal
+Enable
+WeChat Pay
+Enabled
+Wallet
+China
+Bancontact
+Disabled
+Bank redirect
+Belgium
+Enable
+BLIK
+Disabled
+Bank redirect
+Poland
+Enable
+EPS
+Disabled
+Bank redirect
+Austria
+Enable
+iDEAL | Wero
+Disabled
+Bank redirect
+Netherlands
+Enable
+Przelewy24
+Disabled
+Bank redirect
+Poland
+Enable
+Afterpay / Clearpay
+Disabled
+Buy now, pay later
+Australia, Canada, New Zealand, United Kingdom, United States
+Enable
+Klarna
+Disabled
+Buy now, pay later
+All regions
+Enable
+Zip
+Enabled
+Buy now, pay later
+Australia, United States
+Australia BECS Direct Debit
+Enabled
+Bank debit
+Australia
+SEPA Direct Debit
+Disabled
+Bank debit
+Europe
+Enable
+PayTo
+Enabled
+Real-time payments
+Australia
+Pix
+Disabled
+Real-time payments
+Brazil
+Enable
+UPI
+Disabled
+Real-time payments
+India
+Enable
+Navigated to Dashboard – Amax Global Pty Ltd sandbox – Stripe [Test]
+Sandbox
+You're testing in a sandbox. Changes you make here don't affect your live account.
+Switch to live account
+Amax Global Pty Ltd sandbox
+Amax Global Pty Ltd
+* Home
+* Balances
+* Transactions
+* Customers
+* Product catalog
+Shortcuts
+* Invoices
+* Tax
+Products
+* Payments
+* Billing
+* Reporting
+* More
+* 
+Search
+Setup guide
+Developers
+pmc_1TJt9AQmOnGCbQmS...
+
+Show more
+4:48 AM
+Here's exactly what to enable and disable for AMAX Global FX Remittance:
+
+✅ Keep ENABLED
+
+Method	Why
+Cards	Essential — most customers
+Apple Pay	Easy mobile payments
+Google Pay	Easy mobile payments
+Link	Returning customers
+WeChat Pay	Chinese-Australian community
+PayTo	Australian bank transfers, low fee
+Australia BECS Direct Debit	Some customers prefer bank debit
+Alipay	Chinese community ✅ good addition
+❌ Disable / Leave DISABLED
+
+Method	Why
+Zip	Buy now pay later — not for remittance
+Afterpay/Clearpay	Buy now pay later — not for remittance
+Klarna	Buy now pay later — not for remittance
+Cartes Bancaires	France only — not your market
+All European methods	Bancontact, BLIK, EPS, iDEAL, SEPA, Przelewy24 — not your market
+Pix	Brazil only
+UPI	India only — unless you serve Indian community
+One consideration — UPI
+
+If AMAX serves the Indian-Australian community (AUD → INR transfers), turn UPI ON — it's huge in India and Indian diaspora use it actively.
+
+Do you plan to serve Indian customers as well as Chinese and Filipino?
+
+Skip to content
+1. Settings
+2. Billing
+Invoices
+Appearance, customer notifications, payment methods, and templates.
+GeneralTemplates
+Branding
+Change how your invoice emails, receipts, and payment page look in
+Branding settings
+.
+Business information
+Change the contact information that shows up on your invoices and receipts in
+Business settings
+.
+Invoice numbering
+Invoice PDFs
+Customers can click these links to download PDFs of invoices, receipts, and credit notes.
+Manual tax amount rounding
+Taxes will be rounded for each line item and then subtotaled on invoices and credit notes.
+Taxes will first be subtotaled across all line items and then rounded on invoices and credit notes. May be mandated for sellers in certain locations.
+Default memo
+This will appear in the invoice email, PDF, and payment page.500 characters remaining
+Default footer
+This will appear in the invoice and receipt PDFs.5000 characters remaining
+Default item prices
+Include inclusive tax
+Include inclusive tax
+Controls how item prices appear on the invoice and receipt PDFs.
+Default payment terms
+Payment due
+after invoice is sent
+Payment page
+Include a link to a payment page in the invoice email
+Customers can visit this link to pay, download, and see the status of their invoice.
+Save customer payment information
+When enabled, payment methods used for one-time invoices will be stored for future use. Learn more
+Ask customers before saving their payment information
+Adds a consent checkbox on the payment page. Required by privacy regulations in many regions.
+Default payment methods
+Payment method configuration
+Default
+Config ID: pmc_1TJt9AQmOnGCbQmSCITpEZBv
+Active on invoices and subscriptions
+Cards
+Australia BECS Direct Debit
+Alipay
+Link
+PayTo
+Active only on invoices
+WeChat Pay
+Edit payment methods
+Cancel
+Save
+Adaptive Pricing
+Hosted Invoice Page
+On
+International customers will have the option to pay one-time invoices in their local currency on your payment page.
+Adaptive Pricing settings
+Reminders and retriesFor one-off invoices, you can automatically send reminders when invoices become overdue and retry failed payments.
+Invoice reminders
+Send reminders if a one-off invoice hasn't been paid
+Retries for failed card payments
+Retry up to
+4 times8 times
+within
+1 week2 weeks3 weeks1 month2 months
+Retries for failed bank debits
+Up to 2 retry attempts.
+Learn more
+
+Cancel
+Save
+Invoice finalization grace period
+This setting determines the length of time between when the invoice is first created and when the invoice is finalized and sent to the user. Rules evaluate from top to bottom.
+Change orderAdd rule
+
+Name
+Delay
+Unit
+1
+Account default
+Default
+1
+Hour
+Edit
+Invoice tax information
+Tax ID
+Add any tax IDs you’d like to include in invoice PDFs or email receipts. You can set a default ID, but you can always customize each invoice with different IDs. Once a tax ID is added, the ID and type cannot be changed. To make changes, delete the tax ID and add a new one.
+ID type
+Add another ID
+Cancel
+Save
+Navigated to Invoices – Amax Global Pty Ltd sandbox – Stripe [Test]
+Sandbox
+You're testing in a sandbox. Changes you make here don't affect your live account.
+Switch to live account
+Amax Global Pty Ltd sandbox
+Amax Global Pty Ltd
+* Home
+* Balances
+* Transactions
+* Customers
+* Product catalog
+Shortcuts
+* Invoices
+* Tax
+Products
+* Payments
+* Billing
+* Reporting
+* More
+* 
+Search
+Setup guide
+* 
+* 
+* 
+* 
+* 
+* 
+* 
+* 
+* 
+* 
+* 
+* 
+Developers fill this form
+
+Show more
+5:06 AM
+Here's exactly how to fill every field:
+
+Branding & Business Information
+
+Set up your logo and colours in Branding settings later
+Invoice Numbering — leave default
+
+Invoice PDFs — leave ON ✅
+
+Manual Tax Amount Rounding
+
+Select "Taxes will first be subtotaled across all line items and then rounded"
+Standard for Australian businesses
+Default Memo
+
+Thank you for choosing AMAX Global FX Remittance. 
+Your transfer will be processed immediately upon 
+payment confirmation. For support contact us at 
+support@amaxglobal.com.au
+Default Footer
+
+AMAX Global Pty Ltd | ABN: XX XXX XXX XXX | 
+support@amaxglobal.com.au | www.amaxglobal.com.au | 
+Registered with AUSTRAC as a Remittance Service Provider
+Default Item Prices
+
+Select "Include inclusive tax" — keeps pricing clean for customers
+Default Payment Terms
+
+Set to "Due immediately" — remittance must be paid before transfer
+Payment Page
+
+Include payment page link ✅ ON — makes it easy for customers to pay
+Save Customer Payment Information ✅ ON
+
+Good for repeat customers
+Ask customers before saving ✅ ON
+
+Required under Australian Privacy Act — always get consent
+Default Payment Methods — already looks correct:
+
+✅ Cards
+✅ Australia BECS Direct Debit
+✅ Alipay
+✅ Link
+✅ PayTo
+✅ WeChat Pay (invoices only)
+Adaptive Pricing ✅ ON — excellent for AMAX
+
+International customers can pay in their local currency
+Perfect for remittance business
+Invoice Reminders ✅ ON
+
+Send reminders for unpaid invoices
+Retries for failed card payments
+
+Set to 4 times within 1 week
+Remittance fees are small amounts, quick retry is fine
+Retries for failed bank debits
+
+Leave at default 2 attempts
+Invoice Finalization Grace Period
+
+Leave at 1 hour default
+Invoice Tax Information — Tax ID
+
+Leave blank — remittance is input-taxed, no GST registered for financial supplies
+Click Save ✅
+
+You are now fully configured. Want to send a test invoice to your own email to see how it looks?
+
+invoice numering . 1 sequentially for each customer 2. sequentially across your account
+
+5:08 AM
+For AMAX Global choose:
+
+Option 2 — Sequentially across your account ✅
+
+Why:
+
+Option 1 per customer	Option 2 across account
+Invoice numbers	INV-001 per customer	INV-001, INV-002, INV-003 globally
+AUSTRAC compliance	❌ Can create duplicate numbers	✅ Every invoice uniquely numbered
+AML audit trail	❌ Harder to track	✅ Easy sequential audit trail
+Accounting	❌ Confusing across customers	✅ Clean and simple
+Australian tax law	❌ Not recommended	✅ Best practice
+The key reason for AMAX specifically:
+
+As a remittance business registered with AUSTRAC, you need a clean sequential audit trail of every transaction. If two customers both have Invoice #001, that creates confusion in compliance reporting and AML record keeping.
+
+Global sequential numbering means every single transfer has a unique invoice number — INV-0001, INV-0002, INV-0003 — making it easy to reference in AUSTRAC reports and transaction monitoring.
+
+Select Option 2 and click Save. ✅
+
+Invoice prefix
+
+5:13 AM
+For AMAX Global use:
+
+Invoice Prefix:
+
+AMAX-
+This means your invoices will appear as:
+
+Invoice	Number
+First invoice	AMAX-0001
+Second invoice	AMAX-0002
+Third invoice	AMAX-0003
+Why this prefix is good for AMAX:
+
+✅ Instantly identifiable as AMAX transactions
+✅ Professional appearance for customers
+✅ Easy to search and filter in Stripe dashboard
+✅ Clean for AUSTRAC compliance reporting
+✅ Looks professional on PDF invoices sent to customers
+Type AMAX- into the prefix field and click Save. ✅
+
+Default Payment Terms
+* Set to "Due immediately" — remittance must be paid before transfer have to choose a number
+
+5:17 AM
+For AMAX Global enter:
+
+Number: 0
+
+This means due immediately / due today — payment is due the same day the invoice is sent.
+
+Some Stripe accounts show this as a dropdown, in which case select:
+
+"Due on receipt" or
+"0 days"
+Why 0 days for AMAX:
+
+Remittance works like this:
+
+Customer receives invoice
+Customer pays immediately
+You process the transfer
+You never want to give 7, 14 or 30 days credit — you need the funds before you send the transfer. Setting 0 days enforces this.
+
+Enter 0 and click Save. ✅
+
+retries for failed bank debits enable ACH Direct Debit retries?
+
+5:25 AM
+For AMAX Global — No, do not enable ACH Direct Debit retries.
+
+Why not:
+
+Detail
+ACH	American banking system (USA)
+AMAX	Australian business, AUD transactions
+Your customers	Australian residents sending money overseas
+Relevant to you?	❌ No
+ACH is a US payment system — it has nothing to do with Australian bank debits. Your Australian customers use:
+
+✅ BECS Direct Debit — Australian bank debit system
+✅ PayTo — Australian real-time bank payments
+What to do:
+
+ACH retries ❌ Leave OFF
+BECS Direct Debit retries ✅ Leave ON at default 2 attempts
+Simple rule for AMAX:
+
+If you see anything that says ACH, Federal Reserve, Routing Number — that is American and does not apply to your Australian remittance business.
+
+Click Save and move on. ✅
+
+Invoice finalization grace period
+This setting determines the length of time between when the invoice is first created and when the invoice is finalized and sent to the user. Rules evaluate from top to bottom.
+Change orderAdd rule
+
+Name
+Delay
+Unit
+1
+Account default
+Default
+1
+Hour
+Edit
+Invoice tax information
+Tax ID
+Add any tax IDs you’d like to include in invoice PDFs or email receipts. You can set a default ID, but you can always customize each invoice with different IDs. Once a tax ID is added, the ID and type cannot be changed. To make changes, delete the tax ID and add a new one.
+ID type
+
+Show more
+5:27 AM
+For AMAX Global here's exactly what to do:
+
+Invoice Finalization Grace Period
+
+Leave at 1 Hour default ✅
+Do not add any new rules
+For remittance this is fine — gives you 1 hour to make any corrections before the invoice locks and sends
+Invoice Tax Information — Tax ID
+
+Leave completely blank ❌ do not add anything
+Why leave Tax ID blank:
+
+Detail
+GST registration	Remittance is input-taxed under Division 40 GST Act
+Do you charge GST?	❌ No
+Do you need ABN on invoice?	✅ Yes but that goes in footer, not Tax ID field
+Do you need ACN?	Optional — can add to footer manually
+What belongs in your footer instead:
+
+AMAX Global Pty Ltd | ABN: XX XXX XXX XXX | 
+support@amaxglobal.com.au | 
+Registered AUSTRAC Remittance Provider
+Click Save ✅ — your invoice settings are now fully configured.
+
+Ready to move to the next step?
+
+Invoice tax information
+Tax ID
+Add any tax IDs you’d like to include in invoice PDFs or email receipts. You can set a default ID, but you can always customize each invoice with different IDs. Once a tax ID is added, the ID and type cannot be changed. To make changes, delete the tax ID and add a new one.
+ID type
+Add another ID
+
+5:30 AM
+For AMAX Global:
+
+Leave this section completely blank ❌
+
+Do not add any Tax ID here.
+
+Why:
+
+Question	Answer
+Are you registered for GST?	❌ No — remittance is input-taxed
+Do you charge GST to customers?	❌ No
+Do you need a Tax ID on invoices?	❌ No
+What about your ABN?	✅ Put it in the footer only
+The only ID that matters for AMAX is your ABN — and that goes in your invoice footer, not here.
+
+If you add a Tax ID here it implies you are charging tax, which you are not.
+
+Click Save ✅ and move on.
+
+What is the next screen you are seeing?
+
+Description
+Describe the types of products or services you’ll offer.
+
+5:35 AM
+For AMAX Global type this:
+
+International money transfer and foreign exchange 
+remittance services. We provide fast, secure, and 
+competitive rate transfers from Australia to 
+international destinations including Philippines, 
+China, and other countries across Asia and the 
+Pacific region.
+Then click Save ✅
+
+This description is good because it:
+
+✅ Clearly explains what AMAX does
+✅ Mentions key destination countries
+✅ Professional tone for Stripe's compliance review
+✅ Helps Stripe understand your business for risk assessment
+✅ Covers you for AUSTRAC purposes
+What is the next screen?
+
+Add public details for customers
+This information may be visible in payment statements, invoices, and receipts.
+Statement descriptor
+To prevent chargebacks and disputes, your statement descriptor must be similar to your business name or URL. View support article
+Statement descriptor
+A$XX.XX
+Your custom descriptor
+A$XXX.XX
+A$XX.XX
+Your statement descriptor shows up on your customers’ bank or credit card statements. It should be 5–22 characters.
+Shortened descriptorOptional
+This appears on your customers’ statements when you add descriptors for individual products. It should be 2–10 characters.
+
+Show more
+5:37 AM
+For AMAX Global fill it in like this:
+
+Statement Descriptor
+
+AMAX GLOBAL REMIT
+(16 characters — within the 5-22 limit)
+
+Shortened Descriptor
+
+AMAX FX
+(7 characters — within the 2-10 limit)
+
+Why these descriptors matter for AMAX:
+
+Risk	Solution
+Customer forgets they paid you	"AMAX GLOBAL REMIT" is clear and recognisable
+Customer disputes charge (chargeback)	Descriptor matches your business name
+Bank fraud detection flags payment	Clear descriptor reduces false flags
+AUSTRAC audit trail	Consistent descriptor across all transactions
+What customer will see on their bank statement:
+
+AMAX GLOBAL REMIT    $4.99
+Important: This must be similar to your registered business name "AMAX Global Pty Ltd" — which it is ✅
+
+Type these in and click Save ✅
+
+What is the next screen?
+
+Activate your account
+Verify your business
+Add your bank
+Secure your account
+Add extras
+Review and submit
+Add an account for payouts
+We'll send earnings you receive to this account.
+BSB (Bank Service Branch code)
+Account number
+Confirm account number
+Select your payout schedule
+Set a schedule to automatically receive payouts, or send manual payouts via the API or Dashboard. You can update your payout schedule at any time in settings. __View docs__
+Manual
+You can manually initiate a payout from Stripe whenever your funds are available.
+Automatic every
+dayweekmonth
+on
+MondayTuesdayWednesdayThursdayFriday
+When choosing a weekly or monthly schedule, you can specify your preferred day for payouts to your bank account.
+I agree to this Direct Debit Request and the __Direct Debit Request Service Agreement__, and authorize Stripe Payments Australia Pty Ltd (ACN 160 180 343, Direct Debit User ID number 507156, “Stripe”) to debit my account through the Bulk Electronic Clearing System (BECS) in the event that the net activity in my Stripe account on any day is negative or for any other reason relating to the Stripe Services. I certify that I am either an account holder or an authorized signatory on the account listed above. I certify that the account listed above is not restricted from entering a direct debit agreement (which may be applicable to certain trust accounts).
+Continue
+
+Show more
+5:41 AM
+Here's exactly how to fill this form:
+
+BSB
+
+Enter your Australian business bank account BSB
+Format: XXX-XXX (6 digits)
+Use your business account not personal
+Account Number
+
+Enter your business bank account number
+Confirm it again in the second field
+Recommended Banks for AMAX:
+
+Bank	Why Good
+ANZ	Strong FX and international banking
+Westpac	Good for remittance businesses
+NAB	Business friendly
+CBA	Most common, easy setup
+Payout Schedule — choose:
+
+Automatic every — Daily ✅
+
+Automatic every → Day
+Why daily for AMAX:
+
+Detail
+Cash flow	You need funds available daily to process transfers
+Remittance model	Customer pays → you send transfer → you need funds fast
+Weekly/Monthly	Too slow — you may not have enough float to process transfers
+Manual	Risky — easy to forget, bad for cash flow
+Direct Debit Agreement
+
+✅ Tick the checkbox to agree
+This just allows Stripe to debit your account if your balance goes negative
+Then click Continue ✅
+
+What is the next screen?
+
+I DONT HAVE BUSINESS ACCOUNT YET
+
+5:45 AM
+No problem! Here are your options:
+
+Option 1 — Use your personal account temporarily
+
+You can enter your personal BSB and account number now
+Get your business account set up later
+Update Stripe payout account once business account is ready
+⚠️ Not ideal long term but works to get started
+Option 2 — Open a business account first (recommended)
+
+Best banks for a remittance business in Australia:
+
+Bank	Account	Why Good for AMAX
+ANZ	ANZ Business Advantage	Strong FX capabilities
+Westpac	Business One	Good for international transfers
+NAB	Business Everyday	Low fees, easy setup
+CBA	Business Transaction	Most widely used, fast setup
+Wise Business	Wise Business Account	✅ Best for remittance — holds multiple currencies
+My recommendation for AMAX:
+
+Open a Wise Business Account first because:
+
+✅ Holds AUD, USD, PHP, CNY all in one account
+✅ Real mid-market exchange rates
+✅ Perfect for a remittance business
+✅ Can open online in 1-2 days
+✅ Australian BSB and account number provided
+✅ Very low fees
+What to do right now:
+
+Go to wise.com/au/business
+Open business account online
+Come back to Stripe and enter the BSB/account number Wise gives you
+Want help with anything else while you wait for the business account?
+
+I NEED TO PASS AUSTRAC THATS THE PURPOSE
+
+5:45 AM
+Understood — AUSTRAC registration is critical for AMAX. Here is everything you need:
+
+What AUSTRAC Requires for a Remittance Business:
+
+Step 1 — Register as a Remittance Sector Entity
+
+Go to austrac.gov.au
+Register as an Independent Remittance Dealer (IRD)
+Cost: $300 AUD registration fee
+Must do this before you process any transfers
+Documents AUSTRAC Will Ask For:
+
+Document	Detail
+ABN	Must be active
+ACN	If Pty Ltd company
+Proof of identity	Passport or drivers licence
+Business address	Physical address required
+Business bank account	Must be in business name
+AML/CTF Program	Written compliance program
+Business plan	Describing your remittance service
+The Most Important One — AML/CTF Program
+
+This is a written document covering:
+
+✅ How you identify customers (KYC)
+✅ How you verify customer identity
+✅ How you monitor transactions
+✅ How you report suspicious transactions
+✅ How you keep records
+✅ Staff training procedures
+✅ Risk assessment of your customers and countries
+Why You Need a Business Bank Account for AUSTRAC:
+
+Requirement	Detail
+Separate business account	AUSTRAC requires business funds separate from personal
+Transaction monitoring	Must show clear audit trail
+Suspicious matter reports	Must be filed from business account activity
+Record keeping	7 years minimum
+AUSTRAC Will Also Require:
+
+✅ DIFAT — Designated international funds transfer agent registration
+✅ KYC procedures — Know Your Customer identity verification
+✅ Transaction monitoring system — Flag suspicious transactions
+✅ Threshold transaction reports — Any cash transaction over $10,000 AUD
+✅ Suspicious matter reports (SMR) — Report anything unusual
+Recommended Order of Steps for AMAX:
+
+1. Register Pty Ltd company (ASIC) ✅
+2. Get ABN ✅
+3. Open business bank account (Wise or major bank)
+4. Write AML/CTF Program
+5. Register with AUSTRAC
+6. Complete Stripe setup
+7. Start processing transfers
+Do you already have your AML/CTF Program written? This is the hardest part and the most important for AUSTRAC approval. I can help you draft it if needed.
+
+I ALSO NEED DCE LICENSE THEREFORE I AM BUILDING THIS FINTECH PLATFORM
+
+5:48 AM
+Excellent — so AMAX is a full fintech platform covering both Remittance and DCE (Digital Currency Exchange). This is a serious regulatory undertaking. Here is the full picture:
+
+What DCE Means:
+
+Digital Currency Exchange — buying and selling cryptocurrency (Bitcoin, Ethereum etc.) for AUD or other fiat currencies.
+
+AUSTRAC DCE Registration Requirements:
+
+Requirement	Detail
+Register as DCE with AUSTRAC	Mandatory before operating
+AML/CTF Program	Must cover BOTH remittance AND crypto
+KYC/KYB procedures	Know Your Customer + Know Your Business
+Transaction monitoring	Both fiat and crypto transactions
+Suspicious matter reports	Crypto AND remittance
+Registration fee	$3,000 AUD for DCE
+Combined AMAX Regulatory Stack:
+
+License/Registration	Authority	Cost	Timeline
+Pty Ltd company	ASIC	~$600	1-2 days
+ABN	ATO	Free	Same day
+TFN	ATO	Free	Same day
+Remittance IRD	AUSTRAC	$300	4-8 weeks
+DCE Registration	AUSTRAC	$3,000	4-8 weeks
+AFSL or Exemption	ASIC	$10,000+	6-12 months
+The Big One — AFSL
+
+For a full fintech platform you may also need an Australian Financial Services Licence depending on your services:
+
+Service	AFSL Required?
+Remittance only	❌ Not required
+Crypto exchange only	❌ Not currently required
+Crypto as financial product	✅ Yes
+Investment products	✅ Yes
+Financial advice	✅ Yes
+Your AML/CTF Program Must Cover:
+
+Part A — Adoption and oversight
+
+Board approval
+Compliance officer appointment
+Risk assessment
+Part B — Customer identification
+
+KYC for individuals
+KYB for businesses
+Enhanced due diligence for high risk
+For Remittance specifically:
+
+✅ Sender identity verification
+✅ Recipient details
+✅ Purpose of transfer
+✅ Source of funds
+✅ Threshold transaction reports ($10,000+)
+✅ International funds transfer instructions (IFTI) reporting
+For DCE specifically:
+
+✅ Wallet address verification
+✅ Blockchain transaction monitoring
+✅ Crypto to fiat conversion records
+✅ Travel rule compliance
+✅ Sanctions screening
+Technology Stack You Need for AMAX Fintech:
+
+Component	Purpose	Tool
+KYC verification	Identity verification	GreenID, Stripe Identity, or Onfido
+Transaction monitoring	AML screening	ComplyAdvantage or Napier
+Sanctions screening	OFAC, UN lists	ComplyAdvantage
+Crypto compliance	Blockchain monitoring	Chainalysis or Elliptic
+Record keeping	7 year retention	Your database + backups
+Reporting	AUSTRAC reports	AUSTRAC ROII portal
+Recommended Build Order for AMAX:
+
+Phase 1 — Foundation
+├── Register Pty Ltd ✅
+├── Get ABN ✅
+├── Open business bank account
+└── Write AML/CTF Program
+
+Phase 2 — Regulatory
+├── Register Remittance IRD with AUSTRAC
+├── Register DCE with AUSTRAC
+└── Assess AFSL requirement with lawyer
+
+Phase 3 — Technology
+├── Build KYC onboarding flow
+├── Integrate Stripe for payments
+├── Build FX rate engine
+├── Build crypto exchange engine
+└── Integrate transaction monitoring
+
+Phase 4 — Launch
+├── Test with sandbox accounts
+├── AUSTRAC compliance review
+└── Go live
+Most Important Advice:
+
+You need a financial services lawyer and a compliance consultant before going live. AUSTRAC penalties for operating without registration are severe — up to $186,000 AUD per day for individuals and much more for companies.
+
+Would you like me to help you:
+
+Draft the AML/CTF Program for AMAX?
+Design the KYC onboarding flow for the platform?
+Build the technical architecture for the fintech platform?
+DO I NEED TO HAVE THE FINTECH PLATFORM BEFORE I SUBMIT AUSTRAC REGISTRATION..IT IS UNDER REVIEW AND THEY NEED AML CTF AND OTHER QUESTIONAIRES
+
+5:51 AM
+No — you do NOT need the platform built before submitting to AUSTRAC. Here is exactly what you need:
+
+What AUSTRAC Actually Needs at Registration:
+
+They need to see that you HAVE a compliance framework — not a live platform.
+
+What You Submit to AUSTRAC:
+
+Document	Built Platform Needed?
+AML/CTF Program	❌ No — just a written document
+Business description	❌ No — just explain what you plan to do
+KYC procedures	❌ No — just written policies
+Risk assessment	❌ No — just written document
+Ownership structure	❌ No — just ASIC company details
+Questionnaires	❌ No — just answer the questions
+The AUSTRAC Registration Process:
+
+Step 1 — Submit online application
+         ↓
+Step 2 — Pay fee ($300 IRD / $3,000 DCE)
+         ↓
+Step 3 — Submit AML/CTF Program
+         ↓
+Step 4 — Answer questionnaires
+         ↓
+Step 5 — AUSTRAC reviews (4-8 weeks)
+         ↓
+Step 6 — Registration approved
+         ↓
+Step 7 — NOW build and launch platform
+The Questionnaires AUSTRAC Will Ask:
+
+About your business:
+
+What remittance services will you offer?
+What countries will you send money to?
+What is your expected transaction volume?
+Who are your target customers?
+How will you acquire customers?
+About your AML/CTF:
+
+How will you identify customers?
+How will you verify customer identity?
+How will you monitor transactions?
+How will you report suspicious matters?
+Who is your AML/CTF compliance officer?
+About your risk assessment:
+
+What are your high risk countries?
+What are your high risk customer types?
+What are your high risk transaction types?
+How will you manage these risks?
+About ownership:
+
+Who owns AMAX Global Pty Ltd?
+Are there any beneficial owners over 25%?
+Do any owners have criminal history?
+What You Need RIGHT NOW for AUSTRAC:
+
+Document	Status
+ABN	✅ Have it
+ACN	✅ Have it (Pty Ltd)
+AML/CTF Program Part A	❌ Need to write
+AML/CTF Program Part B	❌ Need to write
+Risk Assessment	❌ Need to write
+KYC Procedures	❌ Need to write
+Compliance Officer appointment	❌ Need to nominate
+Business description	❌ Need to write
+The Most Critical Document — AML/CTF Program
+
+This is what AUSTRAC scrutinises most. It must cover:
+
+Part A:
+
+Who is responsible for AML/CTF compliance
+How you will train staff
+How you will audit your program
+Board/director sign off
+Part B — Customer identification for remittance:
+
+How you collect customer name, DOB, address
+How you verify identity documents
+What documents you accept (passport, drivers licence)
+Enhanced due diligence for high risk customers
+Politically exposed persons (PEP) screening
+Sanctions list screening
+Part B — Customer identification for DCE:
+
+Same as above plus
+How you verify crypto wallet ownership
+Travel rule compliance
+Blockchain monitoring procedures
+My Strong Recommendation:
+
+Let me help you write the AML/CTF Program right now. This is the document that will determine whether AUSTRAC approves or rejects your application.
+
+Shall I draft the full AML/CTF Program for AMAX Global covering both remittance and DCE?
+
+DO I NEED A BUSINESS BANK ACCOUNT NOW
+
+5:52 AM
+For AUSTRAC registration specifically — No, not immediately. But here is the full picture:
+
+For AUSTRAC Registration:
+
+Requirement	Business Bank Account Needed?
+Submit application	❌ No
+AML/CTF Program	❌ No
+Answer questionnaires	❌ No
+Pay AUSTRAC fee	⚠️ Can use personal card
+Get approved	❌ No
+However — You WILL Need It Before:
+
+Activity	Business Account Needed?
+Receiving customer payments	✅ Yes
+Stripe payouts	✅ Yes
+Processing actual transfers	✅ Yes
+Opening Stripe live account	✅ Strongly recommended
+Showing AUSTRAC you are operational	✅ Yes
+Practical Recommendation:
+
+Right now → Focus on AUSTRAC documents
+Parallel → Open business bank account
+Before go live → Must have business account
+Fastest Business Account to Open:
+
+Bank	Time to Open	Best For
+Wise Business	1-2 days online	✅ Best for AMAX — multi-currency
+Airwallex	1-2 days online	✅ Great for fintech, FX
+ANZ	3-5 days	Traditional banking
+NAB	3-5 days	Traditional banking
+My Recommendation:
+
+Open Wise Business or Airwallex account today in parallel while you work on AUSTRAC documents. Both are:
+
+✅ Online application
+✅ No branch visit needed
+✅ Multi-currency
+✅ Perfect for remittance and DCE
+✅ Give you Australian BSB and account number
+✅ Fast approval
+What to do today:
+
+1. Start writing AML/CTF Program ← most urgent
+2. Apply for Wise Business or Airwallex account
+3. Continue AUSTRAC questionnaires
+4. Complete Stripe setup
+Shall I start drafting your AML/CTF Program now? That is the most urgent thing you need for AUSTRAC approval.
+
+SHALL I SHOW AUSTRAC THE REMITTANCE WEBSITE I BUILT FOR THAT
+
+5:53 AM
+Yes — absolutely show AUSTRAC your website! It actually helps your application significantly. Here is why:
+
+Why Showing Your Website Helps AUSTRAC:
+
+Reason	Detail
+Shows you are serious	Not just an idea — you have built something
+Demonstrates business legitimacy	Real website = real business intent
+Shows compliance thinking	If your site has T&Cs, privacy policy, AML notices
+Builds credibility	AUSTRAC sees hundreds of applications — stand out
+Proves operational readiness	Shows you understand the industry
+What AUSTRAC Wants to See on Your Website:
+
+Element	Required?
+Business name clearly displayed	✅ Yes
+Services clearly described	✅ Yes
+Contact details	✅ Yes
+Terms and Conditions	✅ Yes
+Privacy Policy	✅ Yes
+AML/CTF notice	✅ Yes
+AUSTRAC registration number	✅ After approval — add immediately
+Complaints procedure	✅ Yes
+Fee disclosure	✅ Yes
+What to Add to Your Website Before Submitting:
+
+Footer must show:
+
+AMAX Global Pty Ltd | ABN: XX XXX XXX XXX
+Registered with AUSTRAC as a Remittance 
+Service Provider and Digital Currency Exchange
+AUSTRAC Registration No: XXXXXXXXX
+Critical Pages You Need:
+
+1. Terms and Conditions
+
+Service description
+Fee structure
+FX rate disclosure
+Cancellation policy
+Liability limitations
+2. Privacy Policy
+
+How you collect customer data
+How you store it
+7 year retention policy
+Australian Privacy Act compliance
+3. AML/CTF Notice
+
+That you are required to collect ID
+That you report to AUSTRAC
+That you screen against sanctions lists
+That you may refuse suspicious transactions
+4. Complaints Page
+
+How customers lodge complaints
+Your response timeframe
+External dispute resolution (EDR) scheme
+External Dispute Resolution — Important:
+
+Before going live you must join an EDR scheme:
+
+Scheme	Detail
+AFCA	Australian Financial Complaints Authority
+Membership fee	~$375 AUD per year
+Required for	Remittance and DCE businesses
+Website	afca.org.au
+What to Do Right Now:
+
+1. Make sure website is live and working
+2. Add Terms and Conditions page
+3. Add Privacy Policy page
+4. Add AML/CTF notice
+5. Add complaints procedure
+6. Then reference website URL in AUSTRAC application
+Is your website currently live? Share the URL and I can review what pages you still need to add before submitting to AUSTRAC.
+
+PAYMENT IS NOT VALID YET
+
+5:54 AM
+That is completely fine and normal. Here is what to tell AUSTRAC:
+
+What to Say in Your AUSTRAC Application:
+
+Our payment system is currently in development 
+and testing phase. We are using Stripe payment 
+gateway which will be fully configured prior 
+to commencing operations. We will not process 
+any real customer transactions until our 
+AUSTRAC registration is approved.
+This is Actually the CORRECT Approach:
+
+Approach	AUSTRAC View
+Processing payments before registration	❌ Illegal — heavy penalties
+Building platform, not yet live	✅ Correct and responsible
+Showing sandbox/test environment	✅ Shows due diligence
+Waiting for approval before going live	✅ Exactly what they want
+What AUSTRAC Cares About at This Stage:
+
+NOT whether your payment is live
+        ↓
+YES whether you have a compliance framework
+        ↓
+YES whether you understand AML/CTF obligations
+        ↓
+YES whether you have written policies
+        ↓
+YES whether you are registered before operating
+Your Current Status is Actually Good:
+
+Item	Status
+Company registered	✅
+ABN active	✅
+Website built	✅
+Stripe setup in progress	✅ Sandbox/test
+Payment not yet live	✅ Correct — waiting for approval
+AUSTRAC application in review	✅
+What to Focus on Right Now:
+
+Priority 1 → Complete AML/CTF Program
+Priority 2 → Answer AUSTRAC questionnaires
+Priority 3 → Join AFCA (dispute resolution)
+Priority 4 → Open business bank account
+Priority 5 → Complete Stripe live setup
+Priority 6 → Go live ONLY after AUSTRAC approves
+Most Urgent Question:
+
+Have you written your AML/CTF Program yet? That is the single most important document for your AUSTRAC approval. Shall I draft it for you now?
+
+
+AMAX-V2__4_.zip
+zip
+
+
+AMAX_GLOBAL_AML_CTF_Program_v1.0.docx
+docx
+
+
+DCE_Questionnaire_AMAX_GLOBAL_Filled.docx
+docx
+
+
+RSP_Questionnaire_AMAX_GLOBAL_Filled.docx
+docx
+
+How to write the AML CTF, AND HOW TO FILL THE FORMS? PLESAE REFER TO THE AMAX FILE ATTACHED.
+
+6:23 AM
+Let me read all your documents first before giving you proper guidance.
+
+
+Ran 2 commands, viewed a file
+Ran 2 commands, viewed a file
+I've read all three documents thoroughly. Here is my full assessment:
+
+Overall Assessment — Your Documents Are Very Strong ✅
+Your AML/CTF Program, DCE Questionnaire, and RSP Questionnaire are professionally written and comprehensive. Here is a detailed review of each:
+
+AML/CTF Program — What's Good and What Needs Attention
+What is excellent:
+
+All 15 sections are present and well-structured
+Risk assessment table is detailed and covers all required categories
+Transaction monitoring rules are specific and practical
+Travel Rule section correctly references the 31 March 2026 deadline
+IVTS reporting obligations correctly included
+Record keeping is correctly set at 7 years throughout
+Governance structure is clear with Qin Xiong as both Director and Compliance Officer
+Items to fix or strengthen:
+
+1. Contact email looks personal — andromedaxy123@gmail.com should be changed to a professional business email before submitting to AUSTRAC:
+
+compliance@amaxglobal.com.au
+or similar. A Gmail address on a compliance document looks unpopular to a regulator.
+
+2. Question 2 on both questionnaires is unchecked — You have left "Attached" unchecked for third-party arrangements. Your Question 5 response mentions you will use third-party KYC and payment providers but says agreements will be provided "upon request." AUSTRAC may push back on this. You should either attach a draft third-party provider agreement or add a more detailed written commitment.
+
+3. Signature and date are blank — Section 15 of the AML/CTF Program has blank signature and date lines. You must physically sign and date this before submitting.
+
+4. Police certificate is checked but not attached — Question 3 on both questionnaires is ticked but the actual police certificate for Qin Xiong must be attached. If you don't have it yet, get it immediately from NSW Police or the Australian Federal Police — it must be issued within the last 6 months.
+
+5. Website/platform URL is missing — Neither questionnaire mentions your actual website URL. AUSTRAC may ask for it. Add it to Question 8 or Question 9 responses.
+
+DCE Questionnaire — Status
+Question	Status	Action Needed
+Q1 — AML/CTF documents	✅ Ticked	Attach the AML/CTF document
+Q2 — Third party arrangements	⚠️ Unchecked	Either attach draft agreement or strengthen Q5 response
+Q3 — Police certificate	✅ Ticked	Must physically attach the certificate
+Q4 — Crypto ATMs	✅ No	Correct
+Q5 — Other comments	✅ Good response	Add website URL
+Q6 — Trust/Partnership	✅ N/A	Correct
+Q7 — Business address	✅ Complete	Good
+Q8 — Business description	✅ Excellent	Add website URL
+Q9 — Geographical link	✅ Excellent	Good
+Declaration	⚠️ Signed/dated	Confirm date matches submission date
+RSP Questionnaire — Status
+Identical structure to DCE — same issues apply. Both questionnaires are well answered with consistent information, which is good.
+
+Three Most Urgent Actions Before Submitting:
+1. Get your police certificate NOW
+
+Apply at acic.gov.au (Australian Criminal Intelligence Commission)
+Takes 1-15 business days
+Must be issued within 6 months of application
+This is the most common reason for AUSTRAC delays
+2. Change your email to a professional business address
+
+Register compliance@amaxglobal.com.au before submitting
+Update it in the AML/CTF Program Section 2
+3. Sign and date the AML/CTF Program
+
+Print Section 15, sign it, scan it back in
+Date must match or be close to your submission date
+Your documents are genuinely well prepared. The substance and content are strong — these are the fixes needed to make them submission-ready. Would you like me to produce an updated version of the AML/CTF Program with the corrections applied?
+
+
+Claim offer AMAX-V2 (4).zip Zip Archive AMAX_GLOBAL_AML_CTF_Program_v1.0.docx Document DCE_Questionnaire_AMAX_GLOBAL_Filled.docx Document is there any gaps in the app design with reference to the regulation , or is there any gaps in the forms Short answer: your AML/CTF program
+
+pasted
+
+FYI  cross check and verify and then give me your summary of solutions as a comparion
+
+6:43 AM
+I've read everything thoroughly — your existing documents plus the full analysis from the other AI. Let me give you my independent assessment and comparison.
+
+My Verdict: The Other AI's Analysis is Mostly Good But Has Issues
+Where the Other AI Got It Right ✅
+Structural gaps it correctly identified:
+
+The Part A / Part B separation point is valid. AUSTRAC does expect this structure and your v1.0 mixes them together. This is an easy fix and worth doing.
+
+The third-party risk management gap is real and important. Your program mentions KYC and payment providers but has no formal oversight framework for them. AUSTRAC will ask about this.
+
+The SMR decision framework gap is legitimate. You need documented decision logic, not just a statement that the Compliance Officer forms suspicion.
+
+The forms gap is correct. You don't have standalone KYC forms, ECDD templates, or SMR worksheets. These are operationally necessary.
+
+Where the Other AI Overstated or Got It Wrong ⚠️
+1. "Not regulator-proof" is too harsh for your stage
+
+Your v1.0 is genuinely strong for a startup DCE/RSP applicant. AUSTRAC does not expect a fully operational system at registration stage — they expect evidence of intent and a credible framework. Your documents already demonstrate both.
+
+2. The "Part C — App Compliance" section it generated is premature
+
+The other AI added a whole section on app/system logic into your AML/CTF Program document itself. This is wrong. Your AML/CTF Program is a policy document — system screenshots and backend logic are evidence you provide separately or after approval. Mixing them into the policy document actually weakens it by making unverifiable claims.
+
+3. The backend database schema it provided is development guidance, not compliance documentation
+
+Useful for your developers, yes. But it does not belong in your AUSTRAC submission and could create a compliance liability if you submit it and then build something different.
+
+4. The "9.5/10" rating is inflated
+
+Your v1.0 is genuinely about 7.5/10. The rewritten version it produced in the canvas is probably 8.5/10 — not 9.5. Reaching true audit-readiness requires operational evidence, not just better-written policies.
+
+5. It missed your most critical immediate gap
+
+Neither the analysis nor the rewrite flagged the most urgent issue — your Gmail address. andromedaxy123@gmail.com as your AML/CTF Compliance Officer contact on a regulatory submission is a credibility problem that could delay your application before AUSTRAC even reads the substance.
+
+My Comparison Table
+Issue	Other AI	My Assessment
+Part A/B separation	✅ Correct	✅ Agree — fix it
+Third-party risk framework	✅ Correct	✅ Agree — add it
+SMR decision framework	✅ Correct	✅ Agree — add it
+Forms (KYC, ECDD, SMR)	✅ Correct	✅ Agree — create them
+Travel Rule gap	✅ Correct	✅ Agree — needs workflow
+App logic in AML/CTF Program	❌ Wrong approach	Keep system logic separate from policy document
+Backend database schema in submission	❌ Wrong	Development artefact only, not for AUSTRAC
+Gmail address issue	❌ Missed entirely	🚨 Fix this first — most urgent
+Police certificate missing	❌ Missed	🚨 Fix this second — blocks submission
+Overall rating (9.5/10)	❌ Inflated	Honest rating is 7.5/10 v1.0, 8.5/10 after fixes
+Submission readiness assessment	⚠️ Overly harsh	Your foundation is solid, needs targeted additions
+My Prioritised Fix List (in order)
+Do these before resubmitting anything to AUSTRAC:
+
+Change Gmail to business email — compliance@amaxglobal.com.au — update everywhere in the document
+Get Qin Xiong's police certificate — apply at acic.gov.au immediately, takes up to 15 business days
+Sign and date Section 15 of the AML/CTF Program
+Add Part A / Part B headers — structural fix, takes 30 minutes
+Add Third-Party Risk Management section — one new page covering vendor due diligence and monitoring
+Add SMR Decision Framework — a simple checklist, half a page
+Expand Travel Rule into a decision flowchart — what happens when data is missing
+Create the four forms — KYC Individual, KYC Business, ECDD, SMR Worksheet — as separate documents
+Add website URL to both questionnaires Question 8/9 responses
+Do NOT do:
+
+Add system/app logic or database schemas into your AML/CTF Program document
+Claim specific technology vendors you haven't contracted yet
+Over-engineer the document — AUSTRAC wants credibility, not complexity
+Would you like me to produce the updated AML/CTF Program v2.0 as a Word document with all the correct fixes applied — clean, professional, and submission-ready?
+
+yes email is info@amaxglobal.com.au
+
+6:44 AM
+Let me build the updated AML/CTF Program v2.0 now with all fixes applied.
+
+
+Ran 3 commands
+Ran 3 commands
+Good — now I'll build the v2.0 from scratch using docx-js with all fixes applied cleanly.
+
+
+Ran 5 commands, edited 2 files, created a file
+Ran 5 commands, edited 2 files, created a file
+Here is your upgraded AML/CTF Program v2.0. Here is a summary of every change made from v1.0:
+
+What changed from v1.0 to v2.0:
+
+The Gmail address has been replaced with info@amaxglobal.com.au throughout the document, including the cover page, business profile table, and footer on every page.
+
+The document now has a clear Part A / Part B structure with distinct headers — exactly as AUSTRAC expects. Part A covers all systems and controls, Part B covers customer identification procedures.
+
+A new Risk Scoring Methodology section (Section 4.2) has been added, explaining the 1–3 scoring logic and how total scores map to Low/Medium/High risk ratings.
+
+A new Third-Party Risk Management section (Section 5) has been added covering vendor onboarding due diligence, contractual requirements, and ongoing monitoring obligations.
+
+The SMR Decision Framework (Section 7) now includes a structured 6-step checklist with documentation requirements at each step.
+
+The Travel Rule section (Section 8) has been converted from a general statement into a proper decision logic table covering five scenarios — complete data, missing data, partial data, non-compliant counterparty, and unhosted wallets.
+
+The website www.amaxglobal.com.au has been added to the Business Profile table.
+
+A Version History table has been added recording both v1.0 and v2.0 with dates and details of changes.
+
+Still to do before submitting:
+
+Sign and date Section 22
+Attach Qin Xiong's police certificate
+Create the four supporting forms (KYC Individual, KYC Business, ECDD, SMR Worksheet) — want me to build those next?
+
+Amax global aml ctf program v2 0
+Document · DOCX 
+
+You are out of free messages until 8:00 AM
+Upgrade
+
+
+
+Claude is AI and can make mistakes. Please double-check responses.
+Amax global aml ctf program v2 0 · DOCX
+
+
+
+
+
+
+
