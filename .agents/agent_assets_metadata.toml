@@ -6,3 +6,9 @@ id = "A_dYoZcASOUpKPPwjW7X-"
 uri = "file://amax_logo.jpg"
 type = "image"
 title = "AMAX Global Logo (JPEG)"
+
+[[outputs]]
+id = "xt93E6-7gkBghAUQ15zKF"
+uri = "file://amax_global_logo.jpg"
+type = "image"
+title = "AMAX Logo (from website)"
