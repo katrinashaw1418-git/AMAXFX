@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +8,7 @@ import { useLocation } from "wouter";
 import { useFxRate } from "@/hooks/use-fx-rates";
 import {
   ArrowRightLeft, Wallet, Shield, Phone,
-  MessageSquare, X, RefreshCw, Bitcoin,
+  MessageSquare, X, RefreshCw, Bitcoin, AlertTriangle, Lock, ChevronRight,
 } from "lucide-react";
 import YtdRateChart from "@/components/fx/ytd-rate-chart";
 import CurrencyBalances from "@/components/dashboard/currency-balances";
@@ -43,8 +44,55 @@ export default function Dashboard() {
   const { data: chartRate, isLoading: chartLoading } = useFxRate(chartFrom, chartTo);
   const chartRateValue = chartRate ? parseFloat((chartRate as any).rate) : 1;
 
+  const { data: kycProfile } = useQuery<{
+    kycProfileComplete: boolean;
+    accountFrozen: boolean;
+    riskLevel?: string;
+  }>({
+    queryKey: ["/api/kyc/profile"],
+  });
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
+
+      {/* ── KYC Hard Stop Banner ── */}
+      {kycProfile && !kycProfile.kycProfileComplete && (
+        <div className="rounded-lg border-2 border-amber-400 bg-amber-50 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="font-semibold text-amber-900">Identity Verification Required</p>
+              <p className="text-sm text-amber-800 mt-0.5">
+                Australian law (AML/CTF Act 2006) requires us to verify your identity before you can send, receive, or exchange funds.
+                Your account is in read-only mode until verification is complete.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              className="bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+              onClick={() => navigate("/compliance")}
+            >
+              Complete KYC <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Frozen Account Banner ── */}
+      {kycProfile?.accountFrozen && (
+        <div className="rounded-lg border-2 border-red-400 bg-red-50 p-4">
+          <div className="flex items-start gap-3">
+            <Lock className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-semibold text-red-900">Account Temporarily Suspended</p>
+              <p className="text-sm text-red-800 mt-0.5">
+                Your account has been suspended pending a compliance review. All transactions are paused.
+                Please contact <a href="mailto:info@amaxglobal.com.au" className="underline">info@amaxglobal.com.au</a> for assistance.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between flex-wrap gap-3">

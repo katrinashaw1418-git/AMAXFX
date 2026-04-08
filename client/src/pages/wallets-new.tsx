@@ -167,6 +167,9 @@ export default function Wallets() {
   const [withdrawAccountNumber, setWithdrawAccountNumber] = useState('');
   const [withdrawPayId, setWithdrawPayId] = useState('');
   const [withdrawPayIdName, setWithdrawPayIdName] = useState('');
+  const [purposeOfTransfer, setPurposeOfTransfer] = useState('');
+  const [beneficiaryName, setBeneficiaryName] = useState('');
+  const [beneficiaryAddress, setBeneficiaryAddress] = useState('');
   const [depositSubmitted, setDepositSubmitted] = useState<{ referenceCode: string; currency: string; amount: string; method: string } | null>(null);
   const [cardClientSecret, setCardClientSecret] = useState<string | null>(null);
   const [cardLoading, setCardLoading] = useState(false);
@@ -478,6 +481,11 @@ export default function Wallets() {
       return;
     }
 
+    if (!purposeOfTransfer) {
+      toast({ title: "Purpose Required", description: "Please select the purpose of transfer (AML/CTF requirement).", variant: "destructive" });
+      return;
+    }
+
     if (withdrawMethod === 'bank_transfer') {
       if (!withdrawBankName || !withdrawAccountNumber) {
         toast({ title: "Missing Bank Details", description: "Please enter account holder name and account number.", variant: "destructive" });
@@ -499,6 +507,7 @@ export default function Wallets() {
       currency: selectedWallet.currency,
       amount: amount,
       withdrawMethod,
+      purposeOfTransfer,
       ...(withdrawMethod === 'bank_transfer' ? {
         bankAccountName: withdrawBankName,
         bankBsb: withdrawBsb,
@@ -1285,6 +1294,29 @@ export default function Wallets() {
                   <SelectContent>
                     <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
                     <SelectItem value="payid">⚡ PayID / NPP (AUD instant)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="purpose-of-transfer">
+                  Purpose of Transfer <span className="text-red-500">*</span>
+                  <span className="text-xs text-muted-foreground ml-1">(AML/CTF requirement)</span>
+                </Label>
+                <Select value={purposeOfTransfer} onValueChange={setPurposeOfTransfer}>
+                  <SelectTrigger id="purpose-of-transfer">
+                    <SelectValue placeholder="Select purpose..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="personal_savings">Personal / Savings</SelectItem>
+                    <SelectItem value="living_expenses">Living Expenses</SelectItem>
+                    <SelectItem value="business_payment">Business Payment</SelectItem>
+                    <SelectItem value="salary_wages">Salary / Wages</SelectItem>
+                    <SelectItem value="investment">Investment</SelectItem>
+                    <SelectItem value="family_support">Family Support</SelectItem>
+                    <SelectItem value="education">Education Fees</SelectItem>
+                    <SelectItem value="property_purchase">Property Purchase</SelectItem>
+                    <SelectItem value="loan_repayment">Loan Repayment</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -1,14 +1,18 @@
 import { useState, useMemo } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Shield,
   CheckCircle,
@@ -60,6 +64,57 @@ export default function Compliance() {
 
   // documents-tab uploads (docId → filename)
   const [docUploads, setDocUploads] = useState<Record<number, string>>({});
+
+  // ── Step 0: Personal Info (KYC Profile) ───────────────────────────────────
+  const [piiFullName,     setPiiFullName]     = useState("");
+  const [piiDob,          setPiiDob]          = useState("");
+  const [piiNationality,  setPiiNationality]  = useState("");
+  const [piiPhone,        setPiiPhone]        = useState("");
+  const [piiPep,          setPiiPep]          = useState(false);
+  const [piiSanctions,    setPiiSanctions]    = useState(false);
+  const [piiConsent,      setPiiConsent]      = useState(false);
+
+  const { data: kycProfile, refetch: refetchProfile } = useQuery<{
+    kycProfileComplete: boolean;
+    fullLegalName?: string;
+    dateOfBirth?: string;
+    nationality?: string;
+    phoneNumber?: string;
+  }>({
+    queryKey: ["/api/kyc/profile"],
+  });
+
+  const profileMutation = useMutation({
+    mutationFn: (payload: any) => apiRequest("PUT", "/api/kyc/profile", payload),
+    onSuccess: () => {
+      toast({ title: "Personal Information Saved", description: "Your KYC profile is complete. Please proceed to document upload." });
+      refetchProfile();
+      queryClient.invalidateQueries({ queryKey: ["/api/kyc/profile"] });
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message ?? "Failed to save profile", variant: "destructive" });
+    },
+  });
+
+  function handleProfileSubmit() {
+    if (!piiFullName || !piiDob || !piiNationality || !piiPhone) {
+      toast({ title: "All fields required", description: "Please complete all personal information fields.", variant: "destructive" });
+      return;
+    }
+    if (!piiSanctions || !piiConsent) {
+      toast({ title: "Declarations Required", description: "You must accept the sanctions and consent declarations to proceed.", variant: "destructive" });
+      return;
+    }
+    profileMutation.mutate({
+      fullLegalName: piiFullName,
+      dateOfBirth: piiDob,
+      nationality: piiNationality,
+      phoneNumber: piiPhone,
+      pepDeclaration: piiPep,
+      sanctionsDeclaration: piiSanctions,
+      consentDeclaration: piiConsent,
+    });
+  }
 
   // ── derive step statuses dynamically ──────────────────────────────────────
   // Step 1: always completed (pre-verified)
@@ -298,6 +353,161 @@ export default function Compliance() {
 
         {/* ── KYC Status Tab ── */}
         <TabsContent value="kyc" className="space-y-4">
+
+          {/* ── Step 0: Personal Information (mandatory first step) ── */}
+          {kycProfile?.kycProfileComplete ? (
+            <div className="flex items-start gap-4 p-4 border rounded-xl border-green-200 bg-green-50">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-600">
+                <CheckCircle className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs text-gray-400 font-medium">Step 0</span>
+                  <h3 className="font-semibold text-gray-900">Personal Information</h3>
+                  <Badge className="bg-green-100 text-green-800">Completed</Badge>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Your identity details have been recorded: {kycProfile.fullLegalName}
+                  {kycProfile.nationality ? ` · ${kycProfile.nationality}` : ""}.
+                  Your KYC profile is complete — proceed to document upload below.
+                </p>
+              </div>
+              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+            </div>
+          ) : (
+            <Card className="border-2 border-amber-400">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center">
+                    <User className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Step 0 — Personal Information</CardTitle>
+                    <p className="text-xs text-amber-700 mt-0.5">Required before document upload — AML/CTF Act 2006, AUSTRAC CDD requirements</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="pii-fullname" className="text-sm font-medium">
+                      Full Legal Name <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="pii-fullname"
+                      placeholder="As it appears on your passport"
+                      value={piiFullName}
+                      onChange={e => setPiiFullName(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">Must match your government-issued ID exactly</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="pii-dob" className="text-sm font-medium">
+                      Date of Birth <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="pii-dob"
+                      type="date"
+                      value={piiDob}
+                      onChange={e => setPiiDob(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="pii-nationality" className="text-sm font-medium">
+                      Country of Nationality <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="pii-nationality"
+                      placeholder="e.g. Australia, China, USA"
+                      value={piiNationality}
+                      onChange={e => setPiiNationality(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="pii-phone" className="text-sm font-medium">
+                      Mobile Phone Number <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="pii-phone"
+                      type="tel"
+                      placeholder="+61 400 000 000"
+                      value={piiPhone}
+                      onChange={e => setPiiPhone(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* PEP Declaration */}
+                <div className="rounded-lg border p-4 space-y-3 bg-slate-50">
+                  <h4 className="text-sm font-semibold">Mandatory Declarations</h4>
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="pii-pep"
+                      checked={piiPep}
+                      onCheckedChange={v => setPiiPep(Boolean(v))}
+                    />
+                    <div>
+                      <Label htmlFor="pii-pep" className="text-sm font-medium cursor-pointer">
+                        Politically Exposed Person (PEP) Declaration
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        I declare that I am, or am a close associate of, a domestic or foreign politically exposed person
+                        (current or former senior government official, politician, military officer, or international organisation executive).
+                        Check this box if this applies to you. If unsure, leave unchecked.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="pii-sanctions"
+                      checked={piiSanctions}
+                      onCheckedChange={v => setPiiSanctions(Boolean(v))}
+                    />
+                    <div>
+                      <Label htmlFor="pii-sanctions" className="text-sm font-medium cursor-pointer">
+                        Sanctions Declaration <span className="text-red-500">*</span>
+                        <span className="ml-1 text-xs font-normal text-muted-foreground">(supplementary — not a substitute for formal screening)</span>
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        I declare that I am not a designated person or entity under Australian sanctions law (Autonomous Sanctions Act 2011),
+                        UN Security Council Resolutions, or DFAT sanctions lists. I understand AMAX independently screens all customers
+                        against official sanctions databases.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="pii-consent"
+                      checked={piiConsent}
+                      onCheckedChange={v => setPiiConsent(Boolean(v))}
+                    />
+                    <div>
+                      <Label htmlFor="pii-consent" className="text-sm font-medium cursor-pointer">
+                        Consent to Verification &amp; Privacy Collection <span className="text-red-500">*</span>
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        I consent to AMAX Global Pty Ltd collecting, holding, and using my personal information for the purposes of
+                        identity verification, compliance with the AML/CTF Act 2006, and as described in the AMAX Privacy Policy.
+                        I understand this information may be shared with authorised third-party verification providers and AUSTRAC.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  className="w-full bg-amber-600 hover:bg-amber-700"
+                  disabled={profileMutation.isPending}
+                  onClick={handleProfileSubmit}
+                >
+                  {profileMutation.isPending ? "Saving..." : "Save Personal Information & Continue"}
+                </Button>
+                <p className="text-xs text-center text-muted-foreground">
+                  Your information is encrypted and stored securely. Required under AML/CTF Act 2006 §33.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>Know Your Customer (KYC) Verification</CardTitle>

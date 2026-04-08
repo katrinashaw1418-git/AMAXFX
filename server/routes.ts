@@ -17,6 +17,8 @@ import {
   passwordResetTokens,
   users,
   advisorMessages,
+  amlFlags,
+  complianceActions,
 } from "@shared/schema";
 import {
   requireAuth,
@@ -3772,6 +3774,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ---------------------------------------------------------------------------
+  // KYC Profile endpoints — AML/CTF Program v2.0 §15 (Part B)
+  // Collects mandatory individual CDD fields before document upload is allowed.
+  // ---------------------------------------------------------------------------
+
+  // GET /api/kyc/profile — returns user's KYC profile fields
+  app.get("/api/kyc/profile", async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user) return res.status(404).json({ error: "User not found" });
+      res.json({
+        fullLegalName: user.fullLegalName ?? "",
+        dateOfBirth: user.dateOfBirth ?? "",
+        nationality: user.nationality ?? "",
+        phoneNumber: user.phoneNumber ?? "",
+        pepDeclaration: user.pepDeclaration ?? false,
+        sanctionsDeclaration: user.sanctionsDeclaration ?? false,
+        consentDeclaration: user.consentDeclaration ?? false,
+        kycProfileComplete: user.kycProfileComplete ?? false,
+        accountFrozen: user.accountFrozen ?? false,
+        kycRefreshDue: user.kycRefreshDue ?? null,
+      });
+    } catch (err: any) {
+      res.status(401).json({ error: err.message ?? "Unauthorized" });
+    }
+  });
+
+  // PUT /api/kyc/profile — saves KYC profile personal info
+  app.put("/api/kyc/profile", async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      const schema = z.object({
+        fullLegalName: z.string().min(2, "Full legal name required"),
+        dateOfBirth: z.string().min(8, "Date of birth required"),
+        nationality: z.string().min(2, "Nationality required"),
+        phoneNumber: z.string().min(8, "Phone number required"),
+        pepDeclaration: z.boolean(),
+        sanctionsDeclaration: z.boolean(),
+        consentDeclaration: z.boolean(),
+      });
+      const data = schema.parse(req.body);
+      if (!data.sanctionsDeclaration || !data.consentDeclaration) {
+        return res.status(400).json({ error: "Mandatory declarations must be accepted" });
+      }
+      // Calculate internal risk score (not shown to user — gaming risk per AUSTRAC guidance)
+      // Geography(AUS=1) + Behaviour(new=1) + Product(fiat=1) + Customer(individual=1) = 4 = Low
+      // Elevated if PEP declared
+      const riskScore = data.pepDeclaration ? 9 : 4;
+      const riskLevel = riskScore <= 6 ? "low" : riskScore <= 9 ? "medium" : "high";
+      const dailyLimit = riskLevel === "low" ? "50000" : riskLevel === "medium" ? "10000" : "2000";
+      // KYC refresh due 1 year from now (for medium/high-risk, 6 months)
+      const refreshMonths = riskLevel === "low" ? 12 : 6;
+      const kycRefreshDue = new Date();
+      kycRefreshDue.setMonth(kycRefreshDue.getMonth() + refreshMonths);
+
+      await db.update(users).set({
+        fullLegalName: data.fullLegalName,
+        dateOfBirth: data.dateOfBirth,
+        nationality: data.nationality,
+        phoneNumber: data.phoneNumber,
+        pepDeclaration: data.pepDeclaration,
+        sanctionsDeclaration: data.sanctionsDeclaration,
+        consentDeclaration: data.consentDeclaration,
+        kycProfileComplete: true,
+        riskScore,
+        riskLevel,
+        dailyTransactionLimit: dailyLimit,
+        kycRefreshDue,
+      }).where(eq(users.id, userId));
+
+      // Log to audit trail
+      await db.insert(auditLogs).values({
+        userId,
+        action: "kyc_profile_submitted",
+        entityType: "user",
+        entityId: String(userId),
+        metadata: { riskLevel, pepDeclared: data.pepDeclaration },
+      });
+
+      // If PEP declared — flag for compliance officer review
+      if (data.pepDeclaration) {
+        await db.insert(complianceActions).values({
+          actionType: "ecdd",
+          userId,
+          performedBy: "system",
+          notes: "Customer self-declared as PEP at KYC onboarding. ECDD required before account activation.",
+          outcome: "pending",
+        });
+      }
+
+      res.json({ success: true, kycProfileComplete: true, riskLevel });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) return res.status(400).json({ error: err.errors[0].message });
+      res.status(500).json({ error: err.message ?? "Failed to save KYC profile" });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
   // Admin transaction lifecycle endpoints
   // Protected by X-Admin-Key header matched against ADMIN_SECRET env var.
   // No UI — used by AMAX ops team to approve/complete/fail transactions.
@@ -3882,6 +3982,178 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, message: txRow.type === "withdrawal" ? "Withdrawal failed — balance refunded" : "Transaction marked failed" });
     } catch (err: any) {
       res.status(500).json({ error: err.message ?? "Failed to fail transaction" });
+    }
+  });
+
+  // GET /api/admin/compliance/alerts — all open AML flags
+  app.get("/api/admin/compliance/alerts", async (req: Request, res: any) => {
+    if (!requireAdminKey(req, res)) return;
+    try {
+      const flags = await db.select().from(amlFlags).orderBy(amlFlags.createdAt);
+      res.json(flags);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to fetch alerts" });
+    }
+  });
+
+  // GET /api/admin/compliance/actions — full compliance action log (SMR/TTR/freeze)
+  app.get("/api/admin/compliance/actions", async (req: Request, res: any) => {
+    if (!requireAdminKey(req, res)) return;
+    try {
+      const actions = await db.select().from(complianceActions).orderBy(complianceActions.createdAt);
+      res.json(actions);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to fetch actions" });
+    }
+  });
+
+  // GET /api/admin/users — all users with KYC + freeze status
+  app.get("/api/admin/users", async (req: Request, res: any) => {
+    if (!requireAdminKey(req, res)) return;
+    try {
+      const allUsers = await db.select({
+        id: users.id, username: users.username, email: users.email,
+        firstName: users.firstName, lastName: users.lastName,
+        kycStatus: users.kycStatus, kycProfileComplete: users.kycProfileComplete,
+        accountFrozen: users.accountFrozen, riskLevel: users.riskLevel,
+        kycRefreshDue: users.kycRefreshDue, createdAt: users.createdAt,
+        pepDeclaration: users.pepDeclaration,
+      }).from(users).orderBy(users.createdAt);
+      res.json(allUsers);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to fetch users" });
+    }
+  });
+
+  // POST /api/admin/freeze/:userId — freeze an account
+  app.post("/api/admin/freeze/:userId", async (req: Request, res: any) => {
+    if (!requireAdminKey(req, res)) return;
+    try {
+      const userId = Number(req.params.userId);
+      const { notes } = req.body;
+      await db.update(users).set({ accountFrozen: true }).where(eq(users.id, userId));
+      await db.insert(complianceActions).values({
+        actionType: "freeze", userId, performedBy: "admin",
+        notes: notes ?? "Account frozen by compliance officer",
+        outcome: "filed",
+      });
+      await db.insert(auditLogs).values({
+        userId, action: "account_frozen", entityType: "user", entityId: String(userId),
+        metadata: { notes }, ipAddress: req.ip,
+      });
+      res.json({ success: true, message: "Account frozen" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to freeze account" });
+    }
+  });
+
+  // POST /api/admin/unfreeze/:userId — unfreeze an account
+  app.post("/api/admin/unfreeze/:userId", async (req: Request, res: any) => {
+    if (!requireAdminKey(req, res)) return;
+    try {
+      const userId = Number(req.params.userId);
+      const { notes } = req.body;
+      await db.update(users).set({ accountFrozen: false }).where(eq(users.id, userId));
+      await db.insert(complianceActions).values({
+        actionType: "unfreeze", userId, performedBy: "admin",
+        notes: notes ?? "Account unfrozen by compliance officer",
+        outcome: "closed",
+      });
+      await db.insert(auditLogs).values({
+        userId, action: "account_unfrozen", entityType: "user", entityId: String(userId),
+        metadata: { notes }, ipAddress: req.ip,
+      });
+      res.json({ success: true, message: "Account unfrozen" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to unfreeze account" });
+    }
+  });
+
+  // POST /api/admin/compliance/smr — log an SMR internal decision
+  app.post("/api/admin/compliance/smr", async (req: Request, res: any) => {
+    if (!requireAdminKey(req, res)) return;
+    try {
+      const schema = z.object({
+        userId: z.number().optional(),
+        transactionId: z.number().optional(),
+        notes: z.string().min(10, "Notes required"),
+        outcome: z.enum(["filed", "closed", "false_positive"]),
+        austracRef: z.string().optional(),
+      });
+      const data = schema.parse(req.body);
+      await db.insert(complianceActions).values({
+        actionType: "smr",
+        userId: data.userId,
+        transactionId: data.transactionId,
+        performedBy: "admin",
+        notes: data.notes,
+        outcome: data.outcome,
+        austracRef: data.austracRef,
+      });
+      // If flagged txn, update its review status
+      if (data.transactionId) {
+        const outcome = data.outcome === "filed" ? "escalated" : data.outcome === "closed" ? "cleared" : "cleared";
+        await db.update(transactions).set({ reviewStatus: outcome }).where(eq(transactions.id, data.transactionId));
+      }
+      res.json({ success: true, message: `SMR logged: ${data.outcome}` });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) return res.status(400).json({ error: err.errors[0].message });
+      res.status(500).json({ error: err.message ?? "Failed to log SMR" });
+    }
+  });
+
+  // POST /api/admin/compliance/ttr — log a TTR
+  app.post("/api/admin/compliance/ttr", async (req: Request, res: any) => {
+    if (!requireAdminKey(req, res)) return;
+    try {
+      const schema = z.object({
+        userId: z.number(),
+        transactionId: z.number(),
+        notes: z.string().min(5, "Notes required"),
+        austracRef: z.string().optional(),
+      });
+      const data = schema.parse(req.body);
+      await db.insert(complianceActions).values({
+        actionType: "ttr",
+        userId: data.userId,
+        transactionId: data.transactionId,
+        performedBy: "admin",
+        notes: data.notes,
+        outcome: "filed",
+        austracRef: data.austracRef,
+      });
+      res.json({ success: true, message: "TTR logged" });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) return res.status(400).json({ error: err.errors[0].message });
+      res.status(500).json({ error: err.message ?? "Failed to log TTR" });
+    }
+  });
+
+  // POST /api/admin/compliance/alert-review — resolve an AML flag
+  app.post("/api/admin/compliance/alert-review", async (req: Request, res: any) => {
+    if (!requireAdminKey(req, res)) return;
+    try {
+      const schema = z.object({
+        flagId: z.number(),
+        outcome: z.enum(["cleared", "escalated", "reviewing"]),
+        notes: z.string().optional(),
+      });
+      const data = schema.parse(req.body);
+      await db.update(amlFlags).set({
+        status: data.outcome,
+        notes: data.notes,
+        reviewedAt: new Date(),
+      }).where(eq(amlFlags.id, data.flagId));
+      await db.insert(complianceActions).values({
+        actionType: "alert_review",
+        performedBy: "admin",
+        notes: data.notes ?? `Alert ${data.flagId} reviewed`,
+        outcome: data.outcome,
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) return res.status(400).json({ error: err.errors[0].message });
+      res.status(500).json({ error: err.message ?? "Failed to update alert" });
     }
   });
 
