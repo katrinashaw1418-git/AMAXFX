@@ -30,3 +30,9 @@ id = "jwc5YSQ9X8S786yjgHXtJ"
 uri = "file://logo_option_FX.jpg"
 type = "image"
 title = "Option FX — F + X in overlapping coins ⭐"
+
+[[outputs]]
+id = "W9CKaw89umWu04voTzqG3"
+uri = "file://logo_fx_final.jpg"
+type = "image"
+title = "AMAX FX Logo — F and X fully shown in overlapping circles"
