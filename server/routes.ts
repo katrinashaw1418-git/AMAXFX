@@ -663,6 +663,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       { baseCurrency: 'AUD',  targetCurrency: 'USDT', rate: '0.68720',  spread: '0.0050' },
       { baseCurrency: 'USDC', targetCurrency: 'AUD', rate: '1.45520',   spread: '0.0050' },
       { baseCurrency: 'AUD',  targetCurrency: 'USDC', rate: '0.68720',  spread: '0.0050' },
+      // Stablecoins vs USD (1:1 peg)
+      { baseCurrency: 'USDT', targetCurrency: 'USD', rate: '1.00000',   spread: '0.0010' },
+      { baseCurrency: 'USD',  targetCurrency: 'USDT', rate: '1.00000',  spread: '0.0010' },
+      { baseCurrency: 'USDC', targetCurrency: 'USD', rate: '1.00000',   spread: '0.0010' },
+      { baseCurrency: 'USD',  targetCurrency: 'USDC', rate: '1.00000',  spread: '0.0010' },
     ];
     for (const { baseCurrency, targetCurrency, rate, spread } of missingRates) {
       const existing = await storage.getFxRate(baseCurrency, targetCurrency);
@@ -1508,15 +1513,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get specific FX rate
+  // Get specific FX rate — with cross-rate derivation via USD when direct pair is missing.
+  // This ensures EUR/GBP, EUR/JPY, GBP/CAD etc. always resolve even though only USD
+  // and AUD cross-rates are stored in the DB as first-class rows.
   app.get("/api/fx-rates/:base/:target", async (req, res) => {
     try {
       const { base, target } = req.params;
-      const rate = await storage.getFxRate(base, target);
-      if (!rate) {
-        return res.status(404).json({ error: "FX rate not found" });
+
+      // 1. Direct lookup
+      const direct = await storage.getFxRate(base, target);
+      if (direct) return res.json(withStaleness(direct));
+
+      // 2. Inverse lookup — invert the stored rate
+      const inverse = await storage.getFxRate(target, base);
+      if (inverse) {
+        const r = parseFloat(inverse.rate);
+        if (r > 0) {
+          return res.json(withStaleness({
+            ...inverse,
+            baseCurrency: base,
+            targetCurrency: target,
+            rate: (1 / r).toFixed(8),
+          }));
+        }
       }
-      res.json(withStaleness(rate));
+
+      // 3. Derive via USD triangulation: rate(A/B) = rate(A/USD) / rate(B/USD)
+      const [baseUsd, targetUsd] = await Promise.all([
+        storage.getFxRate(base, "USD"),
+        storage.getFxRate(target, "USD"),
+      ]);
+      if (baseUsd && targetUsd) {
+        const bRate = parseFloat(baseUsd.rate);
+        const tRate = parseFloat(targetUsd.rate);
+        if (bRate > 0 && tRate > 0) {
+          const derived = bRate / tRate;
+          return res.json(withStaleness({
+            ...baseUsd,
+            baseCurrency: base,
+            targetCurrency: target,
+            rate: derived.toFixed(8),
+          }));
+        }
+      }
+
+      return res.status(404).json({ error: "FX rate not found" });
     } catch (error: any) {
       if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Failed to get FX rate" });
@@ -2888,6 +2929,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await db.execute(
             sql`UPDATE fx_rates SET rate = ${usdPerAud.toFixed(8)}, updated_at = NOW() WHERE base_currency = 'AUD' AND target_currency = ${stable}`
           ).catch(() => {});
+          // Stablecoins vs USD — maintain the 1:1 peg row (update if exists, insert if not)
+          const stableUsdExists = await storage.getFxRate(stable, "USD");
+          if (stableUsdExists) {
+            await db.execute(
+              sql`UPDATE fx_rates SET rate = '1.00000000', updated_at = NOW() WHERE base_currency = ${stable} AND target_currency = 'USD'`
+            ).catch(() => {});
+          } else {
+            await db.execute(
+              sql`INSERT INTO fx_rates (base_currency, target_currency, rate, spread, updated_at) VALUES (${stable}, 'USD', '1.00000000', '0.0010', NOW())`
+            ).catch(() => {});
+          }
+          const usdStableExists = await storage.getFxRate("USD", stable);
+          if (usdStableExists) {
+            await db.execute(
+              sql`UPDATE fx_rates SET rate = '1.00000000', updated_at = NOW() WHERE base_currency = 'USD' AND target_currency = ${stable}`
+            ).catch(() => {});
+          } else {
+            await db.execute(
+              sql`INSERT INTO fx_rates (base_currency, target_currency, rate, spread, updated_at) VALUES ('USD', ${stable}, '1.00000000', '0.0010', NOW())`
+            ).catch(() => {});
+          }
         }
       }
 
