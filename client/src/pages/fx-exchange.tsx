@@ -36,6 +36,25 @@ function formatRateAge(minutes: number | null | undefined): string {
   return `${minutes} min ago`;
 }
 
+function getPanelRate(fxRates: any[], base: string, target: string): number | null {
+  const find = (b: string, t: string) =>
+    fxRates?.find((r: any) => r.baseCurrency === b && r.targetCurrency === t);
+
+  const direct = find(base, target);
+  if (direct) return parseFloat(direct.rate);
+
+  const inverse = find(target, base);
+  if (inverse) { const r = parseFloat(inverse.rate); if (r > 0) return 1 / r; }
+
+  const bUsd = find(base, "USD");
+  const tUsd = find(target, "USD");
+  if (bUsd && tUsd) {
+    const b = parseFloat(bUsd.rate), t = parseFloat(tUsd.rate);
+    if (b > 0 && t > 0) return b / t;
+  }
+  return null;
+}
+
 
 export default function FxExchange() {
   const [fromCurrency, setFromCurrency] = useState("AUD");
@@ -298,10 +317,11 @@ export default function FxExchange() {
                   <p className="text-sm text-gray-400 text-center py-4">Loading rates…</p>
                 ) : (
                   displayedPairs.map(({ base, target }) => {
-                    const rate      = (fxRates as any[])?.find((r: any) => r.baseCurrency === base && r.targetCurrency === target);
-                    const rateValue = rate ? parseFloat(rate.rate) : null;
+                    const directRate = (fxRates as any[])?.find((r: any) => r.baseCurrency === base && r.targetCurrency === target);
+                    const rateValue  = getPanelRate(fxRates as any[], base, target);
                     const isSelected = toCurrency === target;
                     const targetMeta = FIAT_CURRENCIES.find(c => c.code === target);
+                    const decimals   = rateValue && rateValue > 100 ? 2 : 4;
 
                     return (
                       <div
@@ -321,11 +341,15 @@ export default function FxExchange() {
                           {rateValue != null && <RateSparkline fromCurrency={base} toCurrency={target} currentRate={rateValue} />}
                         </div>
                         <div className="text-right flex-shrink-0">
-                          {rateValue !== null ? (
+                          {rateValue != null ? (
                             <>
-                              <p className="font-bold text-sm text-gray-900">{rateValue.toFixed(4)}</p>
-                              <span className={`text-xs ${rate?.isStale ? "text-amber-600" : "text-green-600"}`}>
-                                {rate?.isStale ? `⚠ ${rate.rateAgeMinutes}m` : rate?.rateAgeMinutes != null ? formatRateAge(rate.rateAgeMinutes) : "Live"}
+                              <p className="font-bold text-sm text-gray-900">{rateValue.toFixed(decimals)}</p>
+                              <span className={`text-xs ${directRate?.isStale ? "text-amber-600" : "text-green-600"}`}>
+                                {directRate?.isStale
+                                  ? `⚠ ${formatRateAge(directRate.rateAgeMinutes)}`
+                                  : directRate?.rateAgeMinutes != null
+                                    ? formatRateAge(directRate.rateAgeMinutes)
+                                    : "Live"}
                               </span>
                             </>
                           ) : <span className="text-xs text-gray-300">—</span>}
