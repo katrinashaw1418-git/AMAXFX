@@ -1,0 +1,2336 @@
+
+
+AMAX-V2 (2).zip
+Zip Archive
+please compare the design of the ewallet with the others in the market. deposit with 3 channels including paypal, bank transfer and credit/debit card. withdrawal via bank transfer only. for digital assets deposit via blockchain and withdrawal via cryto exchange or email blockchain. please refer to the other websites with similar functions and find out 1. channels are correct maybe update or add or delete channels for currencies and digital assets 2. channels are effective since it should link and activate the transactions rather than just showing transactions successful it should interact with other plaforms and banks to ensure the transactions are made on the interface 3. check blockchain payment method is there any other methods to make the transaction online and effective with other external channels. 4. since amax is not custodian of funds can we pass austrac based on the design?
+
+This is a good, serious design question — I’ll answer it like a product + compliance audit (institutional level) and benchmark you against real platforms (e.g. Wise, Coinbase, Binance, Revolut, Stripe-powered apps).
+
+🔍 1. Channel Design — Benchmark vs Market
+💼 Your Current Design
+Fiat
+
+Deposit: PayPal, Bank Transfer, Card
+
+Withdrawal: Bank only
+
+Crypto
+
+Deposit: Blockchain
+
+Withdrawal: Exchange / Email blockchain
+
+🧠 Market Standard (What top platforms actually do)
+💳 Fiat (eWallets like Wise / Revolut / Coinbase)
+Deposits
+
+Bank transfer (NPP/PayID in AU) ✅ MUST HAVE
+
+Card (instant but expensive) ✅
+
+PayPal ❌ (almost never used in fintech wallets)
+
+Apple Pay / Google Pay ✅ (increasingly standard)
+
+Open Banking / PayTo (AU) 🚀 emerging MUST
+
+Withdrawals
+
+Bank transfer (NPP/PayID instant) ✅
+
+Card withdrawals ❌ (rare)
+
+PayPal ❌
+
+👉 Key insight:
+PayPal is not standard in serious fintech infrastructure — it creates:
+
+chargeback risk
+
+AML tracing gaps
+
+dependency on third-party wallet
+
+🪙 Crypto (Coinbase / Binance / Kraken)
+Deposits
+
+Blockchain (wallet address) ✅
+
+Sometimes via on-ramp providers (MoonPay, Banxa) ✅
+
+Withdrawals
+
+Blockchain (to wallet) ✅ ONLY standard
+
+Exchange transfer ❌ (not a real “method” — just blockchain)
+
+Email ❌ (this is NOT a real blockchain method)
+
+👉 Important:
+“Email blockchain” is not a valid mechanism — it’s just UX wrapping around:
+
+custodial wallet transfer
+
+or internal ledger transfer
+
+✅ Recommendation (Channel Corrections)
+🔧 Fiat — Fix
+KEEP
+
+Bank transfer (PayID/NPP) ✅
+
+Card (Visa/Mastercard) ✅
+
+REMOVE
+
+❌ PayPal
+
+ADD
+
+✅ PayTo (Australia real-time debit)
+
+✅ Apple Pay / Google Pay (via Stripe or Adyen)
+
+✅ Open Banking (future-proof)
+
+🔧 Crypto — Fix
+KEEP
+
+Blockchain deposit/withdrawal ✅
+
+REMOVE
+
+❌ “Exchange withdrawal” (rename)
+
+❌ “Email blockchain” (not real infra)
+
+REPLACE WITH
+
+✅ Wallet address withdrawal (standard)
+
+✅ Internal transfer (if same platform users)
+
+⚙️ 2. Are Your Channels Actually “Real” or Just UI?
+This is where your app currently fails (based on your previous audits).
+
+❌ Current Problem
+Your system:
+
+Writes transaction = completed
+
+Updates balance
+
+BUT no real external execution
+
+👉 This is simulated finance, not real finance.
+
+✅ What Production Systems Do
+💳 Fiat Integration Layer
+You MUST connect to:
+
+Bank rails
+
+NPP / PayID (via Cuscal, Monoova, Assembly Payments)
+
+Card processors
+
+Stripe / Adyen
+
+Payout APIs
+
+OSKO / batch payments
+
+👉 Flow:
+
+User → API → Payment provider → Bank → callback/webhook → update status
+🪙 Crypto Integration Layer
+You MUST connect to:
+
+Custodian / wallet provider:
+
+Fireblocks
+
+BitGo
+
+Coinbase Custody
+
+or self-managed node + wallet infra
+
+👉 Flow:
+
+User withdraw → sign transaction → broadcast → wait for confirmations → update
+🚨 Critical Gap in Your App
+From your audit:
+
+❌ No custodian integration
+
+❌ No bank API
+
+❌ No blockchain signing/broadcast
+
+❌ No webhook reconciliation
+
+👉 Conclusion:
+
+Your channels are currently UI-only (non-functional financially)
+
+🔗 3. Blockchain Payments — Other Methods?
+Yes — but they are still blockchain underneath.
+
+✅ Valid Methods
+1. Direct Wallet Transfer (Standard)
+User pastes address
+
+You send crypto
+
+2. QR Code Payments
+Same as address, just encoded
+
+3. Payment Processors
+e.g. Coinbase Commerce, BitPay
+
+Used for merchants
+
+4. On/Off-Ramp Providers
+Banxa, MoonPay
+
+Convert fiat ↔ crypto
+
+5. Internal Ledger Transfers
+Instant, no gas fee
+
+Only within your platform
+
+❌ Not Real Methods
+Email transfer (unless custodial system)
+
+Exchange transfer (still blockchain)
+
+“Send via username” (only internal)
+
+🏛️ 4. AUSTRAC Compliance — Can You Pass?
+Short answer:
+
+❌ No — not in current design
+
+Let me be very clear and precise.
+
+🔍 AUSTRAC DCE Requirements (Australia)
+To be compliant, you must:
+
+1. Be a Digital Currency Exchange (DCE)
+Register with AUSTRAC
+
+If you exchange fiat ↔ crypto
+
+2. Have Control or Execution Responsibility
+Even if you say:
+
+“we are not a custodian”
+
+👉 You STILL need:
+
+transaction execution responsibility
+
+AML monitoring
+
+KYC
+
+🚨 Why Your Current Design Fails
+❌ Issue 1 — No Real Transaction Execution
+You simulate balances
+
+No proof of funds movement
+
+👉 AUSTRAC will reject this
+
+❌ Issue 2 — No Custodian / Safeguarding Model
+Even non-custodial models require:
+
+clear wallet ownership model
+
+signing authority design
+
+audit trail
+
+❌ Issue 3 — No AML/CTF Controls in Flow
+Missing:
+
+transaction monitoring
+
+sanctions screening
+
+suspicious matter reporting triggers
+
+❌ Issue 4 — Fiat Rails Not Integrated
+No real banking partner
+
+No settlement system
+
+⚖️ Key Insight
+“Not being a custodian” does NOT reduce compliance
+It actually makes your structure more complex and risky
+
+🧠 Final Strategic Recommendation
+✅ What You Should Do (Realistic Path)
+Option A — Custodial (Recommended)
+Integrate:
+
+Fireblocks (crypto)
+
+Monoova / Cuscal (fiat)
+
+Full control → easier AUSTRAC approval
+
+Option B — Non-Custodial (Harder)
+User-controlled wallets
+
+You only provide interface
+
+BUT:
+
+No internal balances
+
+No fake ledger
+
+Must redesign product completely
+
+📊 Final Verdict Table
+Area	Current	Market Standard	Fix
+Fiat deposit	PayPal + card + bank	Bank + card + PayTo	Remove PayPal
+Fiat withdrawal	Bank only	Bank (PayID)	Add real API
+Crypto deposit	Blockchain	Correct	Keep
+Crypto withdrawal	Exchange/email	Wallet address	Fix naming + logic
+Execution	❌ Simulated	Real API + webhooks	MUST FIX
+Blockchain infra	❌ None	Custodian/API	MUST ADD
+AUSTRAC readiness	❌ No	Full AML/CTF + execution	Not ready
+🚀 Bottom Line
+You are currently at:
+
+“Demo-level fintech UI”
+
+To become:
+
+“Real, compliant financial platform”
+
+You must add:
+
+Payment rails (bank + card)
+
+Crypto custody or wallet infra
+
+Real transaction execution (no fake completion)
+
+AML/CTF monitoring layer
+
+If you want, I can next:
+
+Map exact providers (Australia-ready)
+
+Or design a production architecture (end-to-end)
+
+Or give you a step-by-step AUSTRAC approval strategy
+
+Just tell me 👍
+
+
+yes
+
+Great — I’ll give you a production-ready architecture + AUSTRAC approval strategy tailored to your AMAX app, aligned with what you’ve already built and what must realistically change.
+
+🏗️ 1. Production Architecture (Australia-Ready)
+This is the minimum viable real-world stack to turn your app from “UI demo” → regulated fintech product
+
+🔶 A. High-Level Architecture
+Frontend (Your App)
+        ↓
+Backend API (Node / Next.js)
+        ↓
+-----------------------------------
+| 1. Fiat Layer (Bank Rails)      |
+| 2. Crypto Layer (Custody)       |
+| 3. Ledger + Transactions        |
+| 4. Compliance Engine (AML/KYC)  |
+-----------------------------------
+        ↓
+External Providers
+💳 B. Fiat Layer (Australia)
+✅ Recommended Providers
+Monoova
+
+Cuscal
+
+Stripe
+
+🔧 What Each Does
+1. Monoova / Cuscal
+PayID / NPP deposits (instant bank transfer)
+
+Payouts (OSKO)
+
+Account verification
+
+👉 This is your core banking rail
+
+2. Stripe
+Card payments (Visa/Mastercard)
+
+Apple Pay / Google Pay
+
+👉 Only use for deposit, not withdrawal
+
+💡 Required Flow (Fiat Deposit)
+User clicks deposit
+→ Stripe / PayID request created
+→ User pays externally
+→ Webhook confirms success
+→ THEN update balance
+❗ NOT:
+
+User clicks deposit → balance updated immediately ❌
+🪙 C. Crypto Layer (CRITICAL)
+✅ Recommended Custody Providers
+Fireblocks
+
+BitGo
+
+Coinbase Custody
+
+🔧 What They Do
+Generate wallet addresses
+
+Sign transactions securely
+
+Broadcast to blockchain
+
+Provide audit trail
+
+💡 Required Flow (Crypto Withdrawal)
+User submits withdrawal
+→ Your backend calls Fireblocks API
+→ Transaction signed + broadcast
+→ Blockchain confirmation
+→ Webhook received
+→ THEN mark as completed
+❗ Your Current Gap
+You have:
+
+❌ No signing
+
+❌ No broadcast
+
+❌ No confirmation tracking
+
+👉 This alone blocks AUSTRAC approval
+
+📒 D. Ledger System (You Already Have — Needs Fix)
+You’re close here, but:
+
+🔴 Current Issue
+Transactions marked completed immediately
+
+✅ Fix
+Add states:
+
+status:
+  - pending
+  - processing
+  - completed
+  - failed
+💡 Correct Logic
+Create transaction (pending)
+→ External execution
+→ Webhook received
+→ Update to completed
+🛡️ E. Compliance Engine (AUSTRAC Critical)
+🔧 You MUST integrate:
+KYC Providers
+Sumsub
+
+Onfido
+
+AML / Transaction Monitoring
+Chainalysis
+
+TRM Labs
+
+💡 Required Controls
+You need:
+
+Identity verification (KYC)
+
+Sanctions screening
+
+Transaction monitoring
+
+Suspicious Matter Reports (SMR)
+
+Threshold Transaction Reports (TTR)
+
+🧠 2. AUSTRAC Approval Strategy (Step-by-Step)
+This is where most founders fail — I’ll make it practical.
+
+🥇 Step 1 — Define Your Model (VERY IMPORTANT)
+You must clearly choose:
+
+Option A (Recommended)
+👉 Custodial Exchange Model
+
+You control wallets (via Fireblocks)
+
+You hold user balances
+
+Clear DCE classification
+
+Option B (Advanced / Risky)
+👉 Non-custodial
+
+Users hold wallets
+
+You only provide interface
+
+⚠️ But your current app:
+
+has internal balances
+
+acts like custodian
+
+👉 So Option B is not viable without redesign
+
+🥈 Step 2 — Register as DCE with AUSTRAC
+You must:
+
+Apply as Digital Currency Exchange
+
+Provide:
+
+Business model
+
+AML/CTF program
+
+Risk assessment
+
+🥉 Step 3 — Build AML/CTF Program
+Must include:
+
+Part A
+Risk assessment
+
+Customer risk profiling
+
+Transaction monitoring rules
+
+Part B
+KYC procedures
+
+Identity verification
+
+🏁 Step 4 — Prove “Operational Reality”
+This is where your current app fails.
+
+AUSTRAC expects:
+
+Real fund movement
+
+Real blockchain transactions
+
+Real banking integration
+
+👉 NOT:
+
+simulated balances
+
+fake transaction completion
+
+⚠️ Step 5 — Non-Custodian Claim (Reality Check)
+You said:
+
+“AMAX is not custodian of funds”
+
+👉 AUSTRAC will ask:
+
+Who signs transactions?
+
+Who controls wallets?
+
+Who executes fiat transfers?
+
+If answer = “your system”
+
+👉 You ARE effectively a custodian
+
+🚨 3. What You Must Fix (Priority Order)
+🔴 Tier 1 — BLOCKERS
+Integrate bank rails (Monoova/Cuscal)
+
+Integrate crypto custody (Fireblocks/BitGo)
+
+Add webhook-based transaction confirmation
+
+Remove fake “completed” logic
+
+🟠 Tier 2 — COMPLIANCE
+KYC provider integration
+
+AML monitoring
+
+Risk engine
+
+Audit logs
+
+🟢 Tier 3 — PRODUCT
+Remove PayPal
+
+Add PayID / PayTo
+
+Clean crypto UX (wallet-based only)
+
+📊 Final Reality Check
+❌ Today
+Demo UI
+
+No real execution
+
+Not AUSTRAC-compliant
+
+✅ After Fix
+Real fintech infrastructure
+
+Executable transactions
+
+AUSTRAC-ready DCE
+
+💬 My Direct Advice (Based on Your Situation)
+Given:
+
+You’re already building a full-stack fintech app
+
+You want AUSTRAC approval
+
+You want real-world launch
+
+👉 Do NOT try to stay “non-custodial”
+
+Instead:
+
+Build a controlled custodial model using infrastructure providers
+
+This is:
+
+Faster
+
+Safer
+
+More credible to regulators
+
+🚀 If You Want Next Step
+I can now:
+
+1. Map exact API integration architecture (code-level)
+👉 (based on your current backend)
+
+2. Draft your AUSTRAC application response
+👉 aligned with your current AMAX structure
+
+3. Convert your system into:
+👉 “production-ready + regulator-ready blueprint”
+
+Just tell me which one 👍
+
+
+what do you think.... 1 and 3
+
+Good choice — 1 (API integration architecture) + 3 (production/regulator-ready blueprint) is exactly the right combination to move you from demo → real fintech product.
+
+I’ll keep this practical, implementation-level, aligned with your current codebase and AUSTRAC expectations.
+
+🏗️ PART 1 — API INTEGRATION ARCHITECTURE (CODE-LEVEL DESIGN)
+This is how your backend should actually work.
+
+🔶 1. Core Services You Need
+External Providers (you will integrate)
+Fiat rails: Monoova / Cuscal
+
+Card: Stripe
+
+Crypto custody: Fireblocks
+
+KYC: Sumsub
+
+🧠 2. Backend Architecture (Your System)
+You should split your backend into clear modules:
+
+services/
+  payments/
+    stripe.ts
+    monoova.ts
+  crypto/
+    fireblocks.ts
+  ledger/
+    transactions.ts
+  compliance/
+    kyc.ts
+    aml.ts
+  webhooks/
+    stripeWebhook.ts
+    monoovaWebhook.ts
+    fireblocksWebhook.ts
+💳 3. Fiat Deposit (Stripe Example — REAL FLOW)
+Step 1 — Create Payment Intent
+POST /api/deposit/fiat
+
+const paymentIntent = await stripe.paymentIntents.create({
+  amount: 10000,
+  currency: "aud",
+  metadata: { userId }
+});
+
+return clientSecret;
+Step 2 — Create Transaction (IMPORTANT)
+await db.transaction.create({
+  userId,
+  type: "deposit",
+  asset: "AUD",
+  amount: 100,
+  status: "pending"
+});
+Step 3 — Webhook (THIS IS THE TRUTH)
+if (event.type === "payment_intent.succeeded") {
+  await updateTransaction(txId, "completed");
+  await creditWallet(userId, amount);
+}
+❗ Key Rule
+Balance ONLY updates after webhook — never before
+
+🏦 4. PayID / Bank Deposit (Monoova)
+User → gets PayID reference
+→ sends money via bank
+→ Monoova webhook fires
+→ you confirm deposit
+→ update ledger
+🪙 5. Crypto Withdrawal (Fireblocks)
+Step 1 — Request
+POST /api/withdraw/crypto
+
+await createTransaction({
+  status: "pending"
+});
+Step 2 — Send via Fireblocks
+await fireblocks.createTransaction({
+  assetId: "BTC",
+  source: vaultAccount,
+  destination: address,
+  amount
+});
+Step 3 — Webhook Confirmation
+if (status === "COMPLETED") {
+  updateTransaction(txId, "completed");
+}
+🔁 6. State Machine (MANDATORY)
+pending → processing → completed
+                ↘ failed
+🛑 DO NOT DO THIS (Current Issue)
+createTransaction({ status: "completed" }) ❌
+updateBalanceImmediately() ❌
+🏛️ PART 3 — PRODUCTION + AUSTRAC-READY BLUEPRINT
+This is how your entire system should be positioned.
+
+🔶 1. Your Target Model (You MUST be clear)
+✅ Recommended
+Custodial Fintech Platform (with external custody providers)
+
+🧠 What That Means
+Fiat held via banking partner (Monoova/Cuscal)
+
+Crypto held via Fireblocks vaults
+
+You control transaction execution
+
+You maintain internal ledger
+
+👉 This is what AUSTRAC expects
+
+🔐 2. Control Framework (Critical for Approval)
+You must demonstrate:
+
+A. Funds Flow Clarity
+User → Your platform → External provider → Settlement → Ledger update
+B. No Fake Balances
+Every balance must map to:
+
+bank account OR
+
+blockchain wallet
+
+C. Reconciliation
+Daily:
+
+ledger balance == bank balance == blockchain balance
+🛡️ 3. AML / Compliance Layer (Minimum Required)
+You MUST implement:
+KYC onboarding (Sumsub)
+
+Risk scoring per user
+
+Transaction monitoring rules
+
+💡 Example Rule Engine
+if (tx.amount > 10000) flag("TTR");
+if (country in sanctionsList) block();
+if (rapid movement detected) flag("SMR");
+📊 4. Reporting (AUSTRAC)
+You must support:
+
+TTR (>$10k)
+
+SMR (suspicious)
+
+KYC audit trail
+
+transaction history
+
+⚠️ 5. Your Current Gaps (Honest Assessment)
+Based on your audits:
+
+Area	Status	Risk
+Payment execution	❌ missing	CRITICAL
+Custody integration	❌ missing	CRITICAL
+Webhooks	❌ missing	CRITICAL
+AML/KYC	⚠️ partial	HIGH
+Ledger logic	⚠️ needs fix	HIGH
+🚀 6. What “Production-Ready” Actually Means
+Before launch, you must have:
+
+✅ Infrastructure
+Real bank API
+
+Real crypto custody
+
+Webhooks working
+
+✅ Controls
+Transaction states
+
+Reconciliation
+
+Audit logs
+
+✅ Compliance
+KYC onboarding
+
+AML monitoring
+
+AUSTRAC reporting
+
+🧠 Final Strategic Advice (Very Direct)
+You are currently:
+
+80% product / 20% infrastructure
+
+To launch:
+
+You need to become
+30% product / 70% infrastructure + compliance
+
+🔥 Most Important Insight
+Your biggest risk is NOT UI, features, or growth — it is execution integrity
+
+If transactions are not real:
+
+users lose trust
+
+regulators reject you
+
+banking partners won’t onboard you
+
+🚀 Next Step (Highly Recommended)
+If you want, I can now:
+
+👉 Map this directly into YOUR codebase
+exact files to change
+
+patch-level fixes
+
+endpoint-by-endpoint upgrade
+
+OR
+
+👉 Draft your AUSTRAC submission (based on this architecture)
+Both would take you to real launch readiness
+
+Just tell me 👍
+
+
+👉 Map this directly into YOUR codebase
+
+
+Thought for 1m 1s
+I mapped this directly against your uploaded AMAX-V2 codebase, mainly:
+
+server/routes.ts
+
+shared/schema.ts
+
+server/storage.ts
+
+client/src/pages/wallets.tsx
+
+current PayPal handlers in server/routes.ts
+
+What the code is doing now
+Your biggest production blocker is still here:
+
+server/routes.ts deposit route updates wallet balance immediately and writes transaction status: "completed" with settlementStatus: "internal_only".
+
+server/routes.ts withdrawal route also debits wallet immediately and writes status: "completed" with settlementStatus: "internal_only".
+
+server/routes.ts PayPal capture also credits the wallet directly after capture.
+
+client/src/pages/wallets.tsx still presents deposit/withdraw as if they are execution channels, but they are not connected to a real bank rail / custodian workflow end-to-end.
+
+That means your app is still an internal ledger simulator with some external pricing and partial PayPal payment handling, not yet a real regulated funds-movement stack.
+
+Direct map into your codebase
+1. shared/schema.ts — upgrade transaction model first
+Your transactions table is close, but not enough for real settlement.
+
+Add these fields
+You already have:
+
+status
+
+settlementStatus
+
+sourceExchange
+
+blockchainTxHash
+
+compliance fields
+
+You should add:
+
+provider: text("provider"), // stripe, monoova, cuscal, fireblocks, paypal
+providerReference: text("provider_reference"), // paymentIntentId, payoutId, transferId, vault tx id
+externalAccountRef: text("external_account_ref"), // bank account token / wallet id / address label
+channel: text("channel"), // bank_transfer, payid, payto, card, blockchain, internal_transfer
+failureCode: text("failure_code"),
+failureReason: text("failure_reason"),
+requestedAt: timestamp("requested_at").defaultNow(),
+processingAt: timestamp("processing_at"),
+completedAt: timestamp("completed_at"),
+failedAt: timestamp("failed_at"),
+Tighten status vocabulary
+Right now comments say:
+
+pending, completed, failed, cancelled
+
+For real payments, use:
+
+status: text("status").notNull(), // pending, processing, completed, failed, cancelled
+And use settlementStatus like this:
+
+settlementStatus: text("settlement_status").notNull().default("pending_external")
+// pending_external | settled_external | internal_only | failed_external
+Why this matters in your app
+Because your current routes in server/routes.ts are using completed + internal_only for real-looking customer transactions. That is exactly the field-level behavior that makes the product look live when it is not.
+
+2. server/routes.ts — split “request” routes from “settlement” routes
+This is the biggest structural fix.
+
+Right now these handlers are wrong for production:
+
+handleDeposit
+
+handleWithdraw
+
+They should not move wallet balances directly.
+
+Replace the current deposit pattern
+Current wrong pattern
+Your current deposit code does this:
+
+validate request
+
+lock wallet
+
+increase wallet balance
+
+insert transaction as completed
+
+That is only valid for a back-office manual adjustment route, not a customer deposit route.
+
+Correct pattern
+POST /api/deposit should only create a pending transaction request:
+
+[txRecord] = await tx.insert(transactions).values({
+  userId,
+  type: "deposit",
+  fromCurrency: null,
+  toCurrency: currency,
+  amount: amount.toFixed(8),
+  fee: "0.00000000",
+  exchangeRate: null,
+  status: "pending",
+  settlementStatus: "pending_external",
+  provider: provider, // e.g. stripe, monoova, paypal
+  providerReference: null,
+  channel, // card, bank_transfer, payid, payto
+  description: description || `${currency} Deposit`,
+  sourceExchange: null,
+  blockchainTxHash: null,
+  assetType: classifyAssetType(null, currency),
+  direction: "in",
+  riskFlag: false,
+  reviewStatus: "clear",
+  reviewNotes: null,
+}).returning();
+Then return either:
+
+payment intent / checkout URL
+
+pay-in instructions
+
+provider reference
+
+Only the webhook should credit the wallet.
+
+Replace the current withdrawal pattern
+Current wrong pattern
+Your withdrawal route currently:
+
+checks wallet
+
+deducts balance immediately
+
+inserts completed
+
+That is not safe.
+
+Correct pattern
+On withdrawal request:
+
+reduce only availableBalance
+
+leave balance unchanged until settlement completes, or introduce a reserved amount field
+
+create transaction as pending
+
+Example shape:
+
+await tx.update(wallets).set({
+  availableBalance: available.minus(totalDeduction).toFixed(8),
+}).where(eq(wallets.id, wallet.id));
+
+[txRecord] = await tx.insert(transactions).values({
+  userId,
+  type: "withdrawal",
+  fromCurrency: currency,
+  toCurrency: null,
+  amount: amount.toFixed(8),
+  fee: fee.toFixed(8),
+  exchangeRate: null,
+  status: "pending",
+  settlementStatus: "pending_external",
+  provider: "monoova",
+  providerReference: null,
+  channel: "bank_transfer",
+  description: description || `${currency} Withdrawal`,
+  sourceExchange: null,
+  blockchainTxHash: null,
+  assetType: classifyAssetType(currency, null),
+  direction: "out",
+  riskFlag: false,
+  reviewStatus: "clear",
+  reviewNotes: null,
+}).returning();
+Then:
+
+webhook success → deduct actual balance, mark completed
+
+webhook failure → restore availableBalance, mark failed
+
+Add dedicated settlement handlers in server/routes.ts
+You need provider-specific webhook endpoints.
+
+Add:
+POST /api/webhooks/stripe
+
+POST /api/webhooks/paypal
+
+POST /api/webhooks/monoova
+
+POST /api/webhooks/fireblocks
+
+Each one should:
+
+verify provider signature
+
+locate transaction by providerReference
+
+lock relevant wallet
+
+update wallet only on confirmed completion
+
+write audit log
+
+update AML flags if needed
+
+3. server/routes.ts — stop using generic /api/deposit for all channels
+You need to break channel logic apart. Right now one deposit route tries to represent multiple deposit ideas. That is too vague.
+
+Replace with explicit routes
+Fiat deposit
+POST /api/deposits/card/create
+
+POST /api/deposits/paypal/create only if you keep PayPal
+
+POST /api/deposits/bank-instructions
+
+POST /api/deposits/payid-instructions
+
+later: POST /api/deposits/payto/create
+
+Fiat withdrawal
+POST /api/withdrawals/bank/create
+
+Crypto deposit
+POST /api/crypto/deposits/address
+
+GET /api/crypto/deposits/:currency/address
+
+Crypto withdrawal
+POST /api/crypto/withdrawals/create
+
+Internal transfer
+POST /api/crypto/transfers/internal
+
+That route structure will match the actual channel model you want on the UI.
+
+4. server/routes.ts — PayPal should not be a core eWallet rail
+You already have PayPal code around lines 3071+.
+
+That code is technically more “real” than your generic deposit route, but strategically I would downgrade or remove it from the wallet core.
+
+Why inside this codebase
+Because the rest of the wallet architecture is moving toward:
+
+bank rails
+
+wallet settlement
+
+compliance traceability
+
+crypto custody integration
+
+PayPal becomes an awkward exception.
+
+In your code
+Either:
+
+Option A — remove from wallet core
+Delete:
+
+/api/paypal/create-order
+
+/api/paypal/capture-order
+
+And replace with:
+
+bank transfer / PayID / PayTo / card
+
+Option B — keep temporarily but relabel
+Keep it as:
+
+“third-party checkout deposit”
+not
+
+“bank-grade wallet funding rail”
+
+If kept, it still needs:
+
+provider
+
+providerReference
+
+webhook-first settlement logic
+
+chargeback / reversal handling
+
+Your current capture flow is still too optimistic for a serious stored-value wallet.
+
+5. client/src/pages/wallets.tsx — redesign channel selection by asset type
+This file is where the product design and backend mismatch is most visible.
+
+Right now the UI mixes:
+
+fiat
+
+stablecoin
+
+crypto
+
+blockchain
+
+bank transfer
+
+PayID
+
+card
+
+inside one modal flow.
+
+That is too broad and creates compliance confusion.
+
+Replace deposit options by wallet type
+For fiat wallets
+Show only:
+
+Bank transfer
+
+PayID
+
+Card
+
+later: PayTo
+
+Do not show blockchain for fiat wallets.
+
+For crypto wallets
+Show only:
+
+Blockchain deposit
+
+Internal transfer, only if same-platform transfer exists
+
+Do not show card / bank transfer directly on crypto wallet deposit modal unless it is actually routed through a fiat-to-crypto purchase flow.
+
+Replace withdrawal options by wallet type
+For fiat wallets
+Show only:
+
+Bank transfer
+
+For crypto wallets
+Show only:
+
+Blockchain withdrawal
+
+Internal transfer
+
+Remove any wording like:
+
+“email blockchain”
+
+“crypto exchange withdrawal”
+
+Those are not real settlement channels in your current system.
+
+In wallets.tsx, change the user messaging
+Right now your mutation toasts still sound like execution is happening.
+
+For example:
+
+“Withdrawal Successful”
+
+“Transfer Successful”
+
+For pending real-world settlement, these should become:
+
+title: "Withdrawal submitted",
+description: "Your withdrawal request has been created and is awaiting external settlement confirmation."
+and
+
+title: "Deposit initiated",
+description: "Complete the payment using the selected channel. Your wallet will update after external confirmation."
+That wording matters because your frontend must stop implying money already moved when it has not.
+
+6. client/src/lib/api and wallet mutations — add channel-specific payloads
+Your current wallet mutations use generic payloads like:
+
+{ currency: string; amount: number }
+That is not enough.
+
+You need channel-aware payloads.
+
+Fiat deposit request
+type CreateFiatDepositRequest = {
+  currency: string;
+  amount: number;
+  channel: "bank_transfer" | "payid" | "payto" | "card";
+  returnUrl?: string;
+};
+Bank withdrawal request
+type CreateFiatWithdrawalRequest = {
+  currency: string;
+  amount: number;
+  channel: "bank_transfer";
+  beneficiaryId: string;
+};
+Crypto withdrawal request
+type CreateCryptoWithdrawalRequest = {
+  currency: "BTC" | "ETH" | "USDT" | "USDC";
+  amount: number;
+  destinationAddress: string;
+  network: string;
+  memo?: string;
+};
+That will make the API layer consistent with the real settlement paths.
+
+7. server/storage.ts — keep for demo, but stop treating it as production behavior
+server/storage.ts is full of seeded wallets and transactions. That is fine for demo data.
+
+But do not let this influence the production architecture.
+
+In practice
+Keep demo seed data, but mark it as demo-only and avoid using it as evidence of operational readiness.
+
+Also, your demo transactions include many completed records that look real. That can mislead testing and product review.
+
+A better approach is:
+
+seed historical demo records with settlementStatus: "demo_seed"
+
+or keep them isolated in non-production env only
+
+8. Add provider service modules instead of keeping everything in server/routes.ts
+server/routes.ts is getting too large and is carrying business logic that should be modularized.
+
+Create these files
+server/services/payments/stripe.ts
+create payment intent
+
+verify stripe webhook
+
+parse event to internal settlement update
+
+server/services/payments/monoova.ts
+create deposit reference / pay-in instruction
+
+create payout request
+
+verify webhook
+
+server/services/payments/paypal.ts
+only if retained
+
+server/services/crypto/fireblocks.ts
+create vault deposit address
+
+initiate withdrawal
+
+parse webhook event
+
+return tx hash / provider ref
+
+server/services/ledger/settlement.ts
+This should contain the only functions allowed to move balances on settled external transactions:
+
+applyCompletedDeposit(...)
+applyCompletedWithdrawal(...)
+applyFailedWithdrawalRollback(...)
+applyCompletedCryptoDeposit(...)
+applyCompletedCryptoWithdrawal(...)
+That prevents route handlers from directly mutating balances all over the codebase.
+
+9. Add reserved-balance handling to wallet logic
+Your current wallet schema has:
+
+balance
+
+availableBalance
+
+That is usable, but your routes are not fully using the separation properly.
+
+For withdrawals:
+
+reserve by reducing availableBalance
+
+only reduce balance when settled
+
+That gives you a real pending-state wallet model without immediately pretending the money left.
+
+10. Crypto-specific map into your current codebase
+You already have:
+
+blockchainTxHash
+
+crypto wallet types
+
+crypto pricing infrastructure
+
+What is missing is actual deposit/withdraw settlement.
+
+Add these routes
+Inside server/routes.ts or preferably split files:
+
+Create deposit address
+app.post("/api/crypto/deposits/address", requireAuth, async (req, res) => {
+  // call fireblocks / custody provider
+  // persist wallet address mapping
+  // return deposit address + network
+});
+Request withdrawal
+app.post("/api/crypto/withdrawals/create", requireAuth, async (req, res) => {
+  // validate address/network
+  // create pending tx
+  // reserve available balance
+  // call provider
+  // store providerReference
+});
+Webhook completion
+Webhook then updates:
+
+status = completed
+
+settlementStatus = settled_external
+
+blockchainTxHash = actual tx hash
+
+Without that, your crypto wallet remains UI-only.
+
+What I would delete, keep, and add
+Delete or demote
+generic “instant completed” customer deposit logic in handleDeposit
+
+generic “instant completed” customer withdrawal logic in handleWithdraw
+
+PayPal as a core wallet funding rail
+
+any UI language implying money has already moved
+
+Keep
+idempotency framework
+
+AML flag framework
+
+audit logs
+
+wallet uniqueness constraints
+
+availableBalance concept
+
+FX infrastructure
+
+crypto market pricing feeds
+
+Add
+provider modules
+
+webhook endpoints
+
+pending/processing settlement lifecycle
+
+provider references
+
+channel-specific APIs
+
+crypto address / blockchain withdrawal flow
+
+beneficiary / external account references
+
+The exact priority order for your codebase
+Phase 1 — must do first
+Change handleDeposit so it creates pending transactions only.
+
+Change handleWithdraw so it reserves only and creates pending transactions only.
+
+Add webhook settlement handlers.
+
+Add provider, providerReference, channel, timestamps, failure fields to transactions.
+
+Phase 2
+Split routes into fiat deposit, fiat withdrawal, crypto deposit, crypto withdrawal.
+
+Redesign client/src/pages/wallets.tsx so channel choices depend on wallet type.
+
+Change all success toasts to submitted/pending wording.
+
+Phase 3
+Move external logic out of server/routes.ts into service modules.
+
+Add beneficiary records and saved withdrawal accounts.
+
+Add crypto deposit-address issuance and blockchain withdrawal execution.
+
+Bottom line on this codebase
+Your current AMAX-V2 codebase is not far from a proper internal ledger foundation, but the real-money execution boundary is still wrong.
+
+The single most important change is this:
+
+customer-facing routes must stop updating balances as if settlement already happened
+
+Once you change that, the rest of the architecture starts making sense:
+
+UI becomes honest
+
+webhooks become the source of truth
+
+AUSTRAC story becomes cleaner
+
+bank/custody integrations become possible
+
+Next step: I can turn this into a file-by-file patch pack for shared/schema.ts, server/routes.ts, and client/src/pages/wallets.tsx in copy-paste form.
+
+
+I can turn this into a file-by-file patch pack
+
+
+Thought for 1m 7s
+
+?
+
+Perfect — I’ll give you a clean, copy-paste patch pack (no scrolling issues, no missing pieces).
+This is exactly mapped to your AMAX-V2 structure and only changes what is necessary to move from fake settlement → real settlement-ready architecture.
+
+🔧 PATCH PACK (FILE-BY-FILE)
+🧩 1. shared/schema.ts — Transaction Model Upgrade
+🔁 ADD fields to transactions table
+👉 Find your transactions = pgTable(...) and add these fields
+
+provider: text("provider"), // stripe, monoova, fireblocks, paypal
+providerReference: text("provider_reference"), // external ID (paymentIntentId, txId, etc.)
+externalAccountRef: text("external_account_ref"), // bank account / wallet address label
+channel: text("channel"), // bank_transfer, payid, payto, card, blockchain
+
+failureCode: text("failure_code"),
+failureReason: text("failure_reason"),
+
+requestedAt: timestamp("requested_at").defaultNow(),
+processingAt: timestamp("processing_at"),
+completedAt: timestamp("completed_at"),
+failedAt: timestamp("failed_at"),
+🔁 UPDATE status + settlementStatus defaults
+Replace:
+
+status: text("status").notNull(),
+settlementStatus: text("settlement_status").default("internal_only").notNull(),
+With:
+
+status: text("status").notNull().default("pending"), 
+// pending | processing | completed | failed | cancelled
+
+settlementStatus: text("settlement_status").notNull().default("pending_external"),
+// pending_external | settled_external | internal_only | failed_external
+🧩 2. server/routes.ts — FIX DEPOSIT LOGIC (CRITICAL)
+🔴 FIND your current handleDeposit logic
+👉 REMOVE this part (or comment out)
+
+// ❌ REMOVE THIS BLOCK
+await tx.update(wallets).set({
+  balance: newBalance.toFixed(8),
+  availableBalance: newAvailable.toFixed(8),
+}).where(eq(wallets.id, wallet.id));
+
+status: "completed",
+settlementStatus: "internal_only",
+✅ REPLACE with pending-only logic
+// ✅ CORRECT: DO NOT UPDATE BALANCE HERE
+
+const [txRecord] = await tx.insert(transactions).values({
+  userId,
+  type: "deposit",
+  fromCurrency: null,
+  toCurrency: currency,
+  amount: amount.toFixed(8),
+  fee: "0.00000000",
+  exchangeRate: null,
+  status: "pending",
+  settlementStatus: "pending_external",
+  provider: provider || null,
+  providerReference: null,
+  channel: channel || "bank_transfer",
+  description: description || `${currency} Deposit`,
+  assetType: classifyAssetType(null, currency),
+  direction: "in",
+}).returning();
+🧩 3. server/routes.ts — FIX WITHDRAWAL LOGIC
+🔴 FIND withdrawal balance deduction
+👉 REMOVE this:
+
+// ❌ REMOVE THIS
+balance: newBalance.toFixed(8),
+availableBalance: newAvailable.toFixed(8),
+
+status: "completed",
+settlementStatus: "internal_only",
+✅ REPLACE WITH RESERVED BALANCE MODEL
+// ✅ ONLY REDUCE availableBalance
+await tx.update(wallets).set({
+  availableBalance: available.minus(totalDeduction).toFixed(8),
+}).where(eq(wallets.id, wallet.id));
+
+const [txRecord] = await tx.insert(transactions).values({
+  userId,
+  type: "withdrawal",
+  fromCurrency: currency,
+  toCurrency: null,
+  amount: amount.toFixed(8),
+  fee: fee.toFixed(8),
+  status: "pending",
+  settlementStatus: "pending_external",
+  provider: "monoova",
+  providerReference: null,
+  channel: "bank_transfer",
+  description: `${currency} Withdrawal`,
+  assetType: classifyAssetType(currency, null),
+  direction: "out",
+}).returning();
+🧩 4. server/routes.ts — ADD WEBHOOK (CORE ENGINE)
+✅ ADD this new endpoint
+app.post("/api/webhooks/settlement", async (req, res) => {
+  const { providerReference, status, txHash } = req.body;
+
+  const [txRecord] = await db.select()
+    .from(transactions)
+    .where(eq(transactions.providerReference, providerReference));
+
+  if (!txRecord) return res.status(404).send("Transaction not found");
+
+  const wallet = await getWallet(txRecord.userId, txRecord.toCurrency || txRecord.fromCurrency);
+
+  if (status === "completed") {
+
+    await db.transaction(async (tx) => {
+
+      if (txRecord.type === "deposit") {
+        const newBalance = new Decimal(wallet.balance).plus(txRecord.amount);
+
+        await tx.update(wallets).set({
+          balance: newBalance.toFixed(8),
+          availableBalance: newBalance.toFixed(8),
+        }).where(eq(wallets.id, wallet.id));
+      }
+
+      if (txRecord.type === "withdrawal") {
+        const newBalance = new Decimal(wallet.balance).minus(txRecord.amount);
+
+        await tx.update(wallets).set({
+          balance: newBalance.toFixed(8),
+        }).where(eq(wallets.id, wallet.id));
+      }
+
+      await tx.update(transactions).set({
+        status: "completed",
+        settlementStatus: "settled_external",
+        blockchainTxHash: txHash || null,
+        completedAt: new Date(),
+      }).where(eq(transactions.id, txRecord.id));
+    });
+  }
+
+  if (status === "failed") {
+    await db.update(transactions).set({
+      status: "failed",
+      settlementStatus: "failed_external",
+      failedAt: new Date(),
+    }).where(eq(transactions.id, txRecord.id));
+  }
+
+  res.send({ ok: true });
+});
+🧩 5. client/src/pages/wallets.tsx — FIX USER MESSAGES
+🔴 FIND success messages like:
+"Deposit successful"
+"Withdrawal successful"
+✅ REPLACE WITH:
+title: "Deposit initiated",
+description: "Complete the payment externally. Your balance will update after confirmation."
+title: "Withdrawal submitted",
+description: "Your request is being processed and will complete after settlement."
+🧩 6. client/src/pages/wallets.tsx — CHANNEL FIX
+🔴 REMOVE (if present)
+PayPal as primary wallet funding
+
+"email blockchain"
+
+"exchange withdrawal"
+
+✅ USE THIS CHANNEL MODEL
+Fiat wallet
+["Bank Transfer", "PayID", "Card"]
+Crypto wallet
+["Blockchain Deposit", "Blockchain Withdrawal"]
+🧩 7. NEW FILE — server/services/ledger.ts
+✅ ADD THIS FILE (IMPORTANT CLEAN DESIGN)
+export async function applyCompletedDeposit(tx, wallet, amount) {
+  const newBalance = new Decimal(wallet.balance).plus(amount);
+
+  await tx.update(wallets).set({
+    balance: newBalance.toFixed(8),
+    availableBalance: newBalance.toFixed(8),
+  }).where(eq(wallets.id, wallet.id));
+}
+
+export async function applyCompletedWithdrawal(tx, wallet, amount) {
+  const newBalance = new Decimal(wallet.balance).minus(amount);
+
+  await tx.update(wallets).set({
+    balance: newBalance.toFixed(8),
+  }).where(eq(wallets.id, wallet.id));
+}
+🧩 8. OPTIONAL — REMOVE PAYPAL ROUTES
+🔴 DELETE (recommended)
+/api/paypal/create-order
+/api/paypal/capture-order
+👉 OR downgrade to non-core funding method
+
+🚀 RESULT AFTER PATCH
+BEFORE ❌
+instant fake settlement
+
+UI-driven balances
+
+no external confirmation
+
+not AUSTRAC viable
+
+AFTER ✅
+pending → webhook → settlement
+
+real execution-ready
+
+ledger integrity preserved
+
+regulator-ready structure
+
+🔥 MOST IMPORTANT CHANGE
+If you only remember ONE thing:
+
+Balances must ONLY change after external confirmation (webhook)
+
+🚀 NEXT STEP
+If you want, I can now:
+
+👉 Integrate Fireblocks + Stripe directly into this patch
+👉 OR build your AUSTRAC submission using this architecture
+Just tell me 👍
+
+
+👉 Integrate Fireblocks + Stripe directly into this patch
+
+
+Thought
+
+Thought
+Yes — here is the direct Stripe + Fireblocks integration patch pack for your AMAX-V2 structure.
+
+A few implementation anchors first. Stripe’s PaymentIntents API is the right primitive for card deposits, and Stripe explicitly recommends handling completion server-side from webhooks such as payment_intent.succeeded, rather than trusting the client return flow. Fireblocks’ transaction API requires assetId, source, destination, and amount for transfers, and Fireblocks sends webhook updates as transaction status changes. Fireblocks also recommends reconciling incoming funds only after the transaction is COMPLETED, and for webhook delivery it expects an HTTP 200 response or it retries. 
+
+1. Install packages
+npm install stripe fireblocks-sdk decimal.js
+If your Fireblocks workspace uses the current SDK flow, Fireblocks’ quickstart shows initializing the SDK with your API key plus your private key. 
+
+2. Environment variables
+Add these to your .env:
+
+# Stripe
+STRIPE_SECRET_KEY=sk_live_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
+
+# Fireblocks
+FIREBLOCKS_API_KEY=your_fireblocks_api_key
+FIREBLOCKS_SECRET_KEY_PATH=./secrets/fireblocks_secret.key
+FIREBLOCKS_BASE_URL=https://api.fireblocks.io
+FIREBLOCKS_VAULT_ACCOUNT_ID=0
+
+# App
+APP_BASE_URL=https://your-domain.com
+3. shared/schema.ts
+Add the settlement/provider fields you need so Stripe and Fireblocks can be tracked cleanly.
+
+provider: text("provider"),
+providerReference: text("provider_reference"),
+externalAccountRef: text("external_account_ref"),
+channel: text("channel"),
+
+failureCode: text("failure_code"),
+failureReason: text("failure_reason"),
+
+requestedAt: timestamp("requested_at").defaultNow(),
+processingAt: timestamp("processing_at"),
+completedAt: timestamp("completed_at"),
+failedAt: timestamp("failed_at"),
+And tighten these:
+
+status: text("status").notNull().default("pending"),
+settlementStatus: text("settlement_status").notNull().default("pending_external"),
+4. New file: server/services/payments/stripe.ts
+import Stripe from "stripe";
+
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2025-02-24.acacia",
+});
+
+export async function createCardDepositPaymentIntent(params: {
+  amountMajor: number;
+  currency: string;
+  transactionId: number | string;
+  userId: number | string;
+}) {
+  const amountMinor = Math.round(params.amountMajor * 100);
+
+  return stripe.paymentIntents.create({
+    amount: amountMinor,
+    currency: params.currency.toLowerCase(),
+    automatic_payment_methods: { enabled: true },
+    metadata: {
+      internalTransactionId: String(params.transactionId),
+      userId: String(params.userId),
+      purpose: "wallet_deposit",
+    },
+  });
+}
+Stripe’s docs support creating a PaymentIntent first and then completing fulfillment from webhooks after the payment succeeds. 
+
+5. New file: server/services/crypto/fireblocks.ts
+import fs from "fs";
+import { FireblocksSDK, PeerType, TransactionOperation } from "fireblocks-sdk";
+
+const fireblocksSecret = fs.readFileSync(
+  process.env.FIREBLOCKS_SECRET_KEY_PATH!,
+  "utf8"
+);
+
+export const fireblocks = new FireblocksSDK(
+  fireblocksSecret,
+  process.env.FIREBLOCKS_API_KEY!,
+  process.env.FIREBLOCKS_BASE_URL || "https://api.fireblocks.io"
+);
+
+export async function createVaultDepositAddress(vaultAccountId: string, assetId: string) {
+  // Some workspaces use permanent vault wallets / addresses, others create or fetch address structures differently.
+  // Keep this wrapper so you can adjust for your exact Fireblocks account model.
+  return fireblocks.getDepositAddresses(vaultAccountId, assetId);
+}
+
+export async function createExternalWithdrawal(params: {
+  assetId: string;
+  amount: string;
+  destinationAddress: string;
+  note?: string;
+  vaultAccountId?: string;
+}) {
+  return fireblocks.createTransaction({
+    operation: TransactionOperation.TRANSFER,
+    assetId: params.assetId,
+    source: {
+      type: PeerType.VAULT_ACCOUNT,
+      id: params.vaultAccountId || process.env.FIREBLOCKS_VAULT_ACCOUNT_ID || "0",
+    },
+    destination: {
+      type: PeerType.ONE_TIME_ADDRESS,
+      oneTimeAddress: {
+        address: params.destinationAddress,
+      },
+    },
+    amount: params.amount,
+    note: params.note,
+  });
+}
+Fireblocks’ transaction API requires the core transfer parameters above, and its docs also describe webhook-driven status updates through the transaction lifecycle. 
+
+6. New file: server/services/ledger.ts
+import Decimal from "decimal.js";
+import { eq } from "drizzle-orm";
+import { transactions, wallets } from "../../shared/schema";
+
+export async function applyCompletedDeposit(tx: any, wallet: any, amount: string | number) {
+  const next = new Decimal(wallet.balance).plus(amount);
+
+  await tx.update(wallets)
+    .set({
+      balance: next.toFixed(8),
+      availableBalance: next.toFixed(8),
+    })
+    .where(eq(wallets.id, wallet.id));
+}
+
+export async function applyCompletedWithdrawal(tx: any, wallet: any, amount: string | number) {
+  const next = new Decimal(wallet.balance).minus(amount);
+
+  await tx.update(wallets)
+    .set({
+      balance: next.toFixed(8),
+    })
+    .where(eq(wallets.id, wallet.id));
+}
+
+export async function rollbackFailedWithdrawalReservation(tx: any, wallet: any, amountPlusFee: string | number) {
+  const nextAvailable = new Decimal(wallet.availableBalance).plus(amountPlusFee);
+
+  await tx.update(wallets)
+    .set({
+      availableBalance: nextAvailable.toFixed(8),
+    })
+    .where(eq(wallets.id, wallet.id));
+}
+
+export async function markTransactionProcessing(tx: any, transactionId: number) {
+  await tx.update(transactions)
+    .set({
+      status: "processing",
+      processingAt: new Date(),
+    })
+    .where(eq(transactions.id, transactionId));
+}
+
+export async function markTransactionCompleted(tx: any, transactionId: number, patch: Record<string, any> = {}) {
+  await tx.update(transactions)
+    .set({
+      status: "completed",
+      settlementStatus: "settled_external",
+      completedAt: new Date(),
+      ...patch,
+    })
+    .where(eq(transactions.id, transactionId));
+}
+
+export async function markTransactionFailed(tx: any, transactionId: number, patch: Record<string, any> = {}) {
+  await tx.update(transactions)
+    .set({
+      status: "failed",
+      settlementStatus: "failed_external",
+      failedAt: new Date(),
+      ...patch,
+    })
+    .where(eq(transactions.id, transactionId));
+}
+7. server/routes.ts — Stripe card deposit route
+Add imports near the top:
+
+import express from "express";
+import Decimal from "decimal.js";
+import { and, eq } from "drizzle-orm";
+import { stripe } from "./services/payments/stripe";
+import { fireblocks } from "./services/crypto/fireblocks";
+import {
+  applyCompletedDeposit,
+  applyCompletedWithdrawal,
+  rollbackFailedWithdrawalReservation,
+  markTransactionCompleted,
+  markTransactionFailed,
+  markTransactionProcessing,
+} from "./services/ledger";
+Now add a dedicated Stripe deposit route. This creates a pending internal transaction first, then creates the PaymentIntent.
+
+app.post("/api/deposits/card/create", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user!.id;
+    const { currency, amount } = req.body;
+
+    if (!currency || !amount || Number(amount) <= 0) {
+      return res.status(400).json({ message: "Invalid currency or amount" });
+    }
+
+    if (String(currency).toUpperCase() !== "AUD") {
+      return res.status(400).json({ message: "Card deposits currently support AUD only" });
+    }
+
+    const wallet = await getWallet(userId, currency);
+    if (!wallet) {
+      return res.status(404).json({ message: "Wallet not found" });
+    }
+
+    const [txRecord] = await db.insert(transactions).values({
+      userId,
+      type: "deposit",
+      fromCurrency: null,
+      toCurrency: currency.toUpperCase(),
+      amount: new Decimal(amount).toFixed(8),
+      fee: "0.00000000",
+      exchangeRate: null,
+      status: "pending",
+      settlementStatus: "pending_external",
+      provider: "stripe",
+      providerReference: null,
+      externalAccountRef: null,
+      channel: "card",
+      description: `${currency.toUpperCase()} card deposit`,
+      assetType: classifyAssetType(null, currency.toUpperCase()),
+      direction: "in",
+      requestedAt: new Date(),
+    }).returning();
+
+    const intent = await stripe.paymentIntents.create({
+      amount: Math.round(Number(amount) * 100),
+      currency: currency.toLowerCase(),
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        internalTransactionId: String(txRecord.id),
+        userId: String(userId),
+        purpose: "wallet_deposit",
+      },
+    });
+
+    await db.update(transactions)
+      .set({
+        providerReference: intent.id,
+      })
+      .where(eq(transactions.id, txRecord.id));
+
+    return res.json({
+      transactionId: txRecord.id,
+      clientSecret: intent.client_secret,
+      paymentIntentId: intent.id,
+      status: txRecord.status,
+    });
+  } catch (error: any) {
+    console.error("Card deposit create failed", error);
+    return res.status(500).json({ message: "Failed to create card deposit" });
+  }
+});
+8. server/routes.ts — raw body Stripe webhook
+Stripe webhook signature verification must use the raw request body, so mount this before general JSON parsing for that route path.
+
+app.post(
+  "/api/webhooks/stripe",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    const sig = req.headers["stripe-signature"];
+    if (!sig) {
+      return res.status(400).send("Missing Stripe signature");
+    }
+
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET!
+      );
+    } catch (err: any) {
+      console.error("Stripe webhook signature verification failed", err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    try {
+      if (event.type === "payment_intent.succeeded") {
+        const pi = event.data.object as any;
+        const txId = Number(pi.metadata?.internalTransactionId);
+        if (!txId) {
+          return res.status(200).json({ ok: true });
+        }
+
+        const [txRecord] = await db.select()
+          .from(transactions)
+          .where(eq(transactions.id, txId));
+
+        if (!txRecord || txRecord.status === "completed") {
+          return res.status(200).json({ ok: true });
+        }
+
+        const wallet = await getWallet(txRecord.userId, txRecord.toCurrency);
+        if (!wallet) {
+          return res.status(404).send("Wallet not found");
+        }
+
+        await db.transaction(async (tx) => {
+          await applyCompletedDeposit(tx, wallet, txRecord.amount);
+          await markTransactionCompleted(tx, txRecord.id, {
+            providerReference: pi.id,
+          });
+        });
+      }
+
+      if (event.type === "payment_intent.payment_failed") {
+        const pi = event.data.object as any;
+        const txId = Number(pi.metadata?.internalTransactionId);
+        if (!txId) {
+          return res.status(200).json({ ok: true });
+        }
+
+        await db.transaction(async (tx) => {
+          await markTransactionFailed(tx, txId, {
+            providerReference: pi.id,
+            failureCode: pi.last_payment_error?.code || null,
+            failureReason: pi.last_payment_error?.message || "Stripe payment failed",
+          });
+        });
+      }
+
+      return res.status(200).json({ received: true });
+    } catch (error) {
+      console.error("Stripe webhook processing failed", error);
+      return res.status(500).send("Webhook processing failed");
+    }
+  }
+);
+Stripe’s docs explicitly say to use webhooks for post-payment actions and not rely on the client returning to your app. 
+
+9. server/routes.ts — Fireblocks crypto withdrawal route
+This one reserves only availableBalance up front, then sends the Fireblocks transaction, then waits for webhook completion before reducing actual balance.
+
+app.post("/api/crypto/withdrawals/create", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user!.id;
+    const { currency, amount, destinationAddress, network } = req.body;
+
+    if (!currency || !amount || !destinationAddress) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const assetId = String(currency).toUpperCase();
+    const amountDec = new Decimal(amount);
+
+    if (amountDec.lte(0)) {
+      return res.status(400).json({ message: "Amount must be greater than zero" });
+    }
+
+    const wallet = await getWallet(userId, assetId);
+    if (!wallet) {
+      return res.status(404).json({ message: "Wallet not found" });
+    }
+
+    const available = new Decimal(wallet.availableBalance);
+    if (available.lt(amountDec)) {
+      return res.status(400).json({ message: "Insufficient available balance" });
+    }
+
+    const [txRecord] = await db.transaction(async (tx) => {
+      await tx.update(wallets)
+        .set({
+          availableBalance: available.minus(amountDec).toFixed(8),
+        })
+        .where(eq(wallets.id, wallet.id));
+
+      const [created] = await tx.insert(transactions).values({
+        userId,
+        type: "withdrawal",
+        fromCurrency: assetId,
+        toCurrency: null,
+        amount: amountDec.toFixed(8),
+        fee: "0.00000000",
+        exchangeRate: null,
+        status: "pending",
+        settlementStatus: "pending_external",
+        provider: "fireblocks",
+        providerReference: null,
+        externalAccountRef: destinationAddress,
+        channel: "blockchain",
+        description: `${assetId} blockchain withdrawal`,
+        blockchainTxHash: null,
+        assetType: classifyAssetType(assetId, null),
+        direction: "out",
+        requestedAt: new Date(),
+      }).returning();
+
+      return [created];
+    });
+
+    const fbTx = await fireblocks.createTransaction({
+      operation: "TRANSFER",
+      assetId,
+      source: {
+        type: "VAULT_ACCOUNT",
+        id: process.env.FIREBLOCKS_VAULT_ACCOUNT_ID || "0",
+      },
+      destination: {
+        type: "ONE_TIME_ADDRESS",
+        oneTimeAddress: {
+          address: destinationAddress,
+          tag: undefined,
+        },
+      },
+      amount: amountDec.toString(),
+      note: `Internal transaction ${txRecord.id}${network ? ` | ${network}` : ""}`,
+      externalTxId: String(txRecord.id),
+    } as any);
+
+    await db.update(transactions)
+      .set({
+        providerReference: fbTx.id,
+        status: "processing",
+        processingAt: new Date(),
+      })
+      .where(eq(transactions.id, txRecord.id));
+
+    return res.json({
+      transactionId: txRecord.id,
+      fireblocksTransactionId: fbTx.id,
+      status: "processing",
+    });
+  } catch (error: any) {
+    console.error("Crypto withdrawal create failed", error);
+    return res.status(500).json({ message: "Failed to create crypto withdrawal" });
+  }
+});
+Fireblocks supports using an external transaction identifier, and its transaction webhooks are the right place to finalize status changes. 
+
+10. server/routes.ts — Fireblocks webhook
+You will need to align the exact payload shape to your Fireblocks webhook version, but the integration pattern is stable: receive the transaction status update, find the internal transaction, then settle or fail it. Fireblocks documents transaction status webhooks and expects your endpoint to return HTTP 200, retrying if no response is received. 
+
+app.post("/api/webhooks/fireblocks", express.json(), async (req, res) => {
+  try {
+    const event = req.body;
+
+    // Adjust these field names to your configured webhook version.
+    const data = event?.data || event;
+    const providerReference = data?.id || data?.txId;
+    const status = data?.status;
+    const txHash = data?.txHash || data?.txHashs?.[0] || null;
+    const externalTxId = data?.externalTxId ? Number(data.externalTxId) : null;
+
+    let txRecord = null;
+
+    if (externalTxId) {
+      const rows = await db.select()
+        .from(transactions)
+        .where(eq(transactions.id, externalTxId));
+      txRecord = rows[0] || null;
+    }
+
+    if (!txRecord && providerReference) {
+      const rows = await db.select()
+        .from(transactions)
+        .where(eq(transactions.providerReference, providerReference));
+      txRecord = rows[0] || null;
+    }
+
+    if (!txRecord) {
+      return res.status(200).json({ ok: true });
+    }
+
+    if (status === "COMPLETED") {
+      const wallet = await getWallet(txRecord.userId, txRecord.fromCurrency);
+      if (!wallet) {
+        return res.status(200).json({ ok: true });
+      }
+
+      await db.transaction(async (tx) => {
+        await applyCompletedWithdrawal(tx, wallet, txRecord.amount);
+        await markTransactionCompleted(tx, txRecord.id, {
+          providerReference,
+          blockchainTxHash: txHash,
+        });
+      });
+
+      return res.status(200).json({ ok: true });
+    }
+
+    if (status === "FAILED" || status === "CANCELLED" || status === "REJECTED") {
+      const wallet = await getWallet(txRecord.userId, txRecord.fromCurrency);
+      if (!wallet) {
+        return res.status(200).json({ ok: true });
+      }
+
+      const amountPlusFee = new Decimal(txRecord.amount).plus(txRecord.fee || 0);
+
+      await db.transaction(async (tx) => {
+        await rollbackFailedWithdrawalReservation(tx, wallet, amountPlusFee);
+        await markTransactionFailed(tx, txRecord.id, {
+          providerReference,
+          failureReason: `Fireblocks status: ${status}`,
+        });
+      });
+
+      return res.status(200).json({ ok: true });
+    }
+
+    return res.status(200).json({ ok: true });
+  } catch (error) {
+    console.error("Fireblocks webhook processing failed", error);
+    return res.status(500).send("Webhook processing failed");
+  }
+});
+Fireblocks also notes that for balance validation and reconciliation, incoming transactions should only be considered reconciled after COMPLETED and the related balance update webhook has been received. That is why your production reconciliation job should not treat a merely detected deposit as settled yet. 
+
+11. server/routes.ts — Fireblocks deposit address route
+Your UI will need a way to show a real blockchain deposit address.
+
+app.post("/api/crypto/deposits/address", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user!.id;
+    const { currency } = req.body;
+
+    if (!currency) {
+      return res.status(400).json({ message: "Currency is required" });
+    }
+
+    const assetId = String(currency).toUpperCase();
+
+    const addresses = await fireblocks.getDepositAddresses(
+      process.env.FIREBLOCKS_VAULT_ACCOUNT_ID || "0",
+      assetId
+    );
+
+    const address = Array.isArray(addresses) ? addresses[0] : addresses;
+
+    return res.json({
+      userId,
+      currency: assetId,
+      address: address?.address || null,
+      tag: address?.tag || null,
+      legacyAddress: address?.legacyAddress || null,
+    });
+  } catch (error) {
+    console.error("Create crypto deposit address failed", error);
+    return res.status(500).json({ message: "Failed to fetch deposit address" });
+  }
+});
+If you later move to a segregated-per-user or omnibus structure, Fireblocks has specific deposit-at-scale patterns for that. 
+
+12. client/src/pages/wallets.tsx — card deposit request
+Where your deposit mutation currently hits the generic route, replace the card path with:
+
+const createCardDeposit = async (currency: string, amount: number) => {
+  const res = await fetch("/api/deposits/card/create", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ currency, amount }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to create card deposit");
+  }
+
+  return res.json();
+};
+Then use Stripe.js on the client with the returned clientSecret. On success, show pending wording, not final wording:
+
+toast({
+  title: "Deposit initiated",
+  description: "Complete the card payment. Your wallet balance updates after Stripe confirms settlement.",
+});
+13. client/src/pages/wallets.tsx — crypto withdrawal request
+const createCryptoWithdrawal = async (payload: {
+  currency: string;
+  amount: number;
+  destinationAddress: string;
+  network?: string;
+}) => {
+  const res = await fetch("/api/crypto/withdrawals/create", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to create crypto withdrawal");
+  }
+
+  return res.json();
+};
+And again, pending wording:
+
+toast({
+  title: "Withdrawal submitted",
+  description: "Your blockchain withdrawal is being processed and will complete after Fireblocks confirms it.",
+});
+14. What this gives you immediately
+After these patches, your app becomes much closer to a real settlement architecture:
+
+Fiat card deposits become pending -> Stripe PaymentIntent -> Stripe webhook -> wallet credit, which matches Stripe’s intended post-payment flow. 
+
+Crypto withdrawals become pending -> reserve available balance -> Fireblocks transaction -> Fireblocks webhook -> reduce actual balance / mark failed, which matches Fireblocks’ transaction lifecycle model. 
+
+15. Two important caveats
+Stripe solves card deposits, not your Australian bank transfer withdrawal rail. For that you still need a banking/payments provider such as Monoova/Cuscal or another payout rail. I am not claiming Stripe alone makes fiat withdrawal production-ready.
+
+Fireblocks’ exact webhook payload fields can vary by webhook version/configuration, so you will need one sandbox test pass to align the JSON field names in the handler with your workspace configuration. Fireblocks’ docs explicitly reference webhook versioning and migration guidance. 
+
+The most useful next step is for me to turn this into a single merged server/routes.ts patch block plus the exact companion service files so you can paste it directly with minimal edits.
+
+
+
