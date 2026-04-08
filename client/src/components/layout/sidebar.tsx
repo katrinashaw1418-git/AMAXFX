@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -13,6 +13,7 @@ import {
   ArrowRightLeft,
   Bitcoin,
 } from "lucide-react";
+import { useAuth } from "@/contexts/auth";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -28,8 +29,14 @@ const navigation = [
   { name: "Compliance",  href: "/compliance",   icon: Shield          },
 ];
 
-function SidebarContent() {
-  const [location] = useLocation();
+function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
+  const [location, navigate] = useLocation();
+  const { user } = useAuth();
+
+  function handleNav(href: string) {
+    navigate(href);
+    onNavClick?.();
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -53,20 +60,20 @@ function SidebarContent() {
           const isActive = location === item.href;
 
           return (
-            <Link key={item.name} href={item.href}>
-              <Button
-                variant={isActive ? "default" : "ghost"}
-                className={cn(
-                  "w-full justify-start text-left font-medium",
-                  isActive
-                    ? "bg-primary text-white hover:bg-primary/90"
-                    : "text-gray-700 hover:bg-gray-100"
-                )}
-              >
-                <Icon className="w-4 h-4 mr-3" />
-                {item.name}
-              </Button>
-            </Link>
+            <Button
+              key={item.name}
+              variant={isActive ? "default" : "ghost"}
+              className={cn(
+                "w-full justify-start text-left font-medium",
+                isActive
+                  ? "bg-primary text-white hover:bg-primary/90"
+                  : "text-gray-700 hover:bg-gray-100"
+              )}
+              onClick={() => handleNav(item.href)}
+            >
+              <Icon className="w-4 h-4 mr-3" />
+              {item.name}
+            </Button>
           );
         })}
       </nav>
@@ -84,8 +91,12 @@ function SidebarContent() {
             <User className="w-4 h-4 text-white" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-gray-900">John Chen</p>
-            <p className="text-xs text-gray-500">Verified Client</p>
+            <p className="text-sm font-medium text-gray-900">
+              {user ? `${user.firstName} ${user.lastName}` : "Guest"}
+            </p>
+            <p className="text-xs text-gray-500">
+              {user?.kycStatus === "verified" ? "Verified Client" : "Client"}
+            </p>
           </div>
           <ChevronRight className="w-4 h-4 text-gray-400" />
         </div>
@@ -105,7 +116,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Mobile Sidebar */}
       <Sheet open={isOpen} onOpenChange={onClose}>
         <SheetContent side="left" className="p-0 w-64">
-          <SidebarContent />
+          <SidebarContent onNavClick={onClose} />
         </SheetContent>
       </Sheet>
     </>
