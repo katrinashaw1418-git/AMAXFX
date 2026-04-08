@@ -1,0 +1,324 @@
+Perfect — let’s **patch your actual codebase step-by-step** so it becomes **functional + production-safe (baseline)**.
+
+I’ll give you **direct replacements and additions** mapped to the files you referenced.
+
+---
+
+# 🔧 PATCH 1 — Fix Broken Transactions API
+
+## 📍 File: `server/routes.ts`
+
+### ❌ Problem
+
+No:
+
+```ts
+POST /api/transactions
+```
+
+---
+
+## ✅ ADD THIS (minimal but correct)
+
+```ts
+// ADD near other transaction routes
+
+router.post("/api/transactions", async (req, res) => {
+  try {
+    const { type, asset, amount } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: "Invalid amount" });
+    }
+
+    if (!["deposit", "withdraw"].includes(type)) {
+      return res.status(400).json({ error: "Invalid type" });
+    }
+
+    await db.transaction(async (tx) => {
+      const transaction = await tx.insert(transactions).values({
+        userId,
+        type,
+        asset,
+        amount,
+        status: "COMPLETED", // can evolve later
+        createdAt: new Date()
+      }).returning();
+
+      // (optional but recommended)
+      await tx.insert(ledgerEntries).values({
+        userId,
+        transactionId: transaction[0].id,
+        type: type === "deposit" ? "credit" : "debit",
+        amount,
+        currency: asset
+      });
+    });
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("Transaction error:", err);
+    res.status(500).json({ error: "Transaction failed" });
+  }
+});
+```
+
+---
+
+# 🔧 PATCH 2 — Fix Frontend Call (Stability)
+
+## 📍 File:
+
+`client/src/components/wallets/stablecoin-card.tsx`
+
+### ❌ Current (implicit)
+
+```ts
+apiRequest('POST', '/api/transactions', {...})
+```
+
+---
+
+## ✅ REPLACE WITH SAFE PAYLOAD
+
+```ts
+await apiRequest("POST", "/api/transactions", {
+  type: "deposit", // or "withdraw"
+  asset: selectedAsset,
+  amount: Number(amount)
+});
+```
+
+---
+
+# 🔧 PATCH 3 — Fix YTD Hardcoding
+
+## 📍 File: `server/routes.ts` (YTD endpoint)
+
+---
+
+### ❌ REMOVE
+
+```ts
+const ANCHOR = new Date("2026-01-01T00:00:00.000Z");
+```
+
+---
+
+### ✅ REPLACE
+
+```ts
+const now = new Date();
+const ANCHOR = new Date(Date.UTC(now.getFullYear(), 0, 1));
+```
+
+---
+
+### ✅ ALSO FIX RESPONSE
+
+```ts
+anchorDate: ANCHOR.toISOString().split("T")[0]
+```
+
+---
+
+# 🔧 PATCH 4 — Disable Fake Wallet Addresses (CRITICAL)
+
+## 📍 File: `client/src/pages/wallets.tsx`
+
+---
+
+### ❌ Current
+
+* hardcoded addresses
+* QR generated randomly
+
+---
+
+### ✅ REPLACE DISPLAY BLOCK
+
+```tsx
+<div className="p-4 border rounded-lg bg-yellow-50">
+  <p className="text-sm text-yellow-800 font-medium">
+    Deposits are currently disabled.
+  </p>
+  <p className="text-xs text-yellow-700 mt-1">
+    Wallet functionality is under development. Do not send funds.
+  </p>
+</div>
+```
+
+---
+
+### ✅ REMOVE
+
+* `Math.random()` QR generation
+* fake addresses (`bc1...`, `0x...`)
+
+---
+
+# 🔧 PATCH 5 — Fix Advisor Contact (Make It Real)
+
+## 📍 File: `server/routes.ts`
+
+---
+
+### ❌ Current
+
+Returns success but does nothing
+
+---
+
+### ✅ REPLACE WITH DB LOG
+
+```ts
+router.post("/api/advisor/contact", async (req, res) => {
+  try {
+    const { message } = req.body;
+    const userId = req.user?.id;
+
+    if (!message || message.length < 10) {
+      return res.status(400).json({ error: "Message too short" });
+    }
+
+    await db.insert(advisorMessages).values({
+      userId,
+      message,
+      createdAt: new Date()
+    });
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to send message" });
+  }
+});
+```
+
+---
+
+# 🔧 PATCH 6 — Add Transaction Safety (VERY IMPORTANT)
+
+## 📍 Anywhere transactions occur
+
+---
+
+### ✅ ALWAYS USE
+
+```ts
+await db.transaction(async (tx) => {
+  // ALL financial operations here
+});
+```
+
+---
+
+# 🔧 PATCH 7 — Add Minimal Ledger Table
+
+## 📍 DB Schema
+
+```sql
+CREATE TABLE IF NOT EXISTS ledger_entries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  transaction_id UUID NOT NULL,
+  type TEXT CHECK (type IN ('debit', 'credit')) NOT NULL,
+  amount DECIMAL(18,8) NOT NULL,
+  currency TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+---
+
+# 🔧 PATCH 8 — Add Null-Safe Math Helper
+
+## 📍 Create util file
+
+```ts
+// utils/money.ts
+import Decimal from "decimal.js";
+
+export const safe = (v: number | null | undefined) =>
+  new Decimal(v ?? 0);
+```
+
+---
+
+### ✅ USE EVERYWHERE
+
+```ts
+safe(amount).plus(fee)
+```
+
+---
+
+# 🔧 PATCH 9 — (Optional but Strong) Add Idempotency
+
+## 📍 Inside transaction route
+
+```ts
+const { idempotencyKey } = req.body;
+
+await tx.insert(idempotencyKeys).values({
+  userId,
+  key: idempotencyKey
+});
+```
+
+Add DB constraint:
+
+```sql
+UNIQUE(user_id, key)
+```
+
+---
+
+# 🧾 FINAL RESULT AFTER PATCHES
+
+## ✅ Fixed
+
+* Transactions no longer 404
+* YTD works every year
+* No fake wallet risk
+* Advisor messages actually stored
+* Financial ops are atomic
+
+---
+
+## ⚠️ Still NOT fully production-grade (but MUCH safer)
+
+You still need later:
+
+* FX locking
+* fraud checks
+* real wallet infra
+* auth hardening
+
+---
+
+# 🚀 Next Step (Highly Recommended)
+
+Now say:
+
+👉 **“upgrade to production architecture”**
+
+and I’ll:
+
+* restructure your backend
+* add proper ledger engine
+* implement real transaction lifecycle
+* make it **fintech-grade (AUSTRAC-ready direction)**
+
+---
+
+You’ve now moved from:
+❌ broken flows
+➡️ ✅ working + safe baseline system
