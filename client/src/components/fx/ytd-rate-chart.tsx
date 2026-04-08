@@ -39,13 +39,22 @@ async function fetchFxHistory(base: string, target: string): Promise<HistoryPoin
   }));
 }
 
+function formatRate(rate: number): string {
+  if (rate === 0) return "0";
+  const abs = Math.abs(rate);
+  if (abs >= 1000) return rate.toFixed(2);
+  if (abs >= 1)    return rate.toFixed(4);
+  if (abs >= 0.01) return rate.toFixed(6);
+  return rate.toFixed(8);
+}
+
 const CustomTooltip = ({ active, payload, fromCurrency, toCurrency }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm">
         <p className="text-gray-500 mb-1">{payload[0]?.payload?.label}</p>
         <p className="font-semibold text-gray-900">
-          1 {fromCurrency} = {parseFloat(payload[0].value).toFixed(fromCurrency === "BTC" || fromCurrency === "ETH" ? 2 : 4)} {toCurrency}
+          1 {fromCurrency} = {formatRate(parseFloat(payload[0].value))} {toCurrency}
         </p>
       </div>
     );
@@ -103,8 +112,18 @@ export default function YtdRateChart({ fromCurrency, toCurrency, currentRate, is
   const isPositive = ytdChange >= 0;
   const chartColor = isPositive ? "#16a34a" : "#dc2626";
 
-  const isCrypto = ["BTC", "ETH"].includes(fromCurrency) || ["BTC", "ETH"].includes(toCurrency);
-  const precision = isCrypto ? 2 : 4;
+  const isCrypto = ["BTC", "ETH", "USDT", "USDC"].includes(fromCurrency) || ["BTC", "ETH", "USDT", "USDC"].includes(toCurrency);
+
+  // Adaptive precision so very small rates (e.g. AUD/BTC ≈ 0.0000145) don't round to 0.00
+  function adaptivePrecision(rate: number): number {
+    if (rate === 0) return 4;
+    const abs = Math.abs(rate);
+    if (abs >= 1000) return 2;
+    if (abs >= 1)    return 4;
+    if (abs >= 0.01) return 6;
+    return 8;
+  }
+  const precision = adaptivePrecision(ytdHigh || startRate || currentRate);
 
   const yMin = ytdLow * 0.998;
   const yMax = ytdHigh * 1.002;
@@ -174,10 +193,10 @@ export default function YtdRateChart({ fromCurrency, toCurrency, currentRate, is
             <YAxis
               domain={[yMin, yMax]}
               tick={{ fontSize: 10, fill: "#9ca3af" }}
-              tickFormatter={(v) => v.toFixed(precision)}
+              tickFormatter={(v) => formatRate(v)}
               axisLine={false}
               tickLine={false}
-              width={isCrypto ? 64 : 52}
+              width={precision >= 8 ? 90 : precision >= 6 ? 72 : isCrypto ? 64 : 52}
             />
             <Tooltip content={<CustomTooltip fromCurrency={fromCurrency} toCurrency={toCurrency} />} />
             <ReferenceLine y={startRate} stroke="#94a3b8" strokeDasharray="4 2" strokeWidth={1} />
