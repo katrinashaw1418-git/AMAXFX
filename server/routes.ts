@@ -3293,7 +3293,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // GET /api/stripe/status — frontend uses this to show/hide card payment option
   app.get("/api/stripe/status", (_req: Request, res: any) => {
-    res.json({ configured: !!process.env.STRIPE_SECRET_KEY });
+    res.json({
+      configured: !!process.env.STRIPE_SECRET_KEY,
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? null,
+    });
   });
 
   // POST /api/stripe/create-checkout-session
@@ -3363,9 +3366,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/stripe/create-payment-intent
+  // Body: { walletId: number, amount: string, currency: string }
+  // Returns: { clientSecret } — used by Stripe Elements in the frontend
+  app.post("/api/stripe/create-payment-intent", requireAuth, async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      const { walletId, amount, currency } = req.body;
+      if (!walletId || !amount || !currency) {
+        return res.status(400).json({ error: "walletId, amount and currency are required" });
+      }
+
+      const parsedAmount = parseFloat(amount);
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        return res.status(400).json({ error: "Invalid amount" });
+      }
+
+      const [wallet] = await db.select().from(wallets)
+        .where(and(eq(wallets.id, Number(walletId)), eq(wallets.userId, userId)));
+      if (!wallet) return res.status(404).json({ error: "Wallet not found" });
+
+      const stripe = getStripeClient();
+      const unitAmount = STRIPE_ZERO_DECIMAL.has(currency.toUpperCase())
+        ? Math.round(parsedAmount)
+        : Math.round(parsedAmount * 100);
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: unitAmount,
+        currency: currency.toLowerCase(),
+        automatic_payment_methods: { enabled: true },
+        metadata: {
+          walletId: String(walletId),
+          userId: String(userId),
+          currency,
+          amountDecimal: amount,
+        },
+        description: `AMAX Global ${currency} Wallet Deposit`,
+      });
+
+      res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
+      console.error("[stripe-payment-intent]", error?.message ?? error);
+      res.status(500).json({ error: "Failed to create payment intent" });
+    }
+  });
+
   // POST /api/stripe/webhook
   // Stripe posts events here; body is raw Buffer (set up in server/index.ts)
-  // Handles: checkout.session.completed → credit wallet balance
+  // Handles: checkout.session.completed, payment_intent.succeeded → credit wallet balance
   app.post("/api/stripe/webhook", async (req: Request, res: any) => {
     const sig = req.headers["stripe-signature"];
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -3442,6 +3491,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
 
         console.log(`[stripe-webhook] credited ${amount} ${currency} to wallet ${walletId} (session ${session.id})`);
+      } catch (err: any) {
+        console.error("[stripe-webhook] failed to credit wallet:", err.message);
+        return res.status(500).json({ error: "Failed to credit wallet" });
+      }
+    }
+
+    if (event.type === "payment_intent.succeeded") {
+      const intent = event.data.object as Stripe.PaymentIntent;
+      const { walletId, userId, currency, amountDecimal } = intent.metadata ?? {};
+
+      if (!walletId || !userId || !currency || !amountDecimal) {
+        console.error("[stripe-webhook] missing metadata on payment_intent", intent.id);
+        return res.json({ received: true, skipped: "missing metadata" });
+      }
+
+      const amount = new Decimal(amountDecimal);
+
+      try {
+        let txRecord: any;
+        await db.transaction(async (tx) => {
+          await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+          const [wallet] = await tx.select().from(wallets)
+            .where(and(eq(wallets.id, Number(walletId)), eq(wallets.userId, Number(userId))))
+            .for("update");
+          if (!wallet) throw new Error(`Wallet ${walletId} not found for userId ${userId}`);
+
+          await tx.update(wallets).set({
+            balance: new Decimal(wallet.balance).plus(amount).toFixed(8),
+            availableBalance: new Decimal(wallet.availableBalance).plus(amount).toFixed(8),
+          }).where(eq(wallets.id, wallet.id));
+
+          [txRecord] = await tx.insert(transactions).values({
+            userId: Number(userId),
+            type: "deposit",
+            fromCurrency: null,
+            toCurrency: currency,
+            amount: amount.toFixed(8),
+            fee: "0.00000000",
+            exchangeRate: null,
+            status: "completed",
+            settlementStatus: "stripe_card",
+            description: `${currency} Deposit via Card (Stripe ${intent.id})`,
+            sourceExchange: "stripe",
+            blockchainTxHash: null,
+            assetType: "fiat",
+            direction: "in",
+            riskFlag: false,
+            reviewStatus: "clear",
+            reviewNotes: null,
+          }).returning();
+        });
+
+        await writeAuditLog(
+          Number(userId), "stripe_deposit", "transaction", String(txRecord?.id),
+          { currency, amount: amountDecimal, stripeIntentId: intent.id },
+          null,
+        );
+        console.log(`[stripe-webhook] credited ${amount} ${currency} to wallet ${walletId} (intent ${intent.id})`);
       } catch (err: any) {
         console.error("[stripe-webhook] failed to credit wallet:", err.message);
         return res.status(500).json({ error: "Failed to credit wallet" });

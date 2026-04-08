@@ -20,6 +20,7 @@ import { useWallets } from '@/hooks/use-portfolio';
 import RateSparkline from '@/components/fx/rate-sparkline';
 import { useVoiceNarration } from '@/hooks/use-voice-narration';
 import VoiceSettings from '@/components/voice/voice-settings';
+import StripePaymentForm from '@/components/stripe-payment-form';
 
 // Exchange Rate Display Component for Transfer Modal
 function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrency: string; toCurrency: string; amount: string }) {
@@ -167,8 +168,10 @@ export default function Wallets() {
   const [withdrawPayId, setWithdrawPayId] = useState('');
   const [withdrawPayIdName, setWithdrawPayIdName] = useState('');
   const [depositSubmitted, setDepositSubmitted] = useState<{ referenceCode: string; currency: string; amount: string; method: string } | null>(null);
+  const [cardClientSecret, setCardClientSecret] = useState<string | null>(null);
+  const [cardLoading, setCardLoading] = useState(false);
 
-  const { data: stripeStatus } = useQuery<{ configured: boolean }>({
+  const { data: stripeStatus } = useQuery<{ configured: boolean; publishableKey: string | null }>({
     queryKey: ['/api/stripe/status'],
   });
   const [, navigate] = useLocation();
@@ -336,6 +339,31 @@ export default function Wallets() {
     }
   };
 
+  const handleCardPayment = async () => {
+    if (!selectedWallet || !amount) {
+      toast({ title: "Missing Information", description: "Please enter an amount.", variant: "destructive" });
+      return;
+    }
+    setCardLoading(true);
+    try {
+      const res = await apiRequest('POST', '/api/stripe/create-payment-intent', {
+        walletId: selectedWallet.id,
+        amount,
+        currency: selectedWallet.currency,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to initialise payment');
+      }
+      const { clientSecret } = await res.json();
+      setCardClientSecret(clientSecret);
+    } catch (err: any) {
+      toast({ title: "Card Payment Error", description: err.message, variant: "destructive" });
+    } finally {
+      setCardLoading(false);
+    }
+  };
+
   // Withdraw mutation
   const withdrawMutation = useMutation({
     mutationFn: async (data: { type: string; currency: string; amount: string }) => {
@@ -416,9 +444,9 @@ export default function Wallets() {
       return;
     }
 
-    // Card deposits are handled entirely by Stripe — this function handles bank/payid only.
+    // Card deposits are handled by the inline Stripe Elements form — not this path.
     if (depositMethod === 'card') {
-      handleStripeCheckout();
+      handleCardPayment();
       return;
     }
 
@@ -682,7 +710,7 @@ export default function Wallets() {
 
 
       {/* Deposit Modal */}
-      <Dialog open={depositModalOpen} onOpenChange={(open) => { setDepositModalOpen(open); if (!open) { setDepositSubmitted(null); setAmount(''); setDepositMethod(''); } }}>
+      <Dialog open={depositModalOpen} onOpenChange={(open) => { setDepositModalOpen(open); if (!open) { setDepositSubmitted(null); setCardClientSecret(null); setAmount(''); setDepositMethod(''); } }}>
         <DialogContent className="sm:max-w-[450px] max-h-[80vh] overflow-y-auto p-4">
           <DialogHeader>
             <DialogTitle>Deposit {selectedWallet?.currency}</DialogTitle>
@@ -838,19 +866,51 @@ export default function Wallets() {
                         <p className="text-xs text-red-700 dark:text-red-300 mt-1">Please use PayID or Bank Transfer instead, or contact AMAX support at info@amaxglobal.com.au.</p>
                       </div>
                     )}
-                    <div className="p-3 bg-muted rounded-lg">
-                      <h4 className="font-medium mb-2 text-sm">💳 Card Payment via Stripe</h4>
-                      <div className="text-xs text-muted-foreground space-y-1">
-                        <p>• Visa, Mastercard, American Express accepted</p>
-                        <p>• Processed by Stripe — PCI DSS Level 1 certified</p>
-                        <p>• Card details entered on Stripe's secure page — never stored by AMAX</p>
-                        <p>• Fee: 2.9% + $0.30 per transaction</p>
-                        <p>• Funds credited after Stripe payment confirmation</p>
+
+                    {cardClientSecret && stripeStatus?.publishableKey ? (
+                      <div className="space-y-3">
+                        <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded border border-blue-200 dark:border-blue-800">
+                          <p className="text-xs text-blue-800 dark:text-blue-200">
+                            Paying <strong>{amount} {selectedWallet?.currency}</strong> — enter your card details below
+                          </p>
+                        </div>
+                        <StripePaymentForm
+                          publishableKey={stripeStatus.publishableKey}
+                          clientSecret={cardClientSecret}
+                          onSuccess={() => {
+                            setCardClientSecret(null);
+                            queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
+                            queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+                            toast({ title: "✅ Payment Submitted", description: "Your card payment is processing. Your balance will be updated shortly." });
+                            setDepositModalOpen(false);
+                            setAmount('');
+                            setDepositMethod('');
+                          }}
+                          onError={(msg) => {
+                            toast({ title: "Payment Failed", description: msg, variant: "destructive" });
+                          }}
+                        />
+                        <Button variant="ghost" size="sm" className="w-full h-7 text-xs" onClick={() => setCardClientSecret(null)}>
+                          ← Back
+                        </Button>
                       </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Enter the amount above, then click <strong>Pay Securely with Card</strong> to be redirected to Stripe's hosted payment page.
-                    </p>
+                    ) : (
+                      <>
+                        <div className="p-3 bg-muted rounded-lg">
+                          <h4 className="font-medium mb-2 text-sm">💳 Card Payment via Stripe</h4>
+                          <div className="text-xs text-muted-foreground space-y-1">
+                            <p>• Visa, Mastercard, American Express accepted</p>
+                            <p>• Processed by Stripe — PCI DSS Level 1 certified</p>
+                            <p>• Card details secured by Stripe — never stored by AMAX</p>
+                            <p>• Fee: 2.9% + $0.30 per transaction</p>
+                            <p>• Funds credited after payment confirmation</p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Enter the amount above, then click <strong>Pay Now</strong> to enter your card details securely.
+                        </p>
+                      </>
+                    )}
                   </div>
                 )}
                 
@@ -917,13 +977,15 @@ export default function Wallets() {
                 
                 <div className="flex space-x-2 pt-2">
                   {depositMethod === 'card' ? (
-                    <Button
-                      onClick={handleStripeCheckout}
-                      disabled={stripeLoading || !amount}
-                      className="flex-1 h-8 text-sm"
-                    >
-                      {stripeLoading ? "Redirecting to Stripe..." : "💳 Pay Securely with Card"}
-                    </Button>
+                    !cardClientSecret && (
+                      <Button
+                        onClick={handleCardPayment}
+                        disabled={cardLoading || !amount || !stripeStatus?.configured}
+                        className="flex-1 h-8 text-sm"
+                      >
+                        {cardLoading ? "Preparing payment..." : "💳 Pay Now"}
+                      </Button>
+                    )
                   ) : (
                     <Button
                       onClick={handleDeposit}
