@@ -36,3 +36,9 @@ id = "W9CKaw89umWu04voTzqG3"
 uri = "file://logo_fx_final.jpg"
 type = "image"
 title = "AMAX FX Logo — F and X fully shown in overlapping circles"
+
+[[outputs]]
+id = "T0JHF9xpqbSqGNEFcpoVK"
+uri = "file://amax_logo_original.jpg"
+type = "image"
+title = "AMAX Logo — Original (unchanged)"
