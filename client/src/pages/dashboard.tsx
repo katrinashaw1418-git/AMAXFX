@@ -2,37 +2,33 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "wouter";
-import { useFxRate, useFxRates } from "@/hooks/use-fx-rates";
+import { useFxRate } from "@/hooks/use-fx-rates";
 import {
   ArrowRightLeft, Wallet, Shield, Phone,
-  MessageSquare, X, RefreshCw, Bitcoin, TrendingUp,
+  MessageSquare, X, RefreshCw, Bitcoin,
 } from "lucide-react";
 import YtdRateChart from "@/components/fx/ytd-rate-chart";
-import RateSparkline from "@/components/fx/rate-sparkline";
 import CurrencyBalances from "@/components/dashboard/currency-balances";
 import TransactionHistory from "@/components/dashboard/transaction-history";
 
-const RATE_PAIRS = [
-  { base: "AUD", target: "USD" },
-  { base: "AUD", target: "EUR" },
-  { base: "AUD", target: "GBP" },
-  { base: "AUD", target: "JPY" },
-  { base: "AUD", target: "CNY" },
-  { base: "AUD", target: "BTC" },
-  { base: "AUD", target: "ETH" },
+const CHART_CURRENCIES = [
+  { code: "AUD",  label: "🇦🇺 AUD – Australian Dollar" },
+  { code: "USD",  label: "🇺🇸 USD – US Dollar"          },
+  { code: "EUR",  label: "🇪🇺 EUR – Euro"               },
+  { code: "GBP",  label: "🇬🇧 GBP – British Pound"      },
+  { code: "JPY",  label: "🇯🇵 JPY – Japanese Yen"       },
+  { code: "CNY",  label: "🇨🇳 CNY – Chinese Yuan"       },
+  { code: "HKD",  label: "🇭🇰 HKD – Hong Kong Dollar"   },
+  { code: "SGD",  label: "🇸🇬 SGD – Singapore Dollar"   },
+  { code: "CAD",  label: "🇨🇦 CAD – Canadian Dollar"    },
+  { code: "KRW",  label: "🇰🇷 KRW – South Korean Won"   },
+  { code: "BTC",  label: "₿  BTC – Bitcoin"             },
+  { code: "ETH",  label: "Ξ  ETH – Ethereum"            },
+  { code: "USDT", label: "💵 USDT – Tether"             },
+  { code: "USDC", label: "🪙 USDC – USD Coin"           },
 ];
-
-const ALL_META: Record<string, { flag: string; name: string }> = {
-  AUD:  { flag: "🇦🇺", name: "Australian Dollar" },
-  USD:  { flag: "🇺🇸", name: "US Dollar"          },
-  EUR:  { flag: "🇪🇺", name: "Euro"               },
-  GBP:  { flag: "🇬🇧", name: "British Pound"      },
-  JPY:  { flag: "🇯🇵", name: "Japanese Yen"       },
-  CNY:  { flag: "🇨🇳", name: "Chinese Yuan"       },
-  BTC:  { flag: "₿",   name: "Bitcoin"            },
-  ETH:  { flag: "Ξ",   name: "Ethereum"           },
-};
 
 export default function Dashboard() {
   const [showAdvisorBox, setShowAdvisorBox] = useState(true);
@@ -40,7 +36,6 @@ export default function Dashboard() {
   const [chartTo,   setChartTo]   = useState("USD");
 
   const { data: fxRate,  isLoading: rateLoading  } = useFxRate("AUD", "USD");
-  const { data: fxRates, isLoading: ratesLoading } = useFxRates();
   const audUsdRate = fxRate ? parseFloat((fxRate as any).rate) : 0;
 
   const { data: chartRate, isLoading: chartLoading } = useFxRate(chartFrom, chartTo);
@@ -83,7 +78,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="font-semibold text-gray-900">eWallet</p>
-                <p className="text-xs text-gray-500">Balances & deposits</p>
+                <p className="text-xs text-gray-500">Balances &amp; deposits</p>
               </div>
             </CardContent>
           </Card>
@@ -110,8 +105,8 @@ export default function Dashboard() {
                 <Bitcoin className="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <p className="font-semibold text-gray-900">Crypto</p>
-                <p className="text-xs text-gray-500">Digital assets (DCE)</p>
+                <p className="font-semibold text-gray-900">Crypto Exchange</p>
+                <p className="text-xs text-gray-500">Digital assets (DCE) conversion</p>
               </div>
             </CardContent>
           </Card>
@@ -125,19 +120,69 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="font-semibold text-gray-900">Compliance</p>
-                <p className="text-xs text-gray-500">KYC & documents</p>
+                <p className="text-xs text-gray-500">KYC &amp; documents</p>
               </div>
             </CardContent>
           </Card>
         </Link>
       </div>
 
-      {/* ── Currency Balances + YTD Chart ── */}
+      {/* ── Balances + YTD Chart ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
           <CurrencyBalances />
         </div>
-        <div className="lg:col-span-2">
+
+        <div className="lg:col-span-2 space-y-3">
+          {/* Chart pair selectors */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm text-gray-700">YTD Exchange Rate Chart</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex-1 min-w-[140px]">
+                  <p className="text-xs text-gray-500 mb-1">From</p>
+                  <Select value={chartFrom} onValueChange={setChartFrom}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CHART_CURRENCIES.filter(c => c.code !== chartTo).map(c => (
+                        <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end pb-1 text-gray-400 font-bold mt-5">→</div>
+                <div className="flex-1 min-w-[140px]">
+                  <p className="text-xs text-gray-500 mb-1">To</p>
+                  <Select value={chartTo} onValueChange={setChartTo}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CHART_CURRENCIES.filter(c => c.code !== chartFrom).map(c => (
+                        <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {!chartLoading && chartRateValue > 0 && (
+                  <div className="flex items-end pb-1 mt-5">
+                    <span className="text-sm font-semibold text-gray-700 whitespace-nowrap">
+                      = {chartRateValue < 0.001
+                          ? chartRateValue.toFixed(8)
+                          : chartRateValue < 1
+                          ? chartRateValue.toFixed(6)
+                          : chartRateValue.toFixed(4)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           <YtdRateChart
             fromCurrency={chartFrom}
             toCurrency={chartTo}
@@ -146,63 +191,6 @@ export default function Dashboard() {
           />
         </div>
       </div>
-
-      {/* ── Live Rate Overview ── */}
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Live Rate Overview</CardTitle>
-            <div className="flex items-center gap-1 text-xs text-gray-500">
-              <TrendingUp className="w-3.5 h-3.5" />
-              Click a pair to view its chart
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
-            {ratesLoading ? (
-              <p className="text-sm text-gray-400 col-span-7 py-4 text-center">Loading rates…</p>
-            ) : (
-              RATE_PAIRS.map(({ base, target }) => {
-                const rate      = fxRates?.find((r: any) => r.baseCurrency === base && r.targetCurrency === target);
-                const rateValue = rate ? parseFloat(rate.rate) : null;
-                const isSelected = chartFrom === base && chartTo === target;
-                const meta      = ALL_META[target] ?? { flag: target, name: target };
-                const isCrypto  = target === "BTC" || target === "ETH";
-
-                return (
-                  <div
-                    key={`${base}-${target}`}
-                    onClick={() => { setChartFrom(base); setChartTo(target); }}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors text-center ${
-                      isSelected ? "bg-amber-50 border-amber-300" : "bg-gray-50 border-transparent hover:bg-gray-100"
-                    }`}
-                  >
-                    <p className="text-xs text-gray-500 mb-0.5">{meta.flag} {base}/{target}</p>
-                    {rateValue !== null ? (
-                      <>
-                        <p className="font-bold text-sm text-gray-900">
-                          {isCrypto
-                            ? rateValue.toLocaleString(undefined, { maximumFractionDigits: 2 })
-                            : rateValue.toFixed(4)}
-                        </p>
-                        <div className="mt-1">
-                          <RateSparkline fromCurrency={base} toCurrency={target} currentRate={rateValue} />
-                        </div>
-                        <p className={`text-xs mt-0.5 ${rate?.isStale ? "text-amber-600" : "text-green-600"}`}>
-                          {rate?.isStale ? `⚠ ${rate.rateAgeMinutes}m` : rate?.rateAgeMinutes != null ? `${rate.rateAgeMinutes}m` : "Live"}
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-xs text-gray-300">—</p>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* ── Recent Transactions ── */}
       <TransactionHistory />
