@@ -29,6 +29,13 @@ const FIAT_CURRENCIES = [
   { code: "KRW",  name: "South Korean Won",   flag: "🇰🇷" },
 ];
 
+function formatRateAge(minutes: number | null | undefined): string {
+  if (minutes == null) return "Live rate";
+  if (minutes === 0)   return "< 1 min ago";
+  if (minutes === 1)   return "1 min ago";
+  return `${minutes} min ago`;
+}
+
 const DISPLAYED_PAIRS = [
   { base: "AUD", target: "USD" },
   { base: "AUD", target: "CAD" },
@@ -134,12 +141,12 @@ export default function FxExchange() {
             <span className="font-bold">1 {fromCurrency} = {exchangeRate.toFixed(4)} {toCurrency}</span>
             {(fxRate as any)?.isStale ? (
               <Badge className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs">
-                ⚠ {(fxRate as any).rateAgeMinutes}m old
+                ⚠ {formatRateAge((fxRate as any).rateAgeMinutes)}
               </Badge>
             ) : (
               <span className="flex items-center gap-1 text-green-400 text-xs">
                 <RefreshCw className="w-3 h-3" />
-                {(fxRate as any)?.rateAgeMinutes != null ? `Updated ${(fxRate as any).rateAgeMinutes}m ago` : "Live rate"}
+                {formatRateAge((fxRate as any)?.rateAgeMinutes)}
               </span>
             )}
           </div>
@@ -163,11 +170,18 @@ export default function FxExchange() {
                 )}
               </p>
             </div>
-            {!(fxRate as any)?.isStale && !rateLoading && (
-              <span className="flex items-center gap-1.5 text-xs text-green-400">
-                <RefreshCw className="w-3 h-3" />
-                {(fxRate as any)?.rateAgeMinutes != null ? `Updated ${(fxRate as any).rateAgeMinutes}m ago` : "Live rate"}
-              </span>
+            {!rateLoading && (
+              (fxRate as any)?.isStale ? (
+                <span className="flex items-center gap-1.5 text-xs text-amber-400">
+                  <RefreshCw className="w-3 h-3" />
+                  ⚠ {formatRateAge((fxRate as any)?.rateAgeMinutes)}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 text-xs text-green-400">
+                  <RefreshCw className="w-3 h-3" />
+                  {formatRateAge((fxRate as any)?.rateAgeMinutes)}
+                </span>
+              )
             )}
           </div>
         </CardContent>
@@ -357,9 +371,15 @@ export default function FxExchange() {
                 <span className="text-gray-600">You send</span>
                 <span className="font-semibold">{parseFloat(amount || "0").toLocaleString()} {fromCurrency}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-start">
                 <span className="text-gray-600">Spot Rate</span>
-                <span className="font-medium">1 {fromCurrency} = {exchangeRate.toFixed(6)} {toCurrency}</span>
+                <div className="text-right">
+                  <div className="font-medium">1 {fromCurrency} = {exchangeRate.toFixed(6)} {toCurrency}</div>
+                  <div className={`text-xs mt-0.5 flex items-center justify-end gap-1 ${(fxRate as any)?.isStale ? "text-amber-500" : "text-green-500"}`}>
+                    <RefreshCw className="w-3 h-3" />
+                    {(fxRate as any)?.isStale ? "⚠ " : ""}{formatRateAge((fxRate as any)?.rateAgeMinutes)}
+                  </div>
+                </div>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Processing Fee (0.5%)</span>
