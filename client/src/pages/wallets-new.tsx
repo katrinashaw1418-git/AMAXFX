@@ -39,34 +39,17 @@ function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrenc
   let convertedAmount = '0.00';
   let sendingAmount = '0.00';
   
-  console.log('ExchangeRateDisplay Debug:', { amount, rate, fromCurrency, toCurrency, hasAmount: !!amount });
-  
   if (amount && String(amount).trim() !== '') {
     const amountNumber = parseFloat(String(amount));
     const rateNumber = rate;
     
     if (!isNaN(amountNumber) && !isNaN(rateNumber) && amountNumber > 0) {
-      // Simple calculation: amount × exchange rate - 0.5% fee
       const grossConverted = amountNumber * rateNumber;
-      const transactionFee = grossConverted * 0.005; // 0.5% fee
+      const transactionFee = grossConverted * 0.005;
       const netConverted = grossConverted - transactionFee;
-      
       convertedAmount = netConverted.toFixed(2);
       sendingAmount = amountNumber.toFixed(2);
-      
-      console.log('Calculation Result:', { 
-        amountNumber, 
-        rateNumber, 
-        grossConverted, 
-        transactionFee, 
-        netConverted, 
-        convertedAmount 
-      });
-    } else {
-      console.log('Invalid numbers:', { amountNumber, rateNumber });
     }
-  } else {
-    console.log('No amount provided');
   }
 
   return (
@@ -195,22 +178,14 @@ export default function Wallets() {
 
   const transferMutation = useMutation({
     mutationFn: async (data: { fromCurrency: string; toCurrency: string; amount: number }) => {
-      console.log("Making transfer API call with data:", data);
       const response = await apiRequest("POST", "/api/fx-exchange", data);
-      console.log("Transfer API response status:", response.status);
-      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-        console.error("Transfer API error:", errorData);
         throw new Error(errorData.error || `Transfer failed: ${response.status}`);
       }
-      
-      const result = await response.json();
-      console.log("Transfer API result:", result);
-      return result;
+      return response.json();
     },
     onSuccess: (data) => {
-      console.log("Transfer mutation onSuccess called with data:", data);
       const successMessage = `Converted ${amount} ${selectedWallet?.currency || ''} to ${data.convertedAmount.toFixed(2)} ${toCurrency}`;
       
       toast({
@@ -230,8 +205,6 @@ export default function Wallets() {
       setToCurrency('');
     },
     onError: (error: any) => {
-      console.error("Transfer mutation onError called with error:", error);
-      
       let errorMessage = "Please try again later.";
       if (error.message && error.message.includes("400")) {
         errorMessage = "Insufficient balance. Please check your available funds.";
@@ -253,22 +226,11 @@ export default function Wallets() {
   // Deposit mutation
   const depositMutation = useMutation({
     mutationFn: async (data: { type: string; currency: string; amount: string }) => {
-      console.log("Making deposit API call with data:", data);
       const response = await apiRequest("POST", "/api/wallets/deposit", data);
-      console.log("Deposit API response status:", response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Deposit API error:", errorText);
-        throw new Error(`Deposit failed: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      console.log("Deposit API result:", result);
-      return result;
+      if (!response.ok) throw new Error(`Deposit failed: ${response.status}`);
+      return response.json();
     },
-    onSuccess: (data) => {
-      console.log("Deposit mutation onSuccess called with data:", data);
+    onSuccess: () => {
       const successMessage = `${amount} ${selectedWallet?.currency} has been added to your wallet`;
       
       toast({
@@ -286,7 +248,6 @@ export default function Wallets() {
       setDepositMethod('');
     },
     onError: (error: any) => {
-      console.error("Deposit mutation onError called with error:", error);
       const errorMessage = error.message || "Please try again later.";
       
       // Voice narration
@@ -303,22 +264,11 @@ export default function Wallets() {
   // Withdraw mutation
   const withdrawMutation = useMutation({
     mutationFn: async (data: { type: string; currency: string; amount: string }) => {
-      console.log("Making withdraw API call with data:", data);
       const response = await apiRequest("POST", "/api/wallets/withdraw", data);
-      console.log("Withdraw API response status:", response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Withdraw API error:", errorText);
-        throw new Error(`Withdrawal failed: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      console.log("Withdraw API result:", result);
-      return result;
+      if (!response.ok) throw new Error(`Withdrawal failed: ${response.status}`);
+      return response.json();
     },
-    onSuccess: (data) => {
-      console.log("Withdraw mutation onSuccess called with data:", data);
+    onSuccess: () => {
       const successMessage = `${amount} ${selectedWallet?.currency} has been withdrawn from your wallet`;
       
       toast({
@@ -336,7 +286,6 @@ export default function Wallets() {
       setWithdrawMethod('');
     },
     onError: (error: any) => {
-      console.error("Withdraw mutation onError called with error:", error);
       const errorMessage = error.message || "Please try again later.";
       
       // Voice narration
@@ -351,14 +300,7 @@ export default function Wallets() {
   });
 
   const handleDeposit = () => {
-    console.log("handleDeposit called with:", {
-      selectedWallet: selectedWallet?.currency,
-      amount,
-      depositMethod
-    });
-
     if (!selectedWallet || !amount || !depositMethod) {
-      console.log("Validation failed - missing fields");
       toast({
         title: "Missing Information",
         description: "Please fill in all fields.",
@@ -367,10 +309,7 @@ export default function Wallets() {
       return;
     }
 
-    // Voice narration
     narrateTransaction('deposit', amount, selectedWallet.currency);
-
-    console.log("Starting deposit mutation...");
     depositMutation.mutate({
       type: "deposit",
       currency: selectedWallet.currency,
@@ -399,17 +338,9 @@ export default function Wallets() {
   };
 
   const handleTransfer = () => {
-    const sourceWallet = selectedWallet;
-    const sourceCurrency = sourceWallet?.currency;
-    
-    console.log("handleTransfer called with:", {
-      fromCurrency: sourceCurrency,
-      toCurrency,
-      amount
-    });
+    const sourceCurrency = selectedWallet?.currency;
 
     if (!sourceCurrency || !toCurrency || !amount) {
-      console.log("Validation failed - missing fields");
       toast({
         title: "Missing Information",
         description: "Please fill in all fields.",
@@ -419,7 +350,6 @@ export default function Wallets() {
     }
 
     if (sourceCurrency === toCurrency) {
-      console.log("Validation failed - same currencies");
       toast({
         title: "Invalid Transfer",
         description: "Please select different currencies.",
@@ -428,10 +358,7 @@ export default function Wallets() {
       return;
     }
 
-    // Voice narration
     narrateTransaction('transfer', amount, `${sourceCurrency} to ${toCurrency}`);
-
-    console.log("Starting transfer mutation...");
     transferMutation.mutate({
       fromCurrency: sourceCurrency,
       toCurrency,

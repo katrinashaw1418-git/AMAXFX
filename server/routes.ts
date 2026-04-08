@@ -1642,47 +1642,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // ── Volatile crypto pairs ─────────────────────────────────────────────────
+      // Strategy: always fetch CoinGecko vs USD (most stable, cached), then
+      // triangulate to any other fiat via Frankfurter USD→target series.
+      // This means ONE CoinGecko call per coin regardless of display currency.
       const cryptoBase   = CRYPTO_IDS[base];
       const cryptoTarget = CRYPTO_IDS[target];
 
-      // Crypto as base (BTC/AUD, ETH/AUD, BTC/USD, ETH/USD…)
-      if (cryptoBase) {
-        const dayCount = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (1000 * 60 * 60 * 24));
-        const vsCurrency = target.toLowerCase();
+      // Helper: fetch BTC/USD or ETH/USD daily prices from CoinGecko (vs usd always)
+      async function fetchCryptoUsdPrices(coinId: string): Promise<Map<string, number>> {
+        const dayCount = Math.ceil((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (1000 * 60 * 60 * 24)) + 1;
         const cgRes = await fetchCoinGecko(
-          `https://api.coingecko.com/api/v3/coins/${cryptoBase}/market_chart?vs_currency=${vsCurrency}&days=${dayCount}&interval=daily`
+          `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${dayCount}&interval=daily`
         );
-        if (!cgRes.ok) {
-          // Fallback: try vs USD (more reliable), return as-is
-          const cgUsdRes = await fetchCoinGecko(
-            `https://api.coingecko.com/api/v3/coins/${cryptoBase}/market_chart?vs_currency=usd&days=${dayCount}&interval=daily`
-          );
-          if (!cgUsdRes.ok) return res.status(502).json({ error: "CoinGecko unavailable" });
-          const cgData = await cgUsdRes.json() as { prices: [number, number][] };
-          const points = cgData.prices
-            .filter(([ts]) => { const d = new Date(ts).toISOString().split("T")[0]; return d >= startOfYear && d <= today; })
-            .map(([ts, price]) => ({ date: new Date(ts).toISOString().split("T")[0], rate: price }));
-          return sendCached({ base, target, points });
-        }
+        if (!cgRes.ok) return new Map();
         const cgData = await cgRes.json() as { prices: [number, number][] };
-        const points = cgData.prices
-          .filter(([ts]) => { const d = new Date(ts).toISOString().split("T")[0]; return d >= startOfYear && d <= today; })
-          .map(([ts, price]) => ({ date: new Date(ts).toISOString().split("T")[0], rate: price }));
+        const map = new Map<string, number>();
+        for (const [ts, price] of cgData.prices) {
+          const date = new Date(ts).toISOString().split("T")[0];
+          if (date >= startOfYear && date <= today) map.set(date, price);
+        }
+        return map;
+      }
+
+      // Helper: fetch daily Frankfurter USD→fiatTarget rates
+      async function fetchUsdToFiatSeries(fiatTarget: string): Promise<Map<string, number>> {
+        if (fiatTarget === "USD") {
+          // USD/USD is always 1.0 — no network call needed
+          const map = new Map<string, number>();
+          const d = new Date(startOfYear + "T12:00:00Z");
+          const end = new Date(today + "T12:00:00Z");
+          while (d <= end) {
+            map.set(d.toISOString().split("T")[0], 1);
+            d.setUTCDate(d.getUTCDate() + 1);
+          }
+          return map;
+        }
+        const ffRes = await fetch(
+          `https://api.frankfurter.app/${startOfYear}..${today}?from=USD&to=${fiatTarget}`,
+          { headers: { "Accept": "application/json" } }
+        );
+        if (!ffRes.ok) return new Map();
+        const ffData = await ffRes.json() as { rates: Record<string, Record<string, number>> };
+        const map = new Map<string, number>();
+        for (const [date, vals] of Object.entries(ffData.rates)) {
+          if (vals[fiatTarget]) map.set(date, vals[fiatTarget]);
+        }
+        return map;
+      }
+
+      // Helper: forward-fill missing fiat dates (ECB has no weekends/holidays)
+      function forwardFill(cryptoDates: string[], fiatMap: Map<string, number>): Map<string, number> {
+        const filled = new Map<string, number>();
+        let last = 0;
+        for (const date of cryptoDates.sort()) {
+          const v = fiatMap.get(date);
+          if (v !== undefined) last = v;
+          if (last > 0) filled.set(date, last);
+        }
+        return filled;
+      }
+
+      // Crypto as base (BTC/AUD, ETH/AUD, BTC/USD, ETH/USD, BTC/EUR…)
+      if (cryptoBase) {
+        const [cryptoUsd, usdToTarget] = await Promise.all([
+          fetchCryptoUsdPrices(cryptoBase),
+          fetchUsdToFiatSeries(target),
+        ]);
+        if (cryptoUsd.size === 0) return res.status(502).json({ error: "CoinGecko unavailable" });
+
+        const filledFiat = forwardFill([...cryptoUsd.keys()], usdToTarget);
+        const points: { date: string; rate: number }[] = [];
+        for (const [date, usdPrice] of [...cryptoUsd.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+          const fiatRate = filledFiat.get(date) ?? 1;
+          points.push({ date, rate: usdPrice * fiatRate });
+        }
         return sendCached({ base, target, points });
       }
 
-      // Crypto as target (USD/BTC, AUD/BTC, etc.) — invert
+      // Crypto as target (USD/BTC, AUD/BTC, EUR/BTC, etc.) — invert
       if (cryptoTarget) {
-        const dayCount = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (1000 * 60 * 60 * 24));
-        const vsCurrency = base.toLowerCase();
-        const cgRes = await fetchCoinGecko(
-          `https://api.coingecko.com/api/v3/coins/${cryptoTarget}/market_chart?vs_currency=${vsCurrency}&days=${dayCount}&interval=daily`
-        );
-        if (!cgRes.ok) return res.status(502).json({ error: "CoinGecko unavailable" });
-        const cgData = await cgRes.json() as { prices: [number, number][] };
-        const points = cgData.prices
-          .filter(([ts]) => { const d = new Date(ts).toISOString().split("T")[0]; return d >= startOfYear && d <= today; })
-          .map(([ts, price]) => ({ date: new Date(ts).toISOString().split("T")[0], rate: price > 0 ? 1 / price : 0 }));
+        const [cryptoUsd, usdToBase] = await Promise.all([
+          fetchCryptoUsdPrices(cryptoTarget),
+          fetchUsdToFiatSeries(base),
+        ]);
+        if (cryptoUsd.size === 0) return res.status(502).json({ error: "CoinGecko unavailable" });
+
+        // base/crypto = (base/USD) × (USD/crypto) = (1/usdToBase) × (1/cryptoUsd)
+        // actually base→crypto: how much crypto does 1 unit of base buy?
+        // 1 base = (1/usdToBase) USD; 1 crypto = cryptoUsd USD → 1 base = (1/usdToBase)/cryptoUsd crypto
+        const filledFiat = forwardFill([...cryptoUsd.keys()], usdToBase);
+        const points: { date: string; rate: number }[] = [];
+        for (const [date, usdPrice] of [...cryptoUsd.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+          if (usdPrice <= 0) continue;
+          const baseToUsd = filledFiat.get(date) ?? 1;
+          points.push({ date, rate: baseToUsd > 0 ? (1 / baseToUsd) / usdPrice : 0 });
+        }
         return sendCached({ base, target, points });
       }
 
