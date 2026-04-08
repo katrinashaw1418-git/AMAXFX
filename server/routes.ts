@@ -2,7 +2,7 @@ import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { createHash, randomBytes } from "crypto";
 import { z } from "zod";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { and, eq, sql } from "drizzle-orm";
 import Decimal from "decimal.js";
 import { storage } from "./storage";
@@ -142,6 +142,7 @@ const moneyMovementLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => (req as any).user?.id?.toString() ?? ipKeyGenerator(req),
   message: { error: "Too many requests for this operation. Please try again in a few minutes." },
 });
 
@@ -399,7 +400,7 @@ async function reconstructWalletBalancesAsOf(
     // Debits: money LEFT this wallet after asOfDate → add back to get historical balance
     const totalDebits = txAfter
       .filter((t: any) => t.fromCurrency === currency)
-      .reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0);
+      .reduce((sum: number, t: any) => sum + parseFloat(t.amount ?? "0"), 0);
 
     // Credits: money ENTERED this wallet after asOfDate → subtract to get historical balance
     // For exchange transactions the net credited amount = (amount * exchangeRate) - fee.
@@ -408,7 +409,7 @@ async function reconstructWalletBalancesAsOf(
     const totalCredits = txAfter
       .filter((t: any) => t.toCurrency === currency)
       .reduce((sum: number, t: any) => {
-        const base = parseFloat(t.amount);
+        const base = parseFloat(t.amount ?? "0");
         const rate = t.exchangeRate ? parseFloat(t.exchangeRate) : 1;
         const feeInTarget = t.fee ? parseFloat(t.fee) : 0;
         return sum + (t.type === "exchange" ? base * rate - feeInTarget : base);
@@ -1129,11 +1130,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Investment value — full year from Jan 1 2026, month-by-month, historical + projected
+  // Investment value — full year from Jan 1 of current year, month-by-month, historical + projected
   app.get("/api/investments/history-ytd", async (req, res) => {
     try {
       const { userId } = requireAuth(req);
-      const ANCHOR = new Date("2026-01-01T00:00:00.000Z");
+      const now = new Date();
+      const ANCHOR = new Date(Date.UTC(now.getFullYear(), 0, 1));
       const today = new Date();
       const TOTAL_MONTHS = 12; // Jan through Jan (13 points)
 

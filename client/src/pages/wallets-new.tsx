@@ -608,65 +608,22 @@ export default function Wallets() {
 
             {depositMethod === 'blockchain' && !['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(selectedWallet?.currency) ? (
               <div className="space-y-4">
-                <div className="text-center">
-                  <div className="bg-white p-4 rounded-lg border mx-auto w-fit mb-3">
-                    <div className="w-32 h-32 mx-auto bg-gray-100 rounded flex flex-col items-center justify-center text-xs font-mono text-gray-600 p-2 relative">
-                      <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 rounded"></div>
-                      <div className="relative z-10 text-center leading-tight">
-                        <div className="text-[6px] font-bold mb-1">QR CODE</div>
-                        <div className="grid grid-cols-8 gap-[1px] mb-1">
-                          {Array.from({length: 64}).map((_, i) => (
-                            <div key={i} className={`w-1 h-1 ${Math.random() > 0.5 ? 'bg-black' : 'bg-white'} rounded-[1px]`}></div>
-                          ))}
-                        </div>
-                        <div className="text-[5px] opacity-70 break-all">
-                          {selectedWallet.currency === "BTC" 
-                            ? "bc1qxy2k...0wlh" 
-                            : selectedWallet.currency === "ETH"
-                            ? "0x742d...f1a2"
-                            : selectedWallet.currency === "USDT" 
-                            ? "0x742d...f1a2"
-                            : "0x456e...5D6e7"
-                          }
-                        </div>
-                      </div>
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-2">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-amber-600 text-sm font-bold">!</span>
                     </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2">Scan QR code with your wallet app or copy address below</p>
-                </div>
-                
-                <div className="space-y-3">
-                  <div>
-                    <Label>Wallet Address ({selectedWallet.currency} Network)</Label>
-                    <div className="flex space-x-2">
-                      <Input 
-                        value={selectedWallet.currency === "BTC" 
-                          ? "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh" 
-                          : selectedWallet.currency === "ETH"
-                          ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
-                          : selectedWallet.currency === "USDT" 
-                          ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
-                          : "0x456e7B8F12C3d4e5F6a7B8c9D0e1F2a3B4c5D6e7"
-                        } 
-                        readOnly 
-                        className="font-mono text-xs"
-                      />
-                      <Button variant="outline" size="sm" onClick={() => {
-                        const address = selectedWallet.currency === "BTC" 
-                          ? "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh" 
-                          : selectedWallet.currency === "ETH"
-                          ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
-                          : selectedWallet.currency === "USDT" 
-                          ? "0x742d3a8F87A4CfA7a4D2a3B4a5F8C4e6D9E0f1a2"
-                          : "0x456e7B8F12C3d4e5F6a7B8c9D0e1F2a3B4c5D6e7";
-                        navigator.clipboard.writeText(address);
-                        toast({
-                          title: "Address Copied",
-                          description: "Wallet address copied to clipboard",
-                        });
-                      }}>
-                        Copy
-                      </Button>
+                    <div>
+                      <p className="text-sm font-semibold text-amber-900">Crypto Deposit — Contact Required</p>
+                      <p className="text-sm text-amber-800 mt-1">
+                        To deposit {selectedWallet?.currency}, please contact our team directly. We will provide you with a verified deposit address specific to your account.
+                      </p>
+                      <p className="text-sm text-amber-800 mt-2">
+                        <span className="font-medium">Email:</span> info@amaxglobal.com.au
+                      </p>
+                      <p className="text-xs text-amber-700 mt-2">
+                        Do not send funds to any address not personally confirmed by AMAX Global in writing. AMAX Global will never display deposit addresses directly in the portal.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -674,9 +631,9 @@ export default function Wallets() {
                 <Button
                   variant="outline"
                   className="w-full"
-                  disabled
+                  onClick={() => window.location.href = "mailto:info@amaxglobal.com.au?subject=Crypto Deposit Request - " + selectedWallet?.currency}
                 >
-                  Deposits unavailable
+                  Email us to arrange deposit
                 </Button>
                 <p className="text-xs text-muted-foreground text-center mt-1">
                   Live blockchain deposit processing is not enabled in this environment.
