@@ -1,0 +1,413 @@
+Perfect — this is the **missing layer that turns your system from “working” → “operationally controllable + audit-ready.”**
+
+Below is a **clean, minimal patch** (no heavy refactor, no schema migration required) that adds:
+
+✅ Admin control
+✅ Transaction lifecycle stages
+✅ Safe withdrawal handling
+✅ Deposit completion flow
+
+---
+
+# 🧠 WHAT YOU’RE ADDING
+
+## New Concepts
+
+### 1. `stage` (NEW — lightweight but powerful)
+
+```ts
+review → approved → processing → completed → failed
+```
+
+---
+
+### 2. Admin endpoints (no UI required)
+
+* Approve withdrawals
+* Complete deposits
+* Mark failures
+
+---
+
+### 3. Structured metadata (JSON in description)
+
+---
+
+# 🧱 1. UPDATE TRANSACTION MODEL
+
+## Patch (NO DB migration required if using flexible schema)
+
+```ts
+type Transaction = {
+  id: string;
+  userId: string;
+
+  type: "deposit" | "withdrawal" | "transfer";
+  method: "stripe" | "payid" | "bank";
+
+  amount: number;
+  asset: "AUD";
+
+  status: "pending" | "completed" | "failed";
+
+  // ✅ NEW
+  stage?: "review" | "approved" | "processing" | "completed" | "failed";
+
+  reference?: string;
+
+  description?: string; // JSON string
+
+  createdAt: Date;
+  updatedAt: Date;
+};
+```
+
+---
+
+# 🔄 2. UPDATE WITHDRAWAL CREATION
+
+## Before (your current — incorrect)
+
+```ts
+status: "completed"
+```
+
+---
+
+## ✅ After (correct)
+
+```ts
+status: "pending",
+stage: "review",
+```
+
+---
+
+## Full Patch
+
+```ts
+export const withdrawBank = async (req, res) => {
+  const { amount, accountName, bsb, accountNumber } = req.body;
+  const userId = req.user.id;
+
+  if (!accountName || !bsb || !accountNumber) {
+    throw new Error("Missing required fields");
+  }
+
+  const tx = await db.transactions.create({
+    userId,
+    type: "withdrawal",
+    method: "bank",
+    amount,
+    asset: "AUD",
+
+    status: "pending",
+    stage: "review",
+
+    description: JSON.stringify({
+      accountName,
+      bsb,
+      accountNumber
+    })
+  });
+
+  // deduct immediately (reserved)
+  await wallet.debit(userId, amount);
+
+  res.json({ tx });
+};
+```
+
+---
+
+# ⚡ 3. PAYID WITHDRAWAL PATCH
+
+```ts
+export const withdrawPayID = async (req, res) => {
+  const { amount, payid } = req.body;
+  const userId = req.user.id;
+
+  if (!payid) throw new Error("PayID required");
+
+  const tx = await db.transactions.create({
+    userId,
+    type: "withdrawal",
+    method: "payid",
+    amount,
+    asset: "AUD",
+
+    status: "pending",
+    stage: "review",
+
+    description: JSON.stringify({ payid })
+  });
+
+  await wallet.debit(userId, amount);
+
+  res.json({ tx });
+};
+```
+
+---
+
+# 🏦 4. DEPOSIT (MANUAL) PATCH
+
+## Already good — just add stage
+
+```ts
+const tx = await db.transactions.create({
+  userId,
+  type: "deposit",
+  method,
+  amount,
+
+  status: "pending",
+  stage: "review",
+
+  reference
+});
+```
+
+---
+
+# 🛠️ 5. ADMIN ENDPOINTS (CRITICAL)
+
+## 🔐 Add simple admin guard
+
+```ts
+const isAdmin = (req) => req.user?.role === "admin";
+```
+
+---
+
+## ✅ 5.1 Approve Withdrawal
+
+```ts
+POST /admin/transactions/:id/approve
+```
+
+```ts
+export const approveTransaction = async (req, res) => {
+  if (!isAdmin(req)) throw new Error("Unauthorized");
+
+  const { id } = req.params;
+
+  const tx = await db.transactions.findById(id);
+
+  if (!tx || tx.type !== "withdrawal") {
+    throw new Error("Invalid transaction");
+  }
+
+  await db.transactions.update(id, {
+    stage: "approved"
+  });
+
+  res.json({ success: true });
+};
+```
+
+---
+
+## ✅ 5.2 Mark as Processing (optional but good)
+
+```ts
+POST /admin/transactions/:id/process
+```
+
+```ts
+await db.transactions.update(id, {
+  stage: "processing"
+});
+```
+
+---
+
+## ✅ 5.3 Complete Withdrawal
+
+```ts
+POST /admin/transactions/:id/complete
+```
+
+```ts
+export const completeTransaction = async (req, res) => {
+  if (!isAdmin(req)) throw new Error("Unauthorized");
+
+  const { id } = req.params;
+
+  const tx = await db.transactions.findById(id);
+
+  if (!tx) throw new Error("Not found");
+
+  await db.transactions.update(id, {
+    status: "completed",
+    stage: "completed"
+  });
+
+  res.json({ success: true });
+};
+```
+
+---
+
+## ❗ IMPORTANT
+
+👉 Do NOT debit again here
+(you already debited at withdrawal request)
+
+---
+
+## ✅ 5.4 Fail Transaction (VERY IMPORTANT)
+
+```ts
+POST /admin/transactions/:id/fail
+```
+
+```ts
+export const failTransaction = async (req, res) => {
+  if (!isAdmin(req)) throw new Error("Unauthorized");
+
+  const { id } = req.params;
+
+  const tx = await db.transactions.findById(id);
+
+  if (!tx) throw new Error("Not found");
+
+  // refund user if withdrawal failed
+  if (tx.type === "withdrawal") {
+    await wallet.credit(tx.userId, tx.amount);
+  }
+
+  await db.transactions.update(id, {
+    status: "failed",
+    stage: "failed"
+  });
+
+  res.json({ success: true });
+};
+```
+
+---
+
+# 🧾 6. DEPOSIT COMPLETION (ADMIN)
+
+```ts
+POST /admin/transactions/:id/complete-deposit
+```
+
+```ts
+export const completeDeposit = async (req, res) => {
+  if (!isAdmin(req)) throw new Error("Unauthorized");
+
+  const { id } = req.params;
+
+  const tx = await db.transactions.findById(id);
+
+  if (!tx || tx.type !== "deposit") {
+    throw new Error("Invalid deposit");
+  }
+
+  await wallet.credit(tx.userId, tx.amount);
+
+  await db.transactions.update(id, {
+    status: "completed",
+    stage: "completed"
+  });
+
+  res.json({ success: true });
+};
+```
+
+---
+
+# 🖥️ 7. FRONTEND — SHOW STAGES (IMPORTANT UX)
+
+## Add this mapping:
+
+```ts
+const stageMap = {
+  review: "Under Review",
+  approved: "Approved",
+  processing: "Processing",
+  completed: "Completed",
+  failed: "Failed"
+};
+```
+
+---
+
+## Display:
+
+```tsx
+<span className="badge">
+  {stageMap[tx.stage] || tx.status}
+</span>
+```
+
+---
+
+## UX Example
+
+---
+
+# 🔐 8. AUDIT TRAIL (OPTIONAL BUT STRONG)
+
+Add simple log:
+
+```ts
+await db.logs.create({
+  action: "transaction_update",
+  transactionId: id,
+  performedBy: req.user.id
+});
+```
+
+---
+
+# 🟢 FINAL RESULT
+
+After this patch you now have:
+
+## ✅ Real lifecycle control
+
+* review → approved → processing → completed
+
+## ✅ Admin control
+
+* approve / complete / fail
+
+## ✅ Safe withdrawals
+
+* funds reserved
+* refundable if failed
+
+## ✅ Clean audit trail
+
+* every step trackable
+
+---
+
+# 🧠 FINAL VERDICT
+
+👉 This is now **legit fintech backend architecture**
+👉 Still lightweight, but **operationally real**
+👉 Ready for pilot + compliance discussion
+
+---
+
+# 🚀 NEXT STEP (HIGH IMPACT)
+
+If you want to go one level higher:
+
+### 🔔 Add automation:
+
+* Stripe webhook → auto-complete deposits
+* Email notifications on stage changes
+
+### 🔍 Add reconciliation:
+
+* Match PayID / bank transfers via reference
+
+---
+
+Just say:
+👉 “add webhook + reconciliation system”
