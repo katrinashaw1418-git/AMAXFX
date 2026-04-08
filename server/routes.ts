@@ -2362,12 +2362,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ? "PayID"
           : "Transfer";
 
+        const referenceCode = `AMAX-${randomBytes(4).toString("hex").toUpperCase()}`;
+
         [txRecord] = await tx.insert(transactions).values({
           userId, type: "deposit", fromCurrency: null, toCurrency: currency,
           amount: amount.toFixed(8), fee: "0.00000000", exchangeRate: null,
           status: isPendingChannel ? "pending" : "completed",
           settlementStatus: isPendingChannel ? "awaiting_bank_confirmation" : "internal_only",
-          description: description || `${currency} ${channelLabel} Deposit`,
+          description: isPendingChannel
+            ? JSON.stringify({ method, currency, referenceCode, label: `${currency} ${channelLabel} Deposit` })
+            : (description || `${currency} ${channelLabel} Deposit`),
           sourceExchange: method ?? null, blockchainTxHash: null,
           assetType: classifyAssetType(null, currency),
           direction: "in",
@@ -2379,7 +2383,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (idemKey) await saveIdempotentResponse(userId, "/api/deposit", idemKey, payloadHash, txRecord);
       await writeAuditLog(userId, "deposit", "transaction", String(txRecord?.id), { currency, amount: rawAmount, method }, req.ip || null);
-      res.json(txRecord);
+
+      let referenceCode: string | undefined;
+      try { referenceCode = JSON.parse(txRecord.description ?? "{}").referenceCode; } catch {}
+      res.json({ ...txRecord, referenceCode });
     } catch (error: any) {
       if (error.status) return res.status(error.status).json({ error: error.message });
       console.error("[deposit-error]", error?.message ?? error);
@@ -2461,18 +2468,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           availableBalance: available.minus(totalDeduction).toFixed(8),
         }).where(eq(wallets.id, wallet.id));
 
+        const withdrawRef = `AMAX-W${randomBytes(4).toString("hex").toUpperCase()}`;
+        const withdrawMeta = JSON.stringify({
+          method: withdrawMethod ?? "bank_transfer",
+          referenceCode: withdrawRef,
+          ...(withdrawMethod === "payid"
+            ? { payid: payidIdentifier, accountName: payidAccountName }
+            : { accountName: bankAccountName, bsb: bankBsb, accountNumber: bankAccountNumber, swift: bankSwift, bank: bankName }),
+        });
+
         [txRecord] = await tx.insert(transactions).values({
           userId, type: "withdrawal", fromCurrency: currency, toCurrency: null,
           amount: amount.toFixed(8), fee: fee.toFixed(8), exchangeRate: null,
-          status: "completed", settlementStatus: "internal_only",
-          description: description || `${currency} Withdrawal`,
+          status: "pending", settlementStatus: "awaiting_payout",
+          description: withdrawMeta,
           sourceExchange: null, blockchainTxHash: null,
           assetType: classifyAssetType(currency, null),
           direction: "out",
-          riskFlag: false,
-          reviewStatus: "clear",
-          reviewNotes: null,
+          riskFlag: amount.gte(10000),
+          reviewStatus: amount.gte(10000) ? "flagged" : "clear",
+          reviewNotes: amount.gte(10000) ? "AUSTRAC threshold — manual review required" : null,
         }).returning();
+        txRecord = { ...txRecord, referenceCode: withdrawRef };
       });
 
       if (idemKey) await saveIdempotentResponse(userId, "/api/withdraw", idemKey, payloadHash, txRecord);
@@ -3274,6 +3291,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return new Stripe(key, { apiVersion: "2025-02-24.acacia" });
   }
 
+  // GET /api/stripe/status — frontend uses this to show/hide card payment option
+  app.get("/api/stripe/status", (_req: Request, res: any) => {
+    res.json({ configured: !!process.env.STRIPE_SECRET_KEY });
+  });
+
   // POST /api/stripe/create-checkout-session
   // Body: { walletId: number, amount: string, currency: string }
   // Returns: { sessionId, url }
@@ -3616,8 +3638,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ---------------------------------------------------------------------------
-  // Live FX Rate Refresh
-  // Uses two free, key-free public APIs to keep rates current:
+  // Admin transaction lifecycle endpoints
+  // Protected by X-Admin-Key header matched against ADMIN_SECRET env var.
+  // No UI — used by AMAX ops team to approve/complete/fail transactions.
+  // ---------------------------------------------------------------------------
+  function requireAdminKey(req: Request, res: any): boolean {
+    const secret = process.env.ADMIN_SECRET;
+    if (!secret) { res.status(503).json({ error: "Admin not configured" }); return false; }
+    if (req.headers["x-admin-key"] !== secret) { res.status(401).json({ error: "Unauthorized" }); return false; }
+    return true;
+  }
+
+  // POST /api/admin/transactions/:id/complete-deposit
+  // Credits the wallet and marks a pending deposit as completed.
+  app.post("/api/admin/transactions/:id/complete-deposit", async (req: Request, res: any) => {
+    if (!requireAdminKey(req, res)) return;
+    try {
+      const txId = Number(req.params.id);
+      const [txRow] = await db.select().from(transactions).where(eq(transactions.id, txId));
+      if (!txRow) return res.status(404).json({ error: "Transaction not found" });
+      if (txRow.type !== "deposit") return res.status(400).json({ error: "Not a deposit transaction" });
+      if (txRow.status === "completed") return res.status(409).json({ error: "Already completed" });
+
+      const currency = txRow.toCurrency!;
+      const creditAmount = new Decimal(txRow.amount);
+
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+        const [wallet] = await tx.select().from(wallets)
+          .where(and(eq(wallets.userId, txRow.userId!), eq(wallets.currency, currency)))
+          .for("update");
+        if (!wallet) throw new Error("Wallet not found");
+        await tx.update(wallets).set({
+          balance: new Decimal(wallet.balance).plus(creditAmount).toFixed(8),
+          availableBalance: new Decimal(wallet.availableBalance).plus(creditAmount).toFixed(8),
+        }).where(eq(wallets.id, wallet.id));
+        await tx.update(transactions).set({ status: "completed", settlementStatus: "internal_only" })
+          .where(eq(transactions.id, txId));
+      });
+      res.json({ success: true, message: "Deposit completed and wallet credited" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to complete deposit" });
+    }
+  });
+
+  // POST /api/admin/transactions/:id/complete-withdrawal
+  // Marks a pending withdrawal as completed (balance already deducted at submission).
+  app.post("/api/admin/transactions/:id/complete-withdrawal", async (req: Request, res: any) => {
+    if (!requireAdminKey(req, res)) return;
+    try {
+      const txId = Number(req.params.id);
+      const [txRow] = await db.select().from(transactions).where(eq(transactions.id, txId));
+      if (!txRow) return res.status(404).json({ error: "Transaction not found" });
+      if (txRow.type !== "withdrawal") return res.status(400).json({ error: "Not a withdrawal transaction" });
+      if (txRow.status === "completed") return res.status(409).json({ error: "Already completed" });
+
+      await db.update(transactions).set({ status: "completed", settlementStatus: "paid_out" })
+        .where(eq(transactions.id, txId));
+      res.json({ success: true, message: "Withdrawal marked completed" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to complete withdrawal" });
+    }
+  });
+
+  // POST /api/admin/transactions/:id/fail
+  // Marks a transaction as failed. Refunds balance for failed withdrawals.
+  app.post("/api/admin/transactions/:id/fail", async (req: Request, res: any) => {
+    if (!requireAdminKey(req, res)) return;
+    try {
+      const txId = Number(req.params.id);
+      const [txRow] = await db.select().from(transactions).where(eq(transactions.id, txId));
+      if (!txRow) return res.status(404).json({ error: "Transaction not found" });
+      if (txRow.status === "completed") return res.status(409).json({ error: "Cannot fail a completed transaction" });
+
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+        if (txRow.type === "withdrawal") {
+          // Refund the reserved amount + fee back to the wallet
+          const refundAmount = new Decimal(txRow.amount).plus(new Decimal(txRow.fee ?? "0"));
+          const currency = txRow.fromCurrency!;
+          const [wallet] = await tx.select().from(wallets)
+            .where(and(eq(wallets.userId, txRow.userId!), eq(wallets.currency, currency)))
+            .for("update");
+          if (wallet) {
+            await tx.update(wallets).set({
+              balance: new Decimal(wallet.balance).plus(refundAmount).toFixed(8),
+              availableBalance: new Decimal(wallet.availableBalance).plus(refundAmount).toFixed(8),
+            }).where(eq(wallets.id, wallet.id));
+          }
+        }
+        await tx.update(transactions).set({ status: "failed", settlementStatus: "failed" })
+          .where(eq(transactions.id, txId));
+      });
+      res.json({ success: true, message: txRow.type === "withdrawal" ? "Withdrawal failed — balance refunded" : "Transaction marked failed" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to fail transaction" });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
   //   • frankfurter.app  — ECB fiat rates (EUR, GBP, CAD, CNY vs USD)
   //   • api.coinbase.com — BTC and ETH spot prices
   // Runs immediately on startup, then every 15 minutes.

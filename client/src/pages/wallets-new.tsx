@@ -161,6 +161,16 @@ export default function Wallets() {
   const [payerBsb, setPayerBsb] = useState('');
   const [internalTransferEmail, setInternalTransferEmail] = useState('');
   const [internalTransferAmount, setInternalTransferAmount] = useState('');
+  const [withdrawBankName, setWithdrawBankName] = useState('');
+  const [withdrawBsb, setWithdrawBsb] = useState('');
+  const [withdrawAccountNumber, setWithdrawAccountNumber] = useState('');
+  const [withdrawPayId, setWithdrawPayId] = useState('');
+  const [withdrawPayIdName, setWithdrawPayIdName] = useState('');
+  const [depositSubmitted, setDepositSubmitted] = useState<{ referenceCode: string; currency: string; amount: string; method: string } | null>(null);
+
+  const { data: stripeStatus } = useQuery<{ configured: boolean }>({
+    queryKey: ['/api/stripe/status'],
+  });
   const [, navigate] = useLocation();
   const { toast } = useToast();
   
@@ -267,24 +277,26 @@ export default function Wallets() {
       return response.json();
     },
     onSuccess: (data) => {
-      const isPending = data?.status === 'pending';
-      const successMessage = isPending
-        ? `Your ${amount} ${selectedWallet?.currency} deposit has been submitted. Funds will be credited once AMAX confirms receipt of your transfer.`
-        : `${amount} ${selectedWallet?.currency} has been added to your wallet.`;
-
-      toast({
-        title: isPending ? "⏳ Deposit Submitted" : "✅ Deposit Successful",
-        description: successMessage,
-      });
-
-      narrateSuccess(isPending ? "Deposit submitted, awaiting confirmation" : successMessage);
-
       queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
       queryClient.invalidateQueries({ queryKey: ['/api/portfolio'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
-      setDepositModalOpen(false);
-      setAmount('');
-      setDepositMethod('');
+
+      if (data?.status === 'pending') {
+        setDepositSubmitted({
+          referenceCode: data.referenceCode ?? `AMAX-${data.id}`,
+          currency: selectedWallet?.currency ?? '',
+          amount: amount,
+          method: depositMethod,
+        });
+        narrateSuccess("Deposit submitted, awaiting AMAX confirmation");
+      } else {
+        const msg = `${amount} ${selectedWallet?.currency} has been added to your wallet.`;
+        toast({ title: "✅ Deposit Successful", description: msg });
+        narrateSuccess(msg);
+        setDepositModalOpen(false);
+        setAmount('');
+        setDepositMethod('');
+      }
     },
     onError: (error: any) => {
       const errorMessage = error.message || "Please try again later.";
@@ -332,21 +344,26 @@ export default function Wallets() {
       return response.json();
     },
     onSuccess: () => {
-      const successMessage = `${amount} ${selectedWallet?.currency} has been withdrawn from your wallet`;
+      const successMessage = `Your ${amount} ${selectedWallet?.currency} withdrawal is under review. AMAX will process it within 1 business day.`;
       
       toast({
-        title: "✅ Withdrawal Successful", 
+        title: "⏳ Withdrawal Submitted",
         description: successMessage,
       });
       
-      // Voice narration
-      narrateSuccess(successMessage);
+      narrateSuccess("Withdrawal submitted and under review");
       
       queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
       queryClient.invalidateQueries({ queryKey: ['/api/portfolio'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       setWithdrawModalOpen(false);
       setAmount('');
       setWithdrawMethod('');
+      setWithdrawBankName('');
+      setWithdrawBsb('');
+      setWithdrawAccountNumber('');
+      setWithdrawPayId('');
+      setWithdrawPayIdName('');
     },
     onError: (error: any) => {
       const errorMessage = error.message || "Please try again later.";
@@ -416,22 +433,41 @@ export default function Wallets() {
 
   const handleWithdraw = () => {
     if (!selectedWallet || !amount || !withdrawMethod) {
-      toast({
-        title: "Missing Information", 
-        description: "Please fill in all fields.",
-        variant: "destructive",
-      });
+      toast({ title: "Missing Information", description: "Please fill in all fields.", variant: "destructive" });
       return;
     }
 
-    // Voice narration
+    if (withdrawMethod === 'bank_transfer') {
+      if (!withdrawBankName || !withdrawAccountNumber) {
+        toast({ title: "Missing Bank Details", description: "Please enter account holder name and account number.", variant: "destructive" });
+        return;
+      }
+    }
+
+    if (withdrawMethod === 'payid') {
+      if (!withdrawPayId) {
+        toast({ title: "Missing PayID", description: "Please enter your PayID email or phone number.", variant: "destructive" });
+        return;
+      }
+    }
+
     narrateTransaction('withdraw', amount, selectedWallet.currency);
 
     withdrawMutation.mutate({
       type: "withdraw",
       currency: selectedWallet.currency,
-      amount: amount
-    });
+      amount: amount,
+      withdrawMethod,
+      ...(withdrawMethod === 'bank_transfer' ? {
+        bankAccountName: withdrawBankName,
+        bankBsb: withdrawBsb,
+        bankAccountNumber: withdrawAccountNumber,
+      } : {}),
+      ...(withdrawMethod === 'payid' ? {
+        payid: withdrawPayId,
+        payidAccountName: withdrawPayIdName,
+      } : {}),
+    } as any);
   };
 
   const handleTransfer = () => {
@@ -646,7 +682,7 @@ export default function Wallets() {
 
 
       {/* Deposit Modal */}
-      <Dialog open={depositModalOpen} onOpenChange={setDepositModalOpen}>
+      <Dialog open={depositModalOpen} onOpenChange={(open) => { setDepositModalOpen(open); if (!open) { setDepositSubmitted(null); setAmount(''); setDepositMethod(''); } }}>
         <DialogContent className="sm:max-w-[450px] max-h-[80vh] overflow-y-auto p-4">
           <DialogHeader>
             <DialogTitle>Deposit {selectedWallet?.currency}</DialogTitle>
@@ -654,6 +690,65 @@ export default function Wallets() {
               Add funds to your {selectedWallet?.currency} wallet using multiple payment methods
             </DialogDescription>
           </DialogHeader>
+
+          {depositSubmitted ? (
+            <div className="space-y-4 py-2">
+              <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
+                <span className="text-xl">⏳</span>
+                <div>
+                  <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">Deposit Submitted — Awaiting Funds</p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400">Your balance will be credited once AMAX confirms receipt.</p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
+                <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">Your Unique Reference Code</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-mono font-bold text-blue-800 dark:text-blue-200">{depositSubmitted.referenceCode}</p>
+                  <Button variant="outline" size="sm" className="h-7 text-xs px-3" onClick={() => { navigator.clipboard.writeText(depositSubmitted.referenceCode); toast({ title: "Copied", description: "Reference code copied to clipboard" }); }}>Copy</Button>
+                </div>
+                <p className="text-xs text-blue-700 dark:text-blue-300">Include this reference in your transfer so AMAX can match your payment.</p>
+              </div>
+
+              {depositSubmitted.method === 'payid' && (
+                <div className="p-3 bg-muted rounded-lg space-y-1">
+                  <p className="text-xs font-semibold">Send to AMAX PayID:</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs">info@amaxglobal.com.au</p>
+                    <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText('info@amaxglobal.com.au'); toast({ title: "Copied" }); }}>Copy</Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Account Name: AMAX Global Pty Ltd</p>
+                </div>
+              )}
+
+              {depositSubmitted.method === 'bank_transfer' && (
+                <div className="p-3 bg-muted rounded-lg space-y-1">
+                  <p className="text-xs font-semibold">Transfer to AMAX Bank Account:</p>
+                  <p className="text-xs">Bank: Westpac Banking Corporation</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs">BSB: 032-000</p>
+                    <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText('032000'); toast({ title: "Copied" }); }}>Copy</Button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs">Account: 123456789</p>
+                    <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText('123456789'); toast({ title: "Copied" }); }}>Copy</Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Account Name: AMAX Global Pty Ltd · SWIFT: WPACAU2S</p>
+                </div>
+              )}
+
+              <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                Amount: <strong>{depositSubmitted.amount} {depositSubmitted.currency}</strong>
+              </div>
+
+              <Button className="w-full h-8 text-sm" onClick={() => {
+                setDepositSubmitted(null);
+                setDepositModalOpen(false);
+                setAmount('');
+                setDepositMethod('');
+              }}>Done</Button>
+            </div>
+          ) : (
           <div className="space-y-3">
             <div>
               <Label htmlFor="deposit-method-type">Deposit Method</Label>
@@ -737,6 +832,12 @@ export default function Wallets() {
               <>
                 {depositMethod === 'card' && (
                   <div className="space-y-3">
+                    {stripeStatus && !stripeStatus.configured && (
+                      <div className="p-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
+                        <p className="text-xs font-semibold text-red-900 dark:text-red-100">Card payments temporarily unavailable</p>
+                        <p className="text-xs text-red-700 dark:text-red-300 mt-1">Please use PayID or Bank Transfer instead, or contact AMAX support at info@amaxglobal.com.au.</p>
+                      </div>
+                    )}
                     <div className="p-3 bg-muted rounded-lg">
                       <h4 className="font-medium mb-2 text-sm">💳 Card Payment via Stripe</h4>
                       <div className="text-xs text-muted-foreground space-y-1">
@@ -756,7 +857,7 @@ export default function Wallets() {
                 {depositMethod === 'payid' && (
                   <div className="space-y-3">
                     <div className="p-3 bg-muted rounded-lg">
-                      <h4 className="font-medium mb-2 text-sm">🏦 PayID / NPP Deposit</h4>
+                      <h4 className="font-medium mb-2 text-sm">⚡ PayID / NPP Deposit</h4>
                       <div className="text-xs text-muted-foreground space-y-1">
                         <p>• Instant bank transfer via Australia's NPP / Osko network</p>
                         <p>• Available to all Australian bank account holders</p>
@@ -764,14 +865,21 @@ export default function Wallets() {
                         <p>• Funds credited within 1–2 business hours of receipt</p>
                       </div>
                     </div>
-                    <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-1">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
                       <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">Send to AMAX Global PayID:</p>
-                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">PayID:</span> info@amaxglobal.com.au</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">PayID:</span> info@amaxglobal.com.au</p>
+                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText('info@amaxglobal.com.au'); toast({ title: "Copied", description: "PayID copied to clipboard" }); }}>Copy</Button>
+                      </div>
                       <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account Name:</span> AMAX Global Pty Ltd</p>
-                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Reference:</span> Your registered email address</p>
+                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 pt-1 border-t border-blue-200 dark:border-blue-700">Or pay by BSB (manual transfer fallback):</p>
+                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Bank:</span> Westpac Banking Corporation</p>
+                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">BSB:</span> 032-000</p>
+                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account:</span> 123456789</p>
+                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">SWIFT:</span> WPACAU2S</p>
                     </div>
                     <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
-                      ⏳ Clicking Submit records your deposit request. Your balance will be credited once AMAX confirms receipt of the transfer.
+                      ⏳ Click Submit to record your deposit. A unique reference code will be generated — include it with your transfer so AMAX can match your payment.
                     </p>
                   </div>
                 )}
@@ -790,14 +898,19 @@ export default function Wallets() {
                     <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-1">
                       <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">AMAX Global Bank Details:</p>
                       <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Bank:</span> Westpac Banking Corporation</p>
-                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">BSB:</span> 032-000</p>
-                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account:</span> 123456789</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">BSB:</span> 032-000</p>
+                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText('032000'); toast({ title: "Copied", description: "BSB copied" }); }}>Copy</Button>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account:</span> 123456789</p>
+                        <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { navigator.clipboard.writeText('123456789'); toast({ title: "Copied", description: "Account number copied" }); }}>Copy</Button>
+                      </div>
                       <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account Name:</span> AMAX Global Pty Ltd</p>
                       <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">SWIFT:</span> WPACAU2S</p>
-                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Reference:</span> Your registered email address</p>
                     </div>
                     <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
-                      ⏳ Clicking Submit records your deposit request. Your balance will be credited once AMAX confirms receipt of funds.
+                      ⏳ Click Submit to record your deposit. A unique reference code will be generated — include it in your bank transfer description so AMAX can identify your payment.
                     </p>
                   </div>
                 )}
@@ -841,6 +954,7 @@ export default function Wallets() {
               </Button>
             )}
           </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -1028,6 +1142,8 @@ export default function Wallets() {
                         type="text"
                         placeholder="you@example.com or +61400000000"
                         className="h-8 text-sm"
+                        value={withdrawPayId}
+                        onChange={(e) => setWithdrawPayId(e.target.value)}
                       />
                     </div>
                     <div>
@@ -1036,6 +1152,8 @@ export default function Wallets() {
                         id="withdraw-payid-name"
                         placeholder="John Chen"
                         className="h-8 text-sm"
+                        value={withdrawPayIdName}
+                        onChange={(e) => setWithdrawPayIdName(e.target.value)}
                       />
                     </div>
                   </div>
@@ -1063,6 +1181,8 @@ export default function Wallets() {
                         id="withdraw-bank-name"
                         placeholder="John Chen"
                         className="h-8 text-sm"
+                        value={withdrawBankName}
+                        onChange={(e) => setWithdrawBankName(e.target.value)}
                       />
                     </div>
                     <div>
@@ -1071,6 +1191,8 @@ export default function Wallets() {
                         id="withdraw-bsb"
                         placeholder="123-456"
                         className="h-8 text-sm"
+                        value={withdrawBsb}
+                        onChange={(e) => setWithdrawBsb(e.target.value)}
                       />
                     </div>
                     <div>
@@ -1079,6 +1201,8 @@ export default function Wallets() {
                         id="withdraw-account-number"
                         placeholder="12345678"
                         className="h-8 text-sm"
+                        value={withdrawAccountNumber}
+                        onChange={(e) => setWithdrawAccountNumber(e.target.value)}
                       />
                     </div>
                   </div>
