@@ -78,6 +78,9 @@ export const transactions = pgTable("transactions", {
   riskFlag: boolean("risk_flag").default(false),
   reviewStatus: text("review_status").default("clear"), // "clear" | "flagged" | "reviewing" | "cleared" | "escalated"
   reviewNotes: text("review_notes"),
+  // Internal transfer linking — both sides of a transfer share the same referenceId
+  referenceId: text("reference_id"),
+  counterpartyUserId: integer("counterparty_user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

@@ -2981,6 +2981,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ---------------------------------------------------------------------------
+  // Internal Transfer — user-to-user crypto/fiat transfer on the AMAX ledger.
+  // No external settlement; both sides recorded atomically; AUSTRAC-aware.
+  // ---------------------------------------------------------------------------
+  const internalTransferSchema = z.object({
+    currency: z.string().min(1, "Currency is required"),
+    amount: z.number().positive("Amount must be positive").max(9999999),
+    recipientEmail: z.string().email("Invalid recipient email"),
+  });
+
+  app.post("/api/transfer/internal", moneyMovementLimiter, async (req, res) => {
+    try {
+      const { userId } = requireAuth(req);
+      await requireKyc(userId, storage);
+
+      const parsed = internalTransferSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0].message });
+
+      const { currency, amount: rawAmount, recipientEmail } = parsed.data;
+      const amount = new Decimal(rawAmount);
+
+      // Prevent self-transfer
+      const sender = await storage.getUser(userId);
+      if (!sender) return res.status(404).json({ error: "Sender account not found" });
+      if (sender.email.toLowerCase() === recipientEmail.toLowerCase()) {
+        return res.status(400).json({ error: "You cannot transfer to your own account" });
+      }
+
+      // Resolve recipient
+      const recipient = await storage.getUserByEmail(recipientEmail.toLowerCase());
+      if (!recipient) return res.status(404).json({ error: "No AMAX account found for that email address" });
+
+      // AUSTRAC: flag large transfers (>= AUD 10,000 equivalent — simplified: flag any currency >= 10000)
+      const amlFlagged = amount.gte(10000);
+
+      // Generate a shared reference ID linking both transaction records
+      const referenceId = `ITX-${randomBytes(8).toString("hex").toUpperCase()}`;
+
+      let senderTx: any;
+      let recipientTx: any;
+
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+
+        // Lock sender wallet
+        const [senderWallet] = await tx.select().from(wallets)
+          .where(and(eq(wallets.userId, userId), eq(wallets.currency, currency)))
+          .for("update");
+        if (!senderWallet) throw Object.assign(new Error(`You do not have a ${currency} wallet`), { status: 400 });
+
+        const senderBalance = new Decimal(senderWallet.availableBalance);
+        if (senderBalance.lt(amount)) {
+          throw Object.assign(new Error("Insufficient balance for this transfer"), { status: 400 });
+        }
+
+        // Ensure recipient has a wallet for this currency; create one if not
+        let [recipientWallet] = await tx.select().from(wallets)
+          .where(and(eq(wallets.userId, recipient.id), eq(wallets.currency, currency)))
+          .for("update");
+        if (!recipientWallet) {
+          const walletType = CRYPTO_CURRENCIES.includes(currency) ? "crypto" : "fiat";
+          [recipientWallet] = await tx.insert(wallets).values({
+            userId: recipient.id,
+            currency,
+            balance: "0.00000000",
+            availableBalance: "0.00000000",
+            walletType,
+          }).returning();
+        }
+
+        // Debit sender
+        await tx.update(wallets).set({
+          balance: new Decimal(senderWallet.balance).minus(amount).toFixed(8),
+          availableBalance: senderBalance.minus(amount).toFixed(8),
+        }).where(eq(wallets.id, senderWallet.id));
+
+        // Credit recipient
+        await tx.update(wallets).set({
+          balance: new Decimal(recipientWallet.balance).plus(amount).toFixed(8),
+          availableBalance: new Decimal(recipientWallet.availableBalance).plus(amount).toFixed(8),
+        }).where(eq(wallets.id, recipientWallet.id));
+
+        // Sender transaction record (transfer_out)
+        [senderTx] = await tx.insert(transactions).values({
+          userId,
+          type: "transfer",
+          fromCurrency: currency,
+          toCurrency: currency,
+          amount: amount.toFixed(8),
+          fee: "0.00000000",
+          exchangeRate: "1.00000000",
+          status: "completed",
+          settlementStatus: "internal_only",
+          description: `Internal transfer of ${rawAmount} ${currency} to ${recipient.email}`,
+          sourceExchange: null,
+          blockchainTxHash: null,
+          assetType: CRYPTO_CURRENCIES.includes(currency) ? "crypto" : "fiat",
+          direction: "out",
+          riskFlag: amlFlagged,
+          reviewStatus: amlFlagged ? "flagged" : "clear",
+          reviewNotes: amlFlagged ? `Large internal transfer >= 10000 ${currency} — AUSTRAC threshold review` : null,
+          referenceId,
+          counterpartyUserId: recipient.id,
+        }).returning();
+
+        // Recipient transaction record (transfer_in)
+        [recipientTx] = await tx.insert(transactions).values({
+          userId: recipient.id,
+          type: "transfer",
+          fromCurrency: currency,
+          toCurrency: currency,
+          amount: amount.toFixed(8),
+          fee: "0.00000000",
+          exchangeRate: "1.00000000",
+          status: "completed",
+          settlementStatus: "internal_only",
+          description: `Internal transfer received: ${rawAmount} ${currency} from ${sender.email}`,
+          sourceExchange: null,
+          blockchainTxHash: null,
+          assetType: CRYPTO_CURRENCIES.includes(currency) ? "crypto" : "fiat",
+          direction: "in",
+          riskFlag: amlFlagged,
+          reviewStatus: amlFlagged ? "flagged" : "clear",
+          reviewNotes: amlFlagged ? `Large internal transfer >= 10000 ${currency} — AUSTRAC threshold review` : null,
+          referenceId,
+          counterpartyUserId: userId,
+        }).returning();
+      });
+
+      await writeAuditLog(userId, "internal_transfer", "transaction", String(senderTx?.id), {
+        currency, amount: rawAmount, recipientEmail, referenceId, amlFlagged,
+      }, req.ip || null);
+
+      res.json({
+        success: true,
+        referenceId,
+        senderTransactionId: senderTx?.id,
+        recipientTransactionId: recipientTx?.id,
+        amount: rawAmount,
+        currency,
+        recipientEmail,
+        message: `${rawAmount} ${currency} successfully transferred to ${recipientEmail}`,
+      });
+    } catch (error: any) {
+      console.error("[internal-transfer-error]", error?.message ?? error);
+      if (error.status) return res.status(error.status).json({ error: error.message });
+      res.status(500).json({ error: "Failed to process internal transfer" });
+    }
+  });
+
   // Advisor Contact Route
   app.post("/api/advisor/contact", async (req, res) => {
     try {

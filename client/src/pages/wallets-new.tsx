@@ -159,6 +159,8 @@ export default function Wallets() {
   const [stripeLoading, setStripeLoading] = useState(false);
   const [payerAccountNumber, setPayerAccountNumber] = useState('');
   const [payerBsb, setPayerBsb] = useState('');
+  const [internalTransferEmail, setInternalTransferEmail] = useState('');
+  const [internalTransferAmount, setInternalTransferAmount] = useState('');
   const [, navigate] = useLocation();
   const { toast } = useToast();
   
@@ -358,6 +360,33 @@ export default function Wallets() {
         variant: "destructive",
       });
     }
+  });
+
+  const internalTransferMutation = useMutation({
+    mutationFn: async (data: { currency: string; amount: number; recipientEmail: string }) => {
+      const response = await apiRequest("POST", "/api/transfer/internal", data);
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error || "Transfer failed");
+      return json;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "✅ Transfer Sent",
+        description: `${internalTransferAmount} ${selectedWallet?.currency} transferred to ${internalTransferEmail}. Reference: ${data.referenceId}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      setWithdrawModalOpen(false);
+      setInternalTransferEmail('');
+      setInternalTransferAmount('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Transfer Failed",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const handleDeposit = () => {
@@ -889,19 +918,44 @@ export default function Wallets() {
                     Send {selectedWallet?.currency} instantly to another AMAX user by their registered email address. No blockchain fees — settled on the AMAX internal ledger.
                   </p>
                   <div>
+                    <Label htmlFor="internal-transfer-amount" className="text-xs">Amount ({selectedWallet?.currency})</Label>
+                    <Input
+                      id="internal-transfer-amount"
+                      type="number"
+                      value={internalTransferAmount}
+                      onChange={(e) => setInternalTransferAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="h-8 text-sm"
+                      min="0"
+                    />
+                  </div>
+                  <div>
                     <Label htmlFor="crypto-internal-email" className="text-xs">Recipient AMAX Email</Label>
                     <Input
                       id="crypto-internal-email"
                       type="email"
+                      value={internalTransferEmail}
+                      onChange={(e) => setInternalTransferEmail(e.target.value)}
                       placeholder="recipient@example.com"
                       className="h-8 text-sm"
                     />
                   </div>
                   <Button
                     className="w-full mt-1 h-8 text-sm"
-                    onClick={() => { setWithdrawModalOpen(false); navigate('/crypto'); }}
+                    disabled={internalTransferMutation.isPending || !internalTransferEmail || !internalTransferAmount}
+                    onClick={() => {
+                      if (!selectedWallet || !internalTransferEmail || !internalTransferAmount) {
+                        toast({ title: "Missing fields", description: "Enter amount and recipient email.", variant: "destructive" });
+                        return;
+                      }
+                      internalTransferMutation.mutate({
+                        currency: selectedWallet.currency,
+                        amount: parseFloat(internalTransferAmount),
+                        recipientEmail: internalTransferEmail,
+                      });
+                    }}
                   >
-                    Go to Crypto Exchange to Convert First
+                    {internalTransferMutation.isPending ? "Transferring..." : `⚡ Send ${selectedWallet?.currency} Instantly`}
                   </Button>
                 </div>
 
