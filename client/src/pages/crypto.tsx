@@ -213,7 +213,7 @@ export default function Crypto() {
                 {rateLoading ? (
                   <span className="text-slate-400 text-base">Loading…</span>
                 ) : (
-                  <>1 {fromCurrency} = <span className="text-amber-400">{exchangeRate.toFixed(exchangeRate < 0.001 ? 8 : 4)}</span> {toCurrency}</>
+                  <>1 {fromCurrency} = {exchangeRate.toFixed(exchangeRate < 0.001 ? 8 : 4)} {toCurrency}</>
                 )}
               </p>
             </div>

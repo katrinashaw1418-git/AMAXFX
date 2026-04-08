@@ -178,7 +178,7 @@ export default function FxExchange() {
                 {rateLoading ? (
                   <span className="text-slate-400 text-base">Loading…</span>
                 ) : (
-                  <>1 {fromCurrency} = <span className="text-amber-400">{exchangeRate.toFixed(4)}</span> {toCurrency}</>
+                  <>1 {fromCurrency} = {exchangeRate.toFixed(4)} {toCurrency}</>
                 )}
               </p>
             </div>
