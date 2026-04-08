@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useAuth } from "@/contexts/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,7 @@ type StepStatus = "completed" | "under_review" | "in_progress" | "pending";
 // ── main ─────────────────────────────────────────────────────────────────────
 export default function Compliance() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("kyc");
 
   // which steps have had files uploaded (stepId → filename)
@@ -197,9 +199,10 @@ export default function Compliance() {
   }
 
   function handleDownload(docName: string) {
+    const email = user?.email ?? "your registered email address";
     toast({
       title: "Download Requested",
-      description: `${docName} will be sent to your registered email within 24 hours.`,
+      description: `${docName} will be sent to ${email} within 24 hours.`,
     });
   }
 
