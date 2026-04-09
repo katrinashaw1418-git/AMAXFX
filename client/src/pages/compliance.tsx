@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -82,15 +81,13 @@ export default function Compliance() {
   const [piiPurpose,         setPiiPurpose]         = useState("");
   const [piiSourceFunds,     setPiiSourceFunds]     = useState("");
   const [piiTaxCountry,      setPiiTaxCountry]      = useState("");
-  // PEP status — identity data for risk scoring (moved to agreement step for signing)
-  const [piiPep,             setPiiPep]             = useState(false);
 
   // ── Step 3: Customer Agreement ─────────────────────────────────────────────
   const [signatureName,  setSignatureName]  = useState("");
   const [sectionsRead,   setSectionsRead]   = useState<Set<number>>(new Set());
   const agreementScrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs        = useRef<(HTMLDivElement | null)[]>([]);
-  const allSectionsRead    = sectionsRead.size >= 6;
+  const allSectionsRead    = sectionsRead.size >= 8;
 
   // ── Step 2: Identity document + biometric verification ────────────────────
   const [docType,          setDocType]          = useState<"passport" | "driver_licence" | "national_id">("passport");
@@ -1088,100 +1085,133 @@ export default function Compliance() {
                 if (def.id === 3 && status === "in_progress") {
                   const agreementSections = [
                     {
-                      title: "1. Terms of Service",
-                      content: `These Terms of Service govern your use of AMAX Global Pty Ltd's (ABN 54 690 827 608) digital financial services platform, including foreign exchange, eWallet, digital currency exchange, and remittance services ("Services"). By accepting these terms you agree to be bound by all provisions herein and any supplementary policies published by AMAX Global from time to time.
+                      title: "1. Overview",
+                      content: `This Customer Agreement governs your use of AMAX Global's services, including eWallet, foreign exchange, remittance, and digital currency exchange ("Services").
 
-You must be at least 18 years of age and have legal capacity to enter into binding contracts under Australian law. You agree to use the Services only for lawful purposes and in compliance with all applicable Australian laws, including but not limited to the Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth) ("AML/CTF Act"), the Currency (Restrictions on the Use of Cash) Act 2019 (Cth), and the Australian Consumer Law.
+By creating an account, you agree to this Agreement and any related policies.
 
-AMAX Global reserves the right to suspend, restrict, or terminate your account where there is reasonable suspicion of fraud, money laundering, terrorism financing, sanctions evasion, or any other illegal activity. Transaction limits, fees, and foreign exchange rates are published on our website and may change without prior notice to the extent permitted by law.
-
-These Terms are governed by the laws of New South Wales, Australia. Disputes are subject to the exclusive jurisdiction of courts of competent jurisdiction in New South Wales.`,
+You must be at least 18 years old and legally capable of entering into binding contracts under Australian law.`,
                     },
                     {
-                      title: "2. Privacy Policy",
-                      content: `AMAX Global Pty Ltd collects, uses, and discloses your personal information in accordance with the Australian Privacy Act 1988 (Cth) and the Australian Privacy Principles (APPs). Information collected includes identity documents, biometric data (for identity verification), financial information, transaction history, and device and usage data.
+                      title: "2. Use of Services",
+                      content: `You agree to:
+• Use the Services only for lawful purposes
+• Comply with all applicable Australian laws
+• Provide accurate and current information
 
-Your personal information is used to: (a) verify your identity and comply with CDD/ECDD obligations under the AML/CTF Act; (b) provide and improve our Services; (c) detect, prevent, and investigate fraud, money laundering, and sanctions evasion; (d) comply with our legal and regulatory obligations; and (e) communicate with you regarding your account.
+AMAX Global may suspend, restrict, or terminate your account where required for fraud prevention, legal compliance, or risk management.
 
-We may disclose your information to: AUSTRAC and other regulatory authorities as required by law; DFAT and law enforcement agencies; identity verification providers (including Veriff Pty Ltd); financial institutions processing your transactions; and our professional advisors. We do not sell your personal information.
-
-You have the right to access and correct your personal information. Contact our Privacy Officer at info@amaxglobal.com.au. Data may be transferred to servers in Australia and internationally where our service providers operate.`,
+These Terms are governed by the laws of New South Wales, Australia.`,
                     },
                     {
-                      title: "3. AML/CTF Declaration",
-                      content: `Anti-Money Laundering and Counter-Terrorism Financing Declaration — required under the AML/CTF Act 2006 (Cth) and AUSTRAC obligations.
+                      title: "3. Privacy",
+                      content: `We collect and use your personal information in accordance with the Privacy Act 1988 (Cth).
 
-I declare that:
-(a) I am opening this account solely on my own behalf and not as an agent, trustee, or nominee for any other person or entity, unless I have separately disclosed a third-party arrangement in writing to AMAX Global;
-(b) The funds I deposit, exchange, or remit through AMAX Global are derived from legitimate sources and do not, to the best of my knowledge and belief, constitute proceeds of crime;
-(c) I understand that AMAX Global is required by law to monitor my transactions and may be required to report suspicious matters to AUSTRAC under Part 3 of the AML/CTF Act;
-(d) I will promptly notify AMAX Global in writing if any of the information I have provided changes, including changes to my source of funds, beneficial ownership, or residency status;
-(e) I consent to AMAX Global conducting ongoing CDD and ECDD as required, including re-verification of my identity, and understand that failure to cooperate may result in account restriction or closure.`,
+We use your information to:
+• Verify your identity
+• Provide and improve services
+• Detect and prevent fraud and financial crime
+• Comply with legal obligations
+
+We may share your information with:
+• AUSTRAC and regulators
+• Law enforcement agencies
+• Identity verification providers
+• Financial institutions and service providers
+
+We do not sell your personal information.`,
                     },
                     {
-                      title: "4. Sanctions Declaration",
-                      content: `Sanctions Compliance Declaration — required under Australian autonomous sanctions laws and international obligations.
+                      title: "4. Compliance & AML/CTF",
+                      content: `AMAX Global complies with the Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth).
 
-I declare that:
-(a) I am not a designated person or entity listed on the DFAT Consolidated List, the United Nations Security Council consolidated sanctions list, or any other applicable Australian or international sanctions list;
-(b) I am not acting on behalf of, or for the benefit of, any designated person or entity;
-(c) I do not reside in, and the funds to be transacted are not derived from, a jurisdiction subject to comprehensive Australian autonomous sanctions or United Nations Security Council sanctions;
-(d) I understand that AMAX Global will independently screen my identity information against relevant sanctions lists on an ongoing basis and may freeze or restrict my account if a match is identified, without prior notice, as required by law;
-(e) I will immediately notify AMAX Global if I become aware that I or any beneficial owner of my account becomes subject to any sanctions designation.
+You acknowledge that we:
+• Apply risk-based customer identification procedures (KYC/CDD)
+• Conduct ongoing customer due diligence (OCDD/ECDD)
+• Monitor transactions for suspicious activity
+• May report suspicious matters to AUSTRAC
 
-Breach of Australian sanctions law is a serious criminal offence. AMAX Global is required to report any suspected sanctions breach to DFAT and may refer the matter to the Australian Federal Police.`,
+We may request additional information at any time, including identity documents, source of funds or wealth, and transaction purpose.
+
+Failure to comply may result in account restriction or closure.`,
                     },
                     {
-                      title: "5. Risk Disclosure (Digital Currency Exchange)",
-                      content: `Digital Currency Exchange Risk Disclosure — issued by AMAX Global Pty Ltd, registered with AUSTRAC as a Digital Currency Exchange (DCE) provider.
+                      title: "5. Sanctions Compliance",
+                      content: `We comply with Australian sanctions laws and international obligations.
 
-IMPORTANT RISKS — PLEASE READ CAREFULLY:
-
-(a) Price Volatility: Digital currencies (including Bitcoin, Ethereum, and other crypto-assets) are highly volatile. Their value can decrease significantly in a short period. You may lose all or a substantial part of your investment.
-
-(b) Regulatory Risk: The regulatory environment for digital currencies is evolving. New laws or regulatory actions may adversely affect the value, transferability, or legality of digital currencies.
-
-(c) Technology Risk: Blockchain networks may experience congestion, forks, or technical failures. Transactions on public blockchains are generally irreversible. Errors in wallet addresses will result in permanent loss of funds.
-
-(d) Liquidity Risk: Digital currency markets may lack sufficient liquidity, particularly during periods of high volatility, which may prevent you from executing transactions at your desired price or time.
-
-(e) No Government Guarantee: Digital currencies are not legal tender in Australia and are not backed or guaranteed by the Australian Government, the Reserve Bank of Australia, or any other government or central bank.
-
-(f) Custody Risk: AMAX Global holds digital currencies on your behalf. While we maintain industry-standard security, we are not a bank and your digital currency holdings are not covered by the Financial Claims Scheme.
-
-By proceeding, you acknowledge that you have read and understood these risks and that you are making an informed decision to use AMAX Global's digital currency exchange services.`,
+We:
+• Screen customers and transactions against sanctions lists
+• May restrict or freeze accounts where required by law`,
                     },
                     {
-                      title: "6. Account Terms & Conditions",
-                      content: `AMAX Global Account Terms — these terms govern your eWallet and transactional account with AMAX Global Pty Ltd.
+                      title: "6. Digital Currency Risk Disclosure",
+                      content: `Digital currency services involve significant risk, including:
+• Price volatility
+• Irreversible transactions
+• Technology or network failures
+• Liquidity constraints
+• Regulatory uncertainty
 
-Account Opening: Your account is subject to successful completion of our Know Your Customer (KYC) process, including identity verification and risk assessment. We reserve the right to decline any application without providing reasons.
+Digital assets are not legal tender and are not government-backed. They are not covered by the Financial Claims Scheme.`,
+                    },
+                    {
+                      title: "7. Account Terms",
+                      content: `Account Opening: Accounts are subject to identity verification and risk assessment.
 
-Transaction Limits: Default daily transaction limits apply and are displayed in your account settings. Enhanced limits may be available following ECDD review. Limits may be reduced or suspended for risk management or regulatory compliance reasons.
+Transaction Limits: Limits apply and may be adjusted based on risk.
 
-Fees: Fee schedules are published on our website and may be updated with notice. Fees are deducted from your transaction amount or eWallet balance. No fees apply to incoming deposits unless otherwise specified.
+Fees: Fees are published and may change with notice.
 
-Account Maintenance: You are responsible for maintaining the security of your login credentials. Report any unauthorised access immediately to info@amaxglobal.com.au. AMAX Global is not liable for losses arising from your failure to maintain account security.
+Security: You are responsible for safeguarding your account credentials.
 
-Dormant Accounts: Accounts with no activity for 7 years may be subject to unclaimed money obligations under the Banking Act 1959 (Cth). We will contact you before any funds are transferred.
+Dormant Accounts: Inactive accounts may be treated in accordance with unclaimed money laws.
 
-Termination: You may close your account at any time by contacting info@amaxglobal.com.au. AMAX Global may close your account with 30 days' notice, or immediately in cases of fraud, regulatory direction, or material breach of these terms.
+Termination: We may close accounts for legal, regulatory, or risk reasons.
 
-Currency Conversion: Exchange rates for FX and remittance transactions are indicative until your transaction is confirmed. We will display the rate applicable to your transaction before you confirm.
+Currency Conversion: Exchange rates are confirmed before transaction execution.
 
-Complaints: AMAX Global has an internal dispute resolution process. If unresolved, complaints may be referred to the Australian Financial Complaints Authority (AFCA) at www.afca.org.au or 1800 931 678.
+Complaints: Unresolved complaints may be referred to AFCA (www.afca.org.au · 1800 931 678).
 
-Record Keeping: AMAX Global is required to retain transaction records for 7 years under the AML/CTF Act 2006. Account and KYC records are retained for the period required by applicable law.`,
+Record Keeping: We retain records for at least 7 years as required by law.`,
+                    },
+                    {
+                      title: "8. Declarations & Consent",
+                      content: `By signing this Agreement, I declare and agree that:
+
+Identity & Use
+• I am acting on my own behalf unless disclosed otherwise
+• The information I have provided is true, accurate, and complete
+
+Source of Funds
+• My funds are derived from legitimate sources
+
+Compliance Awareness
+• I understand AMAX Global is required to verify my identity, monitor my transactions, conduct ongoing due diligence, and report suspicious matters to AUSTRAC where required
+
+Sanctions
+• I am not subject to sanctions or acting on behalf of a sanctioned person
+
+PEP Status
+• I am not a Politically Exposed Person (PEP), or I have disclosed this where applicable
+
+Ongoing Obligations
+• I will notify AMAX Global of any material changes to my information
+
+I understand that my account may be subject to verification, monitoring, or restriction to comply with legal obligations.
+
+I agree to the Customer Agreement, Privacy Policy, and Risk Disclosure.`,
                     },
                   ];
 
                   const sectionColors = [
                     "bg-blue-50 border-blue-200",
+                    "bg-slate-50 border-slate-200",
                     "bg-purple-50 border-purple-200",
                     "bg-orange-50 border-orange-200",
                     "bg-red-50 border-red-200",
                     "bg-yellow-50 border-yellow-200",
                     "bg-green-50 border-green-200",
+                    "bg-indigo-50 border-indigo-300",
                   ];
 
                   return (
@@ -1198,7 +1228,7 @@ Record Keeping: AMAX Global is required to retain transaction records for 7 year
                             <Badge className="bg-indigo-100 text-indigo-800">Action Required</Badge>
                           </div>
                           <p className="text-xs text-gray-500 mt-0.5">
-                            Read all 6 sections and sign below to proceed — Electronic Transactions Act 1999 (Cth)
+                            Read all 8 sections and sign below to proceed — Electronic Transactions Act 1999 (Cth)
                           </p>
                         </div>
                       </div>
@@ -1235,7 +1265,7 @@ Record Keeping: AMAX Global is required to retain transaction records for 7 year
                             {kycProfile?.agreementSignedAt && (
                               <p className="text-xs text-muted-foreground">
                                 Signed on {new Date(kycProfile.agreementSignedAt).toLocaleString("en-AU", { timeZone: "Australia/Sydney" })} AEST
-                                — v2.0 — Pursuant to Electronic Transactions Act 1999 (Cth)
+                                — v2.1 — Pursuant to Electronic Transactions Act 1999 (Cth)
                               </p>
                             )}
                           </div>
@@ -1255,7 +1285,7 @@ Record Keeping: AMAX Global is required to retain transaction records for 7 year
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-semibold truncate">{kycProfile?.fullLegalName ?? "Verified Customer"}</p>
-                                  <p className="text-[10px] text-gray-400">Identity verified · AMAX Global Customer Agreement v2.0</p>
+                                  <p className="text-[10px] text-gray-400">Identity verified · AMAX Global Customer Agreement v2.1</p>
                                 </div>
                                 <div className="text-[10px] text-gray-400 flex-shrink-0">
                                   {new Date().toLocaleDateString("en-AU")}
@@ -1266,10 +1296,10 @@ Record Keeping: AMAX Global is required to retain transaction records for 7 year
                               <div className="px-5 pt-4 pb-3 border-b">
                                 <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">AMAX Global Pty Ltd — ABN 54 690 827 608</p>
                                 <h3 className="text-base font-bold text-gray-900 mt-1">Customer Agreement</h3>
-                                <p className="text-xs text-gray-500 mt-0.5">Version 2.0 · Effective 1 January 2025 · Level 2, 8–12 King Street, Rockdale NSW 2216</p>
+                                <p className="text-xs text-gray-500 mt-0.5">Version 2.1 · Effective 1 January 2025 · Level 2, 8–12 King Street, Rockdale NSW 2216</p>
                               </div>
 
-                              {/* 6 sections */}
+                              {/* 8 sections */}
                               {agreementSections.map((sec, idx) => (
                                 <div
                                   key={idx}
@@ -1317,22 +1347,15 @@ Record Keeping: AMAX Global is required to retain transaction records for 7 year
                                 onChange={e => setSignatureName(e.target.value)}
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-serif italic disabled:bg-gray-100 disabled:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
                               />
-                              {/* PEP acknowledgement in agreement */}
-                              <div className="flex items-start gap-2 text-xs text-gray-600">
-                                <Checkbox
-                                  id="agreement-pep"
-                                  checked={piiPep}
-                                  disabled={!allSectionsRead}
-                                  onCheckedChange={v => setPiiPep(Boolean(v))}
-                                />
-                                <Label htmlFor="agreement-pep" className="text-xs cursor-pointer leading-relaxed">
-                                  I confirm I am <span className="underline">not</span> a Politically Exposed Person (PEP), nor an immediate family member or close associate of a PEP. I understand that leaving this unchecked will flag my account for Enhanced Customer Due Diligence.
-                                </Label>
+                              <div className={`rounded-lg border p-3 text-xs text-gray-600 leading-relaxed transition-all ${
+                                allSectionsRead ? "bg-indigo-50 border-indigo-200" : "bg-gray-50 border-gray-200 opacity-50"
+                              }`}>
+                                By signing, I confirm I have read and agree to all 8 sections of this Agreement, including the declarations in Section 8 regarding my identity, source of funds, sanctions status, and PEP status.
                               </div>
                               <Button
                                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
                                 disabled={!allSectionsRead || !signatureName.trim() || agreementMutation.isPending}
-                                onClick={() => agreementMutation.mutate({ signature: signatureName.trim(), pepDeclaration: !piiPep })}
+                                onClick={() => agreementMutation.mutate({ signature: signatureName.trim(), pepDeclaration: false })}
                               >
                                 {agreementMutation.isPending ? "Recording signature…" : "Sign Agreement & Continue"}
                               </Button>

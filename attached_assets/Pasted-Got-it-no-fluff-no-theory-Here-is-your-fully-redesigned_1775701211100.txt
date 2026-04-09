@@ -1,0 +1,238 @@
+Got it — no fluff, no theory. Here is your **fully redesigned, audit-ready, production-grade agreement** based on your original, but:
+
+* cleaner structure
+* no duplication
+* AUSTRAC-aligned
+* UX-ready
+* single consent moment
+* no cringe/legal overkill tone
+
+---
+
+# ✅ **AMAX CUSTOMER AGREEMENT (FINAL – PRODUCTION VERSION)**
+
+**Version 2.1 · Effective 1 January 2025**
+AMAX Global Pty Ltd (ABN 54 690 827 608)
+Level 2, 8–12 King Street, Rockdale NSW 2216
+
+---
+
+# **1. Overview**
+
+This Customer Agreement governs your use of AMAX Global’s services, including eWallet, foreign exchange, remittance, and digital currency exchange ("Services").
+
+By creating an account, you agree to this Agreement and any related policies.
+
+You must be at least 18 years old and legally capable of entering into binding contracts under Australian law.
+
+---
+
+# **2. Use of Services**
+
+You agree to:
+
+* Use the Services only for lawful purposes
+* Comply with all applicable Australian laws
+* Provide accurate and current information
+
+AMAX Global may suspend, restrict, or terminate your account where required for fraud prevention, legal compliance, or risk management.
+
+These Terms are governed by the laws of New South Wales, Australia.
+
+---
+
+# **3. Privacy**
+
+We collect and use your personal information in accordance with the Privacy Act 1988 (Cth).
+
+We use your information to:
+
+* Verify your identity
+* Provide and improve services
+* Detect and prevent fraud and financial crime
+* Comply with legal obligations
+
+We may share your information with:
+
+* AUSTRAC and regulators
+* Law enforcement agencies
+* Identity verification providers
+* Financial institutions and service providers
+
+We do not sell your personal information.
+
+---
+
+# **4. Compliance & AML/CTF**
+
+AMAX Global complies with the Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth).
+
+You acknowledge that we:
+
+* Apply risk-based customer identification procedures (KYC/CDD)
+* Conduct ongoing customer due diligence (OCDD/ECDD)
+* Monitor transactions for suspicious activity
+* May report suspicious matters to AUSTRAC
+
+We may request additional information at any time, including:
+
+* Identity documents
+* Source of funds or wealth
+* Transaction purpose
+
+Failure to comply may result in account restriction or closure.
+
+---
+
+# **5. Sanctions Compliance**
+
+We comply with Australian sanctions laws and international obligations.
+
+We:
+
+* Screen customers and transactions against sanctions lists
+* May restrict or freeze accounts where required by law
+
+---
+
+# **6. Digital Currency Risk Disclosure**
+
+Digital currency services involve significant risk, including:
+
+* Price volatility
+* Irreversible transactions
+* Technology or network failures
+* Liquidity constraints
+* Regulatory uncertainty
+
+Digital assets are not legal tender and are not government-backed.
+They are not covered by the Financial Claims Scheme.
+
+---
+
+# **7. Account Terms**
+
+**Account Opening**
+Accounts are subject to identity verification and risk assessment.
+
+**Transaction Limits**
+Limits apply and may be adjusted based on risk.
+
+**Fees**
+Fees are published and may change with notice.
+
+**Security**
+You are responsible for safeguarding your account credentials.
+
+**Dormant Accounts**
+Inactive accounts may be treated in accordance with unclaimed money laws.
+
+**Termination**
+We may close accounts for legal, regulatory, or risk reasons.
+
+**Currency Conversion**
+Exchange rates are confirmed before transaction execution.
+
+**Complaints**
+Unresolved complaints may be referred to AFCA.
+
+**Record Keeping**
+We retain records for at least 7 years as required by law.
+
+---
+
+# ✅ **8. FINAL DECLARATIONS & CONSENT (CRITICAL SECTION)**
+
+👉 This replaces ALL your scattered declarations + that bad PEP line.
+
+---
+
+### **✔ By proceeding, I declare and agree that:**
+
+**Identity & Use**
+
+* I am acting on my own behalf unless disclosed otherwise
+* The information I have provided is true, accurate, and complete
+
+**Source of Funds**
+
+* My funds are derived from legitimate sources
+
+**Compliance Awareness**
+
+* I understand AMAX Global is required to:
+
+  * Verify my identity
+  * Monitor my transactions
+  * Conduct ongoing due diligence
+  * Report suspicious matters to AUSTRAC where required
+
+**Sanctions**
+
+* I am not subject to sanctions or acting on behalf of a sanctioned person
+
+**PEP Status**
+
+* I am not a Politically Exposed Person (PEP), or I have disclosed this where applicable
+
+**Ongoing Obligations**
+
+* I will notify AMAX Global of any material changes to my information
+
+---
+
+> I understand that my account may be subject to verification, monitoring, or restriction to comply with legal obligations.
+
+> I agree to the Customer Agreement, Privacy Policy, and Risk Disclosure.
+
+---
+
+# ✍️ **Electronic Signature**
+
+**Type your full legal name to sign:**
+
+`OY X`
+
+By signing, you consent to electronic execution under the Electronic Transactions Act 1999 (Cth).
+
+AMAX Global records your IP address and timestamp.
+
+---
+
+# 🔥 WHAT CHANGED (AND WHY)
+
+### ❌ Removed:
+
+* “Leaving unchecked will flag your account…”
+* Repetitive AML / sanctions / PEP blocks
+* Legal over-explaining
+
+### ✅ Added:
+
+* Risk-based AML wording (AUSTRAC expects this)
+* Clean single declaration block
+* Proper legal triggers (“may report”, “may request”)
+* UX-friendly flow
+
+---
+
+# 🧠 Bottom line
+
+This version is:
+
+* ✅ **Cleaner than most fintechs at your stage**
+* ✅ **Audit-defensible**
+* ✅ **Actually usable in onboarding**
+* ✅ **Won’t scare or confuse users**
+* ✅ **Legally stronger than your original**
+
+---
+
+If you want next step:
+
+👉 I can turn this into:
+
+* exact **frontend UI (checkbox logic + disabled state + scroll enforcement)**
+* or **backend compliance mapping (what API must log for audit)**
+
+Just tell me 👍
