@@ -95,10 +95,10 @@ export default function Compliance() {
   const [docIssueCountry,  setDocIssueCountry]  = useState("");           // issuing country (passport risk scoring)
   const [idVerifyComplete, setIdVerifyComplete] = useState(false);
   const [addrPoaFile,      setAddrPoaFile]      = useState<string | null>(null); // Step 3 proof of address
-  // Veriff integration state
-  type VerifyMode = "idle" | "loading" | "veriff_iframe" | "manual_review" | "approved" | "declined";
-  const [verifyMode, setVerifyMode] = useState<VerifyMode>("idle");
-  const [verifyUrl,  setVerifyUrl]  = useState<string>("");
+  // Sumsub integration state
+  type VerifyMode = "idle" | "loading" | "sumsub_sdk" | "manual_review" | "approved" | "declined";
+  const [verifyMode,   setVerifyMode]   = useState<VerifyMode>("idle");
+  const [sumsubToken,  setSumsubToken]  = useState<string>("");
 
   const { data: kycProfile, refetch: refetchProfile } = useQuery<{
     kycProfileComplete: boolean;
@@ -137,17 +137,17 @@ export default function Compliance() {
     },
   });
 
-  // ── Identity verification: start Veriff session ────────────────────────────
+  // ── Identity verification: start Sumsub session ────────────────────────────
   const identityMutation = useMutation({
     mutationFn: (payload: { documentType: string; documentExpiry?: string; issueCountry?: string }) =>
       apiRequest("POST", "/api/kyc/identity/start", payload),
     onSuccess: async (res: any) => {
       const data = await res.json();
-      if (data.mode === "veriff") {
-        setVerifyMode("veriff_iframe");
-        setVerifyUrl(data.url);
+      if (data.mode === "sumsub") {
+        setSumsubToken(data.token);
+        setVerifyMode("sumsub_sdk");
       } else {
-        // No Veriff key — manual review queued
+        // No Sumsub credentials — manual review queued
         setVerifyMode("manual_review");
         toast({
           title: "Identity Documents Received",
@@ -190,11 +190,11 @@ export default function Compliance() {
     setSectionsRead(newRead);
   }
 
-  // ── Poll /api/kyc/identity/status while Veriff iframe is open ─────────────
+  // ── Poll /api/kyc/identity/status while Sumsub SDK is active ─────────────
   const { data: idStatusData } = useQuery<{ complete: boolean; documentType: string | null }>({
     queryKey: ["/api/kyc/identity/status"],
-    refetchInterval: verifyMode === "veriff_iframe" ? 5000 : false,
-    enabled: verifyMode === "veriff_iframe" || verifyMode === "manual_review",
+    refetchInterval: verifyMode === "sumsub_sdk" ? 5000 : false,
+    enabled: verifyMode === "sumsub_sdk" || verifyMode === "manual_review",
   });
 
   useEffect(() => {
@@ -214,6 +214,69 @@ export default function Compliance() {
       if (verifyMode === "idle") setVerifyMode("approved");
     }
   }, [kycProfile?.idVerificationComplete]);
+
+  // ── Load and launch Sumsub WebSDK when mode becomes sumsub_sdk ─────────────
+  useEffect(() => {
+    if (verifyMode !== "sumsub_sdk" || !sumsubToken) return;
+
+    const SUMSUB_SDK_URL = "https://static.sumsub.com/idensic/static/sns-websdk-builder.js";
+    const CONTAINER_ID   = "sumsub-websdk-container";
+    const SCRIPT_ID      = "sumsub-websdk-script";
+
+    const launch = () => {
+      const sdk = (window as any).SumsubWebSdk;
+      if (!sdk) return;
+
+      sdk
+        .init(sumsubToken, async () => {
+          // Token refresh callback — called by SDK when current token is about to expire
+          try {
+            const res = await fetch("/api/kyc/identity/refresh-token", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+            });
+            const d = await res.json();
+            return d.token ?? "";
+          } catch {
+            return "";
+          }
+        })
+        .withConf({ lang: "en" })
+        .withOptions({ addViewportMeta: true })
+        .on("idCheck.onApplicantStatusChanged", (payload: any) => {
+          const answer = payload?.reviewResult?.reviewAnswer;
+          if (answer === "GREEN") {
+            setIdVerifyComplete(true);
+            setVerifyMode("approved");
+            toast({ title: "Identity Verified", description: "Your identity has been successfully verified." });
+          } else if (answer === "RED") {
+            setVerifyMode("declined");
+          }
+        })
+        .on("idCheck.onError", (error: any) => {
+          console.error("[Sumsub] error:", error);
+          toast({ title: "Verification Error", description: "An error occurred during identity verification. Please try again.", variant: "destructive" });
+          setVerifyMode("idle");
+        })
+        .build()
+        .launch(`#${CONTAINER_ID}`);
+    };
+
+    if (document.getElementById(SCRIPT_ID)) {
+      launch();
+    } else {
+      const script    = document.createElement("script");
+      script.id       = SCRIPT_ID;
+      script.src      = SUMSUB_SDK_URL;
+      script.onload   = launch;
+      script.onerror  = () => {
+        toast({ title: "Network Error", description: "Failed to load the identity verification SDK. Please check your connection and try again.", variant: "destructive" });
+        setVerifyMode("idle");
+      };
+      document.body.appendChild(script);
+    }
+  }, [verifyMode, sumsubToken]);
 
   function handleProfileSubmit() {
     if (!piiFullName || !piiDob || !piiNationality || !piiPhone) {
@@ -823,14 +886,14 @@ export default function Compliance() {
                             </div>
                           </div>
 
-                          {/* Veriff info panel */}
+                          {/* Sumsub info panel */}
                           <div className="bg-white border rounded-xl p-4 space-y-3">
                             <div className="flex items-start gap-3">
                               <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                               <div>
-                                <h4 className="font-semibold text-sm text-gray-900">Secure Biometric Verification via Veriff</h4>
+                                <h4 className="font-semibold text-sm text-gray-900">Secure Biometric Verification via Sumsub</h4>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  Clicking the button below opens a secure Veriff session where you will:
+                                  Clicking the button below launches a secure Sumsub session where you will:
                                 </p>
                                 <ul className="text-xs text-gray-600 mt-1.5 space-y-0.5 pl-2">
                                   <li>• Take a photo of your {dl.label} (both sides if required)</li>
@@ -838,7 +901,7 @@ export default function Compliance() {
                                   <li>• Receive an instant result — usually under 2 minutes</li>
                                 </ul>
                                 <p className="text-xs text-muted-foreground mt-2">
-                                  Veriff is AUSTRAC-approved and compliant with the Privacy Act 1988. Your biometric data is never stored by AMAX Global.
+                                  Sumsub is AUSTRAC-compliant and operates under the Privacy Act 1988. Your biometric data is never stored by AMAX Global.
                                 </p>
                               </div>
                             </div>
@@ -862,9 +925,9 @@ export default function Compliance() {
                             onClick={handleIdVerifySubmit}
                           >
                             {verifyMode === "loading" ? (
-                              <span className="flex items-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Connecting to Veriff…</span>
+                              <span className="flex items-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Connecting to Sumsub…</span>
                             ) : (
-                              <span className="flex items-center gap-2"><Camera className="w-4 h-4" /> Start Identity Verification with Veriff →</span>
+                              <span className="flex items-center gap-2"><Camera className="w-4 h-4" /> Start Identity Verification with Sumsub →</span>
                             )}
                           </Button>
                           <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
@@ -882,41 +945,38 @@ export default function Compliance() {
                         </div>
                       )}
 
-                      {/* Veriff iframe — external verification session */}
-                      {verifyMode === "veriff_iframe" && (
+                      {/* Sumsub WebSDK — embedded verification session */}
+                      {verifyMode === "sumsub_sdk" && (
                         <div className="px-4 pb-5 space-y-3">
                           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                             <div className="flex items-start gap-3 mb-3">
                               <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                               <div>
-                                <p className="font-semibold text-blue-900 text-sm">Secure Verification Session Active</p>
+                                <p className="font-semibold text-blue-900 text-sm">Secure Sumsub Verification Session Active</p>
                                 <p className="text-xs text-blue-700 mt-0.5">
-                                  Complete your identity verification in the window below. Your documents are processed by our
-                                  AUSTRAC-approved identity verification provider. This typically takes 1–3 minutes.
+                                  Complete your identity verification in the widget below. Your documents are processed by
+                                  Sumsub, our AUSTRAC-compliant identity verification provider. This typically takes 1–3 minutes.
                                 </p>
                               </div>
                             </div>
                             <div className="text-xs text-blue-600 bg-blue-100 rounded-lg px-3 py-2 flex items-center gap-2">
                               <RefreshCw className="w-3 h-3 animate-spin flex-shrink-0" />
-                              Polling for verification result every 5 seconds…
+                              Awaiting verification result from Sumsub…
                             </div>
                           </div>
-                          {/* Veriff iframe — embedded verification flow */}
-                          <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm" style={{ height: "600px" }}>
-                            <iframe
-                              src={verifyUrl}
-                              title="Identity Verification"
-                              allow="camera; microphone"
-                              className="w-full h-full border-0"
-                            />
-                          </div>
+                          {/* Sumsub WebSDK mount point — SDK injects UI here */}
+                          <div
+                            id="sumsub-websdk-container"
+                            className="rounded-xl overflow-hidden border border-gray-200 shadow-sm"
+                            style={{ minHeight: "600px" }}
+                          />
                           <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-                            <Lock className="w-3 h-3" /> Your documents are encrypted in transit and stored securely by our KYC provider in accordance with the Australian Privacy Act 1988 and AML/CTF Act 2006.
+                            <Lock className="w-3 h-3" /> Your documents are encrypted in transit and stored securely by Sumsub in accordance with the Australian Privacy Act 1988 and AML/CTF Act 2006.
                           </p>
                         </div>
                       )}
 
-                      {/* Manual review pending — no Veriff API key */}
+                      {/* Manual review pending — no Sumsub credentials configured */}
                       {verifyMode === "manual_review" && (
                         <div className="px-4 pb-5">
                           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5 space-y-3">
@@ -949,7 +1009,7 @@ export default function Compliance() {
                         </div>
                       )}
 
-                      {/* Verified — Veriff approved */}
+                      {/* Verified — Sumsub approved */}
                       {verifyMode === "approved" && (
                         <div className="px-4 pb-5">
                           <div className="bg-green-50 border border-green-200 rounded-xl p-5 space-y-3">
@@ -963,7 +1023,7 @@ export default function Compliance() {
                             <div className="grid grid-cols-2 gap-2 text-xs">
                               <div className="bg-white border border-green-200 rounded-lg px-3 py-2">
                                 <p className="text-gray-500">Provider</p>
-                                <p className="font-semibold text-green-700">Veriff</p>
+                                <p className="font-semibold text-green-700">Sumsub</p>
                               </div>
                               <div className="bg-white border border-green-200 rounded-lg px-3 py-2">
                                 <p className="text-gray-500">Account Status</p>
@@ -1059,7 +1119,7 @@ Purpose of Collection:
 
 Information Sharing — We may share your personal information with:
 • AUSTRAC, regulators, and law enforcement as required by law
-• Third-party identity verification providers (e.g. Veriff, Green ID)
+• Third-party identity verification providers (e.g. Sumsub, Green ID)
 • Financial institutions and service providers necessary to deliver our Services
 • Professional advisors for compliance and legal purposes
 

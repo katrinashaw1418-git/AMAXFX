@@ -4060,12 +4060,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ---------------------------------------------------------------------------
-  // Identity verification endpoints — Veriff integration
-  // POST /api/kyc/identity/start  — creates a Veriff session (or queues manual review)
-  // POST /api/kyc/identity/webhook — receives Veriff HMAC-signed decision
-  // GET  /api/kyc/identity/status  — frontend polls for webhook result
+  // Identity verification endpoints — Sumsub integration
+  // POST /api/kyc/identity/start         — creates Sumsub applicant + SDK access token
+  // POST /api/kyc/identity/refresh-token — renews SDK token (called by Sumsub SDK)
+  // POST /api/kyc/identity/webhook       — receives Sumsub applicantReviewed events
+  // GET  /api/kyc/identity/status        — frontend polls for DB-recorded result
   // ---------------------------------------------------------------------------
-  const VERIFF_API_URL = "https://stationapi.veriff.com";
+
+  const SUMSUB_API_URL = "https://api.sumsub.com";
+  const SUMSUB_LEVEL   = "basic-kyc-level"; // verification level configured in Sumsub dashboard
+
+  // Build HMAC-SHA256 signature required by every Sumsub API call
+  function makeSumsubSig(secretKey: string, ts: number, method: string, path: string, body = ""): string {
+    const crypto = require("crypto");
+    return crypto.createHmac("sha256", secretKey)
+      .update(String(ts) + method.toUpperCase() + path + body)
+      .digest("hex");
+  }
+
+  // Authenticated fetch wrapper for Sumsub REST API
+  async function sumsubFetch(appToken: string, secretKey: string, method: string, path: string, body?: object) {
+    const ts      = Math.floor(Date.now() / 1000);
+    const bodyStr = body ? JSON.stringify(body) : "";
+    const sig     = makeSumsubSig(secretKey, ts, method, path, bodyStr);
+    const headers: Record<string, string> = {
+      "X-App-Token":      appToken,
+      "X-App-Access-Ts":  String(ts),
+      "X-App-Access-Sig": sig,
+      "Accept":           "application/json",
+    };
+    if (bodyStr) headers["Content-Type"] = "application/json";
+    return fetch(`${SUMSUB_API_URL}${path}`, {
+      method,
+      headers,
+      ...(bodyStr ? { body: bodyStr } : {}),
+    });
+  }
+
+  // Helper: generate a Sumsub SDK access token for a given externalUserId
+  async function getSumsubAccessToken(appToken: string, secretKey: string, externalUserId: string): Promise<string> {
+    const path    = `/resources/accessTokens?userId=${encodeURIComponent(externalUserId)}&levelName=${encodeURIComponent(SUMSUB_LEVEL)}`;
+    const tokenRes = await sumsubFetch(appToken, secretKey, "POST", path, {});
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text();
+      throw new Error(`Sumsub token error (${tokenRes.status}): ${errText}`);
+    }
+    const tokenData: any = await tokenRes.json();
+    return tokenData.token ?? "";
+  }
 
   // POST /api/kyc/identity/start
   app.post("/api/kyc/identity/start", async (req: Request, res: any) => {
@@ -4074,24 +4116,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [user] = await db.select().from(users).where(eq(users.id, userId));
       if (!user) return res.status(404).json({ error: "User not found" });
 
-      const apiKey = process.env.VERIFF_API_KEY;
+      const appToken  = process.env.SUMSUB_APP_TOKEN;
+      const secretKey = process.env.SUMSUB_SECRET_KEY;
       const docType: string = req.body.documentType ?? "passport";
-      const docTypeMap: Record<string, string> = {
-        passport: "PASSPORT",
-        driver_licence: "DRIVERS_LICENSE",
-        national_id: "ID_CARD",
-      };
 
-      if (!apiKey) {
-        // No Veriff key — queue for manual review by compliance team
-        await db.update(users).set({
-          idDocumentType: docType,
-        }).where(eq(users.id, userId));
+      if (!appToken || !secretKey) {
+        // No Sumsub credentials — queue for manual review by compliance team
+        await db.update(users).set({ idDocumentType: docType }).where(eq(users.id, userId));
         await db.insert(complianceActions as any).values({
           actionType: "id_verification_started",
           userId,
           performedBy: "system",
-          notes: `Manual review queued — VERIFF_API_KEY not configured. Document type: ${docType}. Customer: ${user.firstName} ${user.lastName}.`,
+          notes: `Manual review queued — SUMSUB_APP_TOKEN / SUMSUB_SECRET_KEY not configured. Document type: ${docType}. Customer: ${user.firstName} ${user.lastName}.`,
           outcome: "pending",
         });
         await db.insert(auditLogs as any).values({
@@ -4104,48 +4140,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ mode: "manual_review" });
       }
 
-      // Build Veriff session
-      const callbackUrl = `${req.protocol}://${req.get("host")}/api/kyc/identity/webhook`;
-      const sessionBody = {
-        verification: {
-          callback: callbackUrl,
-          person: {
-            firstName: user.firstName,
-            lastName: user.lastName,
-          },
-          document: {
-            type: docTypeMap[docType] ?? "PASSPORT",
-            country: "AU",
-          },
-          vendorData: `userId:${userId}`,
-          timestamp: new Date().toISOString(),
+      const externalUserId = `amax-${userId}`;
+
+      // Step 1: Create applicant in Sumsub
+      const applicantPath = `/resources/applicants?levelName=${encodeURIComponent(SUMSUB_LEVEL)}`;
+      const applicantBody: Record<string, any> = {
+        externalUserId,
+        email: user.email,
+        info: {
+          firstName: user.firstName ?? "",
+          lastName:  user.lastName  ?? "",
+          ...(user.dateOfBirth ? { dob: user.dateOfBirth } : {}),
+          ...(user.nationality  ? { country: user.nationality } : {}),
         },
       };
-
-      const veriffRes = await fetch(`${VERIFF_API_URL}/v1/sessions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-AUTH-CLIENT": apiKey,
-        },
-        body: JSON.stringify(sessionBody),
-      });
-
-      if (!veriffRes.ok) {
-        const errText = await veriffRes.text();
-        throw new Error(`Veriff API error (${veriffRes.status}): ${errText}`);
+      const applicantRes = await sumsubFetch(appToken, secretKey, "POST", applicantPath, applicantBody);
+      if (!applicantRes.ok) {
+        const errText = await applicantRes.text();
+        throw new Error(`Sumsub applicant error (${applicantRes.status}): ${errText}`);
       }
+      const applicantData: any = await applicantRes.json();
+      const applicantId: string = applicantData.id ?? "";
 
-      const veriffData: any = await veriffRes.json();
-      const sessionId: string = veriffData.verification?.id ?? "";
-      const sessionUrl: string = veriffData.verification?.url ?? "";
+      // Step 2: Generate SDK access token
+      const accessToken = await getSumsubAccessToken(appToken, secretKey, externalUserId);
 
       await db.update(users).set({ idDocumentType: docType }).where(eq(users.id, userId));
       await db.insert(complianceActions as any).values({
         actionType: "id_verification_started",
         userId,
         performedBy: "system",
-        notes: `Veriff session created. Session ID: ${sessionId}. Document type: ${docType}.`,
+        notes: `Sumsub applicant created. Applicant ID: ${applicantId}. External user ID: ${externalUserId}.`,
         outcome: "pending",
       });
       await db.insert(auditLogs as any).values({
@@ -4153,44 +4178,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: "id_verification_session_started",
         entityType: "user",
         entityId: String(userId),
-        metadata: { sessionId, documentType: docType, mode: "veriff" },
+        metadata: { applicantId, externalUserId, levelName: SUMSUB_LEVEL, mode: "sumsub" },
       });
 
-      res.json({ mode: "veriff", url: sessionUrl, sessionId });
+      res.json({ mode: "sumsub", token: accessToken, applicantId });
     } catch (err: any) {
       res.status(500).json({ error: err.message ?? "Failed to start verification" });
     }
   });
 
-  // POST /api/kyc/identity/webhook — receives Veriff decision
-  // No auth — public endpoint called by Veriff servers
-  // Production TODO: verify x-hmac-signature header = sha256(VERIFF_SECRET + rawBody)
+  // POST /api/kyc/identity/refresh-token — called by Sumsub WebSDK when token expires
+  app.post("/api/kyc/identity/refresh-token", async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      const appToken  = process.env.SUMSUB_APP_TOKEN;
+      const secretKey = process.env.SUMSUB_SECRET_KEY;
+      if (!appToken || !secretKey) return res.status(503).json({ error: "KYC provider not configured" });
+      const accessToken = await getSumsubAccessToken(appToken, secretKey, `amax-${userId}`);
+      res.json({ token: accessToken });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to refresh token" });
+    }
+  });
+
+  // POST /api/kyc/identity/webhook — receives Sumsub applicantReviewed events
+  // No auth — public endpoint called by Sumsub servers
+  // Sumsub signs the payload: x-payload-digest = HMAC-SHA256(secretKey, rawBody)
   app.post("/api/kyc/identity/webhook", async (req: Request, res: any) => {
     try {
-      const { verification } = req.body ?? {};
-      if (!verification?.vendorData) {
-        return res.status(400).json({ error: "Missing vendorData in webhook payload" });
+      // Signature verification (active when SUMSUB_SECRET_KEY is set)
+      const secretKey = process.env.SUMSUB_SECRET_KEY;
+      if (secretKey) {
+        const crypto = require("crypto");
+        const rawBody   = JSON.stringify(req.body);
+        const digest    = req.headers["x-payload-digest"] as string ?? "";
+        const expected  = crypto.createHmac("sha256", secretKey).update(rawBody).digest("hex");
+        if (digest && digest !== expected) {
+          return res.status(401).json({ error: "Invalid webhook signature" });
+        }
       }
 
-      // Parse userId encoded in vendorData by the start endpoint
-      const match = String(verification.vendorData).match(/userId:(\d+)/);
-      if (!match) return res.status(400).json({ error: "Invalid vendorData format" });
+      const body: any = req.body ?? {};
+      const type: string          = body.type ?? "";
+      const externalUserId: string = body.externalUserId ?? "";
+
+      // Only act on applicantReviewed events
+      if (type !== "applicantReviewed") return res.json({ success: true, skipped: true });
+
+      const match = externalUserId.match(/^amax-(\d+)$/);
+      if (!match) return res.status(400).json({ error: "Invalid externalUserId format" });
       const userId = parseInt(match[1], 10);
 
-      const status: string = verification.status ?? "unknown"; // "approved" | "declined" | "resubmission_requested"
-      const approved = status === "approved";
+      const reviewResult: any = body.reviewResult ?? {};
+      const reviewAnswer: string = reviewResult.reviewAnswer ?? ""; // "GREEN" | "RED"
+      const approved = reviewAnswer === "GREEN";
 
       if (approved) {
-        await db.update(users).set({
-          idVerificationComplete: true,
-        }).where(eq(users.id, userId));
+        await db.update(users).set({ idVerificationComplete: true }).where(eq(users.id, userId));
       }
 
       await db.insert(complianceActions as any).values({
         actionType: "id_verification_result",
         userId,
-        performedBy: "veriff",
-        notes: `Veriff decision: ${status}. Verification ID: ${verification.id ?? "n/a"}. Person: ${verification.person?.firstName ?? ""} ${verification.person?.lastName ?? ""}.`,
+        performedBy: "sumsub",
+        notes: `Sumsub decision: ${reviewAnswer}. Applicant ID: ${body.applicantId ?? "n/a"}. Reject labels: ${(reviewResult.rejectLabels ?? []).join(", ") || "none"}.`,
         outcome: approved ? "completed" : "pending",
       });
       await db.insert(auditLogs as any).values({
@@ -4198,7 +4249,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: "id_verification_webhook_received",
         entityType: "user",
         entityId: String(userId),
-        metadata: { status, verificationId: verification.id, reason: verification.reason ?? null },
+        metadata: {
+          reviewAnswer,
+          applicantId:  body.applicantId  ?? null,
+          inspectionId: body.inspectionId ?? null,
+          rejectLabels: reviewResult.rejectLabels ?? [],
+        },
       });
 
       res.json({ success: true });
@@ -4207,7 +4263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/kyc/identity/status — frontend polls after starting Veriff session
+  // GET /api/kyc/identity/status — frontend polls for DB-recorded verification result
   app.get("/api/kyc/identity/status", async (req: Request, res: any) => {
     try {
       const { userId } = requireAuth(req);
@@ -4217,7 +4273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(users.id, userId));
       if (!user) return res.status(404).json({ error: "User not found" });
       res.json({
-        complete: user.idVerificationComplete ?? false,
+        complete:     user.idVerificationComplete ?? false,
         documentType: user.idDocumentType ?? null,
       });
     } catch (err: any) {
@@ -4425,7 +4481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/admin/identity/approve/:userId — manually approve identity verification
-  // Used by compliance team when VERIFF_API_KEY is not configured, or as override.
+  // Used by compliance team when SUMSUB credentials are not configured, or as override.
   app.post("/api/admin/identity/approve/:userId", async (req: Request, res: any) => {
     if (!requireAdminKey(req, res)) return;
     try {
