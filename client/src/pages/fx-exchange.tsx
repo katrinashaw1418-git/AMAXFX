@@ -85,8 +85,8 @@ export default function FxExchange() {
     },
     onSuccess: (data) => {
       toast({
-        title: "Exchange Successful",
-        description: `${amount} ${fromCurrency} → ${data.convertedAmount?.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${toCurrency}`,
+        title: "Exchange Submitted — Pending Settlement",
+        description: `${amount} ${fromCurrency} debited. Your ${toCurrency} balance will update once our regulated banking partner confirms execution — typically same day.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
@@ -417,7 +417,11 @@ export default function FxExchange() {
             </div>
             <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-blue-50 border border-blue-200 text-blue-800">
               <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-              <span>Foreign exchange transactions are executed at prevailing market rates. Settlement is typically same day, subject to regulated banking partner processing times.</span>
+              <span>Foreign exchange transactions are executed at prevailing market rates. Rates are indicative until execution is confirmed by our regulated banking partner. Settlement is typically same day, subject to execution by our regulated banking partner.</span>
+            </div>
+            <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-amber-50 border border-amber-200 text-amber-800">
+              <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+              <span>Funds remain held with our regulated banking partner throughout the conversion process. Your account will reflect the converted balance once the partner confirms execution. This exchange will show as <strong>pending</strong> until then.</span>
             </div>
             <p className="text-xs text-gray-500 text-center">
               By confirming, you authorise AMAX Global Pty Ltd (ABN 54 690 827 608) to instruct our regulated banking partner to execute this foreign exchange conversion on your behalf.

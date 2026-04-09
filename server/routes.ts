@@ -2560,7 +2560,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const responseBody = { transaction: txRecord, convertedAmount: netConverted.toNumber(), exchangeRate: exchangeRate.toNumber(), fee: fee.toNumber() };
       if (idemKey) await saveIdempotentResponse(userId, "/api/fx-exchange", idemKey, payloadHash, responseBody);
-      await writeAuditLog(userId, "fx_exchange", "transaction", String(txRecord?.id), { fromCurrency, toCurrency, amount: rawAmount }, req.ip || null);
+      await writeAuditLog(userId, "fx_exchange", "transaction", String(txRecord?.id), {
+        fromCurrency,
+        toCurrency,
+        amount: rawAmount,
+        rateShown: exchangeRate.toFixed(8),
+        feeCharged: fee.toFixed(8),
+        netConverted: netConverted.toFixed(8),
+        consentTimestamp: new Date().toISOString(),
+      }, req.ip || null);
       res.json(responseBody);
     } catch (error: any) {
       if (error.status) return res.status(error.status).json({ error: error.message });
