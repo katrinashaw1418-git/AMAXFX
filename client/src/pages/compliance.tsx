@@ -250,78 +250,39 @@ export default function Compliance() {
     });
   }
 
-  // ── derive step statuses dynamically ──────────────────────────────────────
-  // Step 2: identity verification — runs in parallel with steps 3-5
-  // Step 3: customer agreement — unlocked once personal info (step 1) is saved
-  // Step 4: address verification — unlocked after agreement signed
-  // Step 5: source of funds — unlocked after address uploaded
-  // NOTE: Steps 3-5 are independent of step 2 by design. Identity verification
-  // happens asynchronously (Veriff webhook / manual review) while the user can
-  // simultaneously sign the agreement and upload documents. The server-side
-  // KYC hard stop (requireKyc) enforces that ALL steps are done before transacting.
+  // ── derive step statuses ───────────────────────────────────────────────────
+  // Correct order per AUSTRAC best practice:
+  // 1 Personal Info → 2 Declarations/Agreement → 3 ID Verify → 4 Address → 5 Funds
   const agreementSigned = kycProfile?.agreementSigned ?? false;
   const profileDone = kycProfile?.kycProfileComplete ?? false;
   const stepStatuses = useMemo((): Record<number, StepStatus> => {
-    const s2: StepStatus = idVerifyComplete ? "completed" : "in_progress";
-    const s3: StepStatus = !profileDone ? "pending" : agreementSigned ? "completed" : "in_progress";
-    const s4: StepStatus = !profileDone ? "pending" : stepFiles[4] ? "under_review" : "in_progress";
-    const s5: StepStatus = !profileDone ? "pending" : (riskSubmitted || stepFiles[5]) ? "completed" : "in_progress";
-    return { 2: s2, 3: s3, 4: s4, 5: s5 };
-  }, [idVerifyComplete, profileDone, agreementSigned, stepFiles, riskSubmitted]);
+    const s1: StepStatus = profileDone ? "completed" : "in_progress";
+    const s2: StepStatus = !profileDone ? "pending" : agreementSigned ? "completed" : "in_progress";
+    const s3: StepStatus = !agreementSigned ? "pending" : idVerifyComplete ? "completed" : "in_progress";
+    const s4: StepStatus = !agreementSigned ? "pending" : stepFiles[4] ? "under_review" : "in_progress";
+    const s5: StepStatus = !agreementSigned ? "pending" : (riskSubmitted || stepFiles[5]) ? "completed" : "in_progress";
+    return { 1: s1, 2: s2, 3: s3, 4: s4, 5: s5 };
+  }, [profileDone, agreementSigned, idVerifyComplete, stepFiles, riskSubmitted]);
 
-  // derive current active step — sequential steps 3→4→5 take priority over step 2
-  // Step 2 (identity) runs asynchronously (Veriff / manual review); the user
-  // should focus on completing steps 3-5 in order while identity is processed.
   const currentStepId = useMemo(() => {
-    if (profileDone) {
-      for (const id of [3, 4, 5]) {
-        if (stepStatuses[id] !== "completed" && stepStatuses[id] !== "under_review") return id;
-      }
-    }
-    // All sequential steps done (or profile not saved yet) — surface identity step
-    if (!idVerifyComplete) return 2;
-    return null; // everything complete
-  }, [stepStatuses, profileDone, idVerifyComplete]);
+    if (!profileDone) return 1;
+    if (!agreementSigned) return 2;
+    if (!idVerifyComplete) return 3;
+    if (!stepFiles[4]) return 4;
+    if (!riskSubmitted && !stepFiles[5]) return 5;
+    return null;
+  }, [profileDone, agreementSigned, idVerifyComplete, stepFiles, riskSubmitted]);
 
-  // derive KYC completion % — 5 steps, 20% each
+  // KYC completion % — 20% per step
   const kycPct = useMemo(() => {
     let total = 0;
-    if (kycProfile?.kycProfileComplete) total += 20; // step 1
-    if (idVerifyComplete)               total += 20; // step 2
-    if (kycProfile?.agreementSigned)    total += 20; // step 3 customer agreement
-    if (stepFiles[4])                   total += 20; // step 4 address
-    if (riskSubmitted || stepFiles[5])  total += 20; // step 5 source of funds
+    if (profileDone)                    total += 20;
+    if (agreementSigned)                total += 20;
+    if (idVerifyComplete)               total += 20;
+    if (stepFiles[4])                   total += 20;
+    if (riskSubmitted || stepFiles[5])  total += 20;
     return total;
-  }, [kycProfile?.kycProfileComplete, kycProfile?.agreementSigned, idVerifyComplete, stepFiles, riskSubmitted]);
-
-  // derive doc verification %
-  const docPct = useMemo(() => {
-    let done = 0;
-    if (idVerifyComplete)  done += 1;
-    if (agreementSigned)   done += 1;
-    if (stepFiles[4])      done += 1;
-    if (stepFiles[5] || riskSubmitted) done += 1;
-    return Math.round((done / 4) * 100);
-  }, [idVerifyComplete, agreementSigned, stepFiles, riskSubmitted]);
-
-  const complianceMetrics = useMemo(() => [
-    {
-      label: "KYC Completion",
-      value: kycPct,
-      status: kycPct === 100 ? "completed" : "in_progress",
-    },
-    { label: "AML Screening",         value: 100, status: "completed" },
-    {
-      label: "Document Verification",
-      value: docPct,
-      status: docPct === 100 ? "completed" : docPct > 0 ? "in_progress" : "pending",
-    },
-    {
-      label: "Risk Assessment",
-      value: riskSubmitted ? 100 : 0,
-      status: riskSubmitted ? "completed" : "pending",
-    },
-  ], [kycPct, docPct, riskSubmitted]);
+  }, [profileDone, agreementSigned, idVerifyComplete, stepFiles, riskSubmitted]);
 
   // ── KYC refresh notice ─────────────────────────────────────────────────────
   const kycRefreshNotice = useMemo((): "overdue" | "due_soon" | null => {
@@ -333,38 +294,6 @@ export default function Compliance() {
     if (daysUntilDue <= 30) return "due_soon";
     return null;
   }, [kycProfile?.kycRefreshDue]);
-
-  // ── step definitions ───────────────────────────────────────────────────────
-  const kycStepDefs = [
-    {
-      id: 2,
-      title: "Identity Verification",
-      icon: User,
-      baseDescription: "Government-issued photo ID verified",
-      uploadId: undefined as string | undefined,
-    },
-    {
-      id: 3,
-      title: "Customer Agreement",
-      icon: FileCheck,
-      baseDescription: "Read and sign the AMAX Global Customer Agreement",
-      uploadId: undefined as string | undefined,
-    },
-    {
-      id: 4,
-      title: "Address Verification",
-      icon: MapPin,
-      baseDescription: "Upload a recent utility bill, bank statement, or government letter (dated within 3 months)",
-      uploadId: "kyc-address",
-    },
-    {
-      id: 5,
-      title: "Source of Funds",
-      icon: CreditCard,
-      baseDescription: "Upload payslips, tax returns, or a letter from your employer",
-      uploadId: "kyc-funds",
-    },
-  ];
 
   // ── handlers ──────────────────────────────────────────────────────────────
   function handleKycUpload(stepId: number, stepTitle: string, e: React.ChangeEvent<HTMLInputElement>) {

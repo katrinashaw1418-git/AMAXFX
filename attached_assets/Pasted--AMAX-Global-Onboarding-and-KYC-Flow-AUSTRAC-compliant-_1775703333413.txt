@@ -1,0 +1,166 @@
+## AMAX Global Onboarding and KYC Flow (AUSTRAC-compliant)
+
+### **Step 1: Quick Account Creation**
+
+**Objective:** Minimal friction to start user journey.
+
+* Collect:
+
+  * Email (or social login: Gmail / Apple / Google)
+  * Mobile number (optional here)
+* Action:
+
+  * User clicks 'Create Account'
+  * Account created in backend with basic profile
+* Notes:
+
+  * No sensitive data required at this point
+
+### **Step 2: Email Verification**
+
+**Objective:** Confirm ownership and prevent fraud.
+
+* Action:
+
+  * Send email with 'Verify Your Email' link
+  * User clicks link on mobile or desktop
+* Backend:
+
+  * Update user status to 'email verified'
+* Notes:
+
+  * Cannot proceed to transactions until verified
+
+### **Step 3: Early Risk Profiling**
+
+**Objective:** Capture purpose and intended products to guide KYC level.
+
+* Questions:
+
+  1. What is your intended use of this account?
+
+     * Options: Remittance, FX trading, eWallet, Crypto, Other
+  2. Which products do you plan to use?
+
+     * Options: Digital Currency Exchange, eWallet, FX, Remittance
+* Notes:
+
+  * Helps decide risk-based KYC flow
+  * Minimal UX friction: 2 dropdowns
+
+### **Step 4: Personal Information Collection**
+
+**Objective:** Gather essential info for KYC prefill and verification.
+
+* Fields:
+
+  * Full legal name
+  * Date of birth
+  * Residential address
+  * Country of tax residence
+  * Mobile number (if not collected earlier)
+* Notes:
+
+  * All fields must be validated
+  * Use autocomplete and mobile-friendly form
+
+### **Step 5: KYC Verification (Veriff / Green ID)**
+
+**Objective:** AUSTRAC-compliant identity verification.
+
+* Actions:
+
+  1. Redirect/embed external provider flow
+  2. Collect user data via provider:
+
+     * Government-issued ID (passport / driver’s license / national ID)
+     * Selfie / live facial capture for liveness
+     * OCR extraction of ID details (no manual input required)
+     * Optional: Proof of address (if ID lacks address or high-risk)
+  3. Provider conducts:
+
+     * PEP screening
+     * Sanctions list screening
+     * Fraud checks
+* Notes:
+
+  * Lock all transactions until verification approved
+  * Store verification response, timestamp, and provider metadata for AUSTRAC audit
+
+### **Step 6: Address Verification (Conditional)**
+
+**Objective:** Verify residential address if required.
+
+* Trigger:
+
+  * User selects high-risk products
+  * ID document does not contain address
+  * Risk scoring flags user
+* Actions:
+
+  * Collect utility bill / bank statement / government letter
+  * Verify via provider or manual upload
+
+### **Step 7: Optional Additional KYC**
+
+**Objective:** Support higher-tier AML/CTF compliance.
+
+* Triggered by:
+
+  * High-value transactions
+  * Large deposits
+  * High-risk country of residence
+* Fields:
+
+  * Source of funds
+  * Source of wealth
+  * Employment / income information
+* Notes:
+
+  * Collected post-initial KYC
+  * Can be requested via modal in app
+
+### **Step 8: Verification Review and Unlock**
+
+**Objective:** Enable full account functionality.
+
+* Actions:
+
+  * Receive verification status from provider
+  * Update user profile:
+
+    * Verified / Pending / Rejected
+  * Unlock transactions only for 'Verified' users
+* Notifications:
+
+  * In-app alert
+  * Email confirmation
+* Notes:
+
+  * AUSTRAC audit log includes:
+
+    * KYC submission timestamp
+    * Provider response
+    * Verification outcome
+
+### **Step 9: Full Access and Ongoing Monitoring**
+
+**Objective:** Maintain compliance and risk-based monitoring.
+
+* Actions:
+
+  * User can now access FX, eWallet, Crypto, and Remittance products
+  * Monitor for suspicious activity
+  * Trigger enhanced due diligence if account flagged
+* Notes:
+
+  * Maintain records for 7 years per AML/CTF Act
+  * Re-verification triggered by:
+
+    * Changes to personal info
+    * Sanctions / PEP updates
+    * High-risk transactions
+
+### **Summary Flowchart (Text Format)**
+
+1. Account Creation → 2. Email Verification → 3. Purpose & Product Selection → 4. Personal Info → 5. KYC Verification (Veriff/Green ID) → 6. Address Verification (conditional) → 7. Optional Additional KYC (conditional) → 8. Verification Review & Unlock → 9. Full Access & Monitoring

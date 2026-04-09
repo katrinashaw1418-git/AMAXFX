@@ -1,0 +1,165 @@
+Here’s a **progressive, AUSTRAC-compliant onboarding and KYC UI flow for AMAX**, designed to follow **Wise/Revolut best practices** while keeping the experience smooth for the user. I’ve broken it into **steps, screens, and actions**, including the **KYC statements, ID verification, and conditional flows**.
+
+---
+
+## **AMAX Onboarding & KYC Flow – Step by Step**
+
+### **Step 1: Account Creation (Minimal Friction)**
+
+**Screen:** Sign Up
+**Fields:**
+
+* Email address
+* Password
+* Optional: Social login (Google / Apple)
+
+**Action:**
+
+* User clicks **“Create Account”**
+* Backend creates a minimal user profile
+* Send **email verification link**
+
+**UX Note:** Keep this screen extremely light to reduce drop-off. No KYC statements here.
+
+---
+
+### **Step 2: Email Verification**
+
+**Screen:** Check Your Email
+**Action:**
+
+* User clicks verification link
+* Status updated to **email verified** in backend
+
+**UX Note:** Cannot proceed to transactions until verified.
+
+---
+
+### **Step 3: Early Risk Profiling (Optional Mini Form)**
+
+**Screen:** How Will You Use Your Account?
+**Fields:**
+
+1. Purpose of Account (dropdown) – e.g., Remittance, FX, eWallet, Crypto
+2. Products You Plan to Use (checkbox) – eWallet, FX, Crypto, Remittance
+
+**Action:** Store for **risk-based KYC tiering**
+**UX Note:** Short form, 2–3 questions. Helps determine if higher KYC is needed later.
+
+---
+
+### **Step 4: Personal Information (Pre-KYC)**
+
+**Screen:** Tell Us About Yourself
+**Fields:**
+
+* Full legal name
+* Date of birth
+* Residential address
+* Country of tax residence
+* Mobile number (if not already collected)
+
+**Action:** Store in user profile for KYC prefill
+**UX Note:** Keep form mobile-friendly, validate inputs.
+
+---
+
+### **Step 5: KYC Statements & Declarations**
+
+**Screen:** Confirm Legal & Compliance Statements
+**Format:** Tickboxes + electronic signature
+**Statements:**
+
+1. **Identity Declaration:** “All information I provide is true and correct…”
+2. **PEP Declaration:** “I am not a PEP nor related to a PEP…”
+3. **Sanctions Declaration:** “I am not listed on any sanctions list…”
+4. **Source of Funds:** “Funds are derived from legitimate sources…”
+5. **Consent to Verification:** “I consent to AMAX/third-party verification…”
+6. **Ongoing Monitoring:** “I agree to provide updates if required…”
+7. **Accuracy & Compliance:** “I understand providing false information is a criminal offence…”
+
+**Action:**
+
+* User must tick **all boxes**
+* User types **full legal name** as electronic signature
+* Backend records timestamp and IP for AUSTRAC audit
+
+---
+
+### **Step 6: Identity Verification (Via Veriff/Green ID)**
+
+**Screen:** Verify Your ID
+**Action:** Embed or redirect to third-party provider
+
+* Upload government-issued ID (passport, driver’s license, national ID)
+* Selfie / liveness check
+* Optional: Proof of address (if ID lacks address or flagged by risk model)
+
+**UX Note:** Show progress indicator for each step (ID scan, selfie, verification)
+
+**Backend:** Store verification result, provider metadata, timestamp for AUSTRAC audit
+
+---
+
+### **Step 7: Conditional Additional KYC**
+
+**Trigger:** Only if:
+
+* Transaction is high-risk
+* Large deposits / withdrawals
+* Account flagged by risk engine
+
+**Fields:**
+
+* Source of Wealth
+* Employment / Income Information
+* Additional Proof of Address (if not verified previously)
+
+**UX Note:** Only request when necessary to **minimize user friction**
+
+---
+
+### **Step 8: Verification Review & Unlock**
+
+**Screen:** Account Verified
+**Action:**
+
+* Update user status: Verified / Pending / Rejected
+* Unlock transactions only for Verified users
+* Notify user in-app and via email
+
+**UX Note:** Show clear instructions if verification is rejected, and allow **resubmission**
+
+---
+
+### **Step 9: Full Access & Ongoing Monitoring**
+
+**Screen:** Dashboard / Full Access
+**Action:**
+
+* User can access eWallet, FX, Crypto, Remittance
+* Continuous monitoring for AML/CTF compliance
+* Re-verification triggered by:
+
+  * Changes to personal info
+  * PEP / sanctions updates
+  * High-risk transactions
+
+**Backend:** Maintain records for **7 years** per AML/CTF Act
+
+---
+
+## **Key UX Principles**
+
+1. **Progressive Disclosure:** Only ask what’s necessary at each step.
+2. **Explicit Consent:** Tickboxes + electronic signature before KYC.
+3. **Conditional Fields:** Source of funds / proof of address only when required.
+4. **Audit-Ready:** Each step logged with timestamp, IP, and provider metadata.
+5. **Mobile-Friendly:** All steps designed for seamless mobile capture (ID + selfie).
+6. **Error Handling:** Clear feedback if verification fails, allow re-upload.
+
+---
+
+If you want, I can **turn this into a full visual mockup flow** showing screens, tickboxes, ID upload steps, and where each KYC statement is presented. This would be **ready for your app development team**.
+
+Do you want me to create that visual mockup next?
