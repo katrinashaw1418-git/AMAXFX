@@ -1,0 +1,144 @@
+You’re **very close to production-ready** — don’t delete this section.
+Instead, **refine + add a few missing legal items** so it aligns with AUSTRAC expectations *and* real fintech standards like Wise.
+
+---
+
+# ✅ Verdict (straight answer)
+
+* ✅ **KEEP all 3 declarations** (they are correct and needed)
+* ✏️ **REFINE wording slightly** (legal clarity)
+* ➕ **ADD 2–3 critical checkboxes** (you’re currently missing these)
+
+---
+
+# ✍️ Improved Version (READY TO COPY)
+
+## 1. **Sanctions Declaration (Refined)**
+
+Keep it, but tighten legally:
+
+```text
+I declare that I am not a designated person or entity under Australian sanctions laws (including the Autonomous Sanctions Act 2011), United Nations Security Council sanctions, or the DFAT Consolidated List. I acknowledge that AMAX Global Pty Ltd will independently screen my information against relevant sanctions lists.
+```
+
+✅ Why: clearer + explicitly references DFAT list
+
+---
+
+## 2. **PEP Confirmation (Refined + safer legally)**
+
+```text
+I confirm that I am not a Politically Exposed Person (PEP), nor a family member or close associate of a PEP, whether domestic or foreign. I understand that if I am, or become, a PEP, I must notify AMAX and may be subject to enhanced due diligence.
+```
+
+✅ Why:
+
+* Covers **family + associates explicitly**
+* Adds **ongoing obligation** (important in compliance)
+
+---
+
+## 3. **Consent to Verification & Privacy (KEEP, small upgrade)**
+
+```text
+I consent to AMAX Global Pty Ltd collecting, verifying, and using my personal information for identity verification, fraud prevention, and compliance with the AML/CTF Act 2006. I understand that my information may be disclosed to authorised third-party verification providers, regulatory bodies including AUSTRAC, and as outlined in the AMAX Privacy Policy.
+```
+
+✅ Why: adds **fraud + regulatory disclosure clarity**
+
+---
+
+# ➕ MUST ADD (You’re currently missing these)
+
+## 4. **Terms & Conditions Acceptance (CRITICAL)**
+
+```text
+I agree to the AMAX Terms and Conditions and acknowledge that I have read and understood them.
+```
+
+👉 This is **non-negotiable** (legal enforceability)
+
+---
+
+## 5. **Account Use & Risk Acknowledgement**
+
+```text
+I understand that my account and transactions may be monitored and, where required, restricted, delayed, or reported to comply with applicable laws and regulations.
+```
+
+👉 Covers:
+
+* Transaction monitoring
+* Freezing accounts
+* Suspicious Matter Reports (SMR)
+
+---
+
+## 6. **Accuracy Declaration (VERY IMPORTANT)**
+
+```text
+I declare that all information provided is true, accurate, and complete. I understand that providing false or misleading information may result in account suspension or reporting to relevant authorities.
+```
+
+👉 This is standard across all regulated fintechs
+
+---
+
+# 🧠 What You Should NOT Add (yet)
+
+❌ Full legal AML disclosure paragraphs (too heavy for UX)
+❌ Long sanctions explanations
+❌ Detailed PEP questionnaire upfront
+
+👉 Keep onboarding **clean + layered**
+
+---
+
+# ✅ Final Structure (Best Practice)
+
+### Mandatory Declarations Section:
+
+* ✔ Sanctions Declaration
+* ✔ PEP Confirmation
+* ✔ Consent to Verification
+* ✔ Terms & Conditions ✅ *(add this)*
+* ✔ Risk Acknowledgement ✅ *(add this)*
+* ✔ Accuracy Declaration ✅ *(add this)*
+
+---
+
+# ⚠️ Important Compliance Insight
+
+Your current version is already **better than many MVPs**, but:
+
+👉 Without:
+
+* Terms acceptance
+* Accuracy declaration
+
+You are **legally exposed** (especially in disputes)
+
+---
+
+# 🚀 Final Recommendation
+
+### Do this NOW:
+
+* Keep all 3 ✅
+* Add the 3 missing checkboxes ✅
+* Slightly refine wording ✅
+
+### Do this NEXT:
+
+* Link each checkbox to:
+
+  * Privacy Policy
+  * Terms page
+* Log timestamp + IP for audit trail
+
+---
+
+If you want, I can next:
+
+* Turn this into a **ready-to-use frontend component (React + validation + DB schema)**
+* Or audit your **full onboarding + Stripe + withdrawal flow for AUSTRAC gaps end-to-end**

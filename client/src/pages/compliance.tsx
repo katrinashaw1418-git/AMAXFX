@@ -91,6 +91,9 @@ export default function Compliance() {
   const [piiPep,             setPiiPep]             = useState(false);
   const [piiSanctions,       setPiiSanctions]       = useState(false);
   const [piiConsent,         setPiiConsent]         = useState(false);
+  const [piiTerms,           setPiiTerms]           = useState(false);
+  const [piiRiskAck,         setPiiRiskAck]         = useState(false);
+  const [piiAccuracy,        setPiiAccuracy]        = useState(false);
 
   // ── Step 2: Identity document + biometric verification ────────────────────
   const [docType,          setDocType]          = useState<"passport" | "driver_licence" | "national_id">("passport");
@@ -189,8 +192,8 @@ export default function Compliance() {
       toast({ title: "Financial Profile Required", description: "Please select your employment status, purpose of account, and source of funds.", variant: "destructive" });
       return;
     }
-    if (!piiSanctions || !piiConsent) {
-      toast({ title: "Declarations Required", description: "You must accept the sanctions and consent declarations to proceed.", variant: "destructive" });
+    if (!piiSanctions || !piiConsent || !piiTerms || !piiRiskAck || !piiAccuracy) {
+      toast({ title: "All Declarations Required", description: "You must accept all mandatory declarations (marked *) to proceed.", variant: "destructive" });
       return;
     }
     profileMutation.mutate({
@@ -659,10 +662,13 @@ export default function Compliance() {
                 </div>
 
                 {/* Declarations */}
-                <div className="rounded-lg border p-4 space-y-3 bg-slate-50">
-                  <h4 className="text-sm font-semibold">Mandatory Declarations</h4>
+                <div className="rounded-lg border p-4 space-y-4 bg-slate-50">
+                  <div>
+                    <h4 className="text-sm font-semibold">Mandatory Declarations</h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">All items marked <span className="text-red-500 font-medium">*</span> are required. The PEP confirmation is optional — leave unchecked if you are, or may be, a PEP.</p>
+                  </div>
 
-                  {/* 1. Sanctions */}
+                  {/* 1. Sanctions Declaration */}
                   <div className="flex items-start gap-3">
                     <Checkbox
                       id="pii-sanctions"
@@ -672,17 +678,16 @@ export default function Compliance() {
                     <div>
                       <Label htmlFor="pii-sanctions" className="text-sm font-medium cursor-pointer">
                         Sanctions Declaration <span className="text-red-500">*</span>
-                        <span className="ml-1 text-xs font-normal text-muted-foreground">(supplementary — not a substitute for formal screening)</span>
                       </Label>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        I declare that I am not a designated person or entity under Australian sanctions law (Autonomous Sanctions Act 2011),
-                        UN Security Council Resolutions, or DFAT sanctions lists. I understand AMAX independently screens all customers
-                        against official sanctions databases.
+                        I declare that I am not a designated person or entity under Australian sanctions laws (including the Autonomous Sanctions Act 2011),
+                        United Nations Security Council sanctions, or the DFAT Consolidated List. I acknowledge that AMAX Global Pty Ltd will independently
+                        screen my information against relevant sanctions lists.
                       </p>
                     </div>
                   </div>
 
-                  {/* 2. PEP — "I am NOT" confirmation */}
+                  {/* 2. PEP — optional, positive wording */}
                   <div className="flex items-start gap-3">
                     <Checkbox
                       id="pii-pep"
@@ -692,17 +697,17 @@ export default function Compliance() {
                     <div>
                       <Label htmlFor="pii-pep" className="text-sm font-medium cursor-pointer">
                         Politically Exposed Person (PEP) Confirmation
+                        <span className="ml-1 text-xs font-normal text-muted-foreground">(optional — leave unchecked if you are a PEP)</span>
                       </Label>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        I confirm that I am <strong>not</strong> a politically exposed person and am <strong>not</strong> a close associate
-                        of a domestic or foreign politically exposed person (including current or former senior government officials,
-                        politicians, military officers, or international organisation executives).
-                        Leave unchecked if you are, or may be, a PEP — AMAX will contact you to complete enhanced verification.
+                        I confirm that I am not a Politically Exposed Person (PEP), nor a family member or close associate of a PEP,
+                        whether domestic or foreign. I understand that if I am, or become, a PEP, I must notify AMAX and may be subject
+                        to enhanced due diligence.
                       </p>
                     </div>
                   </div>
 
-                  {/* 3. Consent */}
+                  {/* 3. Consent to Verification & Privacy */}
                   <div className="flex items-start gap-3">
                     <Checkbox
                       id="pii-consent"
@@ -714,9 +719,62 @@ export default function Compliance() {
                         Consent to Verification &amp; Privacy Collection <span className="text-red-500">*</span>
                       </Label>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        I consent to AMAX Global Pty Ltd collecting, holding, and using my personal information for the purposes of
-                        identity verification, compliance with the AML/CTF Act 2006, and as described in the AMAX Privacy Policy.
-                        I understand this information may be shared with authorised third-party verification providers and AUSTRAC.
+                        I consent to AMAX Global Pty Ltd collecting, verifying, and using my personal information for identity verification,
+                        fraud prevention, and compliance with the AML/CTF Act 2006. I understand that my information may be disclosed to
+                        authorised third-party verification providers, regulatory bodies including AUSTRAC, and as outlined in the AMAX Privacy Policy.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 4. Terms & Conditions */}
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="pii-terms"
+                      checked={piiTerms}
+                      onCheckedChange={v => setPiiTerms(Boolean(v))}
+                    />
+                    <div>
+                      <Label htmlFor="pii-terms" className="text-sm font-medium cursor-pointer">
+                        Terms &amp; Conditions Acceptance <span className="text-red-500">*</span>
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        I agree to the AMAX Global Terms and Conditions and acknowledge that I have read and understood them.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 5. Account Use & Risk Acknowledgement */}
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="pii-riskack"
+                      checked={piiRiskAck}
+                      onCheckedChange={v => setPiiRiskAck(Boolean(v))}
+                    />
+                    <div>
+                      <Label htmlFor="pii-riskack" className="text-sm font-medium cursor-pointer">
+                        Account Use &amp; Monitoring Acknowledgement <span className="text-red-500">*</span>
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        I understand that my account and transactions may be monitored and, where required, restricted, delayed, or reported
+                        to comply with applicable laws and regulations including the AML/CTF Act 2006.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 6. Accuracy Declaration */}
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="pii-accuracy"
+                      checked={piiAccuracy}
+                      onCheckedChange={v => setPiiAccuracy(Boolean(v))}
+                    />
+                    <div>
+                      <Label htmlFor="pii-accuracy" className="text-sm font-medium cursor-pointer">
+                        Accuracy Declaration <span className="text-red-500">*</span>
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        I declare that all information provided is true, accurate, and complete. I understand that providing false or
+                        misleading information may result in account suspension or reporting to relevant authorities.
                       </p>
                     </div>
                   </div>

@@ -97,6 +97,12 @@ export async function requireKyc(userId: number, storageInstance: { getUser: (id
   if (!user) {
     throw Object.assign(new Error("User not found"), { status: 401 });
   }
+  if (user.accountFrozen) {
+    throw Object.assign(
+      new Error("Your account has been suspended pending compliance review. Please contact info@amaxglobal.com.au for assistance."),
+      { status: 403 }
+    );
+  }
   if (user.kycStatus !== "verified") {
     throw Object.assign(
       new Error("KYC verification required. Please complete identity verification to perform transactions."),

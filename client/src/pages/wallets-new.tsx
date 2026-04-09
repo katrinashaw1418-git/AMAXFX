@@ -1175,21 +1175,45 @@ export default function Wallets() {
               </div>
 
               <div className="space-y-3">
-                <div className="rounded-lg border p-3 space-y-2">
-                  <p className="text-sm font-medium">🔗 Option 1 — Withdraw to External Wallet Address</p>
-                  <p className="text-xs text-muted-foreground">
-                    Send {selectedWallet?.currency} to any external wallet (Coinbase, Binance, Ledger, MetaMask, etc.). Enter your destination address below.
-                  </p>
+                <div className="rounded-lg border p-3 space-y-3">
                   <div>
-                    <Label htmlFor="crypto-withdraw-address" className="text-xs">Destination Wallet Address</Label>
+                    <p className="text-sm font-medium">🔗 Option 1 — Withdraw to External Wallet Address</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Send {selectedWallet?.currency} to any external wallet (Coinbase, Binance, Ledger, MetaMask, etc.). Complete all fields — required under AUSTRAC Travel Rule obligations.
+                    </p>
+                  </div>
+
+                  {/* AUSTRAC Travel Rule disclosure */}
+                  <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg p-2.5 text-xs text-blue-800">
+                    <span className="flex-shrink-0 mt-0.5">🛡️</span>
+                    <span>
+                      <strong>FATF Travel Rule (AUSTRAC):</strong> For all crypto transfers, AMAX is required to collect and transmit originator and beneficiary information to the receiving VASP. Your details and the recipient's name must be provided below.
+                    </span>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="crypto-withdraw-address" className="text-xs">Destination Wallet Address <span className="text-red-500">*</span></Label>
                     <Input
                       id="crypto-withdraw-address"
+                      value={beneficiaryAddress}
+                      onChange={e => setBeneficiaryAddress(e.target.value)}
                       placeholder={selectedWallet?.currency === 'BTC' ? '1A1zP1eP5QGefi2DMPTfTL5SLmv7Divf...' : '0x742d35Cc6634C0532925a3b8D4C9b8f...'}
                       className="h-8 text-sm font-mono"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="crypto-withdraw-network" className="text-xs">Network</Label>
+                    <Label htmlFor="crypto-beneficiary-name" className="text-xs">Beneficiary Full Legal Name <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="crypto-beneficiary-name"
+                      value={beneficiaryName}
+                      onChange={e => setBeneficiaryName(e.target.value)}
+                      placeholder="Full name of the wallet owner (required — Travel Rule)"
+                      className="h-8 text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground mt-0.5">Enter the full legal name of the person or entity that owns the destination wallet.</p>
+                  </div>
+                  <div>
+                    <Label htmlFor="crypto-withdraw-network" className="text-xs">Network <span className="text-red-500">*</span></Label>
                     <Select>
                       <SelectTrigger className="h-8 text-sm">
                         <SelectValue placeholder="Select network" />
@@ -1204,12 +1228,18 @@ export default function Wallets() {
                     </Select>
                   </div>
                   <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
-                    ⏳ Blockchain withdrawals are reviewed by AMAX compliance before execution. Network fees apply.
+                    ⏳ Blockchain withdrawals are reviewed by our compliance team (Compliance Officer: Qin Xiong) before execution. Approved transfers settle within 1 business day. Network fees apply.
                   </p>
                   <Button
                     variant="outline"
                     className="w-full mt-1 h-8 text-sm"
-                    onClick={() => window.location.href = `mailto:info@amaxglobal.com.au?subject=Crypto Withdrawal Request - ${selectedWallet?.currency}&body=Please process my withdrawal request. Currency: ${selectedWallet?.currency}. I have entered my wallet address above.`}
+                    onClick={() => {
+                      if (!beneficiaryAddress || !beneficiaryName) {
+                        toast({ title: "Fields Required", description: "Please enter the destination wallet address and beneficiary name (required under AUSTRAC Travel Rule).", variant: "destructive" });
+                        return;
+                      }
+                      window.location.href = `mailto:info@amaxglobal.com.au?subject=Crypto Withdrawal Request - ${selectedWallet?.currency}&body=Please process my withdrawal request.%0A%0ACurrency: ${selectedWallet?.currency}%0ADestination Address: ${beneficiaryAddress}%0ABeneficiary Full Legal Name: ${beneficiaryName}%0A%0AI confirm the above information is accurate for Travel Rule compliance.`;
+                    }}
                   >
                     Submit Withdrawal Request
                   </Button>
