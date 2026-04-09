@@ -1330,19 +1330,9 @@ I agree to the Customer Agreement, Privacy Policy, and Risk Disclosure.`,
                             }`}>
                               {/* Sticky summary */}
                               <div className="bg-indigo-700 px-4 py-3">
-                                <p className="text-xs font-semibold text-indigo-100 mb-1.5">By proceeding, you confirm:</p>
-                                <ul className="space-y-0.5">
-                                  {[
-                                    "Your information is accurate and complete",
-                                    "You are not sanctioned or acting for a sanctioned person",
-                                    "You understand AMAX Global's monitoring and compliance obligations",
-                                  ].map(item => (
-                                    <li key={item} className="flex items-start gap-1.5 text-xs text-indigo-200">
-                                      <CheckCircle className="w-3 h-3 mt-0.5 flex-shrink-0 text-indigo-300" />
-                                      {item}
-                                    </li>
-                                  ))}
-                                </ul>
+                                <p className="text-xs text-indigo-100 leading-relaxed">
+                                  By proceeding, you confirm that your information is accurate and complete, that you are not a sanctioned person or acting on behalf of one, and that you understand AMAX Global's monitoring and compliance obligations under Australian law.
+                                </p>
                               </div>
 
                               <div className="p-4 space-y-3">
