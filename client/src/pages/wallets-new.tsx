@@ -175,6 +175,7 @@ export default function Wallets() {
   const [beneficiaryName, setBeneficiaryName] = useState('');
   const [beneficiaryAddress, setBeneficiaryAddress] = useState('');
   const [beneficiaryPhysicalAddress, setBeneficiaryPhysicalAddress] = useState('');
+  const [withdrawPurpose, setWithdrawPurpose] = useState('');
   const [isSelfHosted, setIsSelfHosted] = useState(false);
   const [vaspName, setVaspName] = useState('');
   const [depositSubmitted, setDepositSubmitted] = useState<{ referenceCode: string; currency: string; amount: string; method: string } | null>(null);
@@ -446,6 +447,7 @@ export default function Wallets() {
       setWithdrawModalOpen(false);
       setAmount('');
       setWithdrawMethod('');
+      setWithdrawPurpose('');
       setWithdrawBankName('');
       setWithdrawBsb('');
       setWithdrawAccountNumber('');
@@ -550,7 +552,13 @@ export default function Wallets() {
 
   const handleWithdraw = () => {
     if (!selectedWallet || !amount || !withdrawMethod) {
-      toast({ title: "Missing Information", description: "Please fill in all fields.", variant: "destructive" });
+      toast({ title: "Missing Information", description: "Please fill in all required fields.", variant: "destructive" });
+      return;
+    }
+
+    // Purpose of transfer is mandatory under AML/CTF Act 2006 (Cth) — Part B §15
+    if (!withdrawPurpose) {
+      toast({ title: "Purpose of Transfer Required", description: "Please select a purpose of transfer. This is required under Australia's AML/CTF obligations.", variant: "destructive" });
       return;
     }
 
@@ -575,6 +583,7 @@ export default function Wallets() {
       currency: selectedWallet.currency,
       amount: amount,
       withdrawMethod,
+      purposeOfTransfer: withdrawPurpose,
       ...(withdrawMethod === 'bank_transfer' ? {
         bankAccountName: withdrawBankName,
         bankBsb: withdrawBsb,
@@ -616,34 +625,24 @@ export default function Wallets() {
     });
   };
 
-  // Filter out zero-balance wallets and sort with crypto currencies at bottom
+  // DCE compliance model (post-1 April 2026): AMAX does not maintain crypto accounts
+  // for users. Only fiat wallets are displayed here. Crypto exchange is handled via
+  // the Crypto Exchange page — purchased crypto is delivered to users' external wallets.
+  const CRYPTO_CURRENCIES = ['BTC', 'ETH', 'USDT', 'USDC'];
+
   const walletsWithRegions = wallets
-    .filter((wallet: any) => parseFloat(wallet.balance || '0') > 0) // Hide zero-balance wallets
+    .filter((wallet: any) => parseFloat(wallet.balance || '0') > 0)
+    .filter((wallet: any) => !CRYPTO_CURRENCIES.includes(wallet.currency)) // Fiat only — no crypto accounts
     .map((wallet: any) => ({
       ...wallet,
       config: CurrencyConfig[wallet.currency as keyof typeof CurrencyConfig],
       region: CurrencyConfig[wallet.currency as keyof typeof CurrencyConfig]?.region || 'Other'
     }))
     .sort((a: any, b: any) => {
-      // Define crypto currencies that should always be at bottom
-      const cryptoCurrencies = ['BTC', 'ETH', 'USDT', 'USDC'];
-      const aIsCrypto = cryptoCurrencies.includes(a.currency);
-      const bIsCrypto = cryptoCurrencies.includes(b.currency);
-      
-      // If one is crypto and other isn't, non-crypto comes first
-      if (aIsCrypto && !bIsCrypto) return 1;
-      if (!aIsCrypto && bIsCrypto) return -1;
-      
-      // If both are crypto, maintain the order: BTC, ETH, USDT, USDC
-      if (aIsCrypto && bIsCrypto) {
-        return cryptoCurrencies.indexOf(a.currency) - cryptoCurrencies.indexOf(b.currency);
-      }
-      
       // AUD always first
       if (a.currency === 'AUD') return -1;
       if (b.currency === 'AUD') return 1;
-      
-      // For non-crypto currencies, sort alphabetically
+      // Otherwise alphabetical
       return a.currency.localeCompare(b.currency);
     });
 
@@ -1511,6 +1510,35 @@ export default function Wallets() {
                   </div>
                 )}
               </div>
+
+              {/* Purpose of Transfer — mandatory under AML/CTF Act 2006 (Cth) Part B §15 */}
+              <div>
+                <Label htmlFor="withdraw-purpose" className="text-xs font-medium">
+                  Purpose of Transfer <span className="text-red-500">*</span>{" "}
+                  <span className="text-gray-400 font-normal">(AML/CTF required)</span>
+                </Label>
+                <Select value={withdrawPurpose} onValueChange={setWithdrawPurpose}>
+                  <SelectTrigger id="withdraw-purpose" className="mt-1">
+                    <SelectValue placeholder="Select purpose of transfer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="personal_savings">Personal savings / living expenses</SelectItem>
+                    <SelectItem value="investment">Investment</SelectItem>
+                    <SelectItem value="business_payment">Business / commercial payment</SelectItem>
+                    <SelectItem value="remittance">International remittance</SelectItem>
+                    <SelectItem value="property_purchase">Property purchase</SelectItem>
+                    <SelectItem value="education">Education / study fees</SelectItem>
+                    <SelectItem value="medical">Medical / healthcare</SelectItem>
+                    <SelectItem value="salary_wages">Salary / wages</SelectItem>
+                    <SelectItem value="loan_repayment">Loan repayment</SelectItem>
+                    <SelectItem value="other">Other (specify in notes)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Required under AUSTRAC AML/CTF obligations. This information is collected for compliance monitoring.
+                </p>
+              </div>
+
               {withdrawMethod === 'payid' && (
                 <div className="space-y-3">
                   <div className="p-3 bg-muted rounded-lg">

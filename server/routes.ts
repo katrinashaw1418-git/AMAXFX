@@ -205,6 +205,9 @@ const fxExchangeSchema = z.object({
   fromCurrency: z.string().min(2).max(10),
   toCurrency: z.string().min(2).max(10),
   amount: z.coerce.number().positive("Amount must be positive"),
+  // DCE delivery model (post-1 Apr 2026): for fiat→crypto exchanges, the destination
+  // external wallet address is required for delivery. AMAX does not hold crypto.
+  destinationWallet: z.string().max(200).optional(),
 }).refine(d => d.fromCurrency !== d.toCurrency, {
   message: "Source and target currencies must differ",
 });
@@ -2429,7 +2432,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.errors[0].message });
       }
-      const { fromCurrency, toCurrency, amount: rawAmount } = parsed.data;
+      const { fromCurrency, toCurrency, amount: rawAmount, destinationWallet } = parsed.data;
       const amount = new Decimal(rawAmount);
 
       // Enforce risk-based daily transaction limit
@@ -2506,15 +2509,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .set({ balance: new Decimal(toWallet.balance).plus(netConverted).toFixed(8), availableBalance: new Decimal(toWallet.availableBalance).plus(netConverted).toFixed(8) })
           .where(eq(wallets.id, toWallet.id));
 
+        // DCE delivery model: for fiat→crypto, the crypto is delivered to the user's
+        // external wallet. The destinationWallet is recorded for AUSTRAC audit trail
+        // and Travel Rule compliance. Settlement status = pending_delivery until
+        // blockchain delivery is confirmed.
+        const isFiatToCrypto = !CRYPTO_CURRENCIES.includes(fromCurrency) && CRYPTO_CURRENCIES.includes(toCurrency);
         [txRecord] = await tx.insert(transactions).values({
           userId, type: "exchange", fromCurrency, toCurrency,
           amount: amount.toFixed(8), fee: fee.toFixed(8),
-          exchangeRate: exchangeRate.toFixed(8), status: "completed",
-          settlementStatus: "internal_only",
-          description: `${fromCurrency} to ${toCurrency} Exchange`,
+          exchangeRate: exchangeRate.toFixed(8),
+          status: isFiatToCrypto ? "pending" : "completed",
+          settlementStatus: isFiatToCrypto ? "pending_delivery" : "internal_only",
+          description: isFiatToCrypto
+            ? `${fromCurrency} → ${toCurrency} Exchange — Delivery to external wallet${destinationWallet ? `: ${destinationWallet}` : ""}`
+            : `${fromCurrency} to ${toCurrency} Exchange`,
           sourceExchange: null, blockchainTxHash: null,
           assetType: classifyAssetType(fromCurrency, toCurrency),
           direction: "exchange",
+          // Record destination wallet address for AUSTRAC FATF Travel Rule compliance
+          beneficiaryAddress: destinationWallet ?? null,
           riskFlag: false,
           reviewStatus: "clear",
           reviewNotes: null,
