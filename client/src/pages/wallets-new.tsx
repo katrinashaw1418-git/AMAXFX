@@ -1082,15 +1082,21 @@ export default function Wallets() {
                     )}
                   </>
                 ) : (
-                  /* Coinbase not yet configured — show contact prompt */
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800 p-4 space-y-2">
-                    <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">Crypto Deposit — Coinbase Commerce</p>
-                    <p className="text-sm text-amber-800 dark:text-amber-300">
-                      Coinbase Commerce is being configured. Contact us at <strong>info@amaxglobal.com.au</strong> and we will arrange a verified deposit address for your {selectedWallet?.currency} wallet.
+                  /* Coinbase Commerce API key not yet configured */
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800 p-4 space-y-3">
+                    <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Crypto Deposit — {selectedWallet?.currency} Wallet Address</p>
+                    <p className="text-sm text-blue-800 dark:text-blue-300">
+                      A unique {selectedWallet?.currency} deposit address will be assigned to your account upon request. This address is linked to your verified identity and ensures compliance with AUSTRAC AML/CTF obligations and the FATF Travel Rule.
                     </p>
-                    <Button variant="outline" size="sm" className="w-full mt-2"
-                      onClick={() => window.location.href = `mailto:info@amaxglobal.com.au?subject=Crypto Deposit Request - ${selectedWallet?.currency}`}>
-                      Email us to arrange deposit
+                    <div className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
+                      <p>• Your deposit address is unique to your account — do not share it</p>
+                      <p>• Only send {selectedWallet?.currency} — other assets cannot be credited</p>
+                      <p>• Funds are credited after network confirmation and AML screening</p>
+                      <p>• All deposits are subject to blockchain analytics review</p>
+                    </div>
+                    <Button variant="outline" size="sm" className="w-full"
+                      onClick={() => window.location.href = `mailto:info@amaxglobal.com.au?subject=Crypto Deposit Address Request - ${selectedWallet?.currency}`}>
+                      Request my {selectedWallet?.currency} deposit address
                     </Button>
                   </div>
                 )}
@@ -1271,6 +1277,12 @@ export default function Wallets() {
             </DialogDescription>
           </DialogHeader>
 
+          {/* Global AML/CTF compliance notice */}
+          <div className="rounded-lg border border-gray-200 bg-gray-50 dark:bg-gray-900 dark:border-gray-700 p-3 space-y-1.5 text-xs text-gray-600 dark:text-gray-400">
+            <p className="font-semibold text-gray-800 dark:text-gray-200">🛡️ AML / Travel Rule Compliance</p>
+            <p>All withdrawals are subject to: identity verification (KYC) · beneficiary information collection (FATF Travel Rule) · sanctions and PEP screening · ongoing transaction monitoring for suspicious activity. By proceeding, you confirm all information provided is accurate and complete. Transactions may be reported to AUSTRAC where required by law.</p>
+          </div>
+
           {/* ── CRYPTO WALLET — cannot withdraw directly to bank ── */}
           {selectedWallet?.walletType === 'crypto' ? (
             <div className="space-y-4 py-2">
@@ -1292,9 +1304,13 @@ export default function Wallets() {
                 <div className="rounded-lg border p-3 space-y-3">
                   <div>
                     <p className="text-sm font-medium">🔗 Option 1 — Withdraw to External Wallet Address</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Send {selectedWallet?.currency} to any external wallet (Coinbase, Binance, Ledger, MetaMask, etc.). Complete all fields — required under AUSTRAC Travel Rule obligations.
-                    </p>
+                    <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                      <p>Send {selectedWallet?.currency} to any verified external wallet. All fields below are mandatory under the AUSTRAC Travel Rule (FATF Rec. 16):</p>
+                      <p className="mt-1">• Destination wallet address · Beneficiary full legal name</p>
+                      <p>• Beneficiary physical/postal address · Wallet type (self-hosted or VASP)</p>
+                      <p>• Receiving exchange / VASP name (if not self-hosted)</p>
+                      <p className="mt-1 text-amber-700 dark:text-amber-400">Withdrawals are reviewed by our compliance team within 1 business day. High-risk transactions may require additional verification.</p>
+                    </div>
                   </div>
 
                   {/* AUSTRAC Travel Rule disclosure */}
@@ -1540,9 +1556,12 @@ export default function Wallets() {
 
                 <div className="rounded-lg border p-3 space-y-1">
                   <p className="text-sm font-medium">💱 Option 3 — Convert to AUD, then bank withdraw</p>
-                  <p className="text-xs text-muted-foreground">
-                    Use the Crypto Exchange to convert {selectedWallet?.currency} to AUD, then withdraw to your bank account via Bank Transfer or PayID.
-                  </p>
+                  <div className="text-xs text-muted-foreground space-y-0.5">
+                    <p>Convert {selectedWallet?.currency} to AUD via the Crypto Exchange, then withdraw to your verified Australian bank account via Bank Transfer or PayID.</p>
+                    <p className="mt-1">• Bank account must be held in the same legal name as your verified AMAX account</p>
+                    <p>• Third-party withdrawals are not permitted</p>
+                    <p>• All fiat withdrawals are monitored for AML/CTF compliance and are auditable under AUSTRAC regulations</p>
+                  </div>
                   <Button
                     variant="outline"
                     className="w-full mt-2 h-8 text-sm"
@@ -1605,6 +1624,9 @@ export default function Wallets() {
                       <p>• Settlement: seconds to minutes (business hours)</p>
                       <p>• AUD wallets only — receive funds at your PayID</p>
                       <p>• No fees charged by AMAX for PayID payouts</p>
+                      <p>• PayID must be registered in your verified legal name</p>
+                      <p>• Third-party PayID withdrawals are not permitted</p>
+                      <p>• All withdrawals are subject to AML/CTF monitoring and may be reported to AUSTRAC</p>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -1641,10 +1663,11 @@ export default function Wallets() {
                   <div className="p-3 bg-muted rounded-lg">
                     <h4 className="font-medium mb-2 text-sm">🏦 Bank Transfer Instructions</h4>
                     <div className="text-xs text-muted-foreground space-y-1">
-                      <p>• Funds transferred to your registered bank account</p>
-                      <p>• Processing time: 1-3 business days</p>
+                      <p>• Funds transferred to your nominated Australian bank account</p>
+                      <p>• Processing time: 1–3 business days</p>
                       <p>• Withdrawal fee applies (see fee schedule)</p>
-                      <p>• Please ensure your bank details are up to date</p>
+                      <p>• Bank account must be held in the same legal name as your verified AMAX account — third-party withdrawals are not permitted</p>
+                      <p>• All withdrawals are subject to AML/CTF monitoring and may be reported to AUSTRAC where required by law</p>
                     </div>
                   </div>
                   <div className="space-y-2">

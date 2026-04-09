@@ -1,0 +1,306 @@
+This is a solid start — you’re clearly aiming to align with **AUSTRAC + FATF Travel Rule**, which is exactly where you need to be. But if I review this like a **regulator or compliance auditor**, there are a few gaps and risks you should fix before going live.
+
+I’ll break it into **what’s strong**, **what’s risky/non-compliant**, and **what to upgrade**.
+
+---
+
+# ✅ What You’re Doing Well (Regulator Will Like)
+
+### 1. Travel Rule Awareness (Big Tick)
+
+You explicitly:
+
+* Collect **beneficiary full legal name**
+* Collect **beneficiary address**
+* Mention **VASP name**
+* Reference **AUSTRAC + FATF Travel Rule**
+
+👉 This shows intent to comply with:
+
+* **FATF Recommendation 16**
+* **AUSTRAC AML/CTF Rules (incl. 77B)**
+
+---
+
+### 2. Wallet Type Declaration (Very Important)
+
+You distinguish:
+
+* Self-hosted wallets
+* Exchange (VASP) wallets
+
+👉 This is **critical post-2024–2026 reforms** — good move.
+
+---
+
+### 3. Controlled Withdrawals (Manual Review)
+
+> “Processed via Coinbase by our compliance team”
+
+👉 Regulators like:
+
+* Human oversight
+* Named compliance officer
+* Delayed processing (not fully automated)
+
+---
+
+### 4. Internal Transfer Warning
+
+Clear warning:
+
+* Instant
+* Irreversible
+* Only verified users
+
+👉 Good consumer protection disclosure.
+
+---
+
+# ⚠️ Compliance Gaps / Red Flags (This is where AUSTRAC will push back)
+
+## 🚨 1. “Contact us for deposit address” (Major Risk)
+
+> “Coinbase Commerce is being configured… contact us”
+
+This is **not acceptable at scale**.
+
+### Why:
+
+* No **automated wallet attribution**
+* No **screening before deposit**
+* No **audit trail per user wallet**
+
+### AUSTRAC concern:
+
+> “How do you link incoming funds to a verified customer before receipt?”
+
+### Fix:
+
+* Generate **unique deposit address per user**
+* Pre-link to KYC profile
+* Run **blockchain analytics (Chainalysis/TRM)**
+
+---
+
+## 🚨 2. No Source of Funds / Purpose of Transaction
+
+You collect recipient info — but NOT:
+
+* Purpose of transfer
+* Source of funds
+* Relationship to beneficiary
+
+### Required under:
+
+* AUSTRAC AML/CTF Act (customer due diligence)
+* FATF enhanced due diligence for higher-risk transfers
+
+### Fix:
+
+Add fields like:
+
+* “Purpose of transaction” (dropdown)
+* “Source of funds” (salary, trading, investment, etc.)
+* “Relationship to beneficiary”
+
+---
+
+## 🚨 3. No Sanctions / PEP Screening Mention
+
+Nothing indicates:
+
+* Sanctions screening
+* Politically Exposed Person (PEP) checks
+
+### AUSTRAC expectation:
+
+You must screen:
+
+* Sender
+* Recipient
+* Wallet address (if possible)
+
+### Fix:
+
+Add:
+
+> “All transactions are screened against global sanctions and AML databases.”
+
+---
+
+## 🚨 4. Travel Rule Data Transmission (Critical Gap)
+
+You collect info — but don’t state:
+
+👉 **HOW you transmit it to the receiving VASP**
+
+This is the **core of the Travel Rule**.
+
+### AUSTRAC will ask:
+
+* Are you using:
+
+  * TRISA?
+  * Notabene?
+  * Shyft?
+  * IVMS101 messaging?
+
+### Fix:
+
+Add something like:
+
+> “Travel Rule data is securely transmitted using IVMS101-compliant protocols to supported VASPs.”
+
+---
+
+## 🚨 5. ETH → Fiat → Bank (Oversimplified)
+
+> “ETH must be converted to fiat first”
+
+This is fine — but incomplete.
+
+### Missing:
+
+* KYC level required for withdrawal
+* Bank account ownership verification
+* AML monitoring of fiat exit
+
+### Fix:
+
+Add:
+
+* “Bank account must match verified user name”
+* “Withdrawals subject to AML/CTF monitoring”
+
+---
+
+## 🚨 6. No Transaction Monitoring Disclosure
+
+You don’t mention:
+
+* Suspicious activity monitoring
+* Reporting obligations (SMR/STR)
+
+### Required:
+
+* AUSTRAC expects real-time monitoring
+
+### Fix:
+
+Add:
+
+> “Transactions are monitored for suspicious activity and may be reported to AUSTRAC where required.”
+
+---
+
+## 🚨 7. Internal Transfers = Blind Spot
+
+Internal transfers:
+
+* No blockchain
+* No external visibility
+
+👉 Regulators worry about **layering / laundering inside platform**
+
+### Fix:
+
+Add:
+
+* Internal transfer limits
+* Monitoring rules
+* Audit logs
+
+---
+
+# 🔧 Recommended “Compliant Version” Additions
+
+Here’s what I would insert into your flow:
+
+---
+
+### Add Before Withdrawal Submission:
+
+* Source of Funds *
+* Purpose of Transaction *
+* Relationship to Beneficiary *
+
+---
+
+### Add Compliance Disclosure Block:
+
+> 🛡️ **AML/CTF Compliance Notice**
+> All transactions are subject to:
+>
+> * Identity verification (KYC)
+> * Sanctions and PEP screening
+> * Blockchain analytics screening
+> * Ongoing transaction monitoring
+>
+> Travel Rule data is transmitted to receiving Virtual Asset Service Providers (VASPs) in accordance with FATF Recommendation 16 using secure industry-standard protocols.
+
+---
+
+### Add Bank Withdrawal Controls:
+
+> Bank account must be held in the same legal name as the verified AMAX user. Third-party withdrawals are not permitted.
+
+---
+
+### Add Deposit Upgrade:
+
+Replace:
+
+> “Contact us for deposit address”
+
+With:
+
+> “A unique USDT deposit address will be generated upon verification and linked to your account for compliance and transaction monitoring purposes.”
+
+---
+
+# 🧠 Strategic Observation (Important)
+
+Right now your system is:
+
+👉 **“Form-based compliance” (collecting data)**
+
+But AUSTRAC expects:
+
+👉 **“System-based compliance”**
+
+* Automated screening
+* Travel Rule messaging
+* Risk scoring
+* Monitoring engine
+
+---
+
+# ⚖️ Overall Verdict (If Audited Today)
+
+* **Pass (basic level):** ✔️ structure, disclosures, intent
+* **Fail (operational level):** ❌ automation, monitoring, Travel Rule transmission
+
+👉 If you applied for AUSTRAC today:
+
+* You’d likely get **follow-up questions / conditions**
+* Not outright rejected, but **not approved cleanly**
+
+---
+
+# If you want next step (highly recommended)
+
+I can:
+
+### 👉 Simulate an **AUSTRAC audit questionnaire**
+
+(what they will literally ask you)
+
+### 👉 Or build your:
+
+* AML/CTF Program (Part A + Part B)
+* Travel Rule system architecture
+* End-to-end compliant UX flow
+
+Just say:
+**“run audit simulation”** or **“build full compliance system”**

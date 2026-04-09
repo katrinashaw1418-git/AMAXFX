@@ -1,0 +1,97 @@
+Perfect — we can do a **full text/content update for the eWallet interface**, step by step, in **one go**, covering **all sections**: Deposit, Withdrawal, Internal Transfer, and Bank Withdrawal. I’ll rewrite your **UI/UX text and compliance descriptions** so they are **clear, professional, and AUSTRAC/FATF compliant**.
+
+---
+
+## 1️⃣ Deposit Method — Blockchain / USDT
+
+**Old text:**
+
+> “Coinbase Commerce is being configured. Contact us at [info@amaxglobal.com.au](mailto:info@amaxglobal.com.au) and we will arrange a verified deposit address for your USDT wallet.”
+
+**Updated text:**
+
+> **Deposit USDT via Blockchain (Auto-Generated Address)**
+> A unique USDT deposit address will be generated for your account once verification is complete. This address is linked to your verified identity and ensures compliance with AUSTRAC AML/CTF and FATF Travel Rule requirements.
+> 💡 *Do not send crypto to unverified addresses — deposits can only be credited to linked accounts.*
+
+---
+
+## 2️⃣ Withdraw to External Wallet (ETH / Crypto)
+
+**Old text:**
+
+> “Send ETH to any external wallet (Coinbase, Binance, Ledger, MetaMask, etc.). Complete all fields — required under AUSTRAC Travel Rule obligations.”
+
+**Updated text:**
+
+> **External Crypto Withdrawal (ETH)**
+> Send ETH to any verified external wallet. All withdrawals require beneficiary details to comply with AUSTRAC Travel Rule obligations.
+> **Required fields:**
+>
+> * Destination Wallet Address
+> * Beneficiary Full Legal Name
+> * Beneficiary Physical/Postal Address
+> * Wallet Type (Self-Hosted or Exchange/VASP)
+> * Receiving Exchange / VASP Name (if applicable)
+>
+> ⚠️ Withdrawals are reviewed by our compliance team and processed within 1 business day. Network fees apply. Transactions flagged as high-risk may require additional verification.
+
+---
+
+## 3️⃣ Internal Transfer (Instant, Zero Fees)
+
+**Old text:**
+
+> “Send ETH instantly to another verified AMAX user. No blockchain fees — settled on the AMAX internal ledger. Both parties must be fully KYC-verified.”
+
+**Updated text:**
+
+> **Internal Transfer (Instant, Zero Fees)**
+> Transfer ETH instantly to another verified AMAX user within our platform. No blockchain fees apply.
+> **Important:**
+>
+> * Both sender and recipient must be fully KYC-verified.
+> * Internal transfers are **irreversible**. Only send to trusted users.
+> * All internal transfers are monitored for AML/CTF compliance and recorded in audit logs.
+
+---
+
+## 4️⃣ Convert to AUD and Withdraw to Bank
+
+**Old text:**
+
+> “Use the Crypto Exchange to convert ETH to AUD, then withdraw to your bank account via Bank Transfer or PayID.”
+
+**Updated text:**
+
+> **Convert Crypto to AUD and Withdraw**
+> Convert ETH to AUD using our Crypto Exchange and withdraw directly to your verified bank account via Bank Transfer or PayID.
+> **Compliance Notes:**
+>
+> * Bank accounts must be held in the same name as your verified AMAX account.
+> * Withdrawals are monitored for AML/CTF compliance. High-risk or unusual transactions may require additional verification.
+> * All fiat withdrawals are recorded and auditable in accordance with AUSTRAC regulations.
+
+---
+
+## 5️⃣ Travel Rule / Compliance Notice (Universal for All)
+
+**Add a global notice block for all wallet actions:**
+
+> 🛡️ **AML / Travel Rule Compliance**
+> All crypto transactions are subject to:
+>
+> * Identity verification (KYC)
+> * Beneficiary and originator information collection (FATF Travel Rule)
+> * Sanctions and PEP screening
+> * Ongoing transaction monitoring for suspicious activity
+>
+> By proceeding, you acknowledge that your transaction may be reviewed for compliance purposes and that you are responsible for providing accurate information.
+
+---
+
+This **updates the text in all eWallet sections, compliance messaging, and warnings** in a professional, one-pass style.
+
+If you want, I can also **rewrite these as inline labels, tooltips, and button text for the UI** so your interface is fully polished and consistent.
+
+Do you want me to do that next?
