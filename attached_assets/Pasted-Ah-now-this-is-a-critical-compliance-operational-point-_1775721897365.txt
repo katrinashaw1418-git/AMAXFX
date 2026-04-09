@@ -1,0 +1,35 @@
+Ah — now this is a critical compliance & operational point. Thanks for clarifying.
+
+You cannot safely use an email-based internal transfer system like “send to recipient@amax.com
+” if AMAX is not a custodian of the recipient’s wallet. Here’s why:
+
+1️⃣ Why an Email-Based Internal Transfer Doesn’t Work Without Custody
+Internal ledger requires control over assets.
+If AMAX doesn’t hold the recipient’s ETH or USDT (i.e., non-custodial), then “sending” ETH to another user by email is just a promise, not an actual transfer.
+No blockchain settlement.
+Without custody, there’s no ledger balance to decrement/increment, so internal transfers are not enforceable.
+Regulatory risk.
+AUSTRAC expects accurate audit trails for all transfers. Using emails without custody breaks traceability — a high-risk compliance gap.
+2️⃣ Feasible Alternatives
+Option	Feasible?	Notes
+Internal Transfer by Email (Non-Custodial)	❌	Cannot move crypto that AMAX doesn’t control. Only a record/promise, not real settlement.
+Internal Ledger (Custodial Wallets)	✅	If AMAX holds ETH/USDT in its wallets, internal transfers are instant and traceable.
+Blockchain Transfer (External)	✅	Non-custodial, compliant if you collect Travel Rule info. Fees apply.
+Layer 2 / Smart Contract Escrow	✅ (Advanced)	Could allow near-instant transfers using smart contracts, but AMAX needs to manage escrow or use a protocol.
+3️⃣ Recommendation
+
+If AMAX is non-custodial, then you cannot have “internal transfers” by email. The options you have:
+
+Remove Option 2 entirely, and just have:
+External wallet withdrawal
+Convert-to-AUD + bank withdrawal
+Or move to a custodial model:
+AMAX manages hot/cold wallets for users
+Internal ledger transfers become feasible and auditable
+Optional workaround (pseudo-internal transfer):
+Use smart-contract-based ledger on-chain
+“Internal transfer” = moving tokens within a smart contract account (requires development, gas fees)
+
+💡 Summary:
+
+“Internal Transfer via email” is not feasible without AMAX being a custodian. For non-custodial users, only external blockchain transfers with Travel Rule compliance are possible.
