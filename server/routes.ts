@@ -916,11 +916,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       CREATE UNIQUE INDEX IF NOT EXISTS unique_wallet_user_currency ON wallets (user_id, currency);
     `));
     // Seed demo user if not present (handles fresh production DB)
-    const demoUser = await storage.getUserByUsername("johnchen");
+    const demoUser = await storage.getUserByUsername("Johnchen");
     if (!demoUser) {
-      const hashed = await hashPassword("johnchen888");
+      const hashed = await hashPassword("Johnchen888");
       await db.insert(users).values({
-        username: "johnchen",
+        username: "Johnchen",
         email: "demo@amaxglobal.com.au",
         password: hashed,
         firstName: "John",
