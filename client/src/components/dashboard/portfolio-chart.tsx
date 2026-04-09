@@ -72,7 +72,7 @@ export default function PortfolioChart() {
               <Badge variant="outline" className="text-xs text-muted-foreground font-normal">
                 {data?.chartSource === 'historical_plus_forecast'
                   ? 'Historical data + forecast'
-                  : 'Historical estimate + forecast'}
+                  : 'Limited history + forecast'}
               </Badge>
             </div>
             {data && (
@@ -144,7 +144,7 @@ export default function PortfolioChart() {
                     name === 'historical'
                       ? (data?.chartSource === 'historical_plus_forecast'
                           ? 'Historical'
-                          : 'Historical estimate')
+                          : 'Limited history')
                       : `Forecast (${data?.projectionRate ?? '10% p.a.'})`,
                   ]}
                   labelFormatter={(label) => `${label}`}
@@ -159,7 +159,7 @@ export default function PortfolioChart() {
                     value === 'historical'
                       ? (data?.chartSource === 'historical_plus_forecast'
                           ? 'Historical data'
-                          : 'Historical estimate')
+                          : 'Limited history')
                       : `Forecast (${data?.projectionRate ?? '10% p.a.'})`
                   }
                   wrapperStyle={{ paddingTop: 8 }}

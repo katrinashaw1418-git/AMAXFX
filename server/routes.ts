@@ -4,7 +4,7 @@ import { createHash, createHmac, randomBytes } from "crypto";
 import { sendVerificationEmail, sendPasswordResetEmail, emailConfigured } from "./email";
 import { z } from "zod";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import Decimal from "decimal.js";
 import { storage } from "./storage";
 import { db } from "./db";
@@ -88,6 +88,59 @@ async function runAmlCheck(
     }
   } catch {
     // AML flagging must never block the transaction flow — log silently
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Daily transaction limit check — AML/CTF Program §6 (Risk-Based Controls)
+// Enforces per-user daily transaction limits derived from their risk profile.
+// Low risk: AUD 50,000 | Medium risk: AUD 10,000 | High risk: AUD 2,000
+// Accumulates same-currency transaction volume in the rolling 24-hour window.
+// ---------------------------------------------------------------------------
+async function checkDailyLimit(userId: number, amount: Decimal, currency: string): Promise<void> {
+  try {
+    const user = await storage.getUser(userId);
+    if (!user?.dailyTransactionLimit) return;
+
+    const dailyLimit = new Decimal(user.dailyTransactionLimit);
+    if (dailyLimit.lte(0)) return;
+
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    // Sum all non-failed transactions in the same currency in the last 24 hours
+    const [result] = await db
+      .select({ total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS DECIMAL)), 0)::text` })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, userId),
+          sql`${transactions.createdAt} >= ${since}`,
+          sql`${transactions.status} != 'failed'`,
+          or(
+            eq(transactions.fromCurrency, currency),
+            eq(transactions.toCurrency, currency),
+          ),
+        ),
+      );
+
+    const dailyTotal = new Decimal(result?.total ?? "0");
+    if (dailyTotal.plus(amount).gt(dailyLimit)) {
+      const riskLabel = user.riskLevel === "low"
+        ? "AUD 50,000"
+        : user.riskLevel === "medium"
+        ? "AUD 10,000"
+        : "AUD 2,000";
+      throw Object.assign(
+        new Error(
+          `This transaction would exceed your daily limit of ${riskLabel}. ` +
+          "Please contact support at info@amaxglobal.com.au to request a limit review.",
+        ),
+        { status: 403 },
+      );
+    }
+  } catch (e: any) {
+    if (e.status) throw e;
+    // Limit check must never fail silently in a way that blocks real 403s — rethrow 403s only
   }
 }
 
@@ -2427,9 +2480,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { userId } = requireAuth(req);
       await requireKyc(userId, storage);
       const parsedDeposit = depositSchema.safeParse(req.body);
+
       if (!parsedDeposit.success) return res.status(400).json({ error: parsedDeposit.error.errors[0].message });
       const { currency, amount: rawAmount, description, method } = parsedDeposit.data;
       const amount = new Decimal(rawAmount);
+
+      // Enforce risk-based daily transaction limit before processing
+      await checkDailyLimit(userId, amount, currency);
 
       // Card deposits must use the Checkout.com hosted payment route — never this handler.
       // Accepting card deposits here would credit balances without real payment confirmation.
@@ -2487,14 +2544,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sourceExchange: method ?? null, blockchainTxHash: null,
           assetType: classifyAssetType(null, currency),
           direction: "in",
-          riskFlag: false,
-          reviewStatus: "clear",
-          reviewNotes: null,
+          riskFlag: amount.gte(10000),
+          reviewStatus: amount.gte(10000) ? "flagged" : "clear",
+          reviewNotes: amount.gte(10000) ? "AUSTRAC threshold — manual review required" : null,
         }).returning();
       });
 
       if (idemKey) await saveIdempotentResponse(userId, "/api/deposit", idemKey, payloadHash, txRecord);
       await writeAuditLog(userId, "deposit", "transaction", String(txRecord?.id), { currency, amount: rawAmount, method }, req.ip || null);
+
+      // TTR auto-flag — AUSTRAC mandatory reporting for cash deposits >= AUD $10,000 equivalent.
+      if (amount.gte(10000)) {
+        try {
+          await db.insert(complianceActions).values({
+            userId,
+            transactionId: txRecord?.id ?? null,
+            actionType: "ttr",
+            performedBy: "system",
+            notes: `Auto-flagged: ${currency} deposit of ${rawAmount} meets or exceeds AUD $10,000 AUSTRAC TTR threshold. Pending review by Compliance Officer.`,
+            outcome: null,
+            austracRef: null,
+          });
+        } catch (flagErr: any) {
+          console.error("[ttr-auto-flag-deposit] failed:", flagErr.message);
+        }
+      }
+
+      // Run AML rules (large transactions, fiat-crypto conversions, etc.)
+      await runAmlCheck(userId, txRecord?.id, amount, classifyAssetType(null, currency), "deposit");
 
       let referenceCode: string | undefined;
       try { referenceCode = JSON.parse(txRecord.description ?? "{}").referenceCode; } catch {}
@@ -2536,6 +2613,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           { status: 400 }
         );
       }
+
+      // Enforce risk-based daily transaction limit before processing
+      await checkDailyLimit(userId, amount, currency);
 
       // Currency-aware fiat wire fee table (flat fee per withdrawal, in native currency).
       // These represent typical correspondent banking / SWIFT wire charges.
@@ -2628,6 +2708,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error("[ttr-auto-flag] failed to insert complianceActions:", flagErr.message);
         }
       }
+
+      // Run AML rules (large transactions, fiat-crypto conversions, etc.)
+      await runAmlCheck(userId, txRecord?.id, amount, classifyAssetType(currency, null), "withdrawal");
 
       res.json(txRecord);
     } catch (error: any) {
@@ -3475,6 +3558,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/checkout/create-payment-link", requireAuth, async (req: Request, res: any) => {
     try {
       const { userId } = requireAuth(req);
+      await requireKyc(userId, storage);
       const { walletId, amount, currency } = req.body;
       if (!walletId || !amount || !currency) {
         return res.status(400).json({ error: "walletId, amount and currency are required" });
@@ -3484,6 +3568,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(parsedAmount) || parsedAmount <= 0) {
         return res.status(400).json({ error: "Invalid amount" });
       }
+
+      await checkDailyLimit(userId, new Decimal(parsedAmount), currency);
 
       const [wallet] = await db.select().from(wallets)
         .where(and(eq(wallets.id, Number(walletId)), eq(wallets.userId, userId)));
@@ -3660,10 +3746,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/paypal/create-order", requireAuth, async (req: Request, res: any) => {
     try {
       const { userId } = requireAuth(req);
+      await requireKyc(userId, storage);
       const { walletId, amount, currency } = req.body;
       if (!walletId || !amount || !currency) {
         return res.status(400).json({ error: "walletId, amount and currency are required" });
       }
+
+      await checkDailyLimit(userId, new Decimal(parseFloat(amount)), currency);
 
       const appDomain = process.env.REPLIT_DOMAINS
         ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
@@ -3787,9 +3876,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           blockchainTxHash: null,
           assetType: "fiat",
           direction: "in",
-          riskFlag: false,
-          reviewStatus: "clear",
-          reviewNotes: null,
+          riskFlag: amount.gte(10000),
+          reviewStatus: amount.gte(10000) ? "flagged" : "clear",
+          reviewNotes: amount.gte(10000) ? "AUSTRAC threshold — manual review required" : null,
         }).returning();
       });
 
@@ -3798,6 +3887,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { currency, amount: capturedAmt.value, orderId },
         req.ip || null,
       );
+
+      // TTR auto-flag — AUSTRAC mandatory reporting for PayPal deposits >= AUD $10,000 equivalent.
+      if (amount.gte(10000)) {
+        try {
+          await db.insert(complianceActions).values({
+            userId,
+            transactionId: txRecord?.id ?? null,
+            actionType: "ttr",
+            performedBy: "system",
+            notes: `Auto-flagged: ${currency} PayPal deposit of ${capturedAmt.value} meets or exceeds AUD $10,000 AUSTRAC TTR threshold. Pending review by Compliance Officer.`,
+            outcome: null,
+            austracRef: null,
+          });
+        } catch (flagErr: any) {
+          console.error("[ttr-auto-flag-paypal] failed:", flagErr?.message);
+        }
+      }
+
+      await runAmlCheck(userId, txRecord?.id, amount, "fiat", "deposit");
 
       res.json({ success: true, amount: capturedAmt.value, currency, transactionId: txRecord?.id });
     } catch (error: any) {

@@ -245,6 +245,25 @@ export default function Compliance() {
     }
   }, [kycProfile?.addressDocFilename]);
 
+  // ── Pre-populate PII form from DB on profile load (needed for edit mode) ──
+  useEffect(() => {
+    if (!kycProfile) return;
+    if (kycProfile.fullLegalName)      setPiiFullName(kycProfile.fullLegalName);
+    if (kycProfile.dateOfBirth)        setPiiDob(kycProfile.dateOfBirth);
+    if (kycProfile.nationality)        setPiiNationality(kycProfile.nationality);
+    if (kycProfile.phoneNumber)        setPiiPhone(kycProfile.phoneNumber);
+    if (kycProfile.residentialAddress) setPiiAddress(kycProfile.residentialAddress);
+    if (kycProfile.suburb)             setPiiSuburb(kycProfile.suburb);
+    if (kycProfile.stateRegion)        setPiiStateRegion(kycProfile.stateRegion);
+    if (kycProfile.postcode)           setPiiPostcode(kycProfile.postcode);
+    if (kycProfile.addressCountry)     setPiiAddrCountry(kycProfile.addressCountry);
+    if (kycProfile.employmentStatus)   setPiiEmployment(kycProfile.employmentStatus);
+    if (kycProfile.occupation)         setPiiOccupation(kycProfile.occupation);
+    if (kycProfile.purposeOfAccount)   setPiiPurpose(kycProfile.purposeOfAccount);
+    if (kycProfile.sourceOfFunds)      setPiiSourceFunds(kycProfile.sourceOfFunds);
+    if (kycProfile.taxCountry)         setPiiTaxCountry(kycProfile.taxCountry);
+  }, [kycProfile]);
+
   // ── Load and launch Sumsub WebSDK when mode becomes sumsub_sdk ─────────────
   useEffect(() => {
     if (verifyMode !== "sumsub_sdk" || !sumsubToken) return;

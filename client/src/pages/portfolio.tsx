@@ -530,7 +530,7 @@ export default function Portfolio() {
               <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">
                 {perfChart?.chartSource === 'historical_plus_forecast'
                   ? 'Historical data + forecast'
-                  : 'Historical estimate + forecast'}
+                  : 'Limited history + forecast'}
               </span>
             </div>
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -539,7 +539,7 @@ export default function Portfolio() {
                 <span>
                   {perfChart?.chartSource === 'historical_plus_forecast'
                     ? 'Historical data'
-                    : 'Historical estimate'}
+                    : 'Limited history'}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -596,7 +596,7 @@ export default function Portfolio() {
                     name === 'historical'
                       ? (perfChart?.chartSource === 'historical_plus_forecast'
                           ? 'Historical'
-                          : 'Historical estimate')
+                          : 'Limited history')
                       : `Forecast (${perfChart?.projectionRate ?? '10% p.a.'})`,
                   ]}
                   contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
