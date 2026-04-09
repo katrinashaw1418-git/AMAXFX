@@ -1,0 +1,135 @@
+Ah — perfect, now I fully understand the context. Since **AMAX is not a custodian**, the current “internal ledger” approach doesn’t logically work. We need to **redesign the exchange page as a front-end to an external custodian (Coinbase) while simplifying compliance flows**. Here’s the reasoning and proposed redesign:
+
+---
+
+## **Key Principles for the Redesign**
+
+1. **AMAX is non-custodial**
+
+   * Crypto is **never held on AMAX accounts**.
+   * All purchases / sales happen via **Coinbase (external custodian)**.
+
+2. **Compliance is centralized**
+
+   * **KYC, AML, and Travel Rule** are already handled on the **Compliance/KYC page**.
+   * Exchange page does **not collect source of funds**; it only facilitates execution.
+
+3. **Ledger-based “internal balance” no longer applies**
+
+   * User balance on AMAX is **just a reflection of completed trades**, not actual custody.
+   * Exchange page becomes a **trade execution interface** to Coinbase.
+
+4. **Simplify UX**
+
+   * Remove unnecessary fields like “Source of Funds”.
+   * Only display **fiat → crypto** or **crypto → fiat** amounts.
+   * Include clear **non-custodial notice**.
+
+---
+
+## **Proposed Redesign — Coinbase-Integrated Exchange Page**
+
+### **Header**
+
+**Title:** `Digital Asset Exchange (via Coinbase)`
+**Info Box / Badge:**
+
+> 🔒 **Non-Custodial Trade Execution**
+> All trades are executed through **Coinbase as the custodian**. AMAX does not hold your crypto or private keys. Transactions are irreversible once executed.
+
+---
+
+### **Step 1: Select Trade**
+
+**Buy Crypto (Fiat → Crypto)**
+
+* From: Fiat → `AUD / USD`
+* Input: Amount to spend
+
+**Sell Crypto (Crypto → Fiat)**
+
+* From: Crypto → `BTC / ETH / USDT / USDC`
+* Input: Amount to sell
+
+**To: Asset Class**
+
+* Dropdown: `BTC / ETH / USDT / USDC` or fiat `AUD / USD`
+
+**Swap button** → toggle buy/sell
+
+---
+
+### **Step 2: Trade Summary (Dynamic)**
+
+| Label               | Value                                                |
+| ------------------- | ---------------------------------------------------- |
+| **You Send**        | e.g., 500 AUD                                        |
+| **Spot Rate**       | e.g., 1 AUD = 0.00000994 BTC                         |
+| **Processing Fee**  | e.g., 0.5%                                           |
+| **You Receive**     | Calculated crypto/fiat                               |
+| **Settlement Type** | Coinbase custodial execution (non-custodial on AMAX) |
+
+**Tooltip:**
+
+> “Crypto is sent directly to your Coinbase wallet. AMAX does not hold crypto or private keys. Transactions are irreversible. Digital assets are subject to market volatility.”
+
+---
+
+### **Step 3: Review & Confirm**
+
+* **Checkbox:**
+
+> “I confirm this trade and acknowledge AMAX does not custody crypto. Trade execution is handled via Coinbase.”
+
+* **Button:** `Review & Confirm Exchange` → opens confirmation modal:
+
+  * Re-display trade amounts, fees, spot rate
+  * Warning about **irreversibility**
+  * Confirm execution via Coinbase API
+
+---
+
+### **Step 4: Execution**
+
+* On confirm, **AMAX sends trade instructions to Coinbase**
+* User receives crypto/funds in **their Coinbase account**
+* AMAX page updates **display only**, reflecting the executed trade
+
+---
+
+### **Step 5: Post-Trade Info**
+
+* Confirmation Banner:
+
+> “Your trade has been executed via Coinbase. Your crypto is in your Coinbase wallet. AMAX does not hold private keys.”
+
+* Links / Optional Buttons:
+
+  * `View in Coinbase`
+  * `Return to Exchange`
+
+---
+
+### **UX / Compliance Advantages**
+
+1. **No misleading internal balances** — crypto resides in **Coinbase wallets**.
+2. **Simplified form** — no source of funds, no external wallet input.
+3. **Compliance already centralized** — KYC/AML handled on KYC page.
+4. **Clear non-custodial messaging** — prevents regulatory confusion.
+5. **Scalable** — adding more crypto/fiat pairs is simple.
+
+---
+
+💡 **Bottom Line:**
+
+* AMAX acts as a **trade execution portal** only.
+* Coinbase handles custody.
+* KYC/AML is centralized elsewhere.
+* UX is simple: select asset, amount, review, confirm.
+* Ledger-based “internal balance” is removed — only **display post-trade reflection**.
+
+---
+
+If you want, I can **redesign the full exchange page UI mockup** with this new **Coinbase-integrated, non-custodial flow**, including **buy/sell tabs, trade summary, fees, and confirmation modal** — ready for dev implementation.
+
+Do you want me to create that mockup next?

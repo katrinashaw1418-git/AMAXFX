@@ -357,7 +357,9 @@ export default function Crypto() {
                       <SelectItem value="other">Other (contact compliance@amaxglobal.com.au)</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-gray-400">High-value purchases may require supporting documentation.</p>
+                  <p className="text-xs text-gray-400">
+                    Required at each digital asset purchase under AUSTRAC's ongoing Customer Due Diligence (CDD) obligations — this is separate from, and in addition to, your KYC profile declaration. High-value purchases may also require supporting documentation.
+                  </p>
                 </div>
               )}
 
