@@ -1,0 +1,344 @@
+Got it — I’ll audit this the way a **bank, regulator, or partner like Airwallex would**.
+
+You don’t need generic advice — you need a **pass/fail assessment** across:
+
+* E-wallet (accounts UI)
+* Deposits
+* Transfers (withdrawals)
+* FX
+* Crypto
+
+---
+
+# 🧠 FINAL AUDIT — NON-CUSTODIAL COMPLIANCE
+
+## 🟢 OVERALL VERDICT
+
+👉 **Your structure is fundamentally correct for a non-custodial remittance platform**
+
+You can safely have:
+
+* deposit channels ✅
+* transfer-out channels ✅
+* FX conversion ✅
+* crypto on/off ramps ✅
+
+**BUT only under strict conditions below.**
+
+---
+
+# 🧱 1. E-WALLET (ACCOUNTS) — ✅ PASS (WITH CONDITIONS)
+
+## What you fixed:
+
+* “wallet” → “account” ✅
+* removed custody language ✅
+
+## Remaining requirement:
+
+### Must always be true:
+
+```
+Displayed balance = mirror of external (Airwallex)
+```
+
+---
+
+## 🚨 Fail condition:
+
+If anywhere in code:
+
+```ts
+balance updated without webhook
+```
+
+❌ You become de facto custodian
+
+---
+
+## 🔍 Verdict:
+
+✅ SAFE — if fully webhook-driven
+
+---
+
+# 💰 2. DEPOSITS — ✅ PASS (CRITICAL CHECK)
+
+## Must be structured as:
+
+```
+User → sends money → Airwallex account
+                     ↓
+                webhook → AMAX updates UI
+```
+
+---
+
+## 🚨 HARD FAIL IF:
+
+* funds go to **your own bank account**
+* or you “credit before receipt”
+
+---
+
+## UI requirement:
+
+* “Add funds via regulated partner” ✅
+
+---
+
+## 🔍 Verdict:
+
+✅ SAFE — if funds NEVER touch AMAX accounts
+
+---
+
+# 💸 3. TRANSFER OUT — ✅ PASS
+
+## Your new wording:
+
+* “Transfer Out” ✅
+* instruction-based messaging ✅
+
+---
+
+## Must be technically:
+
+```
+AMAX → POST /payouts → Airwallex executes
+```
+
+---
+
+## 🚨 HARD FAIL IF:
+
+```ts
+mark as completed BEFORE webhook
+```
+
+---
+
+## 🔍 Verdict:
+
+✅ SAFE — correctly framed + executed
+
+---
+
+# 💱 4. FX ENGINE — ⚠️ CONDITIONAL PASS
+
+## This is where most fintechs accidentally break compliance.
+
+---
+
+## ✅ SAFE IF:
+
+```
+FX executed by Airwallex
+```
+
+AND
+
+```
+No internal double-entry simulation
+```
+
+---
+
+## 🚨 HARD FAIL IF:
+
+You do this internally:
+
+```ts
+AUD -= 1000
+USD += converted_amount
+```
+
+❌ without external execution
+
+---
+
+## Correct flow:
+
+```
+Quote → Airwallex conversion → webhook → update balances
+```
+
+---
+
+## 🔍 Verdict:
+
+⚠️ SAFE — only if 100% externally executed
+
+---
+
+# 🪙 5. CRYPTO — ⚠️ HIGH RISK AREA (READ CAREFULLY)
+
+This is the most sensitive part.
+
+---
+
+## You are SAFE IF:
+
+### Model:
+
+```
+User AUD (Airwallex)
+   ↓
+Send to crypto provider (exchange / on-ramp)
+   ↓
+Crypto delivered externally
+```
+
+AND reverse for sell.
+
+---
+
+## ❌ YOU BECOME CUSTODIAN IF:
+
+* you hold crypto keys
+* you maintain internal crypto balances
+* you allow “crypto wallet inside AMAX”
+
+---
+
+## UI requirement (VERY IMPORTANT):
+
+* “Buy crypto via partner” ✅
+* NOT “hold crypto in AMAX wallet” ❌
+
+---
+
+## Fiat side fix you made:
+
+* “fiat wallet” → “fiat account” ✅
+
+👉 Good — but crypto side must match this philosophy.
+
+---
+
+## 🔍 Verdict:
+
+⚠️ SAFE — ONLY if:
+
+* no custody (fiat or crypto)
+* all execution via third-party
+
+---
+
+# ⚖️ 6. REGULATORY POSITION (REALITY CHECK)
+
+From AUSTRAC perspective:
+
+You are:
+
+👉 **Remittance / payment service provider**
+
+NOT:
+
+* deposit-taking institution
+* stored-value wallet
+* custodian
+
+---
+
+# 🧠 7. THE 5 NON-NEGOTIABLE RULES
+
+If you follow these, you are safe:
+
+---
+
+## Rule 1
+
+👉 No money in AMAX accounts
+
+---
+
+## Rule 2
+
+👉 No balance updates without webhook
+
+---
+
+## Rule 3
+
+👉 All FX executed externally
+
+---
+
+## Rule 4
+
+👉 Crypto handled by third-party providers
+
+---
+
+## Rule 5
+
+👉 UI never implies custody
+
+---
+
+# 🚨 8. QUICK FAIL TEST (USE THIS)
+
+Ask:
+
+### 1.
+
+> If AMAX shuts down, can users still access funds?
+
+✅ YES → safe
+❌ NO → you are custodian
+
+---
+
+### 2.
+
+> Can your DB create or destroy money?
+
+❌ YES → broken
+✅ NO → correct
+
+---
+
+### 3.
+
+> Can a transaction complete without Airwallex?
+
+❌ YES → broken
+✅ NO → correct
+
+---
+
+# 🧠 FINAL OPERATOR VERDICT
+
+👉 You are **very close to institution-grade**
+
+Your system is:
+
+✅ structurally correct
+✅ regulator-aligned
+✅ scalable
+
+But your **risk zone is execution discipline**, not design.
+
+---
+
+# 🔥 ONE LINE TRUTH
+
+You can have deposits, transfers, FX, and crypto —
+👉 as long as **you never become the place where money lives**
+
+---
+
+# 🚀 NEXT STEP (HIGH VALUE)
+
+If you want to fully lock this down, I can:
+
+### 🔍 Audit your actual code paths (paste snippets)
+
+### 🧱 Map exact Airwallex + crypto provider flows
+
+### ⚖️ Draft regulator-facing architecture doc
+
+### 📊 Build compliance checklist for bank onboarding
+
+Just tell me 👍
