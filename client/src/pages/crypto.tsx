@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useFxRates, useFxRate } from "@/hooks/use-fx-rates";
 import { useWallets } from "@/hooks/use-portfolio";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -68,8 +69,10 @@ export default function Crypto() {
   const [fromCurrency, setFromCurrency] = useState("AUD");
   const [toCurrency,   setToCurrency]   = useState("BTC");
   const [amount, setAmount]             = useState("500");
-  const [showConfirm, setShowConfirm]   = useState(false);
-  const [showAdvisor, setShowAdvisor]   = useState(true);
+  const [showConfirm, setShowConfirm]       = useState(false);
+  const [showAdvisor, setShowAdvisor]       = useState(true);
+  const [sourceOfFunds, setSourceOfFunds]   = useState("");
+  const [complianceAgreed, setComplianceAgreed] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -116,6 +119,14 @@ export default function Crypto() {
     }
     if (parseFloat(amount) > fromBalance) {
       toast({ title: "Insufficient Balance", description: `You only have ${fromBalance.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${fromCurrency} available.`, variant: "destructive" });
+      return;
+    }
+    if (fromClass === "fiat" && !sourceOfFunds) {
+      toast({ title: "Source of Funds Required", description: "Please declare your source of funds for this purchase (AUSTRAC AML/CTF requirement).", variant: "destructive" });
+      return;
+    }
+    if (!complianceAgreed) {
+      toast({ title: "Compliance Confirmation Required", description: "Please confirm the compliance declaration before proceeding.", variant: "destructive" });
       return;
     }
     setShowConfirm(true);
@@ -316,6 +327,32 @@ export default function Crypto() {
                 </p>
               </div>
 
+              {/* Source of Funds — required for fiat→crypto (AUSTRAC AML/CTF) */}
+              {fromClass === "fiat" && toClass === "crypto" && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-gray-600">
+                    Source of Funds <span className="text-red-500">*</span>
+                    <span className="ml-1 font-normal text-gray-400">(AUSTRAC AML/CTF requirement)</span>
+                  </Label>
+                  <Select value={sourceOfFunds} onValueChange={setSourceOfFunds}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Select source of funds…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="salary">Salary / Employment income</SelectItem>
+                      <SelectItem value="savings">Personal savings</SelectItem>
+                      <SelectItem value="investment">Investment returns</SelectItem>
+                      <SelectItem value="business">Business income</SelectItem>
+                      <SelectItem value="property">Property sale</SelectItem>
+                      <SelectItem value="inheritance">Inheritance / Gift</SelectItem>
+                      <SelectItem value="superannuation">Superannuation / Pension</SelectItem>
+                      <SelectItem value="other">Other (contact compliance@amaxglobal.com.au)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-400">High-value purchases may require supporting documentation.</p>
+                </div>
+              )}
+
               {/* Breakdown */}
               <div className="p-4 bg-gray-50 rounded-lg space-y-2 text-sm">
                 <div className="flex justify-between font-medium text-gray-800 text-base pb-1 border-b">
@@ -348,6 +385,19 @@ export default function Crypto() {
               <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-amber-50 border border-amber-200 text-amber-800">
                 <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                 <span>{disclosure}</span>
+              </div>
+
+              {/* Compliance confirmation checkbox */}
+              <div className="flex items-start gap-2.5 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <Checkbox
+                  id="compliance-agreed"
+                  checked={complianceAgreed}
+                  onCheckedChange={(v) => setComplianceAgreed(v === true)}
+                  className="mt-0.5 shrink-0"
+                />
+                <label htmlFor="compliance-agreed" className="text-xs text-gray-600 leading-relaxed cursor-pointer">
+                  I confirm that all information provided is accurate and complete. I acknowledge this exchange is subject to KYC, AML/CTF monitoring, and AUSTRAC recordkeeping obligations. High-value or suspicious transactions may be reported to AUSTRAC.
+                </label>
               </div>
 
               <Button className="w-full" onClick={openConfirm} disabled={exchangeMutation.isPending || rateLoading}>
@@ -468,12 +518,18 @@ export default function Crypto() {
                 </span>
               </div>
             </div>
+            {sourceOfFunds && (
+              <div className="flex justify-between text-xs text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
+                <span>Source of Funds</span>
+                <span className="font-medium capitalize">{sourceOfFunds.replace(/_/g, " ")}</span>
+              </div>
+            )}
             <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-amber-50 border border-amber-200 text-amber-800">
               <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
               <span>{disclosure}</span>
             </div>
             <p className="text-xs text-gray-500 text-center">
-              By confirming, you authorise AMAX Financial Pty Ltd (ABN 54 690 827 608) to process this digital asset exchange under its AUSTRAC DCE registration.
+              By confirming, you authorise AMAX Financial Pty Ltd (ABN 54 690 827 608) to process this digital asset exchange under its AUSTRAC DCE registration. This transaction is subject to AML/CTF monitoring and may be reported to AUSTRAC.
             </p>
           </div>
           <DialogFooter className="gap-2">
@@ -507,10 +563,10 @@ export default function Crypto() {
               <p className="text-xs text-gray-700 mb-3">Questions about digital assets or large trades? Our team can assist.</p>
               <div className="flex items-center space-x-2 text-amber-600 mb-3">
                 <Phone className="w-3 h-3" />
-                <span className="font-medium text-xs">+61 3 9654 1000</span>
+                <span className="font-medium text-xs">+61 2 1234 5678</span>
               </div>
               <div className="flex space-x-2">
-                <Button variant="outline" size="sm" onClick={() => window.open("tel:+61396541000", "_self")} className="flex-1 text-xs h-8">
+                <Button variant="outline" size="sm" onClick={() => window.open("tel:+61212345678", "_self")} className="flex-1 text-xs h-8">
                   <Phone className="w-3 h-3 mr-1" /> Call
                 </Button>
                 <Button size="sm" className="flex-1 bg-amber-600 hover:bg-amber-700 text-xs h-8">

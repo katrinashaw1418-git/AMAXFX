@@ -172,6 +172,12 @@ export default function Landing() {
             </Button>
           </a>
         </div>
+        <p className="mt-6 text-sm text-white/60">
+          Already have an account?{" "}
+          <Link href="/login" className="text-white underline underline-offset-2 hover:text-white/80 transition-colors">
+            Sign In
+          </Link>
+        </p>
 
         {/* Trust badges */}
         <div className="flex flex-wrap gap-6 justify-center mt-16 text-sm text-white">
@@ -465,7 +471,7 @@ export default function Landing() {
             Join AMAX and experience compliant, fast, and transparent FX exchange, digital wallet, crypto trading, and remittance — all in one platform.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/login">
+            <Link href="/register">
               <Button size="lg" className={`${GREY_BTN} px-10`}>Sign Up Now</Button>
             </Link>
             <Link href="/login">
