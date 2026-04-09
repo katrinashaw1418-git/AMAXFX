@@ -915,11 +915,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await db.execute(sql.raw(`
       CREATE UNIQUE INDEX IF NOT EXISTS unique_wallet_user_currency ON wallets (user_id, currency);
     `));
-    // Hash the demo user's plaintext password on first startup
-    const demoUser = await storage.getUser(1);
-    if (demoUser && !demoUser.password.startsWith("$2")) {
+    // Seed demo user if not present (handles fresh production DB)
+    const demoUser = await storage.getUserByUsername("johnchen");
+    if (!demoUser) {
+      const hashed = await hashPassword("johnchen888");
+      await db.execute(sql.raw(`
+        INSERT INTO users (username, email, password, first_name, last_name, kyc_status, user_tier, created_at)
+        VALUES ('johnchen', 'demo@amaxglobal.com.au', '${hashed}', 'John', 'Chen', 'verified', 'premium', NOW())
+        ON CONFLICT (username) DO NOTHING
+      `));
+    } else if (!demoUser.password.startsWith("$2")) {
       const hashed = await hashPassword(demoUser.password);
-      await storage.updateUser(1, { password: hashed });
+      await storage.updateUser(demoUser.id, { password: hashed });
     }
   }
 
