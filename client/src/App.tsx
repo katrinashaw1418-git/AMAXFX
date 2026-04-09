@@ -21,6 +21,7 @@ import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import NotFound from "@/pages/not-found";
 import AdminCompliance from "@/pages/admin-compliance";
+import Register from "@/pages/register";
 import { Loader2 } from "lucide-react";
 
 function ProtectedApp() {
@@ -73,6 +74,7 @@ function Router() {
       <Route path="/aml-policy"     component={AmlPolicy}      />
       <Route path="/admin-compliance" component={AdminCompliance} />
       <Route path="/login"          component={Login}          />
+      <Route path="/register"       component={Register}       />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword}  />
       <Route component={ProtectedApp} />

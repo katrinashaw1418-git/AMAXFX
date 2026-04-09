@@ -101,10 +101,16 @@ export default function Login() {
                   "Sign In"
                 )}
               </Button>
-              <div className="text-center">
-                <Link href="/forgot-password" className="text-sm text-white hover:text-white/70 transition-colors">
+              <div className="text-center space-y-2">
+                <Link href="/forgot-password" className="text-sm text-white hover:text-white/70 transition-colors block">
                   Forgot your password?
                 </Link>
+                <p className="text-sm text-slate-400">
+                  Don't have an account?{" "}
+                  <Link href="/register" className="text-white underline underline-offset-2 hover:text-white/80">
+                    Create one
+                  </Link>
+                </p>
               </div>
             </form>
           </CardContent>

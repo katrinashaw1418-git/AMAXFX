@@ -47,6 +47,14 @@ const statusLabel = (s: string) =>
 
 type StepStatus = "completed" | "under_review" | "in_progress" | "pending";
 
+const kycStepDefs: { id: number; title: string; icon: any; uploadId: string | null }[] = [
+  { id: 1, title: "Personal Information",  icon: User,       uploadId: null },
+  { id: 2, title: "Customer Agreement",    icon: BookOpen,   uploadId: null },
+  { id: 3, title: "Identity Verification", icon: Camera,     uploadId: null },
+  { id: 4, title: "Proof of Address",      icon: MapPin,     uploadId: "kyc-upload-4" },
+  { id: 5, title: "Source of Funds",       icon: CreditCard, uploadId: "kyc-upload-5" },
+];
+
 // ── main ─────────────────────────────────────────────────────────────────────
 export default function Compliance() {
   const { toast } = useToast();
@@ -717,8 +725,8 @@ export default function Compliance() {
                 const Icon      = def.icon;
                 const canUpload = def.uploadId && (status === "in_progress" || status === "under_review");
 
-                // ── Step 2 expanded identity verification card ──────────────
-                if (def.id === 2 && status === "in_progress") {
+                // ── Step 3 expanded identity verification card ──────────────
+                if (def.id === 3 && status === "in_progress") {
                   const docLabels = {
                     passport:       { label: "Passport",       sub: "Any country",        hint: "Upload the photo page of your passport. Ensure all four corners are visible and text is legible." },
                     driver_licence: { label: "Driver Licence", sub: "Australian only",    hint: "Upload both the front and back of your Australian driver licence." },
@@ -742,7 +750,7 @@ export default function Compliance() {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-gray-400 font-medium">Step 2 of 5</span>
+                            <span className="text-xs text-gray-400 font-medium">Step {def.id} of 5</span>
                             <h3 className="font-semibold text-gray-900">Document upload &amp; ID verification</h3>
                             <Badge className="bg-yellow-100 text-yellow-800">In Progress</Badge>
                           </div>
@@ -1010,8 +1018,8 @@ export default function Compliance() {
                   );
                 }
 
-                // ── Step 3 expanded Customer Agreement card ─────────────────
-                if (def.id === 3 && status === "in_progress") {
+                // ── Step 2 expanded Customer Agreement card ─────────────────
+                if (def.id === 2 && status === "in_progress") {
                   const agreementSections = [
                     {
                       title: "1. Overview",
@@ -1508,7 +1516,8 @@ I agree to the Customer Agreement, Privacy Policy, and Risk Disclosure.`,
                     Next: {nextStep.title}
                   </h4>
                   <p className="text-sm mb-3 text-blue-700">
-                    {nextStep.id === 3 && "Read and sign the AMAX Customer Agreement — covers terms, privacy, AML/CTF, sanctions, and risk disclosure. Scroll through all sections then type your legal name to sign."}
+                    {nextStep.id === 2 && "Read and sign the AMAX Customer Agreement — covers terms, privacy, AML/CTF, sanctions, and risk disclosure. Scroll through all sections then type your legal name to sign."}
+                    {nextStep.id === 3 && "Complete biometric identity verification using your government-issued ID. This typically takes 1–3 minutes via our AUSTRAC-approved provider."}
                     {nextStep.id === 4 && "Upload a utility bill, bank statement, or government letter dated within the last 3 months showing your full name and address."}
                     {nextStep.id === 5 && "Upload a recent payslip, tax return, or employer letter confirming your income and source of funds. Accepted formats: PDF, JPG, PNG, HEIC — max 10 MB."}
                   </p>

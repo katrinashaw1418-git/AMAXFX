@@ -139,7 +139,7 @@ export default function Landing() {
                   Sign In
                 </Button>
               </Link>
-              <Link href="/login">
+              <Link href="/register">
                 <Button className={`${GREY_BTN} text-sm px-4`}>
                   Sign Up <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
@@ -163,7 +163,7 @@ export default function Landing() {
           Send, receive, exchange, and manage funds across fiat and digital currencies — built with compliance and security at its core.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/login">
+          <Link href="/register">
             <Button size="lg" className={`${GREY_BTN} px-8`}>Get Started</Button>
           </Link>
           <a href="#how-it-works">

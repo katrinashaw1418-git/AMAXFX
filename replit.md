@@ -3,6 +3,22 @@
 ## Overview
 This platform is a comprehensive cross-border wealth management solution designed for high-net-worth individuals, the global Chinese diaspora, and SMEs with international financial needs. It integrates traditional finance and cryptocurrency services, offering dual-channel support for FX and crypto trading, multi-currency wallets, AI-powered wealth advisory, and robust compliance features. The vision is to provide a unified, intelligent, and secure platform for managing diverse global assets.
 
+## Recent Changes (April 2026) — Sign-Up + Compliance Step Fix
+
+### User Registration
+- **`POST /api/auth/register`** — new backend endpoint: validates firstName/lastName/email/password, checks email uniqueness, derives a unique username, bcrypt-hashes the password, creates the user (`kycStatus: "pending"`), creates a default AUD wallet, and returns a JWT token + user object.
+- **`register()` in `auth.tsx`** — added to `AuthProvider` and exported via `AuthContextValue`; auto-logs the new user in after successful registration.
+- **`/register` page** (`client/src/pages/register.tsx`) — clean sign-up form with Google/Apple social buttons (placeholder, coming soon toast) + email/password form. First name, last name, email, password (show/hide toggle, live min-length validation). Redirects to `/compliance` after registration so the KYC wizard starts immediately.
+- **App.tsx** — `/register` route added (public, outside `ProtectedApp`).
+- **Landing page** — "Sign Up" nav button and "Get Started" hero CTA both link to `/register` (were pointing to `/login`).
+- **Login page** — "Don't have an account? Create one" link added under the forgot-password link.
+
+### Compliance page — kycStepDefs restored (step ordering fix)
+- `kycStepDefs` constant (deleted in a previous session) re-added with **correct AUSTRAC order**: 1=Personal Information, 2=Customer Agreement, 3=Identity Verification, 4=Proof of Address, 5=Source of Funds.
+- Expanded card condition swapped back to correct IDs: `def.id === 3` → IDVerify expanded card; `def.id === 2` → Agreement expanded card.
+- Hardcoded "Step 2 of 5" label in the IDVerify card changed to dynamic `Step {def.id} of 5`.
+- Next-step prompt descriptions updated: Agreement is now `nextStep.id === 2`; IDVerify added as `nextStep.id === 3`.
+
 ## Recent Changes (April 2026) — Compliance Page Tab Consolidation + AML/CTF Uplift
 
 ### Compliance page restructure (compliance.tsx)

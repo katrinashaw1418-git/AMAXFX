@@ -831,6 +831,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Register new user
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { firstName, lastName, email, password } = req.body;
+      if (!firstName || !lastName || !email || !password) {
+        return res.status(400).json({ error: "First name, last name, email, and password are required." });
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ error: "Please enter a valid email address." });
+      }
+      if (password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters." });
+      }
+      const existing = await storage.getUserByEmail(email);
+      if (existing) {
+        return res.status(409).json({ error: "An account with this email already exists. Please sign in." });
+      }
+      // Derive a unique username from email
+      const base = email.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "_");
+      let username = base;
+      let attempt = 0;
+      while (await storage.getUserByUsername(username)) {
+        attempt++;
+        username = `${base}${attempt}`;
+      }
+      const hashed = await hashPassword(password);
+      const newUser = await storage.createUser({
+        username,
+        email: email.toLowerCase(),
+        password: hashed,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        kycStatus: "pending",
+        userTier: "standard",
+      });
+      // Create a default AUD wallet
+      await storage.createWallet({ userId: newUser.id, currency: "AUD", balance: "0.00", availableBalance: "0.00", walletType: "fiat" });
+      await writeAuditLog(newUser.id, "register", "user", String(newUser.id), { email, username }, req.ip || null);
+      const token = signToken({ userId: newUser.id, username: newUser.username, email: newUser.email });
+      res.status(201).json({ token, user: { id: newUser.id, username: newUser.username, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName, kycStatus: newUser.kycStatus, userTier: newUser.userTier } });
+    } catch (error: any) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
+      res.status(500).json({ error: "Registration failed. Please try again." });
+    }
+  });
+
   // Current authenticated user
   app.get("/api/auth/me", async (req, res) => {
     try {

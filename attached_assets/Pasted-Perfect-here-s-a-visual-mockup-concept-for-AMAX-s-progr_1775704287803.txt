@@ -1,0 +1,175 @@
+Perfect — here’s a **visual mockup concept** for AMAX’s progressive onboarding + KYC flow, ready for mobile and web. I’ll break it **screen by screen**, showing where each tickbox / KYC statement / verification step sits.
+
+---
+
+## **AMAX Onboarding & KYC Flow – Visual Mockup**
+
+### **Screen 1: Sign Up (Minimal Friction)**
+
+```
+[AMAX Logo]
+Create your account
+
+Email: [_________________]
+Password: [_________________]
+[Sign Up Button]
+[Option: Continue with Google / Apple]
+```
+
+> **Action:** Backend creates user, sends verification email.
+
+---
+
+### **Screen 2: Email Verification**
+
+```
+Check your email 📧
+We sent a verification link to: user@example.com
+[Resend Email] [I’ve Verified]
+```
+
+> **Cannot proceed until verified.**
+
+---
+
+### **Screen 3: Early Risk Profiling**
+
+```
+How will you use your AMAX account? 🛠️
+
+Purpose of Account:
+( ) Remittance
+( ) eWallet
+( ) FX
+( ) Crypto
+
+Products you plan to use:
+[ ] eWallet  [ ] FX  [ ] Crypto  [ ] Remittance
+
+[Continue]
+```
+
+> **Stored for risk-tiering.**
+
+---
+
+### **Screen 4: Personal Information (Pre-KYC)**
+
+```
+Tell us about yourself 📝
+
+Full Legal Name: [_________________]
+Date of Birth: [______/______/______]
+Residential Address: [_________________]
+Country of Tax Residence: [___________]
+Mobile Number: [_________________]
+
+[Continue]
+```
+
+---
+
+### **Screen 5: KYC Statements & Declarations**
+
+```
+⚖️ Compliance & Declarations
+
+Please read and agree to all statements:
+
+[ ] Identity Declaration: All info I provide is true and correct.
+[ ] PEP Declaration: I am not a PEP nor related to a PEP.
+[ ] Sanctions Declaration: I am not on any sanctions list.
+[ ] Source of Funds: Funds are from legitimate sources.
+[ ] Consent to Verification: I consent to AMAX / Veriff / GreenID checks.
+[ ] Ongoing Monitoring: I agree to provide updates if required.
+[ ] Accuracy & Compliance: I understand that false info is a criminal offense.
+
+Type your full legal name to sign: [_________________]
+
+[Submit & Continue]
+```
+
+> **Audit-ready tickboxes + electronic signature.**
+
+---
+
+### **Screen 6: Identity Verification (ID + Selfie)**
+
+```
+Verify Your Identity 📷
+
+Step 1: Upload Government ID
+[Upload Front] [Upload Back]
+
+Step 2: Take a Selfie / Liveness Check
+[Take Photo]
+
+Step 3: Optional Proof of Address
+[Upload Utility Bill / Bank Statement]
+
+[Verify & Continue]
+```
+
+> **Third-party verification integrated (Veriff / GreenID).**
+
+---
+
+### **Screen 7: Conditional Additional KYC**
+
+```
+Additional Information Required ⚠️
+
+[ ] Source of Wealth: __________________
+[ ] Employment / Income Info: ___________
+[ ] Additional Proof of Address: __________
+
+[Submit]
+```
+
+> **Shown only for high-risk accounts or large transactions.**
+
+---
+
+### **Screen 8: Verification Status**
+
+```
+Account Verified ✅
+You can now access all AMAX features.
+
+[Go to Dashboard]
+
+If verification failed, instructions: [Resubmit Documents] [Contact Support]
+```
+
+---
+
+### **Screen 9: Full Access & Ongoing Monitoring**
+
+```
+Welcome to AMAX 🎉
+- eWallet balance
+- FX rates
+- Crypto exchange
+- Remittance
+
+⚠️ Your account is monitored continuously for compliance.
+```
+
+> **Backend maintains full AUSTRAC-compliant logs.**
+
+---
+
+## **Key Features of This Flow**
+
+1. **Progressive Onboarding:** Minimal upfront friction.
+2. **Tickbox KYC Statements:** Explicit consent + signature.
+3. **Third-Party Verification:** ID, selfie, optional proof of address.
+4. **Conditional Requests:** Only ask additional info if risk flagged.
+5. **AUSTRAC-Ready:** Full logging of timestamp, IP, and provider metadata.
+6. **Mobile-Optimized:** Especially ID capture and selfies.
+
+---
+
+I can also **turn this into a visual diagram** showing **flow arrows, conditional paths, and KYC checkpoints**, suitable for **handoff to designers and developers**.
+
+Do you want me to create that diagram next?
