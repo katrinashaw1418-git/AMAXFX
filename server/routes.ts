@@ -2507,25 +2507,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .for("update");
         if (!toWallet) throw Object.assign(new Error("Target wallet not found"), { status: 404 });
 
+        // Debit the FROM wallet immediately (funds are reserved for settlement).
         await tx.update(wallets)
           .set({ balance: new Decimal(fromWallet.balance).minus(amount).toFixed(8), availableBalance: available.minus(amount).toFixed(8) })
           .where(eq(wallets.id, fromWallet.id));
 
-        await tx.update(wallets)
-          .set({ balance: new Decimal(toWallet.balance).plus(netConverted).toFixed(8), availableBalance: new Decimal(toWallet.availableBalance).plus(netConverted).toFixed(8) })
-          .where(eq(wallets.id, toWallet.id));
+        // DO NOT credit the TO wallet here. Non-custodial compliance requires that
+        // the TO wallet is only credited after external confirmation:
+        //   — fiat→crypto: credited on Independent Reserve on-chain delivery webhook
+        //   — fiat→fiat:   credited on Airwallex settlement webhook (post-integration)
+        // The TO wallet record is held for validation only; it is not updated here.
 
-        // DCE delivery model: for fiat→crypto, the crypto is delivered to the user's
-        // external wallet. The destinationWallet is recorded for AUSTRAC audit trail
-        // and Travel Rule compliance. Settlement status = pending_delivery until
-        // blockchain delivery is confirmed.
         const isFiatToCrypto = !CRYPTO_CURRENCIES.includes(fromCurrency) && CRYPTO_CURRENCIES.includes(toCurrency);
         [txRecord] = await tx.insert(transactions).values({
           userId, type: "exchange", fromCurrency, toCurrency,
           amount: amount.toFixed(8), fee: fee.toFixed(8),
           exchangeRate: exchangeRate.toFixed(8),
-          status: isFiatToCrypto ? "pending" : "completed",
-          settlementStatus: isFiatToCrypto ? "pending_delivery" : "internal_only",
+          // All exchanges are pending until external partner confirms settlement.
+          status: "pending",
+          settlementStatus: isFiatToCrypto ? "pending_delivery" : "awaiting_airwallex",
           description: isFiatToCrypto
             ? [
                 `${fromCurrency} → ${toCurrency} Exchange — Delivery via Independent Reserve`,
@@ -4933,8 +4933,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/admin/pending-exchanges
+  // Returns all pending exchange transactions (fiat→crypto and fiat→fiat awaiting settlement).
+  app.get("/api/admin/pending-exchanges", async (req: Request, res: any) => {
+    if (!requireAdminKey(req, res)) return;
+    try {
+      const rows = await db.select({
+        id: transactions.id,
+        userId: transactions.userId,
+        fromCurrency: transactions.fromCurrency,
+        toCurrency: transactions.toCurrency,
+        amount: transactions.amount,
+        fee: transactions.fee,
+        exchangeRate: transactions.exchangeRate,
+        settlementStatus: transactions.settlementStatus,
+        description: transactions.description,
+        createdAt: transactions.createdAt,
+      }).from(transactions)
+        .where(and(eq(transactions.type, "exchange"), eq(transactions.status, "pending")))
+        .orderBy(transactions.createdAt);
+      res.json(rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to fetch pending exchanges" });
+    }
+  });
+
+  // POST /api/admin/transactions/:id/complete-exchange
+  // Completes a pending exchange by crediting the TO wallet.
+  // Called manually by admin (or future Airwallex/IR webhook) after external settlement confirmed.
+  app.post("/api/admin/transactions/:id/complete-exchange", async (req: Request, res: any) => {
+    if (!requireAdminKey(req, res)) return;
+    try {
+      const txId = Number(req.params.id);
+      const [txRow] = await db.select().from(transactions).where(eq(transactions.id, txId));
+      if (!txRow) return res.status(404).json({ error: "Transaction not found" });
+      if (txRow.type !== "exchange") return res.status(400).json({ error: "Not an exchange transaction" });
+      if (txRow.status === "completed") return res.status(409).json({ error: "Already completed" });
+      if (txRow.status === "failed") return res.status(409).json({ error: "Cannot complete a failed transaction" });
+
+      const toCurrency = txRow.toCurrency!;
+      // Recalculate net converted: amount × rate − fee (all stored in transaction record)
+      const netConverted = new Decimal(txRow.amount)
+        .mul(new Decimal(txRow.exchangeRate!))
+        .minus(new Decimal(txRow.fee ?? "0"));
+
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+
+        // Ensure TO wallet exists
+        const [toWallet] = await tx.select().from(wallets)
+          .where(and(eq(wallets.userId, txRow.userId!), eq(wallets.currency, toCurrency)))
+          .for("update");
+
+        if (!toWallet) {
+          // Create it if it does not exist yet (e.g. first-ever crypto receipt)
+          await tx.insert(wallets).values({
+            userId: txRow.userId!, currency: toCurrency,
+            balance: netConverted.toFixed(8), availableBalance: netConverted.toFixed(8),
+            walletType: CRYPTO_CURRENCIES.includes(toCurrency) ? "crypto" : "fiat",
+          });
+        } else {
+          await tx.update(wallets).set({
+            balance: new Decimal(toWallet.balance).plus(netConverted).toFixed(8),
+            availableBalance: new Decimal(toWallet.availableBalance).plus(netConverted).toFixed(8),
+          }).where(eq(wallets.id, toWallet.id));
+        }
+
+        await tx.update(transactions).set({ status: "completed", settlementStatus: "settled" })
+          .where(eq(transactions.id, txId));
+      });
+
+      res.json({
+        success: true,
+        message: `Exchange completed — ${netConverted.toFixed(8)} ${toCurrency} credited to user ${txRow.userId}`,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to complete exchange" });
+    }
+  });
+
   // POST /api/admin/transactions/:id/fail
-  // Marks a transaction as failed. Refunds balance for failed withdrawals.
+  // Marks a transaction as failed. Refunds balance for failed withdrawals and exchanges.
   app.post("/api/admin/transactions/:id/fail", async (req: Request, res: any) => {
     if (!requireAdminKey(req, res)) return;
     try {
@@ -4958,11 +5037,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
               availableBalance: new Decimal(wallet.availableBalance).plus(refundAmount).toFixed(8),
             }).where(eq(wallets.id, wallet.id));
           }
+        } else if (txRow.type === "exchange") {
+          // Refund exchange: both balance AND availableBalance were debited on the FROM wallet.
+          // Restore both to return the funds to the user.
+          const refundAmount = new Decimal(txRow.amount);
+          const currency = txRow.fromCurrency!;
+          const [wallet] = await tx.select().from(wallets)
+            .where(and(eq(wallets.userId, txRow.userId!), eq(wallets.currency, currency)))
+            .for("update");
+          if (wallet) {
+            await tx.update(wallets).set({
+              balance: new Decimal(wallet.balance).plus(refundAmount).toFixed(8),
+              availableBalance: new Decimal(wallet.availableBalance).plus(refundAmount).toFixed(8),
+            }).where(eq(wallets.id, wallet.id));
+          }
         }
         await tx.update(transactions).set({ status: "failed", settlementStatus: "failed" })
           .where(eq(transactions.id, txId));
       });
-      res.json({ success: true, message: txRow.type === "withdrawal" ? "Withdrawal failed — balance refunded" : "Transaction marked failed" });
+      res.json({
+        success: true,
+        message: txRow.type === "withdrawal"
+          ? "Withdrawal failed — available balance refunded"
+          : txRow.type === "exchange"
+          ? "Exchange failed — FROM balance restored"
+          : "Transaction marked failed",
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message ?? "Failed to fail transaction" });
     }

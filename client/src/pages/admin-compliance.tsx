@@ -73,6 +73,34 @@ export default function AdminCompliance() {
     setAuthed(true);
   }
 
+  const { data: pendingExchanges = [], refetch: refetchExchanges } = useQuery<any[]>({
+    queryKey: ["/api/admin/pending-exchanges"],
+    enabled: authed,
+    queryFn: () =>
+      fetch("/api/admin/pending-exchanges", { headers: adminHeaders() }).then(r => r.json()),
+    refetchInterval: 30000,
+  });
+
+  const completeExchangeMutation = useMutation({
+    mutationFn: (txId: number) =>
+      fetch(`/api/admin/transactions/${txId}/complete-exchange`, { method: "POST", headers: adminHeaders() }).then(r => r.json()),
+    onSuccess: (data) => {
+      toast({ title: "Exchange Settled", description: data.message });
+      refetchExchanges();
+    },
+    onError: () => toast({ title: "Error", description: "Failed to complete exchange", variant: "destructive" }),
+  });
+
+  const failExchangeMutation = useMutation({
+    mutationFn: (txId: number) =>
+      fetch(`/api/admin/transactions/${txId}/fail`, { method: "POST", headers: adminHeaders() }).then(r => r.json()),
+    onSuccess: (data) => {
+      toast({ title: "Exchange Failed", description: data.message });
+      refetchExchanges();
+    },
+    onError: () => toast({ title: "Error", description: "Failed to fail exchange", variant: "destructive" }),
+  });
+
   const { data: users = [], isLoading: usersLoading, refetch: refetchUsers } = useQuery<any[]>({
     queryKey: ["/api/admin/users"],
     enabled: authed,
@@ -263,6 +291,9 @@ export default function AdminCompliance() {
             </TabsTrigger>
             <TabsTrigger value="alerts">
               <AlertTriangle className="w-4 h-4 mr-1" /> AML Alerts ({alerts.filter((a: any) => a.status === "open").length})
+            </TabsTrigger>
+            <TabsTrigger value="settlements">
+              <Clock className="w-4 h-4 mr-1" /> Pending Settlements {pendingExchanges.length > 0 && <span className="ml-1 px-1.5 py-0.5 text-xs bg-amber-500 text-white rounded-full">{pendingExchanges.length}</span>}
             </TabsTrigger>
             <TabsTrigger value="actions">
               <FileText className="w-4 h-4 mr-1" /> Action Log
@@ -481,6 +512,85 @@ export default function AdminCompliance() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Pending Settlements Tab */}
+          <TabsContent value="settlements">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-500" />
+                  Pending Exchange Settlements
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Exchanges awaiting external confirmation. Fiat→crypto: confirm after Independent Reserve on-chain delivery.
+                  Fiat→fiat: confirm after Airwallex settlement. Completing credits the TO wallet; failing refunds the FROM wallet.
+                </p>
+              </CardHeader>
+              <CardContent className="p-0">
+                {pendingExchanges.length === 0 ? (
+                  <div className="p-6 text-center text-muted-foreground flex flex-col items-center gap-2">
+                    <CheckCircle className="w-8 h-8 text-green-400" />
+                    <p className="text-sm font-medium">No pending settlements</p>
+                    <p className="text-xs">All exchanges have been confirmed by external partners.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {pendingExchanges.map((ex: any) => {
+                      const netConverted = ex.exchangeRate && ex.amount
+                        ? (parseFloat(ex.amount) * parseFloat(ex.exchangeRate) - parseFloat(ex.fee ?? "0")).toLocaleString(undefined, { maximumFractionDigits: 8 })
+                        : "—";
+                      const label = ex.settlementStatus === "pending_delivery"
+                        ? "Awaiting IR on-chain delivery"
+                        : "Awaiting Airwallex settlement";
+                      const labelColor = ex.settlementStatus === "pending_delivery"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-amber-100 text-amber-700";
+                      return (
+                        <div key={ex.id} className="p-4 flex items-center justify-between gap-4 flex-wrap">
+                          <div className="space-y-1 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-mono text-xs text-muted-foreground">TX #{ex.id}</span>
+                              <span className="text-xs text-muted-foreground">User #{ex.userId}</span>
+                              <Badge className={`text-xs ${labelColor}`}>{label}</Badge>
+                            </div>
+                            <p className="text-sm font-semibold">
+                              {parseFloat(ex.amount).toLocaleString(undefined, { maximumFractionDigits: 8 })} {ex.fromCurrency}
+                              {" → "}
+                              {netConverted} {ex.toCurrency}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Rate: 1 {ex.fromCurrency} = {parseFloat(ex.exchangeRate ?? "0").toLocaleString(undefined, { maximumFractionDigits: 8 })} {ex.toCurrency}
+                              {" · "}
+                              {ex.createdAt ? new Date(ex.createdAt).toLocaleString() : ""}
+                            </p>
+                          </div>
+                          <div className="flex gap-2 flex-shrink-0">
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 text-white h-8 text-xs"
+                              onClick={() => completeExchangeMutation.mutate(ex.id)}
+                              disabled={completeExchangeMutation.isPending || failExchangeMutation.isPending}
+                            >
+                              <CheckCircle className="w-3.5 h-3.5 mr-1" /> Complete
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="h-8 text-xs"
+                              onClick={() => failExchangeMutation.mutate(ex.id)}
+                              disabled={completeExchangeMutation.isPending || failExchangeMutation.isPending}
+                            >
+                              <XCircle className="w-3.5 h-3.5 mr-1" /> Fail & Refund
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
