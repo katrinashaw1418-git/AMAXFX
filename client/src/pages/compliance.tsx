@@ -19,20 +19,15 @@ import {
   Clock,
   AlertTriangle,
   Upload,
-  Download,
-  Eye,
   FileText,
   User,
   MapPin,
   CreditCard,
   Building,
-  ChevronRight,
   RefreshCw,
   Lock,
   Camera,
   BookOpen,
-  Briefcase,
-  Home,
   PenLine,
   FileCheck,
 } from "lucide-react";
@@ -69,8 +64,6 @@ export default function Compliance() {
   const [riskGoals,      setRiskGoals]      = useState("");
   const [riskSubmitted,  setRiskSubmitted]  = useState(false);
 
-  // documents-tab uploads (docId → filename)
-  const [docUploads, setDocUploads] = useState<Record<number, string>>({});
 
   // ── Step 1: Personal Info (KYC Profile) ───────────────────────────────────
   const [piiFullName,        setPiiFullName]        = useState("");
@@ -103,10 +96,6 @@ export default function Compliance() {
   const [docType,          setDocType]          = useState<"passport" | "driver_licence" | "national_id">("passport");
   const [docExpiry,        setDocExpiry]        = useState("");           // YYYY-MM-DD from date input
   const [docIssueCountry,  setDocIssueCountry]  = useState("");           // issuing country (passport risk scoring)
-  const [idFrontFile,      setIdFrontFile]      = useState<string | null>(null);
-  const [idBackFile,       setIdBackFile]       = useState<string | null>(null);
-  const [selfieFile,       setSelfieFile]       = useState<string | null>(null);
-  const [idVerifyAnimStep, setIdVerifyAnimStep] = useState(0);   // 0=idle 1-4=running 5=done
   const [idVerifyComplete, setIdVerifyComplete] = useState(false);
   const [addrPoaFile,      setAddrPoaFile]      = useState<string | null>(null); // Step 3 proof of address
   // Veriff integration state
@@ -277,21 +266,9 @@ export default function Compliance() {
   const profileDone = kycProfile?.kycProfileComplete ?? false;
   const stepStatuses = useMemo((): Record<number, StepStatus> => {
     const s2: StepStatus = idVerifyComplete ? "completed" : "in_progress";
-    const s3: StepStatus = !profileDone
-      ? "pending"
-      : agreementSigned
-      ? "completed"
-      : "in_progress";
-    const s4: StepStatus = !agreementSigned
-      ? "pending"
-      : stepFiles[4]
-      ? "under_review"
-      : "in_progress";
-    const s5: StepStatus = !stepFiles[4]
-      ? "pending"
-      : riskSubmitted || stepFiles[5]
-      ? "completed"
-      : "in_progress";
+    const s3: StepStatus = !profileDone ? "pending" : agreementSigned ? "completed" : "in_progress";
+    const s4: StepStatus = !profileDone ? "pending" : stepFiles[4] ? "under_review" : "in_progress";
+    const s5: StepStatus = !profileDone ? "pending" : (riskSubmitted || stepFiles[5]) ? "completed" : "in_progress";
     return { 2: s2, 3: s3, 4: s4, 5: s5 };
   }, [idVerifyComplete, profileDone, agreementSigned, stepFiles, riskSubmitted]);
 
@@ -322,11 +299,13 @@ export default function Compliance() {
 
   // derive doc verification %
   const docPct = useMemo(() => {
-    let done = 2; // passport (approved) + utility bill (under_review) = 2 of 4
-    if (stepFiles[4] || docUploads[4]) done = Math.min(4, done + 1);
-    if (stepFiles[5] || docUploads[5]) done = Math.min(4, done + 1);
+    let done = 0;
+    if (idVerifyComplete)  done += 1;
+    if (agreementSigned)   done += 1;
+    if (stepFiles[4])      done += 1;
+    if (stepFiles[5] || riskSubmitted) done += 1;
     return Math.round((done / 4) * 100);
-  }, [stepFiles, docUploads]);
+  }, [idVerifyComplete, agreementSigned, stepFiles, riskSubmitted]);
 
   const complianceMetrics = useMemo(() => [
     {
@@ -402,45 +381,10 @@ export default function Compliance() {
     e.target.value = "";
   }
 
-  function handleDocTabUpload(docId: number, docName: string, e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setDocUploads(prev => ({ ...prev, [docId]: file.name }));
-    toast({
-      title: "Document Submitted",
-      description: `${file.name} submitted for ${docName}. Review takes 1–2 business days.`,
-    });
-    e.target.value = "";
-  }
-
-  function handleGeneralUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    toast({
-      title: "Document Received",
-      description: `${file.name} uploaded. Our team will categorise and review it shortly.`,
-    });
-    e.target.value = "";
-  }
-
-  function handleView(docName: string) {
-    toast({
-      title: "Document Viewer",
-      description: `Contact info@amaxglobal.com.au to retrieve a copy of ${docName}.`,
-    });
-  }
-
-  function handleDownload(docName: string) {
-    const email = user?.email ?? "your registered email address";
-    toast({
-      title: "Download Requested",
-      description: `${docName} will be sent to ${email} within 24 hours.`,
-    });
-  }
 
   function handleIdVerifySubmit() {
     if (!docExpiry) {
-      toast({ title: "Expiry Date Required", description: "Please enter your document's expiry date.", variant: "destructive" });
+      toast({ title: "Expiry Date Required", description: "Please enter your document's expiry date before starting verification.", variant: "destructive" });
       return;
     }
     if (new Date(docExpiry) <= new Date()) {
@@ -449,14 +393,6 @@ export default function Compliance() {
     }
     if (docType === "passport" && !docIssueCountry) {
       toast({ title: "Issuing Country Required", description: "Please enter the country that issued your passport.", variant: "destructive" });
-      return;
-    }
-    if (!idFrontFile) {
-      toast({ title: "Document Required", description: "Please upload your identity document before submitting.", variant: "destructive" });
-      return;
-    }
-    if (!selfieFile) {
-      toast({ title: "Selfie Required", description: "A biometric selfie is required for identity matching under AUSTRAC electronic verification standards.", variant: "destructive" });
       return;
     }
     setVerifyMode("loading");
@@ -479,13 +415,6 @@ export default function Compliance() {
     });
   }
 
-  // ── document records (merged with any step/tab-uploads) ────────────────────
-  const documents = [
-    { id: 1, name: "Passport / Government ID", status: "approved"     as const, uploadDate: "2024-01-10", size: "2.4 MB" },
-    { id: 2, name: "Biometric Selfie",          status: "under_review" as const, uploadDate: "2024-01-12", size: "1.8 MB" },
-    { id: 4, name: "Proof of Address",          status: (stepFiles[4] || docUploads[4] ? "under_review" : "pending") as any, uploadDate: "", size: "" },
-    { id: 5, name: "Source of Funds",           status: (stepFiles[5] || docUploads[5] ? "under_review" : "pending") as any, uploadDate: "", size: "" },
-  ];
 
   // next step prompt — uses currentStepId so sequential steps 3→5 take priority
   // over step 2 (identity) which runs asynchronously in the background.
@@ -962,106 +891,52 @@ export default function Compliance() {
                             </div>
                           </div>
 
-                          {/* Document upload zone(s) */}
+                          {/* Veriff info panel */}
                           <div className="bg-white border rounded-xl p-4 space-y-3">
-                            <h4 className="font-semibold text-sm">Upload your document</h4>
-                            <p className="text-xs text-muted-foreground">JPG, PNG or PDF — max 10 MB per file</p>
-                            <div className={`grid gap-3 ${needsBack ? "grid-cols-2" : "grid-cols-1"}`}>
-                              {/* Front / single */}
-                              <label htmlFor="id-front" className="cursor-pointer block">
-                                <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${
-                                  idFrontFile ? "border-green-400 bg-green-50" : "border-gray-300 hover:border-blue-400"
-                                }`}>
-                                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                  {idFrontFile ? (
-                                    <>
-                                      <p className="text-sm font-medium text-green-700">✓ {idFrontFile}</p>
-                                      <p className="text-xs text-green-600">Tap to replace</p>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <p className="text-sm font-medium">Click to upload or drag &amp; drop</p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {needsBack ? `${dl.label} — front` : `${dl.label} photo page`}
-                                      </p>
-                                    </>
-                                  )}
-                                </div>
-                                <input id="id-front" type="file" accept=".pdf,.jpg,.jpeg,.png,.heic" className="hidden"
-                                  onChange={e => { const f = e.target.files?.[0]; if (f) { setIdFrontFile(f.name); e.target.value = ""; } }} />
-                              </label>
-                              {/* Back (driver licence / national ID only) */}
-                              {needsBack && (
-                                <label htmlFor="id-back" className="cursor-pointer block">
-                                  <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${
-                                    idBackFile ? "border-green-400 bg-green-50" : "border-gray-300 hover:border-blue-400"
-                                  }`}>
-                                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                    {idBackFile ? (
-                                      <>
-                                        <p className="text-sm font-medium text-green-700">✓ {idBackFile}</p>
-                                        <p className="text-xs text-green-600">Tap to replace</p>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <p className="text-sm font-medium">Click to upload or drag &amp; drop</p>
-                                        <p className="text-xs text-muted-foreground">{dl.label} — back</p>
-                                      </>
-                                    )}
-                                  </div>
-                                  <input id="id-back" type="file" accept=".pdf,.jpg,.jpeg,.png,.heic" className="hidden"
-                                    onChange={e => { const f = e.target.files?.[0]; if (f) { setIdBackFile(f.name); e.target.value = ""; } }} />
-                                </label>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Biometric selfie */}
-                          <div className="bg-white border rounded-xl p-4 space-y-3">
-                            <h4 className="font-semibold text-sm">Biometric selfie</h4>
-                            <p className="text-xs text-muted-foreground">A live photo to match your face against your document</p>
-                            <label htmlFor="id-selfie" className="cursor-pointer block">
-                              <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${
-                                selfieFile ? "border-green-400 bg-green-50" : "border-gray-300 hover:border-blue-400"
-                              }`}>
-                                <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                {selfieFile ? (
-                                  <>
-                                    <p className="text-sm font-medium text-green-700">✓ {selfieFile}</p>
-                                    <p className="text-xs text-green-600">Tap to replace</p>
-                                  </>
-                                ) : (
-                                  <>
-                                    <p className="text-sm font-medium">Take or upload a selfie</p>
-                                    <p className="text-xs text-muted-foreground">Face clearly visible, no sunglasses, good lighting</p>
-                                  </>
-                                )}
+                            <div className="flex items-start gap-3">
+                              <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <h4 className="font-semibold text-sm text-gray-900">Secure Biometric Verification via Veriff</h4>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Clicking the button below opens a secure Veriff session where you will:
+                                </p>
+                                <ul className="text-xs text-gray-600 mt-1.5 space-y-0.5 pl-2">
+                                  <li>• Take a photo of your {dl.label} (both sides if required)</li>
+                                  <li>• Complete a live biometric selfie check</li>
+                                  <li>• Receive an instant result — usually under 2 minutes</li>
+                                </ul>
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  Veriff is AUSTRAC-approved and compliant with the Privacy Act 1988. Your biometric data is never stored by AMAX Global.
+                                </p>
                               </div>
-                              <input id="id-selfie" type="file" accept=".jpg,.jpeg,.png,.heic" capture="user" className="hidden"
-                                onChange={e => { const f = e.target.files?.[0]; if (f) { setSelfieFile(f.name); e.target.value = ""; } }} />
-                            </label>
-                            <div className="bg-gray-50 rounded-lg p-3 space-y-1">
-                              <p className="text-xs font-semibold text-gray-700">Tips for a successful selfie</p>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 text-xs text-center">
                               {[
-                                "Look directly at the camera in a well-lit space",
-                                "Remove glasses, hats, or anything covering your face",
-                                "Plain background preferred — no filters",
-                                "Your face should fill at least 70% of the frame",
-                              ].map(tip => (
-                                <p key={tip} className="text-xs text-gray-600">• {tip}</p>
+                                { icon: "📷", label: "Scan document" },
+                                { icon: "🤳", label: "Live selfie" },
+                                { icon: "✅", label: "Instant result" },
+                              ].map(step => (
+                                <div key={step.label} className="bg-blue-50 rounded-lg py-2">
+                                  <div className="text-base mb-0.5">{step.icon}</div>
+                                  <div className="text-gray-700 font-medium">{step.label}</div>
+                                </div>
                               ))}
                             </div>
                           </div>
 
                           <Button
-                            className="w-full bg-gray-900 hover:bg-gray-800 text-white"
+                            className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
                             disabled={verifyMode === "loading"}
                             onClick={handleIdVerifySubmit}
                           >
-                            {verifyMode === "loading" ? "Starting verification…" : "Submit for verification"}
+                            {verifyMode === "loading" ? (
+                              <span className="flex items-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Connecting to Veriff…</span>
+                            ) : (
+                              <span className="flex items-center gap-2"><Camera className="w-4 h-4" /> Start Identity Verification with Veriff →</span>
+                            )}
                           </Button>
                           <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-                            <Lock className="w-3 h-3" /> Your documents are encrypted in transit and stored securely by our KYC provider in accordance with the Australian Privacy Act 1988.
+                            <Lock className="w-3 h-3" /> Encrypted · AUSTRAC-compliant · Privacy Act 1988
                           </p>
                         </div>
                       )}
@@ -1199,7 +1074,7 @@ export default function Compliance() {
                               If the problem persists, contact our compliance team at{" "}
                               <a href="mailto:info@amaxglobal.com.au" className="underline font-medium">info@amaxglobal.com.au</a>.
                             </p>
-                            <Button className="w-full bg-gray-900 hover:bg-gray-800 text-white" onClick={() => { setVerifyMode("idle"); setIdFrontFile(null); setIdBackFile(null); setSelfieFile(null); }}>
+                            <Button className="w-full bg-gray-900 hover:bg-gray-800 text-white" onClick={() => { setVerifyMode("idle"); setDocExpiry(""); setDocIssueCountry(""); }}>
                               Try Again with Better Documents
                             </Button>
                           </div>
@@ -1707,65 +1582,6 @@ Record Keeping: AMAX Global is required to retain transaction records for 7 year
               </CardContent>
             </Card>
           )}
-          {/* ── Inline Documents Section ── */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <FileText className="w-4 h-4 text-blue-600" /> Document Vault
-              </CardTitle>
-              <p className="text-sm text-gray-500">PDF, JPG, PNG, HEIC — max 10 MB · Review 1–2 business days</p>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {documents.map((doc) => (
-                <div key={doc.id} className="flex items-center justify-between p-3 border rounded-xl gap-3 bg-gray-50/50">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      doc.status === "approved" ? "bg-green-100" : doc.status === "under_review" ? "bg-blue-100" : "bg-gray-100"
-                    }`}>
-                      <FileText className={`w-4 h-4 ${
-                        doc.status === "approved" ? "text-green-600" : doc.status === "under_review" ? "text-blue-600" : "text-gray-400"
-                      }`} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
-                      <div className="flex items-center gap-2 text-xs text-gray-400 flex-wrap">
-                        {doc.uploadDate && <span>Uploaded {new Date(doc.uploadDate).toLocaleDateString("en-AU")}</span>}
-                        {doc.size && <span>{doc.size}</span>}
-                        {docUploads[doc.id] && <span className="text-blue-600">✓ {docUploads[doc.id]}</span>}
-                        {doc.id === 4 && stepFiles[4] && <span className="text-blue-600">✓ {stepFiles[4]}</span>}
-                        {doc.id === 5 && stepFiles[5] && <span className="text-blue-600">✓ {stepFiles[5]}</span>}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <Badge className={statusColor(doc.status)}>{statusLabel(doc.status)}</Badge>
-                    {doc.status === "pending" ? (
-                      <label htmlFor={`doc-upload-inline-${doc.id}`} className="cursor-pointer">
-                        <Button size="sm" variant="outline" asChild>
-                          <span><Upload className="w-3 h-3 mr-1" />Upload</span>
-                        </Button>
-                        <input id={`doc-upload-inline-${doc.id}`} type="file" accept=".pdf,.jpg,.jpeg,.png,.heic" className="hidden"
-                          onChange={(e) => handleDocTabUpload(doc.id, doc.name, e)} />
-                      </label>
-                    ) : (
-                      <Button size="sm" variant="ghost" onClick={() => handleView(doc.name)}>
-                        <Eye className="w-3 h-3 mr-1" />View
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {/* Additional upload */}
-              <label htmlFor="doc-general-inline" className="cursor-pointer block">
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:border-blue-300 transition-colors">
-                  <Upload className="w-5 h-5 text-gray-300 mx-auto mb-1" />
-                  <p className="text-xs text-gray-500 font-medium">Upload additional document</p>
-                  <p className="text-xs text-gray-400">Our compliance team will categorise and review it</p>
-                </div>
-                <input id="doc-general-inline" type="file" accept=".pdf,.jpg,.jpeg,.png,.heic" className="hidden" onChange={handleGeneralUpload} />
-              </label>
-            </CardContent>
-          </Card>
 
           {/* ── Inline Risk Assessment Section ── */}
           <Card>
