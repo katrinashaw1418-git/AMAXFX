@@ -573,130 +573,181 @@ export default function Compliance() {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs text-gray-400 font-medium">Step 1</span>
+                  <span className="text-xs text-gray-400 font-medium">Step 1 of 5</span>
                   <h3 className="font-semibold text-gray-900">Personal Information</h3>
                   <Badge className="bg-green-100 text-green-800">Completed</Badge>
                 </div>
                 <p className="text-sm text-gray-600">
-                  Your identity details have been recorded: {kycProfile.fullLegalName}
-                  {kycProfile.nationality ? ` · ${kycProfile.nationality}` : ""}.
-                  Your KYC profile is complete — proceed to document upload below.
+                  {kycProfile.fullLegalName}{kycProfile.nationality ? ` · ${kycProfile.nationality}` : ""} · Profile saved and verified.
                 </p>
               </div>
               <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
             </div>
           ) : (
-            <Card className="border-2 border-blue-400">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
+            <div className="rounded-2xl border-2 border-blue-300 bg-white overflow-hidden shadow-sm">
+
+              {/* Card top bar */}
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                      <User className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-white font-semibold text-sm">Step 1 of 5 — Personal Information</p>
+                      <p className="text-blue-200 text-xs mt-0.5">Takes about 3 minutes · Required by AUSTRAC</p>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-base">Step 1 — Personal Information</CardTitle>
-                    <p className="text-xs text-blue-700 mt-0.5">Required before document upload — AML/CTF Act 2006, AUSTRAC CDD requirements</p>
+                  <div className="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1">
+                    <Lock className="w-3 h-3 text-blue-200" />
+                    <span className="text-blue-200 text-xs font-medium">Encrypted</span>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <Label htmlFor="pii-fullname" className="text-sm font-medium">
-                      Full Legal Name <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="pii-fullname"
-                      placeholder="As it appears on your passport"
-                      value={piiFullName}
-                      onChange={e => setPiiFullName(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">Must match your government-issued ID exactly</p>
+                {/* Mini step dots */}
+                <div className="flex items-center gap-1.5 mt-3">
+                  {[1,2,3,4,5].map(n => (
+                    <div key={n} className={`h-1.5 rounded-full transition-all ${n === 1 ? "bg-white flex-1" : "bg-white/30 w-6"}`} />
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-5 space-y-5">
+
+                {/* Section A — Identity */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <span className="text-blue-700 text-xs font-bold">A</span>
+                    </div>
+                    <h4 className="text-sm font-semibold text-gray-800">Your Identity</h4>
+                    <span className="text-xs text-gray-400 ml-auto">Must match your ID exactly</span>
                   </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="pii-dob" className="text-sm font-medium">
-                      Date of Birth <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="pii-dob"
-                      type="date"
-                      value={piiDob}
-                      onChange={e => setPiiDob(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="pii-nationality" className="text-sm font-medium">
-                      Country of Nationality <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="pii-nationality"
-                      placeholder="e.g. Australia, China, USA"
-                      value={piiNationality}
-                      onChange={e => setPiiNationality(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="pii-phone" className="text-sm font-medium">
-                      Mobile Phone Number <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="pii-phone"
-                      type="tel"
-                      placeholder="+61 400 000 000"
-                      value={piiPhone}
-                      onChange={e => setPiiPhone(e.target.value)}
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="pii-fullname" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Full Legal Name <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="pii-fullname"
+                        placeholder="As shown on your passport or driver licence"
+                        value={piiFullName}
+                        onChange={e => setPiiFullName(e.target.value)}
+                        className="h-10 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="pii-dob" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Date of Birth <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="pii-dob"
+                        type="date"
+                        value={piiDob}
+                        onChange={e => setPiiDob(e.target.value)}
+                        className="h-10 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="pii-nationality" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Country of Nationality <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="pii-nationality"
+                        placeholder="e.g. Australia"
+                        value={piiNationality}
+                        onChange={e => setPiiNationality(e.target.value)}
+                        className="h-10 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="pii-phone" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Mobile Number <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="pii-phone"
+                        type="tel"
+                        placeholder="+61 400 000 000"
+                        value={piiPhone}
+                        onChange={e => setPiiPhone(e.target.value)}
+                        className="h-10 text-sm"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Residential Address */}
-                <div className="rounded-lg border p-4 space-y-3 bg-slate-50">
-                  <div className="flex items-center gap-2">
-                    <Home className="w-4 h-4 text-blue-600" />
-                    <h4 className="text-sm font-semibold">Residential Address <span className="text-red-500">*</span></h4>
-                  </div>
-                  <p className="text-xs text-muted-foreground -mt-1">No PO Box — required for customer identification under AUSTRAC CDD rules</p>
-                  <div className="space-y-1">
-                    <Label htmlFor="pii-addr" className="text-sm">Street Address <span className="text-red-500">*</span></Label>
-                    <Input id="pii-addr" placeholder="e.g. 12 King Street" value={piiAddress} onChange={e => setPiiAddress(e.target.value)} />
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="space-y-1 col-span-2 md:col-span-2">
-                      <Label htmlFor="pii-suburb" className="text-sm">Suburb / City <span className="text-red-500">*</span></Label>
-                      <Input id="pii-suburb" placeholder="e.g. Rockdale" value={piiSuburb} onChange={e => setPiiSuburb(e.target.value)} />
+                <div className="border-t border-gray-100" />
+
+                {/* Section B — Residential Address */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <span className="text-blue-700 text-xs font-bold">B</span>
                     </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="pii-state" className="text-sm">State <span className="text-red-500">*</span></Label>
-                      <Select value={piiStateRegion} onValueChange={setPiiStateRegion}>
-                        <SelectTrigger id="pii-state"><SelectValue placeholder="State" /></SelectTrigger>
-                        <SelectContent>
-                          {["NSW","VIC","QLD","WA","SA","TAS","ACT","NT"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="pii-postcode" className="text-sm">Postcode <span className="text-red-500">*</span></Label>
-                      <Input id="pii-postcode" placeholder="2216" maxLength={8} value={piiPostcode} onChange={e => setPiiPostcode(e.target.value)} />
-                    </div>
+                    <h4 className="text-sm font-semibold text-gray-800">Residential Address</h4>
+                    <span className="text-xs text-gray-400 ml-auto">No PO Box</span>
                   </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="pii-addrcountry" className="text-sm">Country</Label>
-                    <Input id="pii-addrcountry" placeholder="Australia" value={piiAddrCountry} onChange={e => setPiiAddrCountry(e.target.value)} />
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="pii-addr" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Street Address <span className="text-red-500">*</span>
+                      </Label>
+                      <Input id="pii-addr" placeholder="e.g. 12 King Street" value={piiAddress} onChange={e => setPiiAddress(e.target.value)} className="h-10 text-sm" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                        <Label htmlFor="pii-suburb" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                          Suburb / City <span className="text-red-500">*</span>
+                        </Label>
+                        <Input id="pii-suburb" placeholder="e.g. Rockdale" value={piiSuburb} onChange={e => setPiiSuburb(e.target.value)} className="h-10 text-sm" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                          State <span className="text-red-500">*</span>
+                        </Label>
+                        <Select value={piiStateRegion} onValueChange={setPiiStateRegion}>
+                          <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="State" /></SelectTrigger>
+                          <SelectContent>
+                            {["NSW","VIC","QLD","WA","SA","TAS","ACT","NT"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                            <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="pii-postcode" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                          Postcode <span className="text-red-500">*</span>
+                        </Label>
+                        <Input id="pii-postcode" placeholder="2216" maxLength={8} value={piiPostcode} onChange={e => setPiiPostcode(e.target.value)} className="h-10 text-sm" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="pii-addrcountry" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                          Country
+                        </Label>
+                        <Input id="pii-addrcountry" placeholder="Australia" value={piiAddrCountry} onChange={e => setPiiAddrCountry(e.target.value)} className="h-10 text-sm" />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Employment & Financial Profile */}
-                <div className="rounded-lg border p-4 space-y-3 bg-slate-50">
-                  <div className="flex items-center gap-2">
-                    <Briefcase className="w-4 h-4 text-blue-600" />
-                    <h4 className="text-sm font-semibold">Employment &amp; Financial Profile <span className="text-red-500">*</span></h4>
+                <div className="border-t border-gray-100" />
+
+                {/* Section C — Account Profile */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <span className="text-blue-700 text-xs font-bold">C</span>
+                    </div>
+                    <h4 className="text-sm font-semibold text-gray-800">Account Profile</h4>
+                    <span className="text-xs text-gray-400 ml-auto">AML/CTF Act 2006 §32</span>
                   </div>
-                  <p className="text-xs text-muted-foreground -mt-1">Required for AML/CTF risk assessment and transaction monitoring — AML/CTF Act 2006 §32</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-sm">Employment Status <span className="text-red-500">*</span></Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Employment Status <span className="text-red-500">*</span>
+                      </Label>
                       <Select value={piiEmployment} onValueChange={setPiiEmployment}>
-                        <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                        <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Select status" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="employed">Employed (full-time / part-time)</SelectItem>
                           <SelectItem value="self_employed">Self-employed / Business owner</SelectItem>
@@ -707,14 +758,18 @@ export default function Compliance() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="pii-occupation" className="text-sm">Occupation / Job Title</Label>
-                      <Input id="pii-occupation" placeholder="e.g. Software Engineer" value={piiOccupation} onChange={e => setPiiOccupation(e.target.value)} />
+                    <div className="space-y-1.5">
+                      <Label htmlFor="pii-occupation" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Occupation / Job Title
+                      </Label>
+                      <Input id="pii-occupation" placeholder="e.g. Software Engineer" value={piiOccupation} onChange={e => setPiiOccupation(e.target.value)} className="h-10 text-sm" />
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-sm">Purpose of Using AMAX Global <span className="text-red-500">*</span></Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Purpose of Account <span className="text-red-500">*</span>
+                      </Label>
                       <Select value={piiPurpose} onValueChange={setPiiPurpose}>
-                        <SelectTrigger><SelectValue placeholder="Select purpose" /></SelectTrigger>
+                        <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Select purpose" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="personal_transfers">Personal / Family remittances</SelectItem>
                           <SelectItem value="business_payments">Business payments</SelectItem>
@@ -726,10 +781,12 @@ export default function Compliance() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-sm">Primary Source of Funds <span className="text-red-500">*</span></Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Source of Funds <span className="text-red-500">*</span>
+                      </Label>
                       <Select value={piiSourceFunds} onValueChange={setPiiSourceFunds}>
-                        <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
+                        <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Select source" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="employment">Employment / Salary</SelectItem>
                           <SelectItem value="business">Business income</SelectItem>
@@ -742,53 +799,38 @@ export default function Compliance() {
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="pii-taxcountry" className="text-sm">Country of Tax Residency</Label>
-                    <Input id="pii-taxcountry" placeholder="e.g. Australia" value={piiTaxCountry} onChange={e => setPiiTaxCountry(e.target.value)} />
-                    <p className="text-xs text-muted-foreground">Required for CRS / FATCA cross-border compliance where applicable</p>
-                  </div>
-                </div>
-
-                {/* PEP status — kept here for risk-scoring during profile save */}
-                <div className="rounded-lg border p-4 space-y-3 bg-slate-50">
-                  <div>
-                    <h4 className="text-sm font-semibold">Politically Exposed Person (PEP) Status</h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Used for risk assessment. All other declarations are captured in Step 3 — Customer Agreement.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="pii-pep"
-                      checked={piiPep}
-                      onCheckedChange={v => setPiiPep(Boolean(v))}
-                    />
-                    <div>
-                      <Label htmlFor="pii-pep" className="text-sm font-medium cursor-pointer">
-                        I confirm I am <span className="underline">not</span> a Politically Exposed Person (PEP)
-                        <span className="ml-1 text-xs font-normal text-muted-foreground">(leave unchecked if you are a PEP)</span>
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <Label htmlFor="pii-taxcountry" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Country of Tax Residency
                       </Label>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        A PEP is a person who holds, or has held, a prominent public position or function. Leave unchecked if you are,
-                        or may be, a PEP — you will be subject to enhanced due diligence before account activation.
-                      </p>
+                      <Input id="pii-taxcountry" placeholder="e.g. Australia (for CRS / FATCA reporting)" value={piiTaxCountry} onChange={e => setPiiTaxCountry(e.target.value)} className="h-10 text-sm" />
                     </div>
                   </div>
                 </div>
 
-                <Button
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                  disabled={profileMutation.isPending}
-                  onClick={handleProfileSubmit}
-                >
-                  {profileMutation.isPending ? "Saving..." : "Save Personal Information & Continue"}
-                </Button>
-                <p className="text-xs text-center text-muted-foreground">
-                  Your information is encrypted and stored securely. Required under AML/CTF Act 2006 §33.
-                </p>
-              </CardContent>
-            </Card>
+                {/* Footer actions */}
+                <div className="pt-1 space-y-3">
+                  <Button
+                    className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl"
+                    disabled={profileMutation.isPending}
+                    onClick={handleProfileSubmit}
+                  >
+                    {profileMutation.isPending ? (
+                      <span className="flex items-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Saving…</span>
+                    ) : (
+                      "Continue to Identity Verification →"
+                    )}
+                  </Button>
+                  <div className="flex items-center justify-center gap-4 text-xs text-gray-400">
+                    <span className="flex items-center gap-1"><Lock className="w-3 h-3" /> 256-bit encrypted</span>
+                    <span>·</span>
+                    <span>AUSTRAC registered</span>
+                    <span>·</span>
+                    <span>Privacy Act 1988</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
           <Card>
@@ -1398,7 +1440,7 @@ Record Keeping: AMAX Global is required to retain transaction records for 7 year
                               <Button
                                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
                                 disabled={!allSectionsRead || !signatureName.trim() || agreementMutation.isPending}
-                                onClick={() => agreementMutation.mutate({ signature: signatureName.trim(), pepDeclaration: piiPep })}
+                                onClick={() => agreementMutation.mutate({ signature: signatureName.trim(), pepDeclaration: !piiPep })}
                               >
                                 {agreementMutation.isPending ? "Recording signature…" : "Sign Agreement & Continue"}
                               </Button>
