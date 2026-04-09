@@ -1,0 +1,362 @@
+Here’s the **clean, no-noise summary + all critical code patches in one go**.
+
+---
+
+# 🔥 EXECUTIVE SUMMARY (TIGHT)
+
+## ✅ What’s actually true
+
+* You **do have** KYC, AML rules, and risk scoring → not a blank system
+* Core infra exists: `applyAmlRules`, `riskScore`, `requireKyc`, audit logs
+
+## 🔴 What is broken (real risks)
+
+1. **PEP always false** → invalid compliance records
+2. **KYC refresh not enforced** → violates ongoing CDD
+3. **No payer metadata stored** → no audit trail for deposits
+4. **Raw card capture** → PCI violation
+5. **No beneficiary verification** → AML exposure on withdrawals
+6. **No SMR/IFTI automation** → regulatory breach risk
+
+## 🟡 What is incomplete (next layer)
+
+* Risk model too simple
+* No transaction classification (FX / remittance / crypto)
+* No Travel Rule
+
+---
+
+# 🛠️ CODE PATCHES (ALL CRITICAL FIXES)
+
+I’m writing these as **direct patch-ready snippets**.
+
+---
+
+# ✅ PATCH 1 — FIX PEP DECLARATION (CRITICAL)
+
+## Problem
+
+```ts
+pepDeclaration: false
+```
+
+## Fix (frontend: `compliance.tsx`)
+
+```tsx
+// ADD state
+const [pepDeclaration, setPepDeclaration] = useState<boolean | null>(null);
+
+// ADD checkbox in UI before submit
+<Checkbox
+  checked={pepDeclaration === true}
+  onCheckedChange={(val) => setPepDeclaration(!!val)}
+>
+  I confirm whether I am a Politically Exposed Person (PEP)
+</Checkbox>
+
+// VALIDATION
+if (pepDeclaration === null) {
+  toast.error("Please declare your PEP status");
+  return;
+}
+
+// FIX mutation
+agreementMutation.mutate({
+  ...data,
+  pepDeclaration: pepDeclaration
+});
+```
+
+---
+
+## Fix (backend: `routes.ts`)
+
+```ts
+if (req.body.pepDeclaration === true) {
+  user.riskScore = Math.max(user.riskScore || 0, 9);
+  user.requiresEdd = true;
+}
+```
+
+---
+
+# ✅ PATCH 2 — ENFORCE KYC REFRESH (CRITICAL)
+
+## Problem
+
+`kycRefreshDue` not enforced
+
+## Fix (`auth.ts`)
+
+```ts
+export function requireKyc(user: User) {
+  if (user.kycStatus !== "verified") {
+    throw new Error("KYC verification required");
+  }
+
+  // ✅ ADD THIS BLOCK
+  if (user.kycRefreshDue && new Date(user.kycRefreshDue) < new Date()) {
+    throw new Error(
+      "Your KYC review is overdue. Please complete it before continuing."
+    );
+  }
+}
+```
+
+---
+
+# ✅ PATCH 3 — STORE PAYER METADATA (DEPOSITS)
+
+## Problem
+
+Deposit API ignores payer info
+
+---
+
+## Fix (frontend: `wallets.tsx`)
+
+```ts
+await api.createDeposit({
+  currency,
+  amount,
+  payerName,
+  payerBsb,
+  payerAccountNumber,
+  payerPayId,
+  depositMethod
+});
+```
+
+---
+
+## Fix (backend: `routes.ts`)
+
+```ts
+app.post("/api/deposit", async (req, res) => {
+  const {
+    currency,
+    amount,
+    payerName,
+    payerBsb,
+    payerAccountNumber,
+    payerPayId,
+    depositMethod
+  } = req.body;
+
+  const tx = await db.transactions.create({
+    userId: req.user.id,
+    type: "deposit",
+    currency,
+    amount,
+    metadata: {
+      payerName,
+      payerBsb,
+      payerAccountNumber,
+      payerPayId,
+      depositMethod
+    }
+  });
+
+  res.json(tx);
+});
+```
+
+---
+
+# ✅ PATCH 4 — REMOVE RAW CARD CAPTURE (PCI FIX)
+
+## Problem
+
+Collecting card details in UI
+
+---
+
+## Fix (`wallets.tsx`)
+
+❌ REMOVE:
+
+```tsx
+<Input placeholder="1234 5678 9012 3456" />
+<Input placeholder="MM/YY" />
+<Input placeholder="CVV" />
+```
+
+---
+
+## REPLACE WITH:
+
+```tsx
+<Button
+  onClick={async () => {
+    const res = await api.createCheckoutLink({ amount, currency });
+    window.location.href = res.url;
+  }}
+>
+  Pay with Card
+</Button>
+```
+
+---
+
+# ✅ PATCH 5 — WITHDRAWAL BENEFICIARY VERIFICATION
+
+## Problem
+
+No destination validation
+
+---
+
+## Fix (frontend)
+
+```tsx
+<Select
+  value={selectedAccountId}
+  onValueChange={setSelectedAccountId}
+>
+  {accounts.map(acc => (
+    <SelectItem key={acc.id} value={acc.id}>
+      {acc.bankName} •••• {acc.last4}
+    </SelectItem>
+  ))}
+</Select>
+```
+
+---
+
+## Fix (backend)
+
+```ts
+const account = await db.bankAccounts.findById(req.body.accountId);
+
+if (!account || account.userId !== req.user.id) {
+  throw new Error("Invalid withdrawal account");
+}
+
+await db.transactions.create({
+  type: "withdrawal",
+  metadata: {
+    bankName: account.bankName,
+    accountNumber: account.accountNumber,
+    bsb: account.bsb
+  }
+});
+```
+
+---
+
+# ✅ PATCH 6 — SMR ESCALATION TIMER
+
+## Problem
+
+No 3-day escalation
+
+---
+
+## Add cron job / worker
+
+```ts
+const flagged = await db.amlFlags.findMany({
+  where: {
+    createdAt: {
+      lt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+    },
+    status: "pending"
+  }
+});
+
+for (const flag of flagged) {
+  await db.complianceActions.create({
+    flagId: flag.id,
+    actionType: "smr_overdue"
+  });
+
+  await db.users.update({
+    id: flag.userId,
+    suspended: true
+  });
+}
+```
+
+---
+
+# ✅ PATCH 7 — IFTI REPORTING (CROSS-BORDER)
+
+## Problem
+
+No IFTI generation
+
+---
+
+## Add in transfer logic
+
+```ts
+if (isCrossBorderTransaction(tx)) {
+  await db.reports.create({
+    type: "IFTI",
+    transactionId: tx.id,
+    status: "pending"
+  });
+}
+```
+
+---
+
+## Helper
+
+```ts
+function isCrossBorderTransaction(tx) {
+  return tx.originCountry !== tx.destinationCountry;
+}
+```
+
+---
+
+# ✅ PATCH 8 — BASIC TRAVEL RULE (FOUNDATION)
+
+## Frontend
+
+```tsx
+if (isCryptoTransfer) {
+  requireFields([
+    "recipientWallet",
+    "recipientName",
+    "isSelfHosted"
+  ]);
+}
+```
+
+---
+
+## Backend
+
+```ts
+metadata: {
+  recipientWallet,
+  recipientName,
+  isSelfHosted,
+  vaspName
+}
+```
+
+---
+
+# 🎯 FINAL TAKE
+
+If you implement just these patches:
+
+✔ You eliminate **immediate audit failures**
+✔ You move from **risky → defensible**
+✔ You are **not yet fully licensed-ready**, but very close
+
+---
+
+# 🚀 If you want next level
+
+Next step would be:
+
+* Full **risk engine upgrade (multi-factor)**
+* Proper **transaction classification layer**
+* **AUSTRAC submission pack**
+
+Just say:
+👉 “next level architecture”

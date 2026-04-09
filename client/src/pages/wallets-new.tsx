@@ -20,6 +20,7 @@ import { useWallets } from '@/hooks/use-portfolio';
 import RateSparkline from '@/components/fx/rate-sparkline';
 import { useVoiceNarration } from '@/hooks/use-voice-narration';
 import VoiceSettings from '@/components/voice/voice-settings';
+import { useAuth } from '@/contexts/auth';
 
 // Exchange Rate Display Component for Transfer Modal
 function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrency: string; toCurrency: string; amount: string }) {
@@ -133,6 +134,7 @@ function WalletSparkline({ currency, displayCurrency }: { currency: string; disp
 
 
 export default function Wallets() {
+  const { user } = useAuth();
   const { data: wallets = [], isLoading } = useWallets();
   const [toCurrency, setToCurrency] = useState('');
   const [amount, setAmount] = useState('');
@@ -509,6 +511,10 @@ export default function Wallets() {
       currency: selectedWallet.currency,
       amount: amount,
       method: depositMethod, // 'bank_transfer' | 'payid'
+      // AML/CTF originator information — retained for 7 years per AML/CTF Act 2006 s.106
+      ...(payerName ? { payerName } : {}),
+      ...(payerBsb ? { payerBsb } : {}),
+      ...(payerAccountNumber ? { payerAccountNumber } : {}),
     });
   };
 
@@ -615,6 +621,32 @@ export default function Wallets() {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading"/>
+      </div>
+    );
+  }
+
+  // KYC gate — block wallet access until fully verified.
+  // API enforces this too via requireKyc(); the UI gate prevents confusing
+  // partial states where balances show but all actions throw 403.
+  if (user && user.kycStatus !== "verified") {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[60vh]">
+        <div className="max-w-md w-full text-center space-y-4">
+          <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto">
+            <AlertCircle className="w-8 h-8 text-yellow-600" />
+          </div>
+          <h2 className="text-xl font-semibold">KYC Verification Required</h2>
+          <p className="text-sm text-muted-foreground">
+            You must complete identity verification before accessing your wallets or performing any transactions. This is required under Australian AML/CTF law.
+          </p>
+          <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg text-xs text-yellow-800 dark:text-yellow-300 text-left space-y-1">
+            <p className="font-medium">Status: <span className="capitalize">{user.kycStatus ?? "not started"}</span></p>
+            <p>Complete all 4 steps in the Compliance Centre to unlock your account.</p>
+          </div>
+          <Link href="/compliance">
+            <Button className="mt-2">Go to Compliance Centre →</Button>
+          </Link>
+        </div>
       </div>
     );
   }

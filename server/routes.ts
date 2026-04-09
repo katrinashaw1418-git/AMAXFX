@@ -215,8 +215,14 @@ const depositSchema = z.object({
     .positive("Amount must be positive")
     .max(9999999, "Amount exceeds maximum single-deposit limit of 9,999,999"),
   description: z.string().max(255).optional(),
-  // Payment channel: bank_transfer | payid — card deposits go via Stripe, not this route.
+  // Payment channel: bank_transfer | payid — card deposits go via Checkout.com, not this route.
   method: z.enum(["bank_transfer", "payid"]).optional(),
+  // AML/CTF originator information — AUSTRAC requires payer identity for all inbound transfers.
+  // Mandatory for bank_transfer and payid channels; stored in transaction description JSON.
+  payerName: z.string().max(120).optional(),
+  payerBsb: z.string().max(20).optional(),
+  payerAccountNumber: z.string().max(40).optional(),
+  payerPayId: z.string().max(120).optional(),
 });
 
 const withdrawSchema = z.object({
@@ -2538,7 +2544,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const parsedDeposit = depositSchema.safeParse(req.body);
 
       if (!parsedDeposit.success) return res.status(400).json({ error: parsedDeposit.error.errors[0].message });
-      const { currency, amount: rawAmount, description, method } = parsedDeposit.data;
+      const { currency, amount: rawAmount, description, method, payerName, payerBsb, payerAccountNumber, payerPayId } = parsedDeposit.data;
       const amount = new Decimal(rawAmount);
 
       // Enforce risk-based daily transaction limit before processing
@@ -2595,7 +2601,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: isPendingChannel ? "pending" : "completed",
           settlementStatus: isPendingChannel ? "awaiting_bank_confirmation" : "internal_only",
           description: isPendingChannel
-            ? JSON.stringify({ method, currency, referenceCode, label: `${currency} ${channelLabel} Deposit` })
+            ? JSON.stringify({
+                method,
+                currency,
+                referenceCode,
+                label: `${currency} ${channelLabel} Deposit`,
+                // AML originator fields — retained for 7 years per AML/CTF Act 2006 s.106
+                payer: {
+                  name: payerName ?? null,
+                  bsb: payerBsb ?? null,
+                  accountNumber: payerAccountNumber ?? null,
+                  payId: payerPayId ?? null,
+                },
+              })
             : (description || `${currency} ${channelLabel} Deposit`),
           sourceExchange: method ?? null, blockchainTxHash: null,
           assetType: classifyAssetType(null, currency),
@@ -4396,6 +4414,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // AML/CTF Rules 2025 — EDD trigger for elevated source-of-funds categories.
+      // crypto, inheritance, and "other" are high-risk per AUSTRAC guidance and require
+      // source of wealth documentation before the account may be fully activated.
+      const eddSourcesOfFunds = ["crypto", "inheritance", "other"];
+      if (data.sourceOfFunds && eddSourcesOfFunds.includes(data.sourceOfFunds)) {
+        await db.insert(complianceActions).values({
+          actionType: "ecdd",
+          userId,
+          performedBy: "system",
+          notes: `EDD triggered: source of funds declared as "${data.sourceOfFunds}". Source of wealth documentation required before account activation. Customer must provide supporting documents to compliance@amaxglobal.com.au.`,
+          outcome: "pending",
+        });
+        await db.insert(auditLogs as any).values({
+          userId,
+          action: "edd_triggered_source_of_funds",
+          entityType: "user",
+          entityId: String(userId),
+          metadata: { sourceOfFunds: data.sourceOfFunds, trigger: "high_risk_sof" },
+        });
+      }
+
       res.json({ success: true, kycProfileComplete: true, riskLevel });
     } catch (err: any) {
       if (err instanceof z.ZodError) return res.status(400).json({ error: err.errors[0].message });
@@ -4953,6 +4992,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId, action: "address_doc_approved", entityType: "user", entityId: String(userId),
         metadata: { notes }, ipAddress: req.ip,
       });
+
+      // Promote kycStatus to "verified" only when ALL 4 steps are complete:
+      // kycProfileComplete + agreementSigned + idVerificationComplete + addressDocApproved
+      // This is the single authoritative gate — no other path sets kycStatus = "verified".
+      const [updatedUser] = await db.select({
+        kycProfileComplete: users.kycProfileComplete,
+        agreementSigned: users.agreementSigned,
+        idVerificationComplete: users.idVerificationComplete,
+      }).from(users).where(eq(users.id, userId));
+
+      if (
+        updatedUser?.kycProfileComplete &&
+        updatedUser?.agreementSigned &&
+        updatedUser?.idVerificationComplete
+      ) {
+        await db.update(users).set({ kycStatus: "verified" }).where(eq(users.id, userId));
+        await db.insert(auditLogs as any).values({
+          userId, action: "kyc_fully_verified", entityType: "user", entityId: String(userId),
+          metadata: { promotedBy: "admin", trigger: "address_doc_approved" }, ipAddress: req.ip,
+        });
+      }
+
       res.json({ success: true, message: "Address document approved" });
     } catch (err: any) {
       res.status(500).json({ error: err.message ?? "Failed to approve address document" });

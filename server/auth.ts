@@ -115,4 +115,13 @@ export async function requireKyc(userId: number, storageInstance: { getUser: (id
       { status: 403 }
     );
   }
+  // AML/CTF Rules 2025 — ongoing CDD: periodic review must be completed before
+  // further transactions are permitted. kycRefreshDue is set at KYC profile save
+  // (12 months for low-risk, 6 months for medium/high-risk customers).
+  if (user.kycRefreshDue && new Date(user.kycRefreshDue) < new Date()) {
+    throw Object.assign(
+      new Error("Your periodic KYC review is overdue. Please complete the review in the Compliance Centre before continuing. Contact info@amaxglobal.com.au if you need assistance."),
+      { status: 403, code: "KYC_REFRESH_OVERDUE" }
+    );
+  }
 }
