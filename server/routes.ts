@@ -60,7 +60,7 @@ async function runAmlCheck(
   try {
     const flags: { riskLevel: "low" | "medium" | "high"; reason: string }[] = [];
 
-    // Rule 1: Large transaction (> AUD $10,000 equivalent) — AUSTRAC reporting threshold
+    // Rule 1: Large transaction (≥ AUD $10,000) — AUSTRAC TTR reporting threshold
     if (amount.gte(10000)) {
       flags.push({ riskLevel: "medium", reason: `Large transaction: ${amount.toFixed(2)} (≥ AUD $10,000 threshold)` });
     }
@@ -70,9 +70,54 @@ async function runAmlCheck(
       flags.push({ riskLevel: "low", reason: `Fiat-to-crypto or crypto-to-fiat conversion (type: ${type})` });
     }
 
-    // Rule 3: Very large transaction (> AUD $50,000) — escalate
+    // Rule 3: Very large transaction (≥ AUD $50,000) — escalate to high
     if (amount.gte(50000)) {
       flags.push({ riskLevel: "high", reason: `High-value transaction: ${amount.toFixed(2)} (≥ AUD $50,000)` });
+    }
+
+    // Rule 4: Structuring detection — near-threshold transactions (AML/CTF Act 2006 §136 offence)
+    // Checks rolling 24h total; if sum is between $8,000-$9,999 (just under TTR threshold),
+    // flag as potential structuring/smurfing.
+    if (amount.lt(10000) && amount.gte(3000)) {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const [recentResult] = await db
+        .select({ total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS DECIMAL)), 0)::text` })
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.userId, userId),
+            sql`${transactions.createdAt} >= ${since}`,
+            sql`${transactions.status} != 'failed'`,
+            sql`${transactions.id} != ${txId}`,
+          ),
+        );
+      const rollingTotal = new Decimal(recentResult?.total ?? "0").plus(amount);
+      if (rollingTotal.gte(8000) && rollingTotal.lt(10000)) {
+        flags.push({
+          riskLevel: "medium",
+          reason: `Potential structuring: rolling 24h total ${rollingTotal.toFixed(2)} approaches TTR threshold without triggering it (AML/CTF Act 2006 §136)`,
+        });
+      }
+    }
+
+    // Rule 5: High-velocity — more than 5 transactions in the past hour (layering indicator)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const [velocityResult] = await db
+      .select({ count: sql<string>`COUNT(*)::text` })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, userId),
+          sql`${transactions.createdAt} >= ${oneHourAgo}`,
+          sql`${transactions.status} != 'failed'`,
+        ),
+      );
+    const txCount = parseInt(velocityResult?.count ?? "0", 10);
+    if (txCount > 5) {
+      flags.push({
+        riskLevel: "medium",
+        reason: `High transaction velocity: ${txCount} transactions in the past hour (potential layering)`,
+      });
     }
 
     for (const flag of flags) {
@@ -2373,6 +2418,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { fromCurrency, toCurrency, amount: rawAmount } = parsed.data;
       const amount = new Decimal(rawAmount);
 
+      // Enforce risk-based daily transaction limit
+      await checkDailyLimit(userId, amount, fromCurrency);
+
       // DB-backed idempotency check
       const idemKey = req.headers["idempotency-key"] as string | undefined;
       const payloadHash = hashPayload(req.body);
@@ -3069,6 +3117,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const investmentAmount = new Decimal(rawAmount);
       const deductionAmount = rawSourceAmount ? new Decimal(rawSourceAmount) : investmentAmount;
       const currency = sourceCurrency || "USD";
+
+      // Enforce risk-based daily transaction limit
+      await checkDailyLimit(userId, deductionAmount, currency);
       const minimumInvestment = new Decimal(product.minimumInvestment);
 
       if (investmentAmount.lt(minimumInvestment)) {
@@ -3153,6 +3204,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!parsedTransfer.success) return res.status(400).json({ error: parsedTransfer.error.errors[0].message });
       const { fromCurrency, toCurrency, amount: rawAmount } = parsedTransfer.data;
       const amount = new Decimal(rawAmount);
+
+      // Enforce risk-based daily transaction limit
+      await checkDailyLimit(userId, amount, fromCurrency);
 
       const idemKey = req.headers["idempotency-key"] as string | undefined;
       const payloadHash = hashPayload(req.body);
@@ -3250,6 +3304,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { currency, amount: rawAmount, recipientEmail } = parsed.data;
       const amount = new Decimal(rawAmount);
+
+      // Enforce risk-based daily transaction limit
+      await checkDailyLimit(userId, amount, currency);
 
       // Prevent self-transfer
       const sender = await storage.getUser(userId);
