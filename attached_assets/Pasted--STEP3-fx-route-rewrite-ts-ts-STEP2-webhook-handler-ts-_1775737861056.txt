@@ -1,0 +1,254 @@
+
+
+STEP3_fx_route_rewrite.ts
+ts
+
+
+STEP2_webhook_handler.ts
+ts
+
+
+AMAX-V2__8_.zip
+zip
+
+
+AMAX-V2 (8).zip Zip Archive AMAX-V2 (8).zip Zip Archive Your Wallets Voice Settings Multi-Currency Management Your Balances Show values in: 🇺🇸 USD Currency Balance Approx. Value (USD) YTD vs USD Actions 🇦🇺 AUD Australian Dollar $2,591,552.563 Available: $2,589,183.563
+
+pasted
+
+
+STEP1_schema_additions.ts
+288 lines
+
+ts
+
+
+STEP0_reconciliation_check.ts
+277 lines
+
+ts
+
+10:17 PM
+
+Viewed 2 files
+Viewed 2 files
+I've now read all four uploaded files. Here's my straight assessment of what you have.
+
+What these files actually are
+
+STEP0 is a pre-migration reconciliation script — runs against your existing DB, checks for negative balances, orphaned transactions, duplicate wallets, and writes to the new reconciliation_logs table. Solid.
+
+STEP1 is the schema additions — new columns on wallets and transactions, plus three new tables (webhook_events, reconciliation_logs, migration_ledger). Well-structured, matches your existing Drizzle/text-columns pattern.
+
+STEP2 is the webhook handler — this is the strongest file. It correctly uses raw Buffer for signature verification (not JSON.stringify), fetches authoritative balances from Airwallex rather than trusting webhook amounts, wraps idempotency + status update in a single serializable transaction, and handles the Airwallex token auth cycle (which the advisory docs missed entirely).
+
+STEP3 is the FX route rewrite — removes all wallet balance mutations from the route, creates a deterministic client_order_id as the Airwallex idempotency anchor, creates the transaction record first, calls Airwallex, stores the external ID, and returns pending. The error handler cleans up orphaned initiated records. All existing KYC/AML/TTR infrastructure is preserved.
+
+What's solid across all four files
+
+The files are meaningfully better than the advisory document versions. The token management in STEP2 is the most important correction — Airwallex uses short-lived tokens, not static Bearer keys, and every API wrapper in the advisory docs would have silently failed in production. The deterministic client_order_id in STEP3 is also correct — raw transaction IDs break Airwallex idempotency on retries.
+
+What's genuinely missing or needs attention
+
+STEP2 has a subtle ordering issue: the route sends res.status(200) before processing, then processes asynchronously in the same request handler. This is intentional (Airwallex retry avoidance), but if the Node process restarts mid-flight, that processing is lost. At your current stage this is acceptable — the nightly reconciliation will catch it — but you should be aware of it.
+
+STEP3 references hashPayload, randomBytes, fee, exchangeRate, estimatedNetConverted, available, and storage without importing or defining them in the file. These presumably exist in your current routes.ts and the file is designed as a replacement snippet, not a standalone module. When you integrate this, double-check those imports resolve — particularly storage vs db usage consistency.
+
+The STEP0 reconciliation script checks transactions.availableBalance via wallet joins but your wallets table has availableBalance as a separate column from balance. The stuck pending transaction check uses transactions.status = 'pending' — confirm that your existing transaction status column is named status not settlementStatus, since both exist in the schema.
+
+The gap still remaining from the full conversation
+
+Steps 4 (deposits/withdrawals), 5 (reconciliation cron), and 6 (migration runbook) were described in the advisory thread but don't appear in the uploaded files. Based on the pattern in STEP2 and STEP3, STEP4 would be a deposit intent route and withdrawal route using the same token auth wrapper and webhook-driven settlement. STEP5 would be a node-cron job calling fetchAirwallexBalance per wallet and writing to reconciliation_logs. Do you want me to write those now to match the quality level of STEP2 and STEP3?
+
+SHALL I CHANGE EWALLET TO ACCOUNT
+
+10:22 PM
+Short answer: Yes. Change it.
+
+But do it precisely — not just a find-and-replace on the word "wallet."
+
+Here's exactly what to change and why each one matters:
+
+UI labels that must change
+
+"Your Wallet" → "Your Accounts"
+
+"Available Balance" → "Available for Transfer"
+
+"Wallet Balance" → "Account Balance (held with regulated partner)"
+
+"My Wallet" (nav/menu) → "My Accounts"
+
+Any deposit screen saying "Add to Wallet" → "Fund Account"
+
+Any withdrawal screen saying "Withdraw from Wallet" → "Transfer Out"
+
+What you do NOT need to change
+
+Your internal code variable names like wallets, wallet_id, custodian_wallet_id — these are backend/DB identifiers, regulators don't see them, and renaming them creates unnecessary refactor risk right now. Leave the database table named wallets. Leave your Drizzle schema as-is.
+
+One line you must add (this is the most important part)
+
+Somewhere visible on the accounts/balances screen — footer, tooltip, or info banner — add exactly this or equivalent:
+
+"Funds are held with regulated financial institution partners. AMAX does not hold client funds."
+
+Without this disclosure, changing the label from "Wallet" to "Account" is cosmetic. With it, you've made a legal statement that changes your regulatory characterisation.
+
+Why this actually matters beyond optics
+
+ASIC and AUSTRAC enforcement teams look at the user-facing product when assessing whether you're operating a stored value facility or payment product requiring an AFSL. The word "wallet" implies you hold value. "Account" combined with a custody disclosure implies you're an interface over someone else's licensed infrastructure. Same product, different regulatory signal.
+
+Do you want me to draft the exact UI copy changes as a spec you can hand to your frontend team?
+
+WISE AND THE OTHERS USE EXTERNAL CUSTODY
+
+10:26 PM
+Yes — but the reality is more nuanced than the advisory docs told you. Let me give you the accurate picture.
+
+Wise
+
+Wise holds its own e-money licences in every jurisdiction it operates. In Australia, Wise Australia Pty Ltd holds its own AFSL (licence no. 513764) and is AUSTRAC registered. They are not using an external custodian — they ARE the licensed entity. Customer funds are held in segregated safeguarding accounts that Wise itself controls, at tier-1 banks. The banks are the depository, but Wise is the regulated custodian. This is a critical distinction.
+
+Revolut
+
+Same model. Revolut holds an e-money institution licence in the UK, banking licences in Lithuania and other EU jurisdictions, and separate licences in each market. They custody their own client funds. They are not sitting on top of Airwallex or anyone else.
+
+Airwallex itself
+
+Airwallex is the infrastructure provider that other fintechs sit on top of. Airwallex holds the AFSL and AUSTRAC registration. When smaller platforms use Airwallex, Airwallex is the custodian — not an external custodian in the Wise/Revolut sense, but the licensed entity taking on that obligation.
+
+What this means for AMAX
+
+The advisory conversation you've been having framed this as "use external custody like Wise does." That framing is wrong. Wise doesn't use external custody — Wise IS the custodian. What AMAX is actually doing is using Airwallex as the licensed entity, with AMAX sitting on top as a program manager or distributor. That is a legitimate and common model, but it's not "what Wise does." It's what smaller fintechs do before they have their own licence.
+
+The honest strategic picture
+
+There are two real paths:
+
+The first path is what you're building now — use Airwallex as the licensed infrastructure, AMAX as the interface and compliance layer, no AFSL required, lower regulatory burden, faster to market. This works and is legitimate. The constraint is you're dependent on Airwallex commercially and legally, and your product scope is limited by what their program manager model permits.
+
+The second path is what Wise and Revolut did — obtain your own AFSL and e-money authorisations, become your own custodian, own the full stack. This takes 12-24 months minimum in Australia, significant capital, and a compliance team. It's the long-term play if AMAX scales to meaningful volume.
+
+The question you should actually be asking
+
+At what volume or product scope does the Airwallex program manager model become a ceiling for AMAX — and how far away is that ceiling?
+
+That's the decision that determines when path one becomes path two. Do you want to work through that?
+
+SMALL SCALE TO START WITH
+
+10:27 PM
+Then path one is exactly right for where you are. Here's the clear picture for small scale:
+
+What "small scale on Airwallex" actually looks like
+
+You build the interface, Airwallex handles custody, FX execution, and payment rails. Your AUSTRAC remittance registration covers your obligations as the program manager. You don't need an AFSL. You can launch faster, with less capital, and with lower compliance overhead.
+
+The product is real. The UX is yours. The regulatory heavy lifting is Airwallex's problem.
+
+The honest constraints at small scale
+
+Airwallex will take a commercial margin on every FX conversion they execute for you. Your spread sits on top of theirs. At small volume your unit economics are thinner than Wise's because you're paying for their infrastructure. This is fine at the start — it's the cost of not having your own licence.
+
+Airwallex's program manager onboarding has a compliance review process. They will look at your KYC/AML program, your user base, your transaction types. The better your compliance infrastructure looks (which your Step 0-3 files already demonstrate), the faster that conversation goes.
+
+What small scale buys you
+
+You learn your actual transaction patterns — which currency corridors are most active, what your average transaction size is, where your users actually come from. That data is what you need to make the licensing decision later with real numbers instead of assumptions.
+
+The one thing to protect from day one
+
+Your margin. Decide your FX spread before you launch and model it against Airwallex's wholesale rate. Even at small volume, if your spread doesn't cover your costs plus a buffer, you're building evidence of a broken unit economics model. Fix that on paper before the first transaction goes live.
+
+Do you want to work through the spread and fee model now?
+
+YES
+
+10:28 PM
+Let me get current Airwallex wholesale FX rates and typical program manager margin structures before giving you numbers.
+
+
+Searched the web
+Searched the web
+Good — I now have current verified numbers. Here's the actual spread and fee model you need to build.
+
+What Airwallex charges you (your cost base)
+
+Airwallex charges 0.4% above the interbank rate for major currencies and 0.6% for other currencies, with no additional flat fee. 
+WorldFirst
+ For your primary corridors:
+
+AUD ↔ USD, AUD ↔ EUR, AUD ↔ GBP → 0.4% cost
+AUD ↔ CNY, AUD ↔ KRW, AUD ↔ SGD → 0.6% cost
+That is your floor. Every dollar of spread below those numbers is a loss.
+
+What to charge your users
+
+Here's a simple tiered model built for small-scale AU launch:
+
+Corridor	Airwallex Cost	Your Rate	Your Margin
+AUD ↔ USD/EUR/GBP	0.40%	1.00%	0.60%
+AUD ↔ SGD/HKD/JPY	0.60%	1.20%	0.60%
+AUD ↔ CNY/KRW	0.60%	1.50%	0.90%
+AUD ↔ NZD/CAD	0.40%	0.90%	0.50%
+CNY and KRW carry higher margin because the corridor is more valuable to your specific user base (Chinese diaspora), demand is less price-sensitive on those pairs, and the regulatory complexity justifies it.
+
+Add a flat transfer fee on top
+
+Spread alone doesn't cover fixed costs at low volume. Add:
+
+Transfers under AUD 2,000 → flat AUD $5
+Transfers AUD 2,000–10,000 → flat AUD $3
+Transfers over AUD 10,000 → no flat fee (spread revenue is sufficient)
+What this looks like on a real transaction
+
+User converts AUD 5,000 to CNY:
+
+Airwallex cost: 0.60% = AUD $30
+Your spread: 1.50% = AUD $75
+Flat fee: AUD $3
+Your gross margin: AUD $48 on that transaction
+At 100 transactions like that per month, that's ~AUD $4,800 gross margin before your own operating costs. Enough to run lean at small scale.
+
+The one number to watch
+
+Your break-even transaction size. At 0.60% net margin, a AUD $500 transaction earns you $3. Your flat fee adds another $5. Below AUD $300 per transaction, you're barely covering costs. Consider a minimum transaction size of AUD $200 in your product to protect your unit economics from day one.
+
+What to display to users
+
+Show the all-in rate — your spread baked into the exchange rate shown, plus the flat fee disclosed separately. This matches how Wise presents it and satisfies ASIC's fee transparency requirements. Never show the interbank rate and then add fees on top in a confusing way.
+
+Want me to build this into a pricing calculator you can use to model different volume scenarios before you launch?
+
+YES
+
+10:29 PM
+
+
+The calculator is live. Here's how to use it for your launch planning:
+
+Start here — set the corridor to AUD ↔ CNY/KRW since that's your primary market, then drag the transaction count to where you realistically expect to be in month 3. That number is your real baseline, not your optimistic projection.
+
+The break-even transaction size is the most important number on the screen. Any transaction below that size costs you more in fixed overhead than it earns in spread. If that number is above AUD $300, consider raising your flat fee slightly or setting a minimum transaction limit in your product.
+
+The sensitivity chart at the bottom shows you what happens at 50, 100, 150, 200, 300, and 500 transactions per month. The jump from 100 to 200 transactions is where the model starts to look meaningful — that's your first milestone to target.
+
+One thing to stress-test — drag your rate down to 0.90% on the CNY corridor and see how fast margin collapses. That's the floor you must defend against any competitive pressure. Price discovery from competitors should never push you below that.
+
+
+You are out of free messages until 3:00 AM
+Upgrade
+
+
+
+Claude is AI and can make mistakes. Please double-check responses.
+
+
+
+
+
+
+
+
+
