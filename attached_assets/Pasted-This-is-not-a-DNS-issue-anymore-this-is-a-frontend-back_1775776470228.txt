@@ -1,0 +1,267 @@
+This is **not a DNS issue anymore** — this is a **frontend / backend environment mismatch** between **Replit preview vs deployed site**.
+
+This is actually a **critical production issue** (good you caught it early).
+
+---
+
+# 🔍 What’s happening (real cause)
+
+👉 In **Replit Preview**
+
+* runs inside Replit environment
+* often uses:
+
+  * local state
+  * mock/demo data
+  * relative API paths
+  * auto-auth (sometimes)
+
+👉 In **Published Website (your domain)**
+
+* runs as a real external client
+* requires:
+
+  * correct API endpoint
+  * proper auth handling
+  * real backend connectivity
+
+---
+
+# 🚨 Most common causes (ranked)
+
+## 1. ❌ API base URL is wrong (MOST LIKELY)
+
+In preview:
+
+```js
+fetch("/api/login")
+```
+
+👉 works because frontend + backend share same origin
+
+In production:
+👉 your domain ≠ backend origin → request fails
+
+---
+
+### ✅ Fix
+
+Use environment-based API URL:
+
+```js
+const API_BASE =
+  process.env.NODE_ENV === "production"
+    ? "https://amaxglobalfx.replit.app"
+    : "";
+
+fetch(`${API_BASE}/api/login`)
+```
+
+---
+
+## 2. ❌ CORS issue
+
+If backend is on Replit and frontend is your domain:
+
+👉 browser blocks request
+
+---
+
+### ✅ Fix (backend)
+
+```js
+app.use(cors({
+  origin: [
+    "https://amaxglobal.com.au",
+    "https://www.amaxglobal.com.au"
+  ],
+  credentials: true
+}));
+```
+
+---
+
+## 3. ❌ Demo account is hardcoded (preview only)
+
+In preview:
+
+* you may have:
+
+```js
+if (email === "demo@test.com") loginSuccess();
+```
+
+👉 but production calls real API → fails
+
+---
+
+### ✅ Fix
+
+Make sure:
+
+* demo user exists in DB
+  OR
+* backend supports demo login
+
+---
+
+## 4. ❌ Cookies / session not working
+
+Very common in fintech apps
+
+👉 Browser blocks cookies if:
+
+* missing:
+
+```js
+credentials: "include"
+```
+
+or backend missing:
+
+```js
+cookie: {
+  secure: true,
+  sameSite: "none"
+}
+```
+
+---
+
+## 5. ❌ Environment variables missing
+
+Preview:
+
+* `.env` works
+
+Production:
+
+* variables NOT set
+
+---
+
+### ✅ Check:
+
+* DB URL
+* API keys
+* JWT secret
+
+---
+
+## 6. ❌ HTTPS mismatch
+
+If backend is HTTP and frontend HTTPS → blocked
+
+👉 Must be:
+
+```
+https → https
+```
+
+---
+
+# 🧪 How to diagnose in 30 seconds
+
+Open your live site → press:
+
+👉 **F12 → Network tab → login**
+
+Look for:
+
+* ❌ 404 → wrong API URL
+* ❌ 401 → auth issue
+* ❌ CORS error → backend config
+* ❌ blocked cookies → session issue
+
+---
+
+# 💡 Based on your app (very important)
+
+From your previous audits:
+
+👉 You already have:
+
+* API routes (`/api/...`)
+* no real auth system yet
+* demo logic in frontend
+
+---
+
+## 🎯 My precise diagnosis
+
+👉 Your issue is **95% this:**
+
+**Frontend is calling `/api/...` relative path, but production needs full Replit URL**
+
+---
+
+# ✅ Clean production fix (recommended)
+
+### Step 1 — central config
+
+```js
+// config.ts
+export const API_BASE =
+  window.location.hostname.includes("replit")
+    ? ""
+    : "https://amaxglobalfx.replit.app";
+```
+
+---
+
+### Step 2 — use everywhere
+
+```js
+fetch(`${API_BASE}/api/login`)
+```
+
+---
+
+### Step 3 — backend CORS
+
+```js
+app.use(cors({
+  origin: [
+    "https://amaxglobal.com.au",
+    "https://www.amaxglobal.com.au"
+  ],
+  credentials: true
+}));
+```
+
+---
+
+# ⚠️ AUSTRAC / production warning
+
+Right now your app likely has:
+
+* demo auth
+* no real KYC
+* no proper session control
+
+👉 That is fine for **demo**
+👉 NOT fine for **live fintech exposure**
+
+---
+
+# ✔️ Summary
+
+👉 DNS = correct
+👉 Problem = **frontend ↔ backend connection**
+
+---
+
+## 🔑 Fix in one sentence
+
+👉 Use **full API URL in production + enable CORS + ensure demo user exists in backend**
+
+---
+
+If you want, I can:
+
+✅ audit your login flow end-to-end
+✅ fix your API + frontend linkage
+✅ make it **production-safe for AUSTRAC stage submission**
+
+Just say:
+👉 “full login flow audit”

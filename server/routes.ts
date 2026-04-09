@@ -919,11 +919,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const demoUser = await storage.getUserByUsername("johnchen");
     if (!demoUser) {
       const hashed = await hashPassword("johnchen888");
-      await db.execute(sql.raw(`
-        INSERT INTO users (username, email, password, first_name, last_name, kyc_status, user_tier, created_at)
-        VALUES ('johnchen', 'demo@amaxglobal.com.au', '${hashed}', 'John', 'Chen', 'verified', 'premium', NOW())
-        ON CONFLICT (username) DO NOTHING
-      `));
+      await db.insert(users).values({
+        username: "johnchen",
+        email: "demo@amaxglobal.com.au",
+        password: hashed,
+        firstName: "John",
+        lastName: "Chen",
+        kycStatus: "verified",
+        userTier: "premium",
+      }).onConflictDoNothing();
     } else if (!demoUser.password.startsWith("$2")) {
       const hashed = await hashPassword(demoUser.password);
       await storage.updateUser(demoUser.id, { password: hashed });
