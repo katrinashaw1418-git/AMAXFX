@@ -28,7 +28,8 @@ export async function sendVerificationEmail(
 
   const transport = createTransport()!;
   await transport.sendMail({
-    from: `"AMAX Global" <${GMAIL_USER}>`,
+    from: '"AMAX Global" <info@amaxglobal.com.au>',
+    replyTo: "info@amaxglobal.com.au",
     to,
     subject: "Confirm your AMAX Global account",
     html: `
@@ -93,7 +94,8 @@ export async function sendPasswordResetEmail(
 
   const transport = createTransport()!;
   await transport.sendMail({
-    from: `"AMAX Global" <${GMAIL_USER}>`,
+    from: '"AMAX Global" <info@amaxglobal.com.au>',
+    replyTo: "info@amaxglobal.com.au",
     to,
     subject: "Reset your AMAX Global password",
     html: `
