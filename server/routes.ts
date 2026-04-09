@@ -208,6 +208,10 @@ const fxExchangeSchema = z.object({
   // DCE delivery model (post-1 Apr 2026): for fiat→crypto exchanges, the destination
   // external wallet address is required for delivery. AMAX does not hold crypto.
   destinationWallet: z.string().max(200).optional(),
+  // FATF Travel Rule fields (effective 1 July 2026, AML/CTF Amendment Act 2024):
+  // AMAX is originator VASP and must collect + transmit destination wallet type.
+  walletType: z.enum(["custodial", "self_hosted"]).optional(),
+  custodianName: z.string().max(120).optional(),
 }).refine(d => d.fromCurrency !== d.toCurrency, {
   message: "Source and target currencies must differ",
 });
@@ -2432,7 +2436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.errors[0].message });
       }
-      const { fromCurrency, toCurrency, amount: rawAmount, destinationWallet } = parsed.data;
+      const { fromCurrency, toCurrency, amount: rawAmount, destinationWallet, walletType, custodianName } = parsed.data;
       const amount = new Decimal(rawAmount);
 
       // Enforce risk-based daily transaction limit
@@ -2521,13 +2525,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: isFiatToCrypto ? "pending" : "completed",
           settlementStatus: isFiatToCrypto ? "pending_delivery" : "internal_only",
           description: isFiatToCrypto
-            ? `${fromCurrency} → ${toCurrency} Exchange — Delivery to external wallet${destinationWallet ? `: ${destinationWallet}` : ""}`
+            ? [
+                `${fromCurrency} → ${toCurrency} Exchange — Delivery via Independent Reserve`,
+                destinationWallet ? `Destination: ${destinationWallet}` : null,
+                walletType ? `Wallet type: ${walletType === "self_hosted" ? "self-hosted" : `custodial (${custodianName ?? "unknown"})`}` : null,
+              ].filter(Boolean).join(" | ")
             : `${fromCurrency} to ${toCurrency} Exchange`,
-          sourceExchange: null, blockchainTxHash: null,
+          sourceExchange: isFiatToCrypto ? "Independent Reserve (DCE-100461150-001)" : null,
+          blockchainTxHash: null,
           assetType: classifyAssetType(fromCurrency, toCurrency),
           direction: "exchange",
-          // Record destination wallet address for AUSTRAC FATF Travel Rule compliance
+          // AUSTRAC FATF Travel Rule: beneficiaryAddress = destination wallet
+          // beneficiaryName = wallet type + custodian (for audit trail)
           beneficiaryAddress: destinationWallet ?? null,
+          beneficiaryName: isFiatToCrypto && walletType
+            ? (walletType === "self_hosted" ? "Self-hosted wallet" : `Custodial — ${custodianName ?? "unknown"}`)
+            : null,
           riskFlag: false,
           reviewStatus: "clear",
           reviewNotes: null,

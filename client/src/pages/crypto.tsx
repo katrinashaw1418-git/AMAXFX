@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useFxRates, useFxRate } from "@/hooks/use-fx-rates";
 import { useWallets } from "@/hooks/use-portfolio";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,8 +16,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
   Wallet, Shield, RefreshCw,
-  AlertTriangle, Info, Phone, MessageSquare, X,
-  ArrowDown, Send, Mail,
+  AlertTriangle, Info, Phone, X,
+  ArrowDown, Send, Mail, Building2,
 } from "lucide-react";
 import YtdRateChart from "@/components/fx/ytd-rate-chart";
 import RateSparkline from "@/components/fx/rate-sparkline";
@@ -72,16 +73,23 @@ export default function Crypto() {
   const [mode, setMode] = useState<"buy" | "sell">("buy");
 
   // BUY form state
-  const [fromCurrency,     setFromCurrency]     = useState("AUD");
-  const [toCurrency,       setToCurrency]       = useState("BTC");
-  const [amount,           setAmount]           = useState("500");
+  const [fromCurrency,      setFromCurrency]      = useState("AUD");
+  const [toCurrency,        setToCurrency]        = useState("BTC");
+  const [amount,            setAmount]            = useState("500");
   const [destinationWallet, setDestinationWallet] = useState("");
-  const [complianceAgreed, setComplianceAgreed] = useState(false);
-  const [showConfirm,      setShowConfirm]      = useState(false);
+  // Travel Rule — BUY side (AMAX is originator VASP, must collect destination wallet info)
+  const [destWalletType,    setDestWalletType]    = useState<"" | "custodial" | "self_hosted">("");
+  const [destCustodianName, setDestCustodianName] = useState("");
+  const [complianceAgreed,  setComplianceAgreed]  = useState(false);
+  const [showConfirm,       setShowConfirm]       = useState(false);
 
   // SELL enquiry state
-  const [sellCurrency, setSellCurrency] = useState("BTC");
-  const [sellAmount,   setSellAmount]   = useState("");
+  const [sellCurrency,            setSellCurrency]            = useState("BTC");
+  const [sellAmount,              setSellAmount]              = useState("");
+  // Travel Rule — SELL side (AMAX is beneficiary VASP, must collect originator wallet info)
+  const [originatorWallet,        setOriginatorWallet]        = useState("");
+  const [originatorWalletType,    setOriginatorWalletType]    = useState<"" | "custodial" | "self_hosted">("");
+  const [originatorCustodianName, setOriginatorCustodianName] = useState("");
 
   const [showAdvisor, setShowAdvisor] = useState(true);
 
@@ -92,7 +100,10 @@ export default function Crypto() {
   const { data: fxRate,  isLoading: rateLoading }  = useFxRate(fromCurrency, toCurrency);
 
   const exchangeMutation = useMutation({
-    mutationFn: async (data: { fromCurrency: string; toCurrency: string; amount: number; destinationWallet: string }) => {
+    mutationFn: async (data: {
+      fromCurrency: string; toCurrency: string; amount: number;
+      destinationWallet: string; walletType?: string; custodianName?: string;
+    }) => {
       const res = await apiRequest("POST", "/api/fx-exchange", data);
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -103,11 +114,13 @@ export default function Crypto() {
     onSuccess: (data) => {
       toast({
         title: "Exchange Submitted",
-        description: `${amount} ${fromCurrency} → ${data.convertedAmount?.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${toCurrency} — delivery to your wallet will be confirmed within 1 business day.`,
+        description: `${amount} ${fromCurrency} → ${data.convertedAmount?.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${toCurrency} — Independent Reserve will process and deliver to your wallet within 1 business day.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       setDestinationWallet("");
+      setDestWalletType("");
+      setDestCustodianName("");
       setComplianceAgreed(false);
     },
     onError: (error: Error) => {
@@ -142,21 +155,25 @@ export default function Crypto() {
       return;
     }
     if (!destinationWallet.trim()) {
-      toast({ title: "Wallet Address Required", description: "You must provide an external wallet address. AMAX does not hold crypto — your digital assets are delivered directly to your wallet.", variant: "destructive" });
+      toast({ title: "Wallet Address Required", description: "You must provide a destination wallet address. AMAX delivers crypto directly to your external wallet.", variant: "destructive" });
       return;
     }
     if (!isValidWalletAddress(destinationWallet, toCurrency)) {
       toast({ title: "Invalid Wallet Address", description: `The address entered does not appear to be a valid ${toCurrency} wallet address. Please check and try again.`, variant: "destructive" });
       return;
     }
-    // Rate staleness block — consumer protection, AUSTRAC concern
+    // Travel Rule: wallet type is mandatory from 1 July 2026 (AML/CTF Amendment Act 2024)
+    if (!destWalletType) {
+      toast({ title: "Wallet Type Required", description: "Please indicate whether the destination wallet is self-hosted or custodial. This is required under Australia's Travel Rule obligations.", variant: "destructive" });
+      return;
+    }
+    if (destWalletType === "custodial" && !destCustodianName.trim()) {
+      toast({ title: "Custodian Name Required", description: "Please enter the name of the exchange or institution that holds the destination wallet.", variant: "destructive" });
+      return;
+    }
     if (rateIsStale) {
       const rateAge = (fxRate as any)?.rateAgeMinutes ?? 0;
-      toast({
-        title: "Rate Expired — Please Wait",
-        description: `The displayed rate is ${rateAge} minute${rateAge !== 1 ? "s" : ""} old. Rates must be within 5 minutes. A fresh rate will load automatically.`,
-        variant: "destructive",
-      });
+      toast({ title: "Rate Expired — Please Wait", description: `Rate is ${rateAge} minute${rateAge !== 1 ? "s" : ""} old. Rates must be within 5 minutes. A fresh rate will load automatically.`, variant: "destructive" });
       return;
     }
     if (!complianceAgreed) {
@@ -168,7 +185,12 @@ export default function Crypto() {
 
   const handleConfirm = () => {
     setShowConfirm(false);
-    exchangeMutation.mutate({ fromCurrency, toCurrency, amount: parseFloat(amount), destinationWallet });
+    exchangeMutation.mutate({
+      fromCurrency, toCurrency, amount: parseFloat(amount),
+      destinationWallet,
+      walletType: destWalletType,
+      custodianName: destWalletType === "custodial" ? destCustodianName : undefined,
+    });
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -179,7 +201,7 @@ export default function Crypto() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Crypto Exchange</h1>
-          <p className="text-gray-500 text-sm mt-1">DCE-registered fiat ↔ digital asset exchange</p>
+          <p className="text-gray-500 text-sm mt-1">DCE-registered fiat ↔ digital asset exchange via Independent Reserve</p>
         </div>
         {!rateLoading && (
           <div className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg text-sm">
@@ -199,20 +221,22 @@ export default function Crypto() {
         )}
       </div>
 
-      {/* DCE Registration Notice */}
+      {/* DCE + Custody Notice */}
       <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
         <Shield className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
         <div className="text-sm text-amber-800 space-y-1">
           <p>
-            <span className="font-semibold">AUSTRAC DCE Registration — Exchange Only:</span>{" "}
+            <span className="font-semibold">AUSTRAC DCE Registration — Exchange &amp; Delivery Only:</span>{" "}
             AMAX Financial Pty Ltd (ABN 54 690 827 608) is registered as a Digital Currency Exchange (DCE) with AUSTRAC.
-            AMAX provides fiat ↔ crypto exchange services only. AMAX does not hold, store, or custody digital assets
-            on your behalf and does not maintain crypto accounts for users.
+            AMAX does not hold, store, or custody digital assets on your behalf and does not maintain crypto accounts
+            for users.
           </p>
           <p className="text-xs text-amber-700">
-            Purchased crypto is delivered to your nominated external wallet address.
-            All transactions are subject to AML/CTF monitoring under the <em>Anti-Money Laundering and
-            Counter-Terrorism Financing Act 2006</em> (Cth).
+            <span className="font-medium">Settlement custodian:</span>{" "}
+            Exchange and delivery is executed via Independent Reserve Pty Ltd (ABN 46 164 681 443,
+            AUSTRAC DCE-100461150-001), Australia's longest-running institutional exchange.
+            Independent Reserve maintains 1:1 asset segregation with no rehypothecation.
+            All transactions are subject to AML/CTF monitoring and FATF Travel Rule obligations.
           </p>
         </div>
       </div>
@@ -230,7 +254,7 @@ export default function Crypto() {
         <CardContent className="py-4 px-6">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <p className="text-slate-400 text-xs uppercase tracking-wide mb-1">Live Spot Rate</p>
+              <p className="text-slate-400 text-xs uppercase tracking-wide mb-1">Live Spot Rate — Independent Reserve</p>
               <p className="text-2xl font-bold text-white">
                 {rateLoading ? (
                   <span className="text-slate-400 text-base">Loading…</span>
@@ -267,16 +291,16 @@ export default function Crypto() {
                   <TabsTrigger value="sell" className="flex-1">Sell Crypto</TabsTrigger>
                 </TabsList>
 
-                {/* ── BUY TAB ── */}
+                {/* ─────────── BUY TAB ─────────── */}
                 <TabsContent value="buy" className="space-y-5 mt-0">
 
                   {/* DCE Delivery Notice */}
                   <div className="flex items-start gap-2.5 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
                     <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                     <span>
-                      <strong>Exchange &amp; Deliver Only:</strong> AMAX exchanges your fiat for digital assets and
-                      delivers them directly to your nominated external wallet address. AMAX does not maintain a
-                      crypto account on your behalf. You must provide a valid external wallet address below.
+                      <strong>Exchange &amp; Deliver Only:</strong> AMAX routes your exchange through
+                      Independent Reserve and delivers digital assets to your nominated external wallet.
+                      AMAX never holds crypto — no AMAX crypto account is maintained on your behalf.
                     </span>
                   </div>
 
@@ -307,12 +331,12 @@ export default function Crypto() {
                   <div className="flex items-center gap-3">
                     <div className="flex-1 border-t border-dashed border-gray-200" />
                     <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-gray-50 border border-gray-200 rounded-full px-3 py-1">
-                      <ArrowDown className="w-3 h-3" /> Exchange
+                      <ArrowDown className="w-3 h-3" /> Exchange via Independent Reserve
                     </div>
                     <div className="flex-1 border-t border-dashed border-gray-200" />
                   </div>
 
-                  {/* TO — Crypto selector only, no balance */}
+                  {/* TO — Crypto selector */}
                   <div className="space-y-2">
                     <Label className="text-xs text-gray-500 uppercase tracking-wide">You Receive (Digital Asset)</Label>
                     <Select value={toCurrency} onValueChange={setToCurrency}>
@@ -324,11 +348,11 @@ export default function Crypto() {
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-blue-600 flex items-center gap-1">
-                      <Send className="w-3 h-3" /> Delivered to your external wallet — see field below
+                      <Send className="w-3 h-3" /> Delivered by Independent Reserve to your external wallet — enter address below
                     </p>
                   </div>
 
-                  {/* Destination Wallet Address */}
+                  {/* ─── Destination Wallet Address ─── */}
                   <div className="space-y-1.5">
                     <Label htmlFor="dest-wallet" className="text-xs text-gray-700 font-medium">
                       Destination External Wallet Address <span className="text-red-500">*</span>
@@ -345,9 +369,8 @@ export default function Crypto() {
                       className="font-mono text-sm"
                     />
                     <p className="text-xs text-gray-500">
-                      Your {toCurrency} will be delivered to this address. AMAX does not hold or store crypto — delivery is to
-                      your external wallet only (Coinbase, Binance, Ledger, MetaMask, etc.). Double-check this address:
-                      deliveries cannot be reversed.
+                      Independent Reserve will deliver {toCurrency} to this address on behalf of AMAX.
+                      Neither AMAX nor Independent Reserve can reverse deliveries to incorrect addresses.
                     </p>
                     {destinationWallet && !isValidWalletAddress(destinationWallet, toCurrency) && (
                       <p className="text-xs text-red-600 flex items-center gap-1">
@@ -361,7 +384,57 @@ export default function Crypto() {
                     )}
                   </div>
 
-                  {/* Breakdown */}
+                  {/* ─── Travel Rule — Wallet Type Declaration ─── */}
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+                    <div className="flex items-start gap-2">
+                      <Shield className="w-3.5 h-3.5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-semibold text-blue-800">
+                          FATF Travel Rule — Destination Wallet Declaration <span className="text-red-500">*</span>
+                        </p>
+                        <p className="text-xs text-blue-700 mt-0.5">
+                          Required under the <em>AML/CTF Amendment Act 2024</em> (Cth), effective 1 July 2026.
+                          As originator VASP, AMAX must collect and transmit this information to Independent Reserve.
+                        </p>
+                      </div>
+                    </div>
+                    <RadioGroup
+                      value={destWalletType}
+                      onValueChange={(v) => { setDestWalletType(v as "custodial" | "self_hosted"); setDestCustodianName(""); }}
+                      className="space-y-2"
+                    >
+                      <div className="flex items-start gap-2.5">
+                        <RadioGroupItem value="self_hosted" id="wt-self" className="mt-0.5" />
+                        <label htmlFor="wt-self" className="text-xs text-blue-900 cursor-pointer leading-relaxed">
+                          <span className="font-medium">Self-hosted wallet</span> — I personally control the private key
+                          for this wallet (e.g. Ledger, Trezor, MetaMask, Trust Wallet)
+                        </label>
+                      </div>
+                      <div className="flex items-start gap-2.5">
+                        <RadioGroupItem value="custodial" id="wt-custodial" className="mt-0.5" />
+                        <label htmlFor="wt-custodial" className="text-xs text-blue-900 cursor-pointer leading-relaxed">
+                          <span className="font-medium">Custodial wallet</span> — This wallet is held at an
+                          exchange or financial institution (e.g. Coinbase, Binance, Kraken)
+                        </label>
+                      </div>
+                    </RadioGroup>
+                    {destWalletType === "custodial" && (
+                      <div className="space-y-1">
+                        <Label htmlFor="dest-custodian" className="text-xs text-blue-800 font-medium">
+                          Exchange / Institution Name <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="dest-custodian"
+                          value={destCustodianName}
+                          onChange={e => setDestCustodianName(e.target.value)}
+                          placeholder="e.g. Coinbase, Binance, Kraken, Independent Reserve"
+                          className="text-sm h-9"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ─── Breakdown ─── */}
                   <div className="p-4 bg-gray-50 rounded-lg space-y-2 text-sm">
                     <div className="flex justify-between font-medium text-gray-800 text-base pb-1 border-b">
                       <span>You pay</span>
@@ -376,11 +449,23 @@ export default function Crypto() {
                       <span className="font-medium">{fee.toFixed(8)} {toCurrency}</span>
                     </div>
                     <div className="flex justify-between text-gray-600">
-                      <span>Delivery</span>
-                      <span className="font-medium text-blue-700 truncate max-w-[220px]">
-                        {destinationWallet ? `→ ${destinationWallet.slice(0, 12)}…` : "External wallet address required"}
+                      <span>Delivered to</span>
+                      <span className="font-medium text-blue-700 truncate max-w-[200px] text-right">
+                        {destinationWallet
+                          ? `${destinationWallet.slice(0, 8)}…${destinationWallet.slice(-6)}`
+                          : <span className="text-gray-400 italic">Wallet address required</span>}
                       </span>
                     </div>
+                    {destWalletType && (
+                      <div className="flex justify-between text-gray-600">
+                        <span>Wallet type</span>
+                        <span className="font-medium text-blue-700">
+                          {destWalletType === "self_hosted"
+                            ? "Self-hosted"
+                            : `Custodial${destCustodianName ? ` — ${destCustodianName}` : ""}`}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between font-semibold text-gray-900 pt-1 border-t text-base">
                       <span>You receive</span>
                       <span>{convertedAmount.toLocaleString(undefined, { maximumFractionDigits: 8 })} {toCurrency}</span>
@@ -391,11 +476,12 @@ export default function Crypto() {
                   <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-amber-50 border border-amber-200 text-amber-800">
                     <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                     <span>
-                      This exchange is arranged by AMAX Financial Pty Ltd (ABN 54 690 827 608) under its AUSTRAC DCE registration.
-                      AMAX does not hold, store, or custody digital assets. Upon execution, the purchased {toCurrency} will be
-                      delivered to your specified external wallet address. AMAX does not maintain crypto accounts on your behalf.
-                      Digital assets are not legal tender, are subject to significant price volatility, and exchanges are
-                      irreversible once confirmed.
+                      This exchange is arranged by AMAX Financial Pty Ltd (ABN 54 690 827 608) under its AUSTRAC DCE
+                      registration and executed via Independent Reserve Pty Ltd (DCE-100461150-001). AMAX does not hold,
+                      store, or custody digital assets. Purchased {toCurrency} is delivered by Independent Reserve to
+                      your specified external wallet address. AMAX does not maintain crypto accounts on your behalf.
+                      Digital assets are not legal tender, are subject to significant price volatility, and exchanges
+                      are irreversible once confirmed.
                     </span>
                   </div>
 
@@ -421,7 +507,9 @@ export default function Crypto() {
                     />
                     <label htmlFor="compliance-agreed" className="text-xs text-gray-600 leading-relaxed cursor-pointer">
                       I confirm the destination wallet address is correct and belongs to me or an authorised recipient.
-                      I acknowledge this exchange is subject to KYC, AML/CTF monitoring, and AUSTRAC recordkeeping obligations.
+                      I confirm the wallet type declaration above is accurate.
+                      I acknowledge this exchange is subject to KYC, AML/CTF monitoring, and AUSTRAC recordkeeping
+                      obligations including the FATF Travel Rule.
                       I understand digital asset exchanges are irreversible once confirmed.
                     </label>
                   </div>
@@ -440,22 +528,32 @@ export default function Crypto() {
                   </Button>
                 </TabsContent>
 
-                {/* ── SELL TAB ── */}
+                {/* ─────────── SELL TAB ─────────── */}
                 <TabsContent value="sell" className="space-y-5 mt-0">
+
+                  {/* How SELL works with IR */}
                   <div className="flex items-start gap-2.5 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
                     <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                     <span>
-                      <strong>SELL / CONVERT to AUD:</strong> To sell digital assets for AUD, contact our compliance team.
-                      We will provide you with a one-time exchange deposit address for your specific transaction.
-                      AUD proceeds will be credited to your nominated bank account or AMAX fiat wallet within
-                      1 business day of confirmed receipt.
+                      <strong>SELL / CONVERT to AUD — Independent Reserve Custody Chain:</strong>{" "}
+                      To sell digital assets, AMAX instructs Independent Reserve Pty Ltd (DCE-100461150-001)
+                      to provide you with a one-time exchange deposit address. You send crypto directly to
+                      Independent Reserve's address — <strong>AMAX never receives your crypto</strong>.
+                      Independent Reserve executes the exchange and remits AUD proceeds to AMAX, which credits
+                      your AMAX AUD wallet. Proceeds are credited within 1 business day of confirmed receipt.
                     </span>
                   </div>
 
                   {/* Sell enquiry form */}
-                  <div className="space-y-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                    <p className="text-sm font-medium text-gray-800">Sell Enquiry — Step 1</p>
-                    <p className="text-xs text-gray-500">Tell us what you want to sell. We will confirm rates and provide a deposit address.</p>
+                  <div className="space-y-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">Sell Enquiry — Step 1 of 4</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Provide details below. Our team will confirm rates and issue a written confirmation
+                        with Independent Reserve's one-time deposit address before you send any crypto.
+                        Do not send crypto without first receiving written confirmation.
+                      </p>
+                    </div>
 
                     <div className="space-y-1.5">
                       <Label className="text-xs">Digital Asset to Sell</Label>
@@ -468,6 +566,7 @@ export default function Crypto() {
                         </SelectContent>
                       </Select>
                     </div>
+
                     <div className="space-y-1.5">
                       <Label className="text-xs">Approximate Amount ({sellCurrency})</Label>
                       <Input
@@ -478,12 +577,68 @@ export default function Crypto() {
                       />
                     </div>
 
+                    {/* Travel Rule — originator wallet info (AMAX is beneficiary VASP) */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="orig-wallet" className="text-xs font-medium">
+                        Sending Wallet Address <span className="text-red-500">*</span>{" "}
+                        <span className="text-gray-400 font-normal">(Travel Rule)</span>
+                      </Label>
+                      <Input
+                        id="orig-wallet"
+                        value={originatorWallet}
+                        onChange={e => setOriginatorWallet(e.target.value)}
+                        placeholder={sellCurrency === "BTC" ? "bc1q… or 1A1z…" : "0x742d35Cc6634C0532925..."}
+                        className="font-mono text-sm"
+                      />
+                      <p className="text-xs text-gray-500">
+                        The wallet address you will be sending {sellCurrency} from. Required under the FATF Travel Rule —
+                        Independent Reserve must verify originator information on inbound transfers.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+                      <p className="text-xs font-semibold text-blue-800 flex items-center gap-1">
+                        <Shield className="w-3 h-3" /> Travel Rule — Sending Wallet Type <span className="text-red-500">*</span>
+                      </p>
+                      <RadioGroup
+                        value={originatorWalletType}
+                        onValueChange={(v) => { setOriginatorWalletType(v as "custodial" | "self_hosted"); setOriginatorCustodianName(""); }}
+                        className="space-y-2"
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <RadioGroupItem value="self_hosted" id="ot-self" className="mt-0.5" />
+                          <label htmlFor="ot-self" className="text-xs text-blue-900 cursor-pointer">
+                            <span className="font-medium">Self-hosted</span> — I control the private key
+                          </label>
+                        </div>
+                        <div className="flex items-start gap-2.5">
+                          <RadioGroupItem value="custodial" id="ot-custodial" className="mt-0.5" />
+                          <label htmlFor="ot-custodial" className="text-xs text-blue-900 cursor-pointer">
+                            <span className="font-medium">Custodial</span> — held at an exchange/institution
+                          </label>
+                        </div>
+                      </RadioGroup>
+                      {originatorWalletType === "custodial" && (
+                        <Input
+                          value={originatorCustodianName}
+                          onChange={e => setOriginatorCustodianName(e.target.value)}
+                          placeholder="Exchange or institution name (e.g. Coinbase, Binance)"
+                          className="text-sm h-9 mt-1"
+                        />
+                      )}
+                    </div>
+
                     <Button
                       className="w-full"
                       onClick={() => {
+                        const walletTypeStr = originatorWalletType === "self_hosted"
+                          ? "Self-hosted wallet (I control the private key)"
+                          : originatorWalletType === "custodial"
+                          ? `Custodial wallet at: ${originatorCustodianName || "TBD"}`
+                          : "TBD";
                         const subject = encodeURIComponent(`AMAX Crypto SELL Enquiry — ${sellAmount || "?"} ${sellCurrency}`);
                         const body = encodeURIComponent(
-                          `Hello AMAX Compliance Team,\n\nI would like to sell the following digital assets:\n\nAsset: ${sellCurrency}\nAmount: ${sellAmount || "TBD"}\n\nPlease provide me with a one-time deposit address and confirm the current rate and AUD proceeds.\n\nThank you.`
+                          `Hello AMAX Compliance Team,\n\nI would like to sell the following digital assets via Independent Reserve:\n\nAsset: ${sellCurrency}\nAmount: ${sellAmount || "TBD"}\nSending wallet address: ${originatorWallet || "TBD"}\nSending wallet type: ${walletTypeStr}\n\nPlease confirm rates and provide Independent Reserve's one-time deposit address in writing before I send any crypto.\n\nThank you.`
                         );
                         window.open(`mailto:info@amaxglobal.com.au?subject=${subject}&body=${body}`, "_self");
                       }}
@@ -491,27 +646,43 @@ export default function Crypto() {
                       <Mail className="w-4 h-4 mr-2" />
                       Email Sell Enquiry to Compliance
                     </Button>
-                    <p className="text-xs text-gray-500 text-center">Or call us: +61 2 1234 5678</p>
+                    <p className="text-xs text-gray-500 text-center">Or call: +61 2 1234 5678</p>
                   </div>
 
+                  {/* Process steps — corrected for IR custody chain */}
                   <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-3 text-sm">
-                    <p className="font-medium text-gray-800">How the SELL process works:</p>
-                    <ol className="space-y-2 text-xs text-gray-600 list-none">
-                      <li className="flex items-start gap-2"><span className="bg-amber-600 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs font-bold">1</span><span>Contact compliance team with the asset and amount you wish to sell.</span></li>
-                      <li className="flex items-start gap-2"><span className="bg-amber-600 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs font-bold">2</span><span>We confirm the current rate and provide a one-time exchange deposit address for your transaction.</span></li>
-                      <li className="flex items-start gap-2"><span className="bg-amber-600 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs font-bold">3</span><span>You send your crypto to the provided address. AML/CTF monitoring applies to all inbound transactions.</span></li>
-                      <li className="flex items-start gap-2"><span className="bg-amber-600 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs font-bold">4</span><span>Upon confirmed receipt, AMAX executes the exchange and credits AUD to your nominated account within 1 business day.</span></li>
+                    <p className="font-medium text-gray-800 flex items-center gap-1.5">
+                      <Building2 className="w-4 h-4 text-amber-600" /> How the SELL process works:
+                    </p>
+                    <ol className="space-y-2.5 text-xs text-gray-600 list-none">
+                      <li className="flex items-start gap-2">
+                        <span className="bg-amber-600 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs font-bold">1</span>
+                        <span>Submit enquiry above with asset, amount, sending wallet address, and wallet type.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="bg-amber-600 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs font-bold">2</span>
+                        <span>AMAX compliance team verifies your KYC, confirms the rate, and instructs Independent Reserve to issue a one-time exchange deposit address for your transaction.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="bg-amber-600 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs font-bold">3</span>
+                        <span>You receive written confirmation with Independent Reserve's deposit address. Only then should you send your {sellCurrency || "crypto"} — directly to Independent Reserve, not to AMAX.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="bg-amber-600 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs font-bold">4</span>
+                        <span>Independent Reserve confirms receipt, executes the exchange, and remits AUD proceeds to AMAX. Your AMAX AUD wallet is credited within 1 business day.</span>
+                      </li>
                     </ol>
                   </div>
 
                   <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-amber-50 border border-amber-200 text-amber-800">
                     <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                     <span>
-                      SELL transactions are processed by AMAX's compliance team (Compliance Officer: Qin Xiong).
-                      Do not send crypto to any address without first receiving written confirmation from AMAX.
-                      AMAX does not maintain standing crypto wallets for users — each sell transaction uses a
-                      one-time exchange address. All transactions are subject to AML/CTF monitoring and may be
-                      reported to AUSTRAC.
+                      Do not send crypto to any address without first receiving <strong>written confirmation</strong> from
+                      AMAX specifying Independent Reserve's one-time deposit address for your transaction.
+                      AMAX does not maintain standing crypto wallets and does not directly receive your crypto.
+                      Each sell transaction uses a unique one-time address issued by Independent Reserve.
+                      All transactions are subject to AML/CTF monitoring and FATF Travel Rule obligations
+                      and may be reported to AUSTRAC.
                     </span>
                   </div>
                 </TabsContent>
@@ -541,19 +712,13 @@ export default function Crypto() {
                       BTC: { flag: "₿" }, ETH: { flag: "Ξ" },
                       USDT: { flag: "💵" }, USDC: { flag: "🪙" },
                     };
-
                     return (
                       <div
                         key={`${base}-${target}`}
                         className={`flex items-center gap-2 p-2.5 rounded-lg cursor-pointer transition-colors border ${
                           isSelected ? "bg-amber-50 border-amber-300" : "bg-gray-50 border-transparent hover:bg-gray-100"
                         }`}
-                        onClick={() => {
-                          if (mode === "buy") {
-                            setFromCurrency(base);
-                            setToCurrency(target);
-                          }
-                        }}
+                        onClick={() => { if (mode === "buy") { setFromCurrency(base); setToCurrency(target); } }}
                       >
                         <div className="flex-1 min-w-0">
                           <p className={`font-semibold text-xs ${isSelected ? "text-amber-700" : "text-gray-800"}`}>
@@ -590,12 +755,15 @@ export default function Crypto() {
         <Info className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-gray-500">
           Digital currency exchange services provided by AMAX Financial Pty Ltd (ABN 54 690 827 608), registered as a
-          Digital Currency Exchange (DCE) with AUSTRAC. AMAX does not hold, control, or custody digital assets at any
-          point and does not maintain crypto accounts on behalf of users. Purchased digital assets are delivered to
-          your nominated external wallet address upon exchange execution. Transactions are subject to AML/CTF monitoring
-          under the <em>Anti-Money Laundering and Counter-Terrorism Financing Act 2006</em> (Cth) and FATF Travel Rule
-          obligations. Digital assets are not legal tender, not backed by government guarantee, and subject to
-          significant price risk. Past performance is not indicative of future results.
+          Digital Currency Exchange (DCE) with AUSTRAC. Exchange and delivery is executed via Independent Reserve Pty Ltd
+          (ABN 46 164 681 443, AUSTRAC DCE-100461150-001, ISO 27001 certified), an Australian-domiciled institutional
+          exchange with 1:1 asset segregation and no rehypothecation. AMAX does not hold, control, or custody digital
+          assets at any point and does not maintain crypto accounts on behalf of users. Purchased digital assets are
+          delivered by Independent Reserve to your nominated external wallet address. All transactions are subject to
+          AML/CTF monitoring under the <em>Anti-Money Laundering and Counter-Terrorism Financing Act 2006</em> (Cth)
+          and FATF Travel Rule obligations (effective 1 July 2026). Digital assets are not legal tender, not backed
+          by government guarantee, and subject to significant price risk. Past performance is not indicative of
+          future results.
         </p>
       </div>
 
@@ -610,7 +778,7 @@ export default function Crypto() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="text-xs px-3 py-1.5 rounded-full font-medium w-fit bg-amber-100 text-amber-800">
-              Buy — Fiat → Digital Asset
+              Buy — Fiat → Digital Asset via Independent Reserve
             </div>
             <div className="bg-gray-50 rounded-lg p-4 space-y-3 text-sm">
               <div className="flex justify-between">
@@ -639,24 +807,29 @@ export default function Crypto() {
               </div>
               <div className="flex justify-between pt-2 border-t">
                 <span className="text-gray-600 text-xs">Delivery address</span>
-                <span className="text-xs font-mono text-blue-700 break-all text-right max-w-[220px]">
+                <span className="text-xs font-mono text-blue-700 break-all text-right max-w-[200px]">
                   {destinationWallet}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 text-xs">Wallet type</span>
+                <span className="text-xs text-blue-700">
+                  {destWalletType === "self_hosted"
+                    ? "Self-hosted"
+                    : `Custodial — ${destCustodianName}`}
                 </span>
               </div>
             </div>
             <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-amber-50 border border-amber-200 text-amber-800">
               <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
               <span>
-                I confirm the delivery wallet address is correct. Deliveries to incorrect addresses cannot be recovered.
-                AMAX will arrange this exchange under its AUSTRAC DCE registration. AMAX does not custody digital assets.
+                Delivery to incorrect addresses cannot be reversed. By confirming, you authorise AMAX Financial
+                Pty Ltd (ABN 54 690 827 608) to route this exchange through Independent Reserve Pty Ltd
+                (DCE-100461150-001) and deliver {toCurrency} to the specified wallet. AMAX does not custody
+                digital assets. This transaction is subject to AML/CTF monitoring and Travel Rule reporting
+                obligations and may be disclosed to AUSTRAC.
               </span>
             </div>
-            <p className="text-xs text-gray-500 text-center">
-              By confirming, you authorise AMAX Financial Pty Ltd (ABN 54 690 827 608) to exchange the above fiat
-              amount for digital assets and deliver them to your specified wallet address under its AUSTRAC DCE
-              registration. AMAX does not custody or store digital assets. This transaction is subject to AML/CTF
-              monitoring and may be reported to AUSTRAC.
-            </p>
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowConfirm(false)} className="flex-1">Cancel</Button>
@@ -675,18 +848,18 @@ export default function Crypto() {
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center space-x-2">
                   <div className="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center">
-                    <MessageSquare className="w-4 h-4 text-white" />
+                    <Building2 className="w-4 h-4 text-white" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm">Crypto Support</h3>
-                    <p className="text-xs text-gray-600">DCE Compliance Team</p>
+                    <p className="text-xs text-gray-600">AMAX Compliance Team</p>
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => setShowAdvisor(false)} className="h-6 w-6 p-0">
                   <X className="h-3 w-3" />
                 </Button>
               </div>
-              <p className="text-xs text-gray-700 mb-3">Questions about digital asset exchange or compliance? Our team can assist.</p>
+              <p className="text-xs text-gray-700 mb-3">Questions about crypto exchange or sell enquiries? Our team can help.</p>
               <div className="flex items-center space-x-2 text-amber-600 mb-3">
                 <Phone className="w-3 h-3" />
                 <span className="font-medium text-xs">+61 2 1234 5678</span>

@@ -1,0 +1,148 @@
+SELL / CONVERT to AUD: To sell digital assets for AUD, contact our compliance team. We will provide you with a one-time exchange deposit address for your specific transaction. AUD proceeds will be credited to your nominated bank account or AMAX fiat wallet within 1 business day of confirmed receipt.
+Sell Enquiry — Step 1
+Tell us what you want to sell. We will confirm rates and provide a deposit address.
+Digital Asset to Sell₿ BTC – Bitcoin
+Approximate Amount (BTC)
+Email Sell Enquiry to Compliance
+Or call us: +61 2 1234 5678
+How the SELL process works:
+1. 1Contact compliance team with the asset and amount you wish to sell.
+2. 2We confirm the current rate and provide a one-time exchange deposit address for your transaction.
+3. 3You send your crypto to the provided address. AML/CTF monitoring applies to all inbound transactions.
+4. 4Upon confirmed receipt, AMAX executes the exchange and credits AUD to your nominated account within 1 business day.
+SELL transactions are processed by AMAX's compliance team (Compliance Officer: Qin Xiong). Do not send crypto to any address without first receiving written confirmation from AMAX. AMAX does not maintain standing crypto wallets for users — each sell transaction uses a one-time exchange address. All transactions are subject to AML/CTF monitoring and may be reported to AUSTRAC. Exchange & Deliver Only: AMAX exchanges your fiat for digital assets and delivers them directly to your nominated external wallet address. AMAX does not maintain a crypto account on your behalf. You must provide a valid external wallet address below.
+You Pay (Fiat)
+🇦🇺 AUD
+Available: 2,591,552.56 AUD
+Exchange
+You Receive (Digital Asset)₿ BTC – Bitcoin
+Delivered to your external wallet — see field below
+Destination External Wallet Address *
+Your BTC will be delivered to this address. AMAX does not hold or store crypto — delivery is to your external wallet only (Coinbase, Binance, Ledger, MetaMask, etc.). Double-check this address: deliveries cannot be reversed.
+You pay500 AUD
+Spot Rate1 AUD = 0.00000987 BTC
+Processing Fee (0.5%)0.00002468 BTC
+DeliveryExternal wallet address required
+You receive0.00491033 BTC
+This exchange is arranged by AMAX Financial Pty Ltd (ABN 54 690 827 608) under its AUSTRAC DCE registration. AMAX does not hold, store, or custody digital assets. Upon execution, the purchased BTC will be delivered to your specified external wallet address. AMAX does not maintain crypto accounts on your behalf. Digital assets are not legal tender, are subject to significant price volatility, and exchanges are irreversible once confirmed.
+I confirm the destination wallet address is correct and belongs to me or an authorised recipient. I acknowledge this exchange is subject to KYC, AML/CTF monitoring, and AUSTRAC recordkeeping obligations. I understand digital asset exchanges are irreversible once confirmed.  IS IT CORRECT? 
+
+Yes — the text you’ve provided largely aligns with AUSTRAC and DCE compliance requirements, but I’ll break it down carefully and highlight any potential issues or improvements.
+
+✅ What is correct / compliant:
+One-time deposit addresses for sells:
+AUSTRAC expects exchanges to avoid holding client funds unnecessarily. Using a one-time deposit address per transaction reduces custodial risk and is compliant.
+AML/CTF monitoring:
+Explicitly stating that all inbound transactions are monitored for AML/CTF and may be reported to AUSTRAC is correct.
+External wallet delivery:
+AMAX does not custody crypto; delivering to the customer’s external wallet is fine and reduces regulatory risk.
+KYC acknowledgment:
+Requiring the user to confirm the wallet is theirs and agreeing to KYC/AML/CTF obligations is good practice.
+No reversals / volatility disclaimer:
+Warning about irreversibility and price volatility is necessary to comply with fair dealing and consumer protection guidelines.
+AUSTRAC registration note:
+Clearly stating that AMAX operates under AUSTRAC DCE registration shows regulatory awareness.
+⚠️ Potential improvements / things to double-check:
+Spot rate and fees clarity:
+
+Ensure the calculation of fees and delivered amount is transparent and matches the agreed rate. In your example:
+
+You pay 500 AUD
+Spot Rate 1 AUD = 0.00000987 BTC
+Processing Fee 0.5% = 0.00002468 BTC
+You receive 0.00491033 BTC
+
+Let’s verify the math:
+
+Convert AUD to BTC at spot:
+500 × 0.00000987 = 0.004935 BTC
+Deduct 0.5% fee:
+0.004935 × 0.005 = 0.000024675 BTC ≈ 0.00002468 BTC ✅
+BTC to receive:
+0.004935 − 0.00002468 ≈ 0.00491032 BTC ✅
+
+✅ The math is correct.
+
+Compliance contact info:
+You mention “Qin Xiong, Compliance Officer” — make sure this is consistent with the officer listed in AUSTRAC registration, as discrepancies can trigger scrutiny.
+Consumer disclosures:
+You may want a short paragraph about risks of digital assets, as required under ASIC/consumer guidance for exchanges. Your note is good, but a bit more formal wording may help in a regulatory audit.
+Confirmation of funds transfer:
+Ensure your system generates a written confirmation before users send crypto. You mention this, which is correct.
+Summary
+
+Your text is mostly correct and AUSTRAC-compliant:
+
+One-time addresses ✅
+AML/CTF monitoring ✅
+No custody of digital assets ✅
+Fee transparency ✅
+User acknowledgment ✅
+
+Minor recommendations:
+
+Make sure the compliance officer matches the AUSTRAC registration record.
+Add a formal consumer risk disclosure paragraph (optional but recommended).
+Maintain clear records of confirmations for audit purposes.
+
+If you want, I can rewrite your SELL / CONVERT text so it is fully AUSTRAC- and ASIC-friendly, keeping all legal and compliance points while making it user-friendly for your website.
+
+Do you want me to do that?
+
+NOMINATE AN EXTERNAL CUSTODY FOR AMAX GIVE A FEW BEST OPTIONS
+
+
+Got it! Since AMAX does not custody digital assets internally, you need a reputable external custody provider for either cold storage or insured custodial services to safeguard client or operational crypto assets. Here are some of the best options for Australia and globally:
+
+1️⃣ Fireblocks
+Type: Institutional-grade custody and wallet infrastructure.
+Features:
+Multi-party computation (MPC) for private key security.
+Supports all major cryptocurrencies.
+Integration with exchanges, DeFi, and internal wallets.
+Insurance coverage available.
+Pros: Highly secure, widely used by exchanges and financial institutions.
+Cons: Cost can be high for small-scale use.
+Website: fireblocks.com
+2️⃣ BitGo
+Type: Institutional crypto custody and wallet services.
+Features:
+Multi-signature wallets.
+Insurance for assets under custody.
+Compliance-ready (AUSTRAC / global reporting).
+Pros: Well-established; supports fiat gateways for AUD.
+Cons: Setup process can be lengthy; fees apply.
+Website: bitgo.com
+3️⃣ Anchorage Digital (now part of Binance Custody in some regions)
+Type: Fully regulated digital asset custodian.
+Features:
+Federally regulated in the U.S. (SOC 2 Type II, ISO 27001).
+Cold storage with staking support.
+Insurance coverage.
+Pros: Strong compliance track record; good for institutional partnerships.
+Cons: May require international compliance setup if based outside Australia.
+Website: anchorage.com
+4️⃣ Coinbase Custody
+Type: Custodial services for institutions.
+Features:
+Cold storage with insurance up to certain limits.
+Supports AUD through banking integration in Australia.
+Compliance-ready (AML/CTF monitoring).
+Pros: Trusted, easy integration with Coinbase exchange if needed.
+Cons: Limited asset coverage compared to Fireblocks/BitGo.
+Website: custody.coinbase.com
+5️⃣ Gemini Custody
+Type: Regulated custodian and exchange.
+Features:
+SOC 2 certified and insured.
+Multi-signature and cold storage.
+Supports AUD deposits via partner banks.
+Pros: Strong regulatory reputation; suitable for Australian compliance.
+Cons: Integration may take time; fees for smaller volumes.
+Website: gemini.com/custody
+Considerations for AMAX:
+AUSTRAC compliance: Ensure custodian can provide reporting / audit support.
+Insurance: Prefer custodians that offer crypto insurance against theft or hacking.
+Integration: Check if the custodian can deliver directly to external wallets for your sell/exchange workflow.
+Multi-sig vs MPC: MPC (Fireblocks) is often preferred for internal transaction security over traditional multi-sig setups.
+Australian presence: Some custodians like BitGo, Fireblocks, and Coinbase have Australian compliance support, which helps with AUSTRAC audits.
