@@ -95,7 +95,7 @@ export default function Compliance() {
   const [sectionsRead,   setSectionsRead]   = useState<Set<number>>(new Set());
   const agreementScrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs        = useRef<(HTMLDivElement | null)[]>([]);
-  const allSectionsRead    = sectionsRead.size >= 14;
+  const allSectionsRead    = sectionsRead.size >= 13;
 
   // ── Step 2: Identity document + biometric verification ────────────────────
   const [docType,          setDocType]          = useState<"passport" | "driver_licence" | "national_id">("passport");
@@ -1109,7 +1109,15 @@ You declare:
 AMAX will independently screen accounts and transactions and may freeze or restrict accounts where legally required.`,
                     },
                     {
-                      title: "6. Digital Currency Risk Disclosure",
+                      title: "6. PEP Status Declaration",
+                      content: `I am not a Politically Exposed Person (PEP), nor an immediate family member or close associate of a PEP.
+
+A Politically Exposed Person is someone who holds or has held a prominent public position domestically or internationally (e.g., head of state, government minister, senior judicial officer, senior military officer, or executive of a state-owned enterprise).
+
+If my PEP status changes, I will notify AMAX immediately.`,
+                    },
+                    {
+                      title: "7. Digital Currency Risk Disclosure",
                       content: `Digital currency services involve significant risk:
 
 • Price Volatility: Prices can change rapidly, and you may lose all or part of your investment
@@ -1121,7 +1129,7 @@ AMAX will independently screen accounts and transactions and may freeze or restr
 Digital currencies are not legal tender, not government-backed, and not covered by the Financial Claims Scheme.`,
                     },
                     {
-                      title: "7. Account Terms",
+                      title: "8. Account Terms",
                       content: `Account Opening: Subject to identity verification and risk assessment.
 Transaction Limits: Default limits apply; enhanced limits may require additional KYC.
 Fees: Published online; may change with notice.
@@ -1133,18 +1141,18 @@ Complaints: Refer unresolved complaints to AFCA (www.afca.org.au · 1800 931 678
 Record Keeping: Records retained for at least 7 years per law.`,
                     },
                     {
-                      title: "8. Identity & Use Declaration",
+                      title: "9. Identity & Use Declaration",
                       content: `I am acting on my own behalf unless otherwise disclosed.
 All information I provide is true, accurate, and complete.
 I understand that AMAX may verify my identity and my account activity may be monitored.`,
                     },
                     {
-                      title: "9. Source of Funds Declaration",
+                      title: "10. Source of Funds Declaration",
                       content: `All funds deposited, exchanged, or remitted through AMAX are derived from legitimate sources.
 I will provide documentation if requested for verification.`,
                     },
                     {
-                      title: "10. Compliance Awareness Declaration",
+                      title: "11. Compliance Awareness Declaration",
                       content: `I understand that AMAX is required to:
 • Verify my identity
 • Monitor my transactions
@@ -1154,17 +1162,7 @@ I will provide documentation if requested for verification.`,
 I will cooperate fully with compliance requirements.`,
                     },
                     {
-                      title: "11. Sanctions Declaration",
-                      content: `I am not subject to any sanctions and am not acting on behalf of any sanctioned person or entity.
-I will notify AMAX immediately if this status changes.`,
-                    },
-                    {
-                      title: "12. PEP Status Declaration",
-                      content: `I am not a Politically Exposed Person (PEP), nor an immediate family member or close associate of a PEP.
-If my PEP status changes, I will notify AMAX immediately.`,
-                    },
-                    {
-                      title: "13. Ongoing Obligations Declaration",
+                      title: "12. Ongoing Obligations Declaration",
                       content: `I will notify AMAX of any material changes to my information, including:
 • Residential address or contact details
 • Source of funds or wealth
@@ -1172,7 +1170,7 @@ If my PEP status changes, I will notify AMAX immediately.`,
 • PEP or sanctions status`,
                     },
                     {
-                      title: "14. Accuracy & Legal Compliance Guarantee",
+                      title: "13. Accuracy & Legal Compliance Guarantee",
                       content: `I confirm that all information provided above is accurate and complete.
 I understand that providing false information is a criminal offence under Australian law.
 I consent to AMAX maintaining records, conducting verification, and monitoring my account for legal compliance.`,
@@ -1185,13 +1183,12 @@ I consent to AMAX maintaining records, conducting verification, and monitoring m
                     "bg-purple-50 border-purple-200",
                     "bg-orange-50 border-orange-200",
                     "bg-red-50 border-red-200",
+                    "bg-violet-50 border-violet-200",
                     "bg-yellow-50 border-yellow-200",
                     "bg-green-50 border-green-200",
                     "bg-indigo-50 border-indigo-200",
                     "bg-teal-50 border-teal-200",
                     "bg-sky-50 border-sky-200",
-                    "bg-rose-50 border-rose-200",
-                    "bg-violet-50 border-violet-200",
                     "bg-amber-50 border-amber-200",
                     "bg-indigo-50 border-indigo-300",
                   ];
@@ -1210,7 +1207,7 @@ I consent to AMAX maintaining records, conducting verification, and monitoring m
                             <Badge className="bg-indigo-100 text-indigo-800">Action Required</Badge>
                           </div>
                           <p className="text-xs text-gray-500 mt-0.5">
-                            Read all 14 sections and sign below to proceed — Electronic Transactions Act 1999 (Cth)
+                            Read all 13 sections and sign below to proceed — Electronic Transactions Act 1999 (Cth)
                           </p>
                         </div>
                       </div>
@@ -1340,7 +1337,7 @@ I consent to AMAX maintaining records, conducting verification, and monitoring m
                               <div className={`rounded-lg border p-3 text-xs text-gray-600 leading-relaxed transition-all ${
                                 allSectionsRead ? "bg-indigo-50 border-indigo-200" : "bg-gray-50 border-gray-200 opacity-50"
                               }`}>
-                                By signing, I confirm I have read and agree to all 14 sections of this Agreement, including the declarations in Sections 8–14 regarding my identity, source of funds, compliance awareness, sanctions status, PEP status, ongoing obligations, and accuracy guarantee.
+                                By signing, I confirm I have read and agree to all 13 sections of this Agreement, including the declarations in Sections 5–6 and 9–13 regarding sanctions, PEP status, identity, source of funds, compliance awareness, ongoing obligations, and accuracy guarantee.
                               </div>
                               <Button
                                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
