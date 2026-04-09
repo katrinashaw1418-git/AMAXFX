@@ -31,10 +31,10 @@ This platform is a comprehensive cross-border wealth management solution designe
 - **Document array**: Updated to use stepFiles[4] (Address) and stepFiles[5] (SOF); doc IDs 4 and 5 (no longer 3 and 4).
 
 ### KYC / AML / CTF gaps confirmed implemented
-- **Server-side KYC hard stop**: `requireKyc(userId, storage)` is called in both `handleDeposit` and `handleWithdraw` — returns 403 if `accountFrozen` or `kycStatus !== "verified"`.
-- **$10K TTR auto-flag**: Frontend regulatory disclosure renders when `amount >= 10000` in both deposit and withdrawal sections. Server sets `riskFlag: true`, `reviewStatus: "flagged"`, `reviewNotes: "AUSTRAC threshold"` on transactions ≥ 10,000.
-- **Travel Rule UI (crypto)**: `beneficiaryName` + `beneficiaryAddress` fields are required in the crypto withdrawal section; FATF Travel Rule disclosure shown; submission blocked if fields empty; email request pre-filled with both values.
-- **KYC refresh notification**: `kycRefreshDue` returned by `GET /api/kyc/profile`; compliance page shows "overdue" (red) or "due_soon" (amber, within 30 days) banners.
+- **Server-side KYC hard stop** (`server/auth.ts` — `requireKyc`): Three-layer check — (1) `accountFrozen` → 403 suspension message; (2) `kycProfileComplete=false` → 403 directing user to Step 1 of Compliance Centre; (3) `kycStatus !== "verified"` → 403 directing user to complete all steps. Called on all money-movement routes (deposit, withdraw, transfer, exchange, crypto).
+- **$10K TTR mandatory disclosure**: Amber banner with ⚖️ icon renders in both deposit and withdrawal amount fields when `amount >= 10000`, citing AML/CTF Act 2006 §43 and TTR obligation to AUSTRAC. Server auto-creates `complianceActions` TTR record and sets `riskFlag: true`, `reviewStatus: "flagged"`.
+- **Travel Rule UI — full beneficiary data** (`wallets-new.tsx`): Three required fields for external crypto sends — (1) Destination Wallet Address; (2) Beneficiary Full Legal Name; (3) **Beneficiary Physical/Postal Address** (new, citing AUSTRAC AML/CTF Rule 77B). All three validated before mailto submission; all included in email body. State reset on modal close.
+- **KYC refresh notification**: `kycRefreshDue` returned by `GET /api/kyc/profile`; compliance page shows "overdue" (red) or "due_soon" (amber, within 30 days) banners — implemented in previous session.
 
 ## Recent Changes (April 2026) — Navigation & Page Restructure
 

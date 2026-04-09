@@ -103,9 +103,15 @@ export async function requireKyc(userId: number, storageInstance: { getUser: (id
       { status: 403 }
     );
   }
+  if (!user.kycProfileComplete) {
+    throw Object.assign(
+      new Error("You must complete your KYC profile (Step 1 — Personal Information) before performing transactions. Please visit the Compliance Centre to continue."),
+      { status: 403 }
+    );
+  }
   if (user.kycStatus !== "verified") {
     throw Object.assign(
-      new Error("KYC verification required. Please complete identity verification to perform transactions."),
+      new Error("KYC verification required. Please complete all identity verification steps in the Compliance Centre before performing transactions."),
       { status: 403 }
     );
   }

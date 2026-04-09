@@ -169,6 +169,7 @@ export default function Wallets() {
   const [purposeOfTransfer, setPurposeOfTransfer] = useState('');
   const [beneficiaryName, setBeneficiaryName] = useState('');
   const [beneficiaryAddress, setBeneficiaryAddress] = useState('');
+  const [beneficiaryPhysicalAddress, setBeneficiaryPhysicalAddress] = useState('');
   const [depositSubmitted, setDepositSubmitted] = useState<{ referenceCode: string; currency: string; amount: string; method: string } | null>(null);
   const { data: checkoutStatus } = useQuery<{ configured: boolean }>({
     queryKey: ['/api/checkout/status'],
@@ -380,6 +381,9 @@ export default function Wallets() {
       setWithdrawAccountNumber('');
       setWithdrawPayId('');
       setWithdrawPayIdName('');
+      setBeneficiaryName('');
+      setBeneficiaryAddress('');
+      setBeneficiaryPhysicalAddress('');
     },
     onError: (error: any) => {
       const errorMessage = error.message || "Please try again later.";
@@ -884,9 +888,12 @@ export default function Wallets() {
                   </p>
                 )}
                 {parseFloat(amount) >= 10000 && (
-                  <p className="text-xs text-muted-foreground mt-2 p-2 bg-muted rounded border border-border">
-                    Transactions of {selectedWallet?.currency ?? ""} $10,000 or more may be subject to regulatory reporting obligations under the <em>Anti-Money Laundering and Counter-Terrorism Financing Act 2006</em> (Cth).
-                  </p>
+                  <div className="flex items-start gap-2 mt-2 p-2.5 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-800 dark:text-amber-300">
+                    <span className="flex-shrink-0">⚖️</span>
+                    <span>
+                      Transactions of {selectedWallet?.currency ?? ""} 10,000 or more are subject to mandatory reporting obligations under the <em>Anti-Money Laundering and Counter-Terrorism Financing Act 2006</em> (Cth) §43. AMAX is required to submit a Threshold Transaction Report (TTR) to AUSTRAC.
+                    </span>
+                  </div>
                 )}
               </div>
             )}
@@ -1150,10 +1157,21 @@ export default function Wallets() {
                       id="crypto-beneficiary-name"
                       value={beneficiaryName}
                       onChange={e => setBeneficiaryName(e.target.value)}
-                      placeholder="Full name of the wallet owner (required — Travel Rule)"
+                      placeholder="Full legal name of the wallet owner"
                       className="h-8 text-sm"
                     />
-                    <p className="text-xs text-muted-foreground mt-0.5">Enter the full legal name of the person or entity that owns the destination wallet.</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Full legal name of the person or entity that owns the destination wallet (required — FATF Travel Rule).</p>
+                  </div>
+                  <div>
+                    <Label htmlFor="crypto-beneficiary-physical" className="text-xs">Beneficiary Physical / Postal Address <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="crypto-beneficiary-physical"
+                      value={beneficiaryPhysicalAddress}
+                      onChange={e => setBeneficiaryPhysicalAddress(e.target.value)}
+                      placeholder="Street address, suburb, state, postcode, country"
+                      className="h-8 text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground mt-0.5">Physical or registered address of the beneficiary — required under AUSTRAC AML/CTF Rule 77B.</p>
                   </div>
                   <div>
                     <Label htmlFor="crypto-withdraw-network" className="text-xs">Network <span className="text-red-500">*</span></Label>
@@ -1177,11 +1195,11 @@ export default function Wallets() {
                     variant="outline"
                     className="w-full mt-1 h-8 text-sm"
                     onClick={() => {
-                      if (!beneficiaryAddress || !beneficiaryName) {
-                        toast({ title: "Fields Required", description: "Please enter the destination wallet address and beneficiary name (required under AUSTRAC Travel Rule).", variant: "destructive" });
+                      if (!beneficiaryAddress || !beneficiaryName || !beneficiaryPhysicalAddress) {
+                        toast({ title: "Fields Required", description: "Please enter the destination wallet address, beneficiary full legal name, and beneficiary physical address — all required under the AUSTRAC Travel Rule.", variant: "destructive" });
                         return;
                       }
-                      window.location.href = `mailto:info@amaxglobal.com.au?subject=Crypto Withdrawal Request - ${selectedWallet?.currency}&body=Please process my withdrawal request.%0A%0ACurrency: ${selectedWallet?.currency}%0ADestination Address: ${beneficiaryAddress}%0ABeneficiary Full Legal Name: ${beneficiaryName}%0A%0AI confirm the above information is accurate for Travel Rule compliance.`;
+                      window.location.href = `mailto:info@amaxglobal.com.au?subject=Crypto Withdrawal Request - ${selectedWallet?.currency}&body=Please process my withdrawal request.%0A%0ACurrency: ${selectedWallet?.currency}%0ADestination Wallet Address: ${beneficiaryAddress}%0ABeneficiary Full Legal Name: ${beneficiaryName}%0ABeneficiary Physical Address: ${encodeURIComponent(beneficiaryPhysicalAddress)}%0A%0AI confirm the above information is accurate for Travel Rule (FATF / AUSTRAC AML/CTF Rule 77B) compliance.`;
                     }}
                   >
                     Submit Withdrawal Request
@@ -1308,9 +1326,12 @@ export default function Wallets() {
                   </p>
                 )}
                 {parseFloat(amount) >= 10000 && (
-                  <p className="text-xs text-muted-foreground mt-2 p-2 bg-muted rounded border border-border">
-                    Transactions of {selectedWallet?.currency ?? ""} $10,000 or more may be subject to regulatory reporting obligations under the <em>Anti-Money Laundering and Counter-Terrorism Financing Act 2006</em> (Cth).
-                  </p>
+                  <div className="flex items-start gap-2 mt-2 p-2.5 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-800 dark:text-amber-300">
+                    <span className="flex-shrink-0">⚖️</span>
+                    <span>
+                      Transactions of {selectedWallet?.currency ?? ""} 10,000 or more are subject to mandatory reporting obligations under the <em>Anti-Money Laundering and Counter-Terrorism Financing Act 2006</em> (Cth) §43. AMAX is required to submit a Threshold Transaction Report (TTR) to AUSTRAC.
+                    </span>
+                  </div>
                 )}
               </div>
               {withdrawMethod === 'payid' && (

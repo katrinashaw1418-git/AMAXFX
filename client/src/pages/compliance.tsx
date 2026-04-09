@@ -93,6 +93,8 @@ export default function Compliance() {
   const [docType,          setDocType]          = useState<"passport" | "driver_licence" | "national_id">("passport");
   const [docExpiry,        setDocExpiry]        = useState("");           // YYYY-MM-DD from date input
   const [docIssueCountry,  setDocIssueCountry]  = useState("");           // issuing country (passport risk scoring)
+  const [editStep1, setEditStep1] = useState(false); // allow re-editing step 1 after completion
+  const [editStep2, setEditStep2] = useState(false); // allow re-editing step 2 after completion
   const [idVerifyComplete,  setIdVerifyComplete]  = useState(false);
   const [idDocsSubmitted,   setIdDocsSubmitted]   = useState(false); // true when Sumsub SDK complete → "under_review"
   const [addressDocApproved, setAddressDocApproved] = useState(false); // true when admin approves POA → "completed"
@@ -135,7 +137,8 @@ export default function Compliance() {
   const profileMutation = useMutation({
     mutationFn: (payload: any) => apiRequest("PUT", "/api/kyc/profile", payload),
     onSuccess: () => {
-      toast({ title: "Personal Information Saved", description: "Your KYC profile is complete. Please proceed to document upload." });
+      toast({ title: "Personal Information Saved", description: "Your KYC profile has been updated. Please proceed to the next step." });
+      setEditStep1(false);
       refetchProfile();
       queryClient.invalidateQueries({ queryKey: ["/api/kyc/profile"] });
     },
@@ -175,6 +178,7 @@ export default function Compliance() {
     onSuccess: async (res: any) => {
       const data = await res.json();
       toast({ title: "Agreement Signed", description: `Customer agreement signed — ref ${data.agreementRef}` });
+      setEditStep2(false);
       refetchProfile();
       queryClient.invalidateQueries({ queryKey: ["/api/kyc/profile"] });
     },
@@ -578,22 +582,24 @@ export default function Compliance() {
           )}
 
           {/* ── Step 1: Personal Information (mandatory first step) ── */}
-          {kycProfile?.kycProfileComplete ? (
-            <div className="flex items-start gap-4 p-4 border rounded-xl border-green-200 bg-green-50">
+          {kycProfile?.kycProfileComplete && !editStep1 ? (
+            <div className="flex items-start gap-4 p-4 border-2 border-green-200 bg-green-50 rounded-xl">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-600">
                 <CheckCircle className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="text-xs text-gray-400 font-medium">Step 1 of 4</span>
                   <h3 className="font-semibold text-gray-900">Personal Information</h3>
                   <Badge className="bg-green-100 text-green-800">Completed</Badge>
                 </div>
                 <p className="text-sm text-gray-600">
-                  {kycProfile.fullLegalName}{kycProfile.nationality ? ` · ${kycProfile.nationality}` : ""} · Profile saved and verified.
+                  {kycProfile.fullLegalName}{kycProfile.nationality ? ` · ${kycProfile.nationality}` : ""} · Profile saved.
                 </p>
               </div>
-              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+              <Button size="sm" variant="outline" className="flex-shrink-0 h-8 text-xs" onClick={() => setEditStep1(true)}>
+                Edit
+              </Button>
             </div>
           ) : (
             <div className="rounded-2xl border-2 border-blue-300 bg-white overflow-hidden shadow-sm">
@@ -822,17 +828,30 @@ export default function Compliance() {
 
                 {/* Footer actions */}
                 <div className="pt-1 space-y-3">
-                  <Button
-                    className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl"
-                    disabled={profileMutation.isPending}
-                    onClick={handleProfileSubmit}
-                  >
-                    {profileMutation.isPending ? (
-                      <span className="flex items-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Saving…</span>
-                    ) : (
-                      "Continue to Identity Verification →"
+                  <div className="flex gap-2">
+                    {editStep1 && kycProfile?.kycProfileComplete && (
+                      <Button
+                        variant="outline"
+                        className="h-11 text-sm rounded-xl"
+                        onClick={() => setEditStep1(false)}
+                      >
+                        Cancel
+                      </Button>
                     )}
-                  </Button>
+                    <Button
+                      className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl"
+                      disabled={profileMutation.isPending}
+                      onClick={handleProfileSubmit}
+                    >
+                      {profileMutation.isPending ? (
+                        <span className="flex items-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Saving…</span>
+                      ) : editStep1 ? (
+                        "Save Changes"
+                      ) : (
+                        "Continue to Identity Verification →"
+                      )}
+                    </Button>
+                  </div>
                   <div className="flex items-center justify-center gap-4 text-xs text-gray-400">
                     <span className="flex items-center gap-1"><Lock className="w-3 h-3" /> 256-bit encrypted</span>
                     <span>·</span>
@@ -1147,7 +1166,7 @@ export default function Compliance() {
                 }
 
                 // ── Step 2 expanded Customer Agreement card ─────────────────
-                if (def.id === 2 && status === "in_progress") {
+                if (def.id === 2 && (status === "in_progress" || (status === "completed" && editStep2))) {
                   const agreementSections = [
                     {
                       title: "1. Overview",
@@ -1525,13 +1544,24 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                               }`}>
                                 By signing, I confirm I have read and agree to all 18 sections of this Agreement, including the declarations in Sections 12–18 regarding identity, source of funds, compliance awareness, sanctions status, PEP status, ongoing obligations, and accuracy of information.
                               </div>
-                              <Button
-                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-                                disabled={!allSectionsRead || !signatureName.trim() || agreementMutation.isPending}
-                                onClick={() => agreementMutation.mutate({ signature: signatureName.trim(), pepDeclaration: false })}
-                              >
-                                {agreementMutation.isPending ? "Recording signature…" : "Sign Agreement & Continue"}
-                              </Button>
+                              <div className="flex gap-2">
+                                {editStep2 && status === "completed" && (
+                                  <Button
+                                    variant="outline"
+                                    className="h-10 text-sm"
+                                    onClick={() => setEditStep2(false)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                )}
+                                <Button
+                                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+                                  disabled={!allSectionsRead || !signatureName.trim() || agreementMutation.isPending}
+                                  onClick={() => agreementMutation.mutate({ signature: signatureName.trim(), pepDeclaration: false })}
+                                >
+                                  {agreementMutation.isPending ? "Recording signature…" : editStep2 ? "Re-sign Agreement" : "Sign Agreement & Continue"}
+                                </Button>
+                              </div>
                               <p className="text-[10px] text-center text-muted-foreground">
                                 Electronic signature valid under the Electronic Transactions Act 1999 (Cth) · AMAX Global records your IP address and timestamp
                               </p>
@@ -1700,47 +1730,8 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                   );
                 }
 
-                // ── Step 1 completed — read-only personal info review ───────
-                if (def.id === 1 && status === "completed") {
-                  return (
-                    <div key={def.id} className="border-2 border-green-200 bg-green-50 rounded-xl overflow-hidden">
-                      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-600">
-                          <CheckCircle className="w-5 h-5 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-gray-400 font-medium">Step 1 of 4</span>
-                            <h3 className="font-semibold text-gray-900">Personal Information</h3>
-                            <Badge className="bg-green-100 text-green-800">Completed</Badge>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-0.5">Your personal information has been saved — this is read-only for compliance purposes</p>
-                        </div>
-                      </div>
-                      <div className="px-4 pb-5">
-                        <div className="bg-white border border-green-200 rounded-xl p-4 space-y-3">
-                          <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                            <div><span className="text-gray-500 text-xs">Full Legal Name</span><p className="font-medium">{kycProfile?.fullLegalName || "—"}</p></div>
-                            <div><span className="text-gray-500 text-xs">Date of Birth</span><p className="font-medium">{kycProfile?.dateOfBirth || "—"}</p></div>
-                            <div><span className="text-gray-500 text-xs">Nationality</span><p className="font-medium">{kycProfile?.nationality || "—"}</p></div>
-                            <div><span className="text-gray-500 text-xs">Phone Number</span><p className="font-medium">{kycProfile?.phoneNumber || "—"}</p></div>
-                            <div className="col-span-2"><span className="text-gray-500 text-xs">Residential Address</span><p className="font-medium">{[kycProfile?.residentialAddress, kycProfile?.suburb, kycProfile?.stateRegion, kycProfile?.postcode, kycProfile?.addressCountry].filter(Boolean).join(", ") || "—"}</p></div>
-                            <div><span className="text-gray-500 text-xs">Employment Status</span><p className="font-medium capitalize">{kycProfile?.employmentStatus?.replace(/_/g, " ") || "—"}</p></div>
-                            <div><span className="text-gray-500 text-xs">Source of Funds</span><p className="font-medium capitalize">{kycProfile?.sourceOfFunds?.replace(/_/g, " ") || "—"}</p></div>
-                            <div><span className="text-gray-500 text-xs">Purpose of Account</span><p className="font-medium capitalize">{kycProfile?.purposeOfAccount?.replace(/_/g, " ") || "—"}</p></div>
-                            <div><span className="text-gray-500 text-xs">Tax Residency</span><p className="font-medium">{kycProfile?.taxCountry || "—"}</p></div>
-                          </div>
-                          <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1 pt-1">
-                            <Lock className="w-3 h-3" /> Stored securely — contact AMAX Global to request corrections under the Privacy Act 1988
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-
-                // ── Step 2 completed — read-only agreement review ───────────
-                if (def.id === 2 && status === "completed") {
+                // ── Step 2 completed — agreement review with Edit option ────
+                if (def.id === 2 && status === "completed" && !editStep2) {
                   return (
                     <div key={def.id} className="border-2 border-green-200 bg-green-50 rounded-xl overflow-hidden">
                       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
@@ -1755,6 +1746,9 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                           </div>
                           <p className="text-xs text-gray-500 mt-0.5">AMAX Global Customer Agreement electronically signed — binding under the Electronic Transactions Act 1999 (Cth)</p>
                         </div>
+                        <Button size="sm" variant="outline" className="flex-shrink-0 h-8 text-xs" onClick={() => setEditStep2(true)}>
+                          Edit
+                        </Button>
                       </div>
                       <div className="px-4 pb-5">
                         <div className="bg-white border border-green-200 rounded-xl p-4 space-y-3">
@@ -1765,7 +1759,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                             <div><span className="text-gray-500 text-xs">Signed At</span><p className="font-medium">{kycProfile?.agreementSignedAt ? new Date(kycProfile.agreementSignedAt).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" }) : "—"}</p></div>
                           </div>
                           <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1 pt-1">
-                            <Lock className="w-3 h-3" /> Agreement record retained for 7 years under AML/CTF Act 2006 s.106 — not editable
+                            <Lock className="w-3 h-3" /> Agreement record retained for 7 years under AML/CTF Act 2006 s.106
                           </p>
                         </div>
                       </div>
