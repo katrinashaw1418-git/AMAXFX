@@ -199,7 +199,7 @@ export default function AdminCompliance() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-900">AMAX Compliance Dashboard</h1>
-              <p className="text-sm text-slate-500">AML/CTF Program v2.0 — Compliance Officer: Qin Xiong</p>
+              <p className="text-sm text-slate-500">AML/CTF Program v2.1 — Compliance Officer: Qin Xiong</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -263,7 +263,7 @@ export default function AdminCompliance() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Customer Register</CardTitle>
-                <p className="text-xs text-muted-foreground">AML/CTF Program v2.0 §15 — Customer Due Diligence Register</p>
+                <p className="text-xs text-muted-foreground">AML/CTF Program v2.1 §15 — Customer Due Diligence Register</p>
               </CardHeader>
               <CardContent className="p-0">
                 {usersLoading ? (
@@ -464,7 +464,7 @@ export default function AdminCompliance() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Compliance Action Log</CardTitle>
-                <p className="text-xs text-muted-foreground">Immutable audit trail — SMRs, TTRs, account freezes, ECDD flags. AML/CTF Program v2.0 §26.</p>
+                <p className="text-xs text-muted-foreground">Immutable audit trail — SMRs, TTRs, account freezes, ECDD flags. AML/CTF Program v2.1 §26.</p>
               </CardHeader>
               <CardContent className="p-0">
                 {actions.length === 0 ? (

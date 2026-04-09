@@ -1325,9 +1325,27 @@ I agree to the Customer Agreement, Privacy Policy, and Risk Disclosure.`,
                             </div>
 
                             {/* Signature section */}
-                            <div className={`bg-white border-2 rounded-xl p-4 space-y-3 transition-all ${
+                            <div className={`bg-white border-2 rounded-xl overflow-hidden transition-all ${
                               allSectionsRead ? "border-indigo-300" : "border-gray-200 opacity-60"
                             }`}>
+                              {/* Sticky summary */}
+                              <div className="bg-indigo-700 px-4 py-3">
+                                <p className="text-xs font-semibold text-indigo-100 mb-1.5">By proceeding, you confirm:</p>
+                                <ul className="space-y-0.5">
+                                  {[
+                                    "Your information is accurate and complete",
+                                    "You are not sanctioned or acting for a sanctioned person",
+                                    "You understand AMAX Global's monitoring and compliance obligations",
+                                  ].map(item => (
+                                    <li key={item} className="flex items-start gap-1.5 text-xs text-indigo-200">
+                                      <CheckCircle className="w-3 h-3 mt-0.5 flex-shrink-0 text-indigo-300" />
+                                      {item}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+
+                              <div className="p-4 space-y-3">
                               <div className="flex items-center gap-2">
                                 <PenLine className="w-4 h-4 text-indigo-600 flex-shrink-0" />
                                 <h4 className="text-sm font-semibold text-gray-900">Electronic Signature</h4>
@@ -1362,6 +1380,7 @@ I agree to the Customer Agreement, Privacy Policy, and Risk Disclosure.`,
                               <p className="text-[10px] text-center text-muted-foreground">
                                 Electronic signature valid under the Electronic Transactions Act 1999 (Cth) · AMAX Global records your IP address and timestamp
                               </p>
+                              </div>{/* /p-4 inner wrapper */}
                             </div>
                           </>
                         )}
