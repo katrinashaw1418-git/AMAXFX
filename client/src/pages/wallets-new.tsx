@@ -757,7 +757,7 @@ export default function Wallets() {
       )}
 
       {/* Deposit Modal */}
-      <Dialog open={depositModalOpen} onOpenChange={(open) => { setDepositModalOpen(open); if (!open) { setDepositSubmitted(null); setCardClientSecret(null); setAmount(''); setDepositMethod(''); } }}>
+      <Dialog open={depositModalOpen} onOpenChange={(open) => { setDepositModalOpen(open); if (!open) { setDepositSubmitted(null); setAmount(''); setDepositMethod(''); } }}>
         <DialogContent className="sm:max-w-[450px] max-h-[80vh] overflow-y-auto p-4">
           <DialogHeader>
             <DialogTitle>Deposit {selectedWallet?.currency}</DialogTitle>
