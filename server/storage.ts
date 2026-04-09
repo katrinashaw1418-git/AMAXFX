@@ -96,7 +96,7 @@ export class MemStorage implements IStorage {
       id: 1,
       username: "johnchen",
       email: "demo@amaxglobal.com.au",
-      password: "johnchen123",
+      password: "johnchen888",
       firstName: "John",
       lastName: "Chen",
       kycStatus: "verified",
