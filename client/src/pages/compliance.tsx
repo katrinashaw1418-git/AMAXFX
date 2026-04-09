@@ -93,7 +93,9 @@ export default function Compliance() {
   const [docType,          setDocType]          = useState<"passport" | "driver_licence" | "national_id">("passport");
   const [docExpiry,        setDocExpiry]        = useState("");           // YYYY-MM-DD from date input
   const [docIssueCountry,  setDocIssueCountry]  = useState("");           // issuing country (passport risk scoring)
-  const [idVerifyComplete, setIdVerifyComplete] = useState(false);
+  const [idVerifyComplete,  setIdVerifyComplete]  = useState(false);
+  const [idDocsSubmitted,   setIdDocsSubmitted]   = useState(false); // true when Sumsub SDK complete → "under_review"
+  const [addressDocApproved, setAddressDocApproved] = useState(false); // true when admin approves POA → "completed"
   const [addrPoaFile,      setAddrPoaFile]      = useState<string | null>(null); // Step 3 proof of address
   // Sumsub integration state
   type VerifyMode = "idle" | "loading" | "sumsub_sdk" | "manual_review" | "approved" | "declined";
@@ -102,7 +104,10 @@ export default function Compliance() {
 
   const { data: kycProfile, refetch: refetchProfile } = useQuery<{
     kycProfileComplete: boolean;
+    idDocsSubmitted: boolean;
     idVerificationComplete: boolean;
+    addressDocFilename?: string | null;
+    addressDocApproved: boolean;
     fullLegalName?: string;
     dateOfBirth?: string;
     nationality?: string;
@@ -121,6 +126,8 @@ export default function Compliance() {
     agreementSigned?: boolean;
     agreementSignedAt?: string | null;
     agreementRef?: string | null;
+    agreementSignature?: string | null;
+    agreementVersion?: string | null;
   }>({
     queryKey: ["/api/kyc/profile"],
   });
@@ -206,14 +213,33 @@ export default function Compliance() {
   }, [idStatusData?.complete]);
 
   // ── Seed idVerifyComplete from DB on profile load ─────────────────────────
-  // Ensures that if identity was verified in a previous session (or by admin),
-  // the local state reflects it immediately without requiring a new verification flow.
   useEffect(() => {
     if (kycProfile?.idVerificationComplete && !idVerifyComplete) {
       setIdVerifyComplete(true);
       if (verifyMode === "idle") setVerifyMode("approved");
     }
   }, [kycProfile?.idVerificationComplete]);
+
+  // ── Seed idDocsSubmitted from DB ───────────────────────────────────────────
+  useEffect(() => {
+    if (kycProfile?.idDocsSubmitted && !idDocsSubmitted) {
+      setIdDocsSubmitted(true);
+    }
+  }, [kycProfile?.idDocsSubmitted]);
+
+  // ── Seed addressDocApproved from DB ───────────────────────────────────────
+  useEffect(() => {
+    if (kycProfile?.addressDocApproved && !addressDocApproved) {
+      setAddressDocApproved(true);
+    }
+  }, [kycProfile?.addressDocApproved]);
+
+  // ── Seed stepFiles[4] from DB addressDocFilename ──────────────────────────
+  useEffect(() => {
+    if (kycProfile?.addressDocFilename && !stepFiles[4]) {
+      setStepFiles(prev => ({ ...prev, 4: kycProfile.addressDocFilename! }));
+    }
+  }, [kycProfile?.addressDocFilename]);
 
   // ── Load and launch Sumsub WebSDK when mode becomes sumsub_sdk ─────────────
   useEffect(() => {
@@ -252,6 +278,31 @@ export default function Compliance() {
             toast({ title: "Identity Verified", description: "Your identity has been successfully verified." });
           } else if (answer === "RED") {
             setVerifyMode("declined");
+          } else {
+            // Docs submitted to Sumsub — now "under_review" waiting for their decision
+            if (!idDocsSubmitted) {
+              setIdDocsSubmitted(true);
+              fetch("/api/kyc/identity/docs-submitted", {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+              }).catch(() => {});
+              toast({
+                title: "Documents Submitted",
+                description: "Your identity documents have been sent to Sumsub for review. This typically takes 1–2 business days.",
+              });
+            }
+          }
+        })
+        .on("idCheck.onComplete", () => {
+          // Fired when user completes the entire SDK flow — ensure docs-submitted is recorded
+          if (!idDocsSubmitted) {
+            setIdDocsSubmitted(true);
+            fetch("/api/kyc/identity/docs-submitted", {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+            }).catch(() => {});
           }
         })
         .on("idCheck.onError", (error: any) => {
@@ -321,28 +372,38 @@ export default function Compliance() {
   const stepStatuses = useMemo((): Record<number, StepStatus> => {
     const s1: StepStatus = profileDone ? "completed" : "in_progress";
     const s2: StepStatus = !profileDone ? "pending" : agreementSigned ? "completed" : "in_progress";
-    const s3: StepStatus = !agreementSigned ? "pending" : idVerifyComplete ? "completed" : "in_progress";
-    const s4: StepStatus = !agreementSigned ? "pending" : stepFiles[4] ? "under_review" : "in_progress";
+    // Step 3: in_progress → under_review (docs sent to Sumsub) → completed (Sumsub approved)
+    const s3: StepStatus = !agreementSigned ? "pending"
+      : idVerifyComplete  ? "completed"
+      : idDocsSubmitted   ? "under_review"
+      : "in_progress";
+    // Step 4: in_progress → under_review (doc uploaded) → completed (admin approved)
+    const s4: StepStatus = !agreementSigned ? "pending"
+      : addressDocApproved            ? "completed"
+      : (stepFiles[4] || kycProfile?.addressDocFilename) ? "under_review"
+      : "in_progress";
     return { 1: s1, 2: s2, 3: s3, 4: s4 };
-  }, [profileDone, agreementSigned, idVerifyComplete, stepFiles]);
+  }, [profileDone, agreementSigned, idVerifyComplete, idDocsSubmitted, addressDocApproved, stepFiles, kycProfile?.addressDocFilename]);
 
   const currentStepId = useMemo(() => {
     if (!profileDone) return 1;
     if (!agreementSigned) return 2;
-    if (!idVerifyComplete) return 3;
-    if (!stepFiles[4]) return 4;
+    // Step 3 active only while docs not yet submitted (in_progress) or after re-attempt (declined)
+    if (!idDocsSubmitted && !idVerifyComplete) return 3;
+    // Step 4 active while doc not yet approved
+    if (!addressDocApproved) return 4;
     return null;
-  }, [profileDone, agreementSigned, idVerifyComplete, stepFiles]);
+  }, [profileDone, agreementSigned, idDocsSubmitted, idVerifyComplete, addressDocApproved]);
 
   // KYC completion % — 25% per step
   const kycPct = useMemo(() => {
     let total = 0;
-    if (profileDone)      total += 25;
-    if (agreementSigned)  total += 25;
-    if (idVerifyComplete) total += 25;
-    if (stepFiles[4])     total += 25;
+    if (profileDone)       total += 25;
+    if (agreementSigned)   total += 25;
+    if (idVerifyComplete)  total += 25;
+    if (addressDocApproved) total += 25;
     return total;
-  }, [profileDone, agreementSigned, idVerifyComplete, stepFiles]);
+  }, [profileDone, agreementSigned, idVerifyComplete, addressDocApproved]);
 
   // ── Compliance metrics grid (4 tiles) ─────────────────────────────────────
   const complianceMetrics = useMemo(() => [
@@ -364,9 +425,9 @@ export default function Compliance() {
     {
       label: "Documentation",
       status: stepStatuses[4],
-      value: stepFiles[4] ? 100 : agreementSigned ? 0 : 0,
+      value: addressDocApproved ? 100 : (stepFiles[4] || kycProfile?.addressDocFilename) ? 50 : 0,
     },
-  ], [stepStatuses, profileDone, agreementSigned, idVerifyComplete, stepFiles]);
+  ], [stepStatuses, profileDone, agreementSigned, idVerifyComplete, addressDocApproved, stepFiles, kycProfile?.addressDocFilename]);
 
   // ── KYC refresh notice ─────────────────────────────────────────────────────
   const kycRefreshNotice = useMemo((): "overdue" | "due_soon" | null => {
@@ -383,10 +444,20 @@ export default function Compliance() {
   function handleKycUpload(stepId: number, stepTitle: string, e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setStepFiles(prev => ({ ...prev, [stepId]: file.name }));
+    const filename = file.name;
+    setStepFiles(prev => ({ ...prev, [stepId]: filename }));
+    // Persist step 4 address document to DB so it survives page refresh
+    if (stepId === 4) {
+      fetch("/api/kyc/address/upload", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename }),
+      }).catch(() => {});
+    }
     toast({
-      title: "Document Submitted",
-      description: `${file.name} received for ${stepTitle}. Our compliance team will review it within 1–2 business days.`,
+      title: "Document Submitted for Review",
+      description: `${filename} has been received for ${stepTitle}. Our compliance team will review it within 1–2 business days.`,
     });
     e.target.value = "";
   }
@@ -1629,6 +1700,124 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                   );
                 }
 
+                // ── Step 1 completed — read-only personal info review ───────
+                if (def.id === 1 && status === "completed") {
+                  return (
+                    <div key={def.id} className="border-2 border-green-200 bg-green-50 rounded-xl overflow-hidden">
+                      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-600">
+                          <CheckCircle className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-gray-400 font-medium">Step 1 of 4</span>
+                            <h3 className="font-semibold text-gray-900">Personal Information</h3>
+                            <Badge className="bg-green-100 text-green-800">Completed</Badge>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">Your personal information has been saved — this is read-only for compliance purposes</p>
+                        </div>
+                      </div>
+                      <div className="px-4 pb-5">
+                        <div className="bg-white border border-green-200 rounded-xl p-4 space-y-3">
+                          <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                            <div><span className="text-gray-500 text-xs">Full Legal Name</span><p className="font-medium">{kycProfile?.fullLegalName || "—"}</p></div>
+                            <div><span className="text-gray-500 text-xs">Date of Birth</span><p className="font-medium">{kycProfile?.dateOfBirth || "—"}</p></div>
+                            <div><span className="text-gray-500 text-xs">Nationality</span><p className="font-medium">{kycProfile?.nationality || "—"}</p></div>
+                            <div><span className="text-gray-500 text-xs">Phone Number</span><p className="font-medium">{kycProfile?.phoneNumber || "—"}</p></div>
+                            <div className="col-span-2"><span className="text-gray-500 text-xs">Residential Address</span><p className="font-medium">{[kycProfile?.residentialAddress, kycProfile?.suburb, kycProfile?.stateRegion, kycProfile?.postcode, kycProfile?.addressCountry].filter(Boolean).join(", ") || "—"}</p></div>
+                            <div><span className="text-gray-500 text-xs">Employment Status</span><p className="font-medium capitalize">{kycProfile?.employmentStatus?.replace(/_/g, " ") || "—"}</p></div>
+                            <div><span className="text-gray-500 text-xs">Source of Funds</span><p className="font-medium capitalize">{kycProfile?.sourceOfFunds?.replace(/_/g, " ") || "—"}</p></div>
+                            <div><span className="text-gray-500 text-xs">Purpose of Account</span><p className="font-medium capitalize">{kycProfile?.purposeOfAccount?.replace(/_/g, " ") || "—"}</p></div>
+                            <div><span className="text-gray-500 text-xs">Tax Residency</span><p className="font-medium">{kycProfile?.taxCountry || "—"}</p></div>
+                          </div>
+                          <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1 pt-1">
+                            <Lock className="w-3 h-3" /> Stored securely — contact AMAX Global to request corrections under the Privacy Act 1988
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // ── Step 2 completed — read-only agreement review ───────────
+                if (def.id === 2 && status === "completed") {
+                  return (
+                    <div key={def.id} className="border-2 border-green-200 bg-green-50 rounded-xl overflow-hidden">
+                      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-600">
+                          <CheckCircle className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-gray-400 font-medium">Step 2 of 4</span>
+                            <h3 className="font-semibold text-gray-900">Customer Agreement</h3>
+                            <Badge className="bg-green-100 text-green-800">Signed</Badge>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">AMAX Global Customer Agreement electronically signed — binding under the Electronic Transactions Act 1999 (Cth)</p>
+                        </div>
+                      </div>
+                      <div className="px-4 pb-5">
+                        <div className="bg-white border border-green-200 rounded-xl p-4 space-y-3">
+                          <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                            <div><span className="text-gray-500 text-xs">Agreement Reference</span><p className="font-medium font-mono">{kycProfile?.agreementRef || "—"}</p></div>
+                            <div><span className="text-gray-500 text-xs">Version</span><p className="font-medium">{kycProfile?.agreementVersion || "—"}</p></div>
+                            <div><span className="text-gray-500 text-xs">Signed By</span><p className="font-medium">{kycProfile?.agreementSignature || kycProfile?.fullLegalName || "—"}</p></div>
+                            <div><span className="text-gray-500 text-xs">Signed At</span><p className="font-medium">{kycProfile?.agreementSignedAt ? new Date(kycProfile.agreementSignedAt).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" }) : "—"}</p></div>
+                          </div>
+                          <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1 pt-1">
+                            <Lock className="w-3 h-3" /> Agreement record retained for 7 years under AML/CTF Act 2006 s.106 — not editable
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // ── Step 4 completed — read-only POA review ─────────────────
+                if (def.id === 4 && status === "completed") {
+                  return (
+                    <div key={def.id} className="border-2 border-green-200 bg-green-50 rounded-xl overflow-hidden">
+                      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-600">
+                          <CheckCircle className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-gray-400 font-medium">Step 4 of 4</span>
+                            <h3 className="font-semibold text-gray-900">Proof of Address</h3>
+                            <Badge className="bg-green-100 text-green-800">Approved</Badge>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">Address document reviewed and approved by the AMAX Global compliance team</p>
+                        </div>
+                      </div>
+                      <div className="px-4 pb-5">
+                        <div className="bg-white border border-green-200 rounded-xl p-4 space-y-3">
+                          <div className="flex items-center gap-3">
+                            <CheckCircle className="w-7 h-7 text-green-600 flex-shrink-0" />
+                            <div>
+                              <p className="font-semibold text-green-900">Address Verified</p>
+                              <p className="text-xs text-green-700">Document reviewed and accepted — residential address confirmed</p>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                              <p className="text-gray-500">Document Submitted</p>
+                              <p className="font-semibold text-green-800 truncate">{kycProfile?.addressDocFilename || stepFiles[4] || "—"}</p>
+                            </div>
+                            <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                              <p className="text-gray-500">Review Status</p>
+                              <p className="font-semibold text-green-800">Approved</p>
+                            </div>
+                          </div>
+                          <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1 pt-1">
+                            <Lock className="w-3 h-3" /> Document retained under AML/CTF Act 2006 record-keeping obligations — not editable
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <div
                     key={def.id}
@@ -1658,7 +1847,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                           {status === "under_review" ? "Under Review" : statusLabel(status)}
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-600">{def.baseDescription}</p>
+                      <p className="text-sm text-gray-600">{def.title}</p>
                       {fileName && (
                         <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
                           <CheckCircle className="w-3 h-3" /> {fileName} — submitted for review
@@ -1692,12 +1881,12 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                           )}
                         </div>
                       ) : canUpload ? (
-                        <label htmlFor={def.uploadId} className="cursor-pointer">
+                        <label htmlFor={def.uploadId ?? undefined} className="cursor-pointer">
                           <Button size="sm" asChild>
                             <span><Upload className="w-3 h-3 mr-1" /> Upload</span>
                           </Button>
                           <input
-                            id={def.uploadId}
+                            id={def.uploadId ?? undefined}
                             type="file"
                             accept=".pdf,.jpg,.jpeg,.png,.heic"
                             className="hidden"

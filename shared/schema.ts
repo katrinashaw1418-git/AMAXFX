@@ -33,9 +33,13 @@ export const users = pgTable("users", {
   purposeOfAccount: text("purpose_of_account"),  // personal_transfers | business_payments | investment | remittance | other
   sourceOfFunds: text("source_of_funds"),         // employment | business | savings | inheritance | property | crypto | other
   taxCountry: text("tax_country"),
-  // ID document verification (Step 2)
+  // ID document verification (Step 3)
   idDocumentType: text("id_document_type"),       // passport | driver_licence | national_id
-  idVerificationComplete: boolean("id_verification_complete").default(false),
+  idDocsSubmitted: boolean("id_docs_submitted").default(false),   // docs sent to Sumsub → "under_review"
+  idVerificationComplete: boolean("id_verification_complete").default(false), // Sumsub approved → "completed"
+  // Proof of Address (Step 4)
+  addressDocFilename: text("address_doc_filename"),  // filename of uploaded POA document
+  addressDocApproved: boolean("address_doc_approved").default(false), // admin approved → "completed"
   // Account control
   accountFrozen: boolean("account_frozen").default(false),
   // Internal risk scoring (not shown to user — gaming risk per AUSTRAC guidance)

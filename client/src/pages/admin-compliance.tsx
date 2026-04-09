@@ -127,6 +127,20 @@ export default function AdminCompliance() {
     onError: () => toast({ title: "Error", description: "Failed to approve identity.", variant: "destructive" }),
   });
 
+  const addressApproveMutation = useMutation({
+    mutationFn: ({ userId }: { userId: number }) =>
+      fetch(`/api/admin/kyc/approve-address/${userId}`, {
+        method: "POST",
+        headers: { ...adminHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: "Proof of Address document approved by compliance officer via admin dashboard" }),
+      }).then(r => r.json()),
+    onSuccess: (data) => {
+      toast({ title: "Address Approved", description: data.message ?? "Proof of Address document approved." });
+      refetchUsers();
+    },
+    onError: () => toast({ title: "Error", description: "Failed to approve address document.", variant: "destructive" }),
+  });
+
   const smrMutation = useMutation({
     mutationFn: (payload: any) =>
       fetch("/api/admin/compliance/smr", {
@@ -304,7 +318,9 @@ export default function AdminCompliance() {
                             <td className="p-3">
                               {u.idVerificationComplete
                                 ? <Badge className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1 inline" />Verified</Badge>
-                                : <Badge className="bg-amber-100 text-amber-800"><Clock className="w-3 h-3 mr-1 inline" />Pending</Badge>}
+                                : u.idDocsSubmitted
+                                  ? <Badge className="bg-blue-100 text-blue-800"><Clock className="w-3 h-3 mr-1 inline" />Under Review</Badge>
+                                  : <Badge className="bg-amber-100 text-amber-800"><Clock className="w-3 h-3 mr-1 inline" />Pending</Badge>}
                             </td>
                             <td className="p-3">{riskBadge(u.riskLevel)}</td>
                             <td className="p-3">
@@ -370,6 +386,18 @@ export default function AdminCompliance() {
                                     onClick={() => identityApproveMutation.mutate({ userId: u.id })}
                                   >
                                     <CheckCircle className="w-3 h-3 mr-1" /> Verify ID
+                                  </Button>
+                                )}
+                                {u.addressDocFilename && !u.addressDocApproved && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-xs text-green-700 border-green-200"
+                                    disabled={addressApproveMutation.isPending}
+                                    onClick={() => addressApproveMutation.mutate({ userId: u.id })}
+                                    title={`Approve address doc: ${u.addressDocFilename}`}
+                                  >
+                                    <CheckCircle className="w-3 h-3 mr-1" /> Approve Address
                                   </Button>
                                 )}
                               </div>

@@ -3840,10 +3840,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sourceOfFunds: user.sourceOfFunds ?? "",
         taxCountry: user.taxCountry ?? "",
         idDocumentType: user.idDocumentType ?? "",
+        idDocsSubmitted: user.idDocsSubmitted ?? false,
         idVerificationComplete: user.idVerificationComplete ?? false,
+        addressDocFilename: user.addressDocFilename ?? null,
+        addressDocApproved: user.addressDocApproved ?? false,
         agreementSigned: user.agreementSigned ?? false,
         agreementSignedAt: user.agreementSignedAt ?? null,
         agreementRef: user.agreementRef ?? null,
+        agreementSignature: user.agreementSignature ?? null,
+        agreementVersion: user.agreementVersion ?? null,
       });
     } catch (err: any) {
       res.status(401).json({ error: err.message ?? "Unauthorized" });
@@ -4128,6 +4133,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/kyc/identity/docs-submitted — called by frontend when Sumsub SDK signals
+  // that documents have been submitted (applicant status → pending review by Sumsub)
+  app.post("/api/kyc/identity/docs-submitted", async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      await db.update(users).set({ idDocsSubmitted: true }).where(eq(users.id, userId));
+      await db.insert(auditLogs as any).values({
+        userId, action: "id_docs_submitted_to_sumsub", entityType: "user", entityId: String(userId),
+        metadata: { note: "User completed Sumsub SDK — docs submitted for review" }, ipAddress: req.ip,
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to record docs submitted" });
+    }
+  });
+
+  // POST /api/kyc/address/upload — save POA document filename (step 4 under_review)
+  app.post("/api/kyc/address/upload", async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      const { filename } = z.object({ filename: z.string().min(1) }).parse(req.body);
+      await db.update(users).set({ addressDocFilename: filename }).where(eq(users.id, userId));
+      await db.insert(auditLogs as any).values({
+        userId, action: "address_doc_uploaded", entityType: "user", entityId: String(userId),
+        metadata: { filename, note: "Proof of Address document uploaded by user" }, ipAddress: req.ip,
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to record address document" });
+    }
+  });
+
   // POST /api/kyc/identity/webhook — receives Sumsub applicantReviewed events
   // No auth — public endpoint called by Sumsub servers
   // Sumsub signs the payload: x-payload-digest = HMAC-SHA256(secretKey, rawBody)
@@ -4352,7 +4389,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: users.id, username: users.username, email: users.email,
         firstName: users.firstName, lastName: users.lastName,
         kycStatus: users.kycStatus, kycProfileComplete: users.kycProfileComplete,
+        idDocsSubmitted: users.idDocsSubmitted,
         idVerificationComplete: users.idVerificationComplete,
+        addressDocFilename: users.addressDocFilename,
+        addressDocApproved: users.addressDocApproved,
         accountFrozen: users.accountFrozen, riskLevel: users.riskLevel,
         kycRefreshDue: users.kycRefreshDue, createdAt: users.createdAt,
         pepDeclaration: users.pepDeclaration,
@@ -4433,6 +4473,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, message: "Identity verification approved" });
     } catch (err: any) {
       res.status(500).json({ error: err.message ?? "Failed to approve identity" });
+    }
+  });
+
+  // POST /api/admin/kyc/approve-address/:userId — approve Step 4 Proof of Address document
+  app.post("/api/admin/kyc/approve-address/:userId", async (req: Request, res: any) => {
+    if (!requireAdminKey(req, res)) return;
+    try {
+      const userId = Number(req.params.userId);
+      const { notes } = req.body;
+      await db.update(users).set({ addressDocApproved: true }).where(eq(users.id, userId));
+      await db.insert(complianceActions as any).values({
+        actionType: "address_doc_approved",
+        userId,
+        performedBy: "admin",
+        notes: notes ?? "Proof of Address document approved by compliance officer",
+        outcome: "completed",
+      });
+      await db.insert(auditLogs as any).values({
+        userId, action: "address_doc_approved", entityType: "user", entityId: String(userId),
+        metadata: { notes }, ipAddress: req.ip,
+      });
+      res.json({ success: true, message: "Address document approved" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to approve address document" });
     }
   });
 
