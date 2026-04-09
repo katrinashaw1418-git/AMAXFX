@@ -3,6 +3,23 @@
 ## Overview
 This platform is a comprehensive cross-border wealth management solution designed for high-net-worth individuals, the global Chinese diaspora, and SMEs with international financial needs. It integrates traditional finance and cryptocurrency services, offering dual-channel support for FX and crypto trading, multi-currency wallets, AI-powered wealth advisory, and robust compliance features. The vision is to provide a unified, intelligent, and secure platform for managing diverse global assets.
 
+## Recent Changes (April 2026) — Compliance Page Tab Consolidation + AML/CTF Uplift
+
+### Compliance page restructure (compliance.tsx)
+- **Tab consolidation**: Reduced from 7 tabs (KYC Status, Documents, Risk Profile, Regulatory, Terms, Privacy, Risk Disclosure) to 2 tabs — **"KYC & Documents"** and **"Regulatory"**. Terms, Privacy, and Risk Disclosure are now covered by the Step 3 Customer Agreement.
+- **Inline Document Vault**: Document list (4 entries: Passport/ID, Biometric Selfie, Proof of Address, Source of Funds) now renders directly inside the KYC tab — file status badges, upload inputs for pending docs, View button for approved/reviewed docs.
+- **Inline Risk Assessment**: Risk questionnaire (FX experience, annual income, source of funds, purpose) now renders inline in the KYC tab; purple "Submit Risk Assessment" button.
+- **KYC Refresh Notification**: Amber "Due Soon" and red "Overdue" banners render conditionally based on `kycRefreshDue` from the API — compliant with AUSTRAC periodic CDD obligation.
+- **Step numbering fixed**: Agreement=3, Address=4, SOF=5; all `kycStepDefs`, `stepStatuses`, `kycPct`, `docPct`, `stepFiles`, `documents` array updated to new IDs.
+- **Next-step prompt**: Dynamic "Next:" card now shows correct copy for steps 3/4/5 (Agreement, Address upload, SOF upload); removed `setActiveTab` buttons that referenced deleted tabs.
+- **Document array**: Updated to use stepFiles[4] (Address) and stepFiles[5] (SOF); doc IDs 4 and 5 (no longer 3 and 4).
+
+### KYC / AML / CTF gaps confirmed implemented
+- **Server-side KYC hard stop**: `requireKyc(userId, storage)` is called in both `handleDeposit` and `handleWithdraw` — returns 403 if `accountFrozen` or `kycStatus !== "verified"`.
+- **$10K TTR auto-flag**: Frontend regulatory disclosure renders when `amount >= 10000` in both deposit and withdrawal sections. Server sets `riskFlag: true`, `reviewStatus: "flagged"`, `reviewNotes: "AUSTRAC threshold"` on transactions ≥ 10,000.
+- **Travel Rule UI (crypto)**: `beneficiaryName` + `beneficiaryAddress` fields are required in the crypto withdrawal section; FATF Travel Rule disclosure shown; submission blocked if fields empty; email request pre-filled with both values.
+- **KYC refresh notification**: `kycRefreshDue` returned by `GET /api/kyc/profile`; compliance page shows "overdue" (red) or "due_soon" (amber, within 30 days) banners.
+
 ## Recent Changes (April 2026) — Navigation & Page Restructure
 
 ### Product-separated navigation and pages
