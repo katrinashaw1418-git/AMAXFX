@@ -3843,9 +3843,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         taxCountry: z.string().optional(),
       });
       const data = schema.parse(req.body);
-      if (!data.sanctionsDeclaration || !data.consentDeclaration) {
-        return res.status(400).json({ error: "Mandatory declarations must be accepted" });
-      }
+      // Note: sanctionsDeclaration and consentDeclaration are formally captured
+      // during the Customer Agreement signing step (Step 3), not here.
       // Calculate internal risk score (not shown to user — gaming risk per AUSTRAC guidance)
       // Geography(AUS=1) + Behaviour(new=1) + Product(fiat=1) + Customer(individual=1) = 4 = Low
       // Elevated if PEP declared
