@@ -219,6 +219,16 @@ export default function Compliance() {
     }
   }, [idStatusData?.complete]);
 
+  // ── Seed idVerifyComplete from DB on profile load ─────────────────────────
+  // Ensures that if identity was verified in a previous session (or by admin),
+  // the local state reflects it immediately without requiring a new verification flow.
+  useEffect(() => {
+    if (kycProfile?.idVerificationComplete && !idVerifyComplete) {
+      setIdVerifyComplete(true);
+      if (verifyMode === "idle") setVerifyMode("approved");
+    }
+  }, [kycProfile?.idVerificationComplete]);
+
   function handleProfileSubmit() {
     if (!piiFullName || !piiDob || !piiNationality || !piiPhone) {
       toast({ title: "Personal Details Required", description: "Please complete name, date of birth, nationality, and phone number.", variant: "destructive" });
@@ -255,14 +265,19 @@ export default function Compliance() {
   }
 
   // ── derive step statuses dynamically ──────────────────────────────────────
-  // Step 2: identity verification
-  // Step 3: customer agreement (new) — unlocked after identity verified
+  // Step 2: identity verification — runs in parallel with steps 3-5
+  // Step 3: customer agreement — unlocked once personal info (step 1) is saved
   // Step 4: address verification — unlocked after agreement signed
   // Step 5: source of funds — unlocked after address uploaded
+  // NOTE: Steps 3-5 are independent of step 2 by design. Identity verification
+  // happens asynchronously (Veriff webhook / manual review) while the user can
+  // simultaneously sign the agreement and upload documents. The server-side
+  // KYC hard stop (requireKyc) enforces that ALL steps are done before transacting.
   const agreementSigned = kycProfile?.agreementSigned ?? false;
+  const profileDone = kycProfile?.kycProfileComplete ?? false;
   const stepStatuses = useMemo((): Record<number, StepStatus> => {
     const s2: StepStatus = idVerifyComplete ? "completed" : "in_progress";
-    const s3: StepStatus = !idVerifyComplete
+    const s3: StepStatus = !profileDone
       ? "pending"
       : agreementSigned
       ? "completed"
@@ -278,15 +293,21 @@ export default function Compliance() {
       ? "completed"
       : "in_progress";
     return { 2: s2, 3: s3, 4: s4, 5: s5 };
-  }, [idVerifyComplete, agreementSigned, stepFiles, riskSubmitted]);
+  }, [idVerifyComplete, profileDone, agreementSigned, stepFiles, riskSubmitted]);
 
-  // derive current active step (first non-completed step)
+  // derive current active step — sequential steps 3→4→5 take priority over step 2
+  // Step 2 (identity) runs asynchronously (Veriff / manual review); the user
+  // should focus on completing steps 3-5 in order while identity is processed.
   const currentStepId = useMemo(() => {
-    for (const id of [2, 3, 4, 5]) {
-      if (stepStatuses[id] !== "completed" && stepStatuses[id] !== "under_review") return id;
+    if (profileDone) {
+      for (const id of [3, 4, 5]) {
+        if (stepStatuses[id] !== "completed" && stepStatuses[id] !== "under_review") return id;
+      }
     }
-    return 5;
-  }, [stepStatuses]);
+    // All sequential steps done (or profile not saved yet) — surface identity step
+    if (!idVerifyComplete) return 2;
+    return null; // everything complete
+  }, [stepStatuses, profileDone, idVerifyComplete]);
 
   // derive KYC completion % — 5 steps, 20% each
   const kycPct = useMemo(() => {
@@ -466,8 +487,9 @@ export default function Compliance() {
     { id: 5, name: "Source of Funds",           status: (stepFiles[5] || docUploads[5] ? "under_review" : "pending") as any, uploadDate: "", size: "" },
   ];
 
-  // next step prompt content
-  const nextStep = kycStepDefs.find(s => stepStatuses[s.id] === "in_progress");
+  // next step prompt — uses currentStepId so sequential steps 3→5 take priority
+  // over step 2 (identity) which runs asynchronously in the background.
+  const nextStep = currentStepId != null ? kycStepDefs.find(s => s.id === currentStepId) : undefined;
 
   // ── render ────────────────────────────────────────────────────────────────
   return (

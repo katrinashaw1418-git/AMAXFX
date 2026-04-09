@@ -113,6 +113,20 @@ export default function AdminCompliance() {
     onError: () => toast({ title: "Error", description: "Failed to update account.", variant: "destructive" }),
   });
 
+  const identityApproveMutation = useMutation({
+    mutationFn: ({ userId }: { userId: number }) =>
+      fetch(`/api/admin/identity/approve/${userId}`, {
+        method: "POST",
+        headers: { ...adminHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: "Identity manually approved by compliance officer via admin dashboard" }),
+      }).then(r => r.json()),
+    onSuccess: (data) => {
+      toast({ title: "Identity Approved", description: data.message ?? "Identity verification marked as approved." });
+      refetchUsers();
+    },
+    onError: () => toast({ title: "Error", description: "Failed to approve identity.", variant: "destructive" }),
+  });
+
   const smrMutation = useMutation({
     mutationFn: (payload: any) =>
       fetch("/api/admin/compliance/smr", {
@@ -265,6 +279,7 @@ export default function AdminCompliance() {
                           <th className="text-left p-3 font-medium text-slate-600">Name / Email</th>
                           <th className="text-left p-3 font-medium text-slate-600">KYC Status</th>
                           <th className="text-left p-3 font-medium text-slate-600">Profile</th>
+                          <th className="text-left p-3 font-medium text-slate-600">ID Verified</th>
                           <th className="text-left p-3 font-medium text-slate-600">Risk</th>
                           <th className="text-left p-3 font-medium text-slate-600">PEP</th>
                           <th className="text-left p-3 font-medium text-slate-600">Status</th>
@@ -285,6 +300,11 @@ export default function AdminCompliance() {
                               {u.kycProfileComplete
                                 ? <Badge className="bg-green-100 text-green-800">Complete</Badge>
                                 : <Badge className="bg-gray-100 text-gray-800">Incomplete</Badge>}
+                            </td>
+                            <td className="p-3">
+                              {u.idVerificationComplete
+                                ? <Badge className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1 inline" />Verified</Badge>
+                                : <Badge className="bg-amber-100 text-amber-800"><Clock className="w-3 h-3 mr-1 inline" />Pending</Badge>}
                             </td>
                             <td className="p-3">{riskBadge(u.riskLevel)}</td>
                             <td className="p-3">
@@ -341,6 +361,17 @@ export default function AdminCompliance() {
                                 >
                                   <FileText className="w-3 h-3 mr-1" /> SMR
                                 </Button>
+                                {!u.idVerificationComplete && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-xs text-blue-700 border-blue-200"
+                                    disabled={identityApproveMutation.isPending}
+                                    onClick={() => identityApproveMutation.mutate({ userId: u.id })}
+                                  >
+                                    <CheckCircle className="w-3 h-3 mr-1" /> Verify ID
+                                  </Button>
+                                )}
                               </div>
                             </td>
                           </tr>

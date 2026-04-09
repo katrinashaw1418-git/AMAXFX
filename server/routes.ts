@@ -4266,6 +4266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: users.id, username: users.username, email: users.email,
         firstName: users.firstName, lastName: users.lastName,
         kycStatus: users.kycStatus, kycProfileComplete: users.kycProfileComplete,
+        idVerificationComplete: users.idVerificationComplete,
         accountFrozen: users.accountFrozen, riskLevel: users.riskLevel,
         kycRefreshDue: users.kycRefreshDue, createdAt: users.createdAt,
         pepDeclaration: users.pepDeclaration,
@@ -4317,6 +4318,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, message: "Account unfrozen" });
     } catch (err: any) {
       res.status(500).json({ error: err.message ?? "Failed to unfreeze account" });
+    }
+  });
+
+  // POST /api/admin/identity/approve/:userId — manually approve identity verification
+  // Used by compliance team when VERIFF_API_KEY is not configured, or as override.
+  app.post("/api/admin/identity/approve/:userId", async (req: Request, res: any) => {
+    if (!requireAdminKey(req, res)) return;
+    try {
+      const userId = Number(req.params.userId);
+      const { notes } = req.body;
+      await db.update(users).set({ idVerificationComplete: true }).where(eq(users.id, userId));
+      await db.insert(complianceActions as any).values({
+        actionType: "id_verification_manual_approved",
+        userId,
+        performedBy: "admin",
+        notes: notes ?? "Identity manually approved by compliance officer",
+        outcome: "completed",
+      });
+      await db.insert(auditLogs as any).values({
+        userId,
+        action: "id_verification_manual_approved",
+        entityType: "user",
+        entityId: String(userId),
+        metadata: { notes, method: "manual_admin" },
+        ipAddress: req.ip,
+      });
+      res.json({ success: true, message: "Identity verification approved" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to approve identity" });
     }
   });
 

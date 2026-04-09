@@ -1,0 +1,21 @@
+Great question. Let me check your AML/CTF Program v2.0 first to confirm exactly what it says about verification providers.
+
+Your AML/CTF Program (Section 5.2 and Section 15) specifies:
+
+- Electronic verification using an approved third-party identity verification service such as GreenID, Veriff, or equivalent
+- Checks against government records, credit bureau data, and/or biometric matching
+- Document verification plus biometric selfie matching
+
+So you are contractually and compliance-obligated to use a real external KYC provider — not just upload and store documents yourself. Here is my full comparison to help you choose:Here is the summary of my recommendation for AMAX:
+
+**Use Veriff + ComplyAdvantage together** — not a single provider alone. Here is why:
+
+Veriff handles document capture, biometric liveness, and face matching across all the document types your customers will use — Australian passports and licences, Chinese national IDs, Filipino passports, and Indian IDs. It gives you a full audit trail which is exactly what AUSTRAC requires.
+
+ComplyAdvantage runs the sanctions and PEP screening separately immediately after Veriff approves the identity. Your AML/CTF Program requires both checks — they are different obligations and no single provider does both perfectly at your price point.
+
+The critical architectural point is that you never store document images in your own database. Veriff stores them in their encrypted infrastructure. You only store the session ID, decision, document type, and timestamp. This protects you under the Privacy Act 1988 and reduces your data liability significantly.
+
+For your startup stage the cost is roughly $1–2 USD per customer verification through Veriff, plus ComplyAdvantage from around $99 USD per month for low volume. Once you scale past 200 verifications per month, switch to Sumsub which bundles everything into one platform.
+
+Click "View integration guide" on Veriff to see the full 7-step backend flow, database schema, and all three outcome states. Want me to now build the actual compliance dashboard that Qin Xiong uses to manage the manual review queue?
