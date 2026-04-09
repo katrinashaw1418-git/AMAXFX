@@ -241,48 +241,37 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* ── Portfolio Value | Balances | Transactions ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      {/* ── Top: Total Portfolio Value ── */}
+      <Card className="bg-slate-800 text-white border-slate-700">
+        <CardContent className="p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="w-4 h-4 text-slate-400" />
+            <p className="text-slate-400 text-xs uppercase tracking-wide">Total Portfolio Value</p>
+          </div>
+          <p className="text-4xl font-bold">
+            {totalAud !== null
+              ? `A$${totalAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+              : "A$0"}
+          </p>
+          <div className="flex gap-6 mt-4 pt-4 border-t border-slate-700">
+            <div className="flex justify-between text-sm gap-2">
+              <span className="text-slate-400">Fiat:</span>
+              <span className="text-white font-medium">{fiatAud !== null ? `A$${fiatAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "A$0"}</span>
+            </div>
+            <div className="flex justify-between text-sm gap-2">
+              <span className="text-slate-400">Digital Assets:</span>
+              <span className="text-white font-medium">{cryptoAud !== null ? `A$${cryptoAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "A$0"}</span>
+            </div>
+          </div>
+          <p className="text-xs text-slate-600 mt-3 italic">Digital assets subject to market volatility</p>
+        </CardContent>
+      </Card>
 
-        {/* Column 1 — Total Portfolio Value */}
-        <div className="space-y-4">
-          <Card className="bg-slate-800 text-white border-slate-700">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-4 h-4 text-slate-400" />
-                <p className="text-slate-400 text-xs uppercase tracking-wide">Total Portfolio Value</p>
-              </div>
-              <p className="text-4xl font-bold">
-                {totalAud !== null
-                  ? `A$${totalAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-                  : "A$0"}
-              </p>
-              <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-slate-700">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Fiat Holdings</span>
-                  <span className="text-white font-medium">{fiatAud !== null ? `A$${fiatAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "A$0"}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Digital Assets</span>
-                  <span className="text-white font-medium">{cryptoAud !== null ? `A$${cryptoAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "A$0"}</span>
-                </div>
-              </div>
-              <p className="text-xs text-slate-600 mt-4 italic">Digital assets subject to market volatility</p>
-            </CardContent>
-          </Card>
+      {/* ── Middle: Currency Balances ── */}
+      <CurrencyBalances hideSummary />
 
-        </div>
-
-        {/* Column 2 — Balances */}
-        <div className="lg:col-span-1">
-          <CurrencyBalances hideSummary />
-        </div>
-
-        {/* Column 3 — Recent Transactions */}
-        <div className="lg:col-span-1">
-          <TransactionHistory />
-        </div>
-      </div>
+      {/* ── Bottom: Recent Transactions ── */}
+      <TransactionHistory />
 
       {/* ── Floating Advisor Box ── */}
       {showAdvisorBox && (
