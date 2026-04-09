@@ -71,7 +71,6 @@ export default function Crypto() {
   const [amount, setAmount]             = useState("500");
   const [showConfirm, setShowConfirm]       = useState(false);
   const [showAdvisor, setShowAdvisor]       = useState(true);
-  const [sourceOfFunds, setSourceOfFunds]   = useState("");
   const [complianceAgreed, setComplianceAgreed] = useState(false);
 
   const { toast } = useToast();
@@ -119,10 +118,6 @@ export default function Crypto() {
     }
     if (parseFloat(amount) > fromBalance) {
       toast({ title: "Insufficient Balance", description: `You only have ${fromBalance.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${fromCurrency} available.`, variant: "destructive" });
-      return;
-    }
-    if (fromClass === "fiat" && !sourceOfFunds) {
-      toast({ title: "Source of Funds Required", description: "Please declare your source of funds for this purchase (AUSTRAC AML/CTF requirement).", variant: "destructive" });
       return;
     }
     if (!complianceAgreed) {
@@ -335,34 +330,6 @@ export default function Crypto() {
                 </p>
               </div>
 
-              {/* Source of Funds — required for fiat→crypto (AUSTRAC AML/CTF) */}
-              {fromClass === "fiat" && toClass === "crypto" && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-gray-600">
-                    Source of Funds <span className="text-red-500">*</span>
-                    <span className="ml-1 font-normal text-gray-400">(AUSTRAC AML/CTF requirement)</span>
-                  </Label>
-                  <Select value={sourceOfFunds} onValueChange={setSourceOfFunds}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="Select source of funds…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="salary">Salary / Employment income</SelectItem>
-                      <SelectItem value="savings">Personal savings</SelectItem>
-                      <SelectItem value="investment">Investment returns</SelectItem>
-                      <SelectItem value="business">Business income</SelectItem>
-                      <SelectItem value="property">Property sale</SelectItem>
-                      <SelectItem value="inheritance">Inheritance / Gift</SelectItem>
-                      <SelectItem value="superannuation">Superannuation / Pension</SelectItem>
-                      <SelectItem value="other">Other (contact compliance@amaxglobal.com.au)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-gray-400">
-                    Required at each digital asset purchase under AUSTRAC's ongoing Customer Due Diligence (CDD) obligations — this is separate from, and in addition to, your KYC profile declaration. High-value purchases may also require supporting documentation.
-                  </p>
-                </div>
-              )}
-
               {/* Breakdown */}
               <div className="p-4 bg-gray-50 rounded-lg space-y-2 text-sm">
                 <div className="flex justify-between font-medium text-gray-800 text-base pb-1 border-b">
@@ -528,12 +495,6 @@ export default function Crypto() {
                 </span>
               </div>
             </div>
-            {sourceOfFunds && (
-              <div className="flex justify-between text-xs text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
-                <span>Source of Funds</span>
-                <span className="font-medium capitalize">{sourceOfFunds.replace(/_/g, " ")}</span>
-              </div>
-            )}
             <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-amber-50 border border-amber-200 text-amber-800">
               <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
               <span>{disclosure}</span>
