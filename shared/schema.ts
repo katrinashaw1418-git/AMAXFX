@@ -22,6 +22,20 @@ export const users = pgTable("users", {
   sanctionsDeclaration: boolean("sanctions_declaration").default(false),
   consentDeclaration: boolean("consent_declaration").default(false),
   kycProfileComplete: boolean("kyc_profile_complete").default(false),
+  // Extended CDD fields — AUSTRAC customer identification procedure (Part B §15)
+  residentialAddress: text("residential_address"),
+  suburb: text("suburb"),
+  stateRegion: text("state_region"),
+  postcode: text("postcode"),
+  addressCountry: text("address_country"),
+  occupation: text("occupation"),
+  employmentStatus: text("employment_status"),   // employed | self_employed | unemployed | student | retired
+  purposeOfAccount: text("purpose_of_account"),  // personal_transfers | business_payments | investment | remittance | other
+  sourceOfFunds: text("source_of_funds"),         // employment | business | savings | inheritance | property | crypto | other
+  taxCountry: text("tax_country"),
+  // ID document verification (Step 2)
+  idDocumentType: text("id_document_type"),       // passport | driver_licence | national_id
+  idVerificationComplete: boolean("id_verification_complete").default(false),
   // Account control
   accountFrozen: boolean("account_frozen").default(false),
   // Internal risk scoring (not shown to user — gaming risk per AUSTRAC guidance)

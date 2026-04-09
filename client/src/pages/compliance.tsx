@@ -28,6 +28,11 @@ import {
   Building,
   ChevronRight,
   RefreshCw,
+  Lock,
+  Camera,
+  BookOpen,
+  Briefcase,
+  Home,
 } from "lucide-react";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -65,21 +70,53 @@ export default function Compliance() {
   // documents-tab uploads (docId → filename)
   const [docUploads, setDocUploads] = useState<Record<number, string>>({});
 
-  // ── Step 0: Personal Info (KYC Profile) ───────────────────────────────────
-  const [piiFullName,     setPiiFullName]     = useState("");
-  const [piiDob,          setPiiDob]          = useState("");
-  const [piiNationality,  setPiiNationality]  = useState("");
-  const [piiPhone,        setPiiPhone]        = useState("");
-  const [piiPep,          setPiiPep]          = useState(false);
-  const [piiSanctions,    setPiiSanctions]    = useState(false);
-  const [piiConsent,      setPiiConsent]      = useState(false);
+  // ── Step 1: Personal Info (KYC Profile) ───────────────────────────────────
+  const [piiFullName,        setPiiFullName]        = useState("");
+  const [piiDob,             setPiiDob]             = useState("");
+  const [piiNationality,     setPiiNationality]     = useState("");
+  const [piiPhone,           setPiiPhone]           = useState("");
+  // Address
+  const [piiAddress,         setPiiAddress]         = useState("");
+  const [piiSuburb,          setPiiSuburb]          = useState("");
+  const [piiStateRegion,     setPiiStateRegion]     = useState("");
+  const [piiPostcode,        setPiiPostcode]        = useState("");
+  const [piiAddrCountry,     setPiiAddrCountry]     = useState("Australia");
+  // Employment & financial profile
+  const [piiEmployment,      setPiiEmployment]      = useState("");
+  const [piiOccupation,      setPiiOccupation]      = useState("");
+  const [piiPurpose,         setPiiPurpose]         = useState("");
+  const [piiSourceFunds,     setPiiSourceFunds]     = useState("");
+  const [piiTaxCountry,      setPiiTaxCountry]      = useState("");
+  // Declarations
+  const [piiPep,             setPiiPep]             = useState(false);
+  const [piiSanctions,       setPiiSanctions]       = useState(false);
+  const [piiConsent,         setPiiConsent]         = useState(false);
+
+  // ── Step 2: Identity document + biometric verification ────────────────────
+  const [docType,          setDocType]          = useState<"passport" | "driver_licence" | "national_id">("passport");
+  const [idFrontFile,      setIdFrontFile]      = useState<string | null>(null);
+  const [idBackFile,       setIdBackFile]       = useState<string | null>(null);
+  const [selfieFile,       setSelfieFile]       = useState<string | null>(null);
+  const [idVerifyAnimStep, setIdVerifyAnimStep] = useState(0);   // 0=idle 1-4=running 5=done
+  const [idVerifyComplete, setIdVerifyComplete] = useState(false);
 
   const { data: kycProfile, refetch: refetchProfile } = useQuery<{
     kycProfileComplete: boolean;
+    idVerificationComplete: boolean;
     fullLegalName?: string;
     dateOfBirth?: string;
     nationality?: string;
     phoneNumber?: string;
+    residentialAddress?: string;
+    suburb?: string;
+    stateRegion?: string;
+    postcode?: string;
+    addressCountry?: string;
+    occupation?: string;
+    employmentStatus?: string;
+    purposeOfAccount?: string;
+    sourceOfFunds?: string;
+    taxCountry?: string;
   }>({
     queryKey: ["/api/kyc/profile"],
   });
@@ -98,7 +135,15 @@ export default function Compliance() {
 
   function handleProfileSubmit() {
     if (!piiFullName || !piiDob || !piiNationality || !piiPhone) {
-      toast({ title: "All fields required", description: "Please complete all personal information fields.", variant: "destructive" });
+      toast({ title: "Personal Details Required", description: "Please complete name, date of birth, nationality, and phone number.", variant: "destructive" });
+      return;
+    }
+    if (!piiAddress || !piiSuburb || !piiPostcode) {
+      toast({ title: "Address Required", description: "Please enter your full residential address (no PO Box).", variant: "destructive" });
+      return;
+    }
+    if (!piiEmployment || !piiPurpose || !piiSourceFunds) {
+      toast({ title: "Financial Profile Required", description: "Please select your employment status, purpose of account, and source of funds.", variant: "destructive" });
       return;
     }
     if (!piiSanctions || !piiConsent) {
@@ -115,28 +160,43 @@ export default function Compliance() {
       pepDeclaration: !piiPep,
       sanctionsDeclaration: piiSanctions,
       consentDeclaration: piiConsent,
+      residentialAddress: piiAddress,
+      suburb: piiSuburb,
+      stateRegion: piiStateRegion,
+      postcode: piiPostcode,
+      addressCountry: piiAddrCountry,
+      occupation: piiOccupation,
+      employmentStatus: piiEmployment,
+      purposeOfAccount: piiPurpose,
+      sourceOfFunds: piiSourceFunds,
+      taxCountry: piiTaxCountry,
     });
   }
 
   // ── derive step statuses dynamically ──────────────────────────────────────
-  // Step 2: always completed (pre-verified photo ID)
-  // Step 3: in_progress → under_review once file uploaded
+  // Step 2: in_progress until idVerifyComplete, then completed
+  // Step 3: pending until step 2 complete, then in_progress → under_review once file uploaded
   // Step 4: pending until step 3 uploaded, then in_progress → under_review once uploaded
   // Step 5: pending until step 4 uploaded, then in_progress → completed once risk submitted
   const stepStatuses = useMemo((): Record<number, StepStatus> => {
-    const s3 = stepFiles[3] ? "under_review" : "in_progress";
-    const s4 = !stepFiles[3]
+    const s2: StepStatus = idVerifyComplete ? "completed" : "in_progress";
+    const s3: StepStatus = !idVerifyComplete
+      ? "pending"
+      : stepFiles[3]
+      ? "under_review"
+      : "in_progress";
+    const s4: StepStatus = !stepFiles[3]
       ? "pending"
       : stepFiles[4]
       ? "under_review"
       : "in_progress";
-    const s5 = !stepFiles[4]
+    const s5: StepStatus = !stepFiles[4]
       ? "pending"
       : riskSubmitted
       ? "completed"
       : "in_progress";
-    return { 2: "completed", 3: s3, 4: s4, 5: s5 };
-  }, [stepFiles, riskSubmitted]);
+    return { 2: s2, 3: s3, 4: s4, 5: s5 };
+  }, [idVerifyComplete, stepFiles, riskSubmitted]);
 
   // derive current active step (first non-completed step)
   const currentStepId = useMemo(() => {
@@ -146,14 +206,16 @@ export default function Compliance() {
     return 5;
   }, [stepStatuses]);
 
-  // derive KYC completion %
+  // derive KYC completion % — 5 steps, 20% each
   const kycPct = useMemo(() => {
-    let total = 25; // step 2 always done
-    if (stepFiles[3])   total += 25;
-    if (stepFiles[4])   total += 25;
-    if (riskSubmitted)  total += 25;
+    let total = 0;
+    if (kycProfile?.kycProfileComplete) total += 20; // step 1
+    if (idVerifyComplete)               total += 20; // step 2
+    if (stepFiles[3])                   total += 20; // step 3
+    if (stepFiles[4])                   total += 20; // step 4
+    if (riskSubmitted)                  total += 20; // step 5
     return total;
-  }, [stepFiles, riskSubmitted]);
+  }, [kycProfile?.kycProfileComplete, idVerifyComplete, stepFiles, riskSubmitted]);
 
   // derive doc verification %
   const docPct = useMemo(() => {
@@ -262,6 +324,26 @@ export default function Compliance() {
     });
   }
 
+  function handleIdVerifySubmit() {
+    if (!idFrontFile) {
+      toast({ title: "Document Required", description: "Please upload your identity document before submitting.", variant: "destructive" });
+      return;
+    }
+    if (!selfieFile) {
+      toast({ title: "Selfie Required", description: "A biometric selfie is required for identity matching under AUSTRAC electronic verification standards.", variant: "destructive" });
+      return;
+    }
+    // Run the 4-step animated verification sequence
+    setIdVerifyAnimStep(1);
+    setTimeout(() => setIdVerifyAnimStep(2), 1800);
+    setTimeout(() => setIdVerifyAnimStep(3), 3600);
+    setTimeout(() => setIdVerifyAnimStep(4), 5200);
+    setTimeout(() => {
+      setIdVerifyAnimStep(5);
+      setIdVerifyComplete(true);
+    }, 6800);
+  }
+
   function handleCompleteRiskAssessment() {
     if (!riskExperience || !riskIncome || !riskFunds) {
       toast({
@@ -282,8 +364,8 @@ export default function Compliance() {
   const documents = [
     { id: 1, name: "Passport Copy",    status: "approved"     as const, uploadDate: "2024-01-10", size: "2.4 MB" },
     { id: 2, name: "Utility Bill",     status: "under_review" as const, uploadDate: "2024-01-12", size: "1.8 MB" },
-    { id: 3, name: "Bank Statement",   status: (stepFiles[2] || docUploads[3] ? "under_review" : "pending") as any, uploadDate: "", size: "" },
-    { id: 4, name: "Income Statement", status: (stepFiles[3] || docUploads[4] ? "under_review" : "pending") as any, uploadDate: "", size: "" },
+    { id: 3, name: "Bank Statement",   status: (stepFiles[3] || docUploads[3] ? "under_review" : "pending") as any, uploadDate: "", size: "" },
+    { id: 4, name: "Income Statement", status: (stepFiles[4] || docUploads[4] ? "under_review" : "pending") as any, uploadDate: "", size: "" },
   ];
 
   // next step prompt content
@@ -438,6 +520,108 @@ export default function Compliance() {
                   </div>
                 </div>
 
+                {/* Residential Address */}
+                <div className="rounded-lg border p-4 space-y-3 bg-slate-50">
+                  <div className="flex items-center gap-2">
+                    <Home className="w-4 h-4 text-blue-600" />
+                    <h4 className="text-sm font-semibold">Residential Address <span className="text-red-500">*</span></h4>
+                  </div>
+                  <p className="text-xs text-muted-foreground -mt-1">No PO Box — required for customer identification under AUSTRAC CDD rules</p>
+                  <div className="space-y-1">
+                    <Label htmlFor="pii-addr" className="text-sm">Street Address <span className="text-red-500">*</span></Label>
+                    <Input id="pii-addr" placeholder="e.g. 12 King Street" value={piiAddress} onChange={e => setPiiAddress(e.target.value)} />
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="space-y-1 col-span-2 md:col-span-2">
+                      <Label htmlFor="pii-suburb" className="text-sm">Suburb / City <span className="text-red-500">*</span></Label>
+                      <Input id="pii-suburb" placeholder="e.g. Rockdale" value={piiSuburb} onChange={e => setPiiSuburb(e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="pii-state" className="text-sm">State <span className="text-red-500">*</span></Label>
+                      <Select value={piiStateRegion} onValueChange={setPiiStateRegion}>
+                        <SelectTrigger id="pii-state"><SelectValue placeholder="State" /></SelectTrigger>
+                        <SelectContent>
+                          {["NSW","VIC","QLD","WA","SA","TAS","ACT","NT"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="pii-postcode" className="text-sm">Postcode <span className="text-red-500">*</span></Label>
+                      <Input id="pii-postcode" placeholder="2216" maxLength={8} value={piiPostcode} onChange={e => setPiiPostcode(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="pii-addrcountry" className="text-sm">Country</Label>
+                    <Input id="pii-addrcountry" placeholder="Australia" value={piiAddrCountry} onChange={e => setPiiAddrCountry(e.target.value)} />
+                  </div>
+                </div>
+
+                {/* Employment & Financial Profile */}
+                <div className="rounded-lg border p-4 space-y-3 bg-slate-50">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-blue-600" />
+                    <h4 className="text-sm font-semibold">Employment &amp; Financial Profile <span className="text-red-500">*</span></h4>
+                  </div>
+                  <p className="text-xs text-muted-foreground -mt-1">Required for AML/CTF risk assessment and transaction monitoring — AML/CTF Act 2006 §32</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-sm">Employment Status <span className="text-red-500">*</span></Label>
+                      <Select value={piiEmployment} onValueChange={setPiiEmployment}>
+                        <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="employed">Employed (full-time / part-time)</SelectItem>
+                          <SelectItem value="self_employed">Self-employed / Business owner</SelectItem>
+                          <SelectItem value="retired">Retired</SelectItem>
+                          <SelectItem value="student">Student</SelectItem>
+                          <SelectItem value="unemployed">Unemployed / Seeking work</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="pii-occupation" className="text-sm">Occupation / Job Title</Label>
+                      <Input id="pii-occupation" placeholder="e.g. Software Engineer" value={piiOccupation} onChange={e => setPiiOccupation(e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-sm">Purpose of Using AMAX Global <span className="text-red-500">*</span></Label>
+                      <Select value={piiPurpose} onValueChange={setPiiPurpose}>
+                        <SelectTrigger><SelectValue placeholder="Select purpose" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="personal_transfers">Personal / Family remittances</SelectItem>
+                          <SelectItem value="business_payments">Business payments</SelectItem>
+                          <SelectItem value="investment">Investment / Portfolio management</SelectItem>
+                          <SelectItem value="fx_conversion">FX conversion</SelectItem>
+                          <SelectItem value="savings">Savings / eWallet management</SelectItem>
+                          <SelectItem value="crypto">Cryptocurrency exchange</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-sm">Primary Source of Funds <span className="text-red-500">*</span></Label>
+                      <Select value={piiSourceFunds} onValueChange={setPiiSourceFunds}>
+                        <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="employment">Employment / Salary</SelectItem>
+                          <SelectItem value="business">Business income</SelectItem>
+                          <SelectItem value="savings">Personal savings</SelectItem>
+                          <SelectItem value="inheritance">Inheritance / Gift</SelectItem>
+                          <SelectItem value="property">Property / Rental income</SelectItem>
+                          <SelectItem value="investment">Investment returns</SelectItem>
+                          <SelectItem value="crypto">Crypto / Digital assets</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="pii-taxcountry" className="text-sm">Country of Tax Residency</Label>
+                    <Input id="pii-taxcountry" placeholder="e.g. Australia" value={piiTaxCountry} onChange={e => setPiiTaxCountry(e.target.value)} />
+                    <p className="text-xs text-muted-foreground">Required for CRS / FATCA cross-border compliance where applicable</p>
+                  </div>
+                </div>
+
                 {/* Declarations */}
                 <div className="rounded-lg border p-4 space-y-3 bg-slate-50">
                   <h4 className="text-sm font-semibold">Mandatory Declarations</h4>
@@ -527,7 +711,242 @@ export default function Compliance() {
                 const fileName  = stepFiles[def.id];
                 const Icon      = def.icon;
                 const canUpload = def.uploadId && (status === "in_progress" || status === "under_review");
-                const isLocked  = status === "pending";
+
+                // ── Step 2 expanded identity verification card ──────────────
+                if (def.id === 2 && status === "in_progress") {
+                  const docLabels = {
+                    passport:       { label: "Passport",       sub: "Any country",        hint: "Upload the photo page of your passport. Ensure all four corners are visible and text is legible." },
+                    driver_licence: { label: "Driver Licence", sub: "Australian only",    hint: "Upload both the front and back of your Australian driver licence." },
+                    national_id:    { label: "National ID",    sub: "Foreign nationals",  hint: "Upload both the front and back of your national identity card." },
+                  };
+                  const dl = docLabels[docType];
+                  const needsBack = docType !== "passport";
+                  const animSteps = [
+                    { label: "Documents Received",       icon: FileText  },
+                    { label: "Identity Matching",        icon: User      },
+                    { label: "Sanctions & PEP Screening",icon: Shield    },
+                    { label: "Risk Score Assigned",      icon: CheckCircle },
+                  ];
+
+                  return (
+                    <div key={def.id} className="border-2 border-yellow-300 bg-yellow-50 rounded-xl overflow-hidden">
+                      {/* Step header */}
+                      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-yellow-500">
+                          <User className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-gray-400 font-medium">Step 2 of 5</span>
+                            <h3 className="font-semibold text-gray-900">Document upload &amp; ID verification</h3>
+                            <Badge className="bg-yellow-100 text-yellow-800">In Progress</Badge>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">Upload your government-issued ID and a biometric selfie — required under AUSTRAC electronic verification standards</p>
+                        </div>
+                      </div>
+
+                      {idVerifyAnimStep === 0 && (
+                        <div className="px-4 pb-5 space-y-4">
+                          {/* Document type selector */}
+                          <div className="bg-white border rounded-xl p-4 space-y-3">
+                            <h4 className="font-semibold text-sm">Select your document type</h4>
+                            <p className="text-xs text-muted-foreground">Choose the government-issued ID you will upload</p>
+                            <div className="grid grid-cols-3 gap-3">
+                              {(["passport","driver_licence","national_id"] as const).map((dt) => {
+                                const info = docLabels[dt];
+                                return (
+                                  <button
+                                    key={dt}
+                                    type="button"
+                                    onClick={() => setDocType(dt)}
+                                    className={`border-2 rounded-xl p-3 text-center transition-all ${
+                                      docType === dt
+                                        ? "border-blue-500 bg-blue-50"
+                                        : "border-gray-200 bg-white hover:border-gray-300"
+                                    }`}
+                                  >
+                                    <div className="text-2xl mb-1">
+                                      {dt === "passport" ? "📕" : dt === "driver_licence" ? "🚗" : "🪪"}
+                                    </div>
+                                    <div className="text-xs font-semibold">{info.label}</div>
+                                    <div className="text-xs text-muted-foreground">{info.sub}</div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <div className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">{dl.hint}</div>
+                          </div>
+
+                          {/* Document upload zone(s) */}
+                          <div className="bg-white border rounded-xl p-4 space-y-3">
+                            <h4 className="font-semibold text-sm">Upload your document</h4>
+                            <p className="text-xs text-muted-foreground">JPG, PNG or PDF — max 10 MB per file</p>
+                            <div className={`grid gap-3 ${needsBack ? "grid-cols-2" : "grid-cols-1"}`}>
+                              {/* Front / single */}
+                              <label htmlFor="id-front" className="cursor-pointer block">
+                                <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${
+                                  idFrontFile ? "border-green-400 bg-green-50" : "border-gray-300 hover:border-blue-400"
+                                }`}>
+                                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                  {idFrontFile ? (
+                                    <>
+                                      <p className="text-sm font-medium text-green-700">✓ {idFrontFile}</p>
+                                      <p className="text-xs text-green-600">Tap to replace</p>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <p className="text-sm font-medium">Click to upload or drag &amp; drop</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {needsBack ? `${dl.label} — front` : `${dl.label} photo page`}
+                                      </p>
+                                    </>
+                                  )}
+                                </div>
+                                <input id="id-front" type="file" accept=".pdf,.jpg,.jpeg,.png,.heic" className="hidden"
+                                  onChange={e => { const f = e.target.files?.[0]; if (f) { setIdFrontFile(f.name); e.target.value = ""; } }} />
+                              </label>
+                              {/* Back (driver licence / national ID only) */}
+                              {needsBack && (
+                                <label htmlFor="id-back" className="cursor-pointer block">
+                                  <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${
+                                    idBackFile ? "border-green-400 bg-green-50" : "border-gray-300 hover:border-blue-400"
+                                  }`}>
+                                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                    {idBackFile ? (
+                                      <>
+                                        <p className="text-sm font-medium text-green-700">✓ {idBackFile}</p>
+                                        <p className="text-xs text-green-600">Tap to replace</p>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <p className="text-sm font-medium">Click to upload or drag &amp; drop</p>
+                                        <p className="text-xs text-muted-foreground">{dl.label} — back</p>
+                                      </>
+                                    )}
+                                  </div>
+                                  <input id="id-back" type="file" accept=".pdf,.jpg,.jpeg,.png,.heic" className="hidden"
+                                    onChange={e => { const f = e.target.files?.[0]; if (f) { setIdBackFile(f.name); e.target.value = ""; } }} />
+                                </label>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Biometric selfie */}
+                          <div className="bg-white border rounded-xl p-4 space-y-3">
+                            <h4 className="font-semibold text-sm">Biometric selfie</h4>
+                            <p className="text-xs text-muted-foreground">A live photo to match your face against your document</p>
+                            <label htmlFor="id-selfie" className="cursor-pointer block">
+                              <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${
+                                selfieFile ? "border-green-400 bg-green-50" : "border-gray-300 hover:border-blue-400"
+                              }`}>
+                                <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                {selfieFile ? (
+                                  <>
+                                    <p className="text-sm font-medium text-green-700">✓ {selfieFile}</p>
+                                    <p className="text-xs text-green-600">Tap to replace</p>
+                                  </>
+                                ) : (
+                                  <>
+                                    <p className="text-sm font-medium">Take or upload a selfie</p>
+                                    <p className="text-xs text-muted-foreground">Face clearly visible, no sunglasses, good lighting</p>
+                                  </>
+                                )}
+                              </div>
+                              <input id="id-selfie" type="file" accept=".jpg,.jpeg,.png,.heic" capture="user" className="hidden"
+                                onChange={e => { const f = e.target.files?.[0]; if (f) { setSelfieFile(f.name); e.target.value = ""; } }} />
+                            </label>
+                            <div className="bg-gray-50 rounded-lg p-3 space-y-1">
+                              <p className="text-xs font-semibold text-gray-700">Tips for a successful selfie</p>
+                              {[
+                                "Look directly at the camera in a well-lit space",
+                                "Remove glasses, hats, or anything covering your face",
+                                "Plain background preferred — no filters",
+                                "Your face should fill at least 70% of the frame",
+                              ].map(tip => (
+                                <p key={tip} className="text-xs text-gray-600">• {tip}</p>
+                              ))}
+                            </div>
+                          </div>
+
+                          <Button
+                            className="w-full bg-gray-900 hover:bg-gray-800 text-white"
+                            onClick={handleIdVerifySubmit}
+                          >
+                            Submit for verification
+                          </Button>
+                          <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
+                            <Lock className="w-3 h-3" /> 256-bit encrypted — data handled under the AMAX Privacy Policy &amp; AML/CTF Act 2006
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Verification animation */}
+                      {idVerifyAnimStep >= 1 && idVerifyAnimStep < 5 && (
+                        <div className="px-4 pb-5 space-y-3">
+                          <div className="bg-white border rounded-xl p-5 space-y-4">
+                            <p className="text-sm font-semibold text-center text-gray-700">Verifying your identity…</p>
+                            {animSteps.map((step, idx) => {
+                              const stepNum = idx + 1;
+                              const done    = idVerifyAnimStep > stepNum;
+                              const active  = idVerifyAnimStep === stepNum;
+                              const StepIcon = step.icon;
+                              return (
+                                <div key={idx} className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
+                                  done   ? "bg-green-50 border border-green-200" :
+                                  active ? "bg-blue-50 border border-blue-300"  :
+                                  "bg-gray-50 border border-gray-200 opacity-40"
+                                }`}>
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                    done   ? "bg-green-600" :
+                                    active ? "bg-blue-600 animate-pulse" :
+                                    "bg-gray-300"
+                                  }`}>
+                                    {done ? <CheckCircle className="w-4 h-4 text-white" /> : <StepIcon className="w-4 h-4 text-white" />}
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className={`text-sm font-medium ${done ? "text-green-800" : active ? "text-blue-800" : "text-gray-500"}`}>
+                                      {step.label}
+                                    </p>
+                                    {active && <p className="text-xs text-blue-600 animate-pulse">Processing…</p>}
+                                    {done  && <p className="text-xs text-green-600">Complete</p>}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Verification complete */}
+                      {idVerifyAnimStep === 5 && (
+                        <div className="px-4 pb-5">
+                          <div className="bg-green-50 border border-green-200 rounded-xl p-5 space-y-3">
+                            <div className="flex items-center gap-3">
+                              <CheckCircle className="w-8 h-8 text-green-600 flex-shrink-0" />
+                              <div>
+                                <p className="font-semibold text-green-900">Identity Verified</p>
+                                <p className="text-sm text-green-700">All checks passed — document verified, face matched, sanctions clear</p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div className="bg-white border border-green-200 rounded-lg px-3 py-2">
+                                <p className="text-gray-500">Risk Rating</p>
+                                <p className="font-semibold text-green-700">Low</p>
+                              </div>
+                              <div className="bg-white border border-green-200 rounded-lg px-3 py-2">
+                                <p className="text-gray-500">Account Status</p>
+                                <p className="font-semibold text-green-700">Unlocked</p>
+                              </div>
+                            </div>
+                            <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
+                              <Lock className="w-3 h-3" /> 256-bit encrypted — data handled under the AMAX Privacy Policy &amp; AML/CTF Act 2006
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
 
                 return (
                   <div

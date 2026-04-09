@@ -3795,6 +3795,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         kycProfileComplete: user.kycProfileComplete ?? false,
         accountFrozen: user.accountFrozen ?? false,
         kycRefreshDue: user.kycRefreshDue ?? null,
+        residentialAddress: user.residentialAddress ?? "",
+        suburb: user.suburb ?? "",
+        stateRegion: user.stateRegion ?? "",
+        postcode: user.postcode ?? "",
+        addressCountry: user.addressCountry ?? "Australia",
+        occupation: user.occupation ?? "",
+        employmentStatus: user.employmentStatus ?? "",
+        purposeOfAccount: user.purposeOfAccount ?? "",
+        sourceOfFunds: user.sourceOfFunds ?? "",
+        taxCountry: user.taxCountry ?? "",
+        idDocumentType: user.idDocumentType ?? "",
+        idVerificationComplete: user.idVerificationComplete ?? false,
       });
     } catch (err: any) {
       res.status(401).json({ error: err.message ?? "Unauthorized" });
@@ -3813,6 +3825,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pepDeclaration: z.boolean(),
         sanctionsDeclaration: z.boolean(),
         consentDeclaration: z.boolean(),
+        residentialAddress: z.string().optional(),
+        suburb: z.string().optional(),
+        stateRegion: z.string().optional(),
+        postcode: z.string().optional(),
+        addressCountry: z.string().optional(),
+        occupation: z.string().optional(),
+        employmentStatus: z.string().optional(),
+        purposeOfAccount: z.string().optional(),
+        sourceOfFunds: z.string().optional(),
+        taxCountry: z.string().optional(),
       });
       const data = schema.parse(req.body);
       if (!data.sanctionsDeclaration || !data.consentDeclaration) {
@@ -3842,6 +3864,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         riskLevel,
         dailyTransactionLimit: dailyLimit,
         kycRefreshDue,
+        residentialAddress: data.residentialAddress ?? null,
+        suburb: data.suburb ?? null,
+        stateRegion: data.stateRegion ?? null,
+        postcode: data.postcode ?? null,
+        addressCountry: data.addressCountry ?? null,
+        occupation: data.occupation ?? null,
+        employmentStatus: data.employmentStatus ?? null,
+        purposeOfAccount: data.purposeOfAccount ?? null,
+        sourceOfFunds: data.sourceOfFunds ?? null,
+        taxCountry: data.taxCountry ?? null,
       }).where(eq(users.id, userId));
 
       // Log to audit trail

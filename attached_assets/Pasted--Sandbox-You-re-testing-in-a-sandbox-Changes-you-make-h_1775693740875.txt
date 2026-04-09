@@ -1,0 +1,527 @@
+
+Sandbox
+You're testing in a sandbox. Changes you make here don't affect your live account.
+Switch to live account
+
+Close
+Edit test invoice
+
+Draft saved at 4/8/26, 6:29 PM
+Show preview
+Charge customer
+Customer
+X Y
+oyx8888@gmail.com
+Language:
+English (United States)
+Currency
+
+AUD - Australian Dollar
+Selecting a new currency will clear all items from the invoice.
+Items
+Add single, one-time items or products from your product catalog to this invoice.
+
+International Money Transfer × 1
+$4.99
+Add item
+Subtotal
+$4.99
+Add shipping
+
+Select a coupon…
+Add another coupon
+Collect tax automatically
+
+Add tax manually
+Total
+$4.99
+Payment collection
+Request payment
+Create an invoice requesting payment on a specific date
+
+Autocharge customer
+Automatically charge a payment method on file
+
+Add card
+Schedule charge date
+
+Additional options
+Customize your invoice with additional fields to better suit your business needs and compliance requirements. Learn more
+
+Template
+Select a template...
+Memo
+
+Footer
+
+Custom fields
+
+Tax ID
+
+PDF page size
+Letter
+Letter
+Preview
+Invoice PDF
+Email
+Payment page
+
+Tip: Change how this page looks in branding.  FILL THE FORM
+
+Here’s a clean, ready-to-use filled version of your Stripe test invoice based on a typical compliant fintech/transfer setup in Australia:
+
+✅ Invoice Setup (Completed)
+Customer
+Name: X Y
+
+Email: oyx8888@gmail.com
+
+Language: English (United States)
+
+Currency
+AUD – Australian Dollar
+
+Items
+Item Name: International Money Transfer
+
+Quantity: 1
+
+Unit Price: $4.99
+
+Subtotal: $4.99
+
+Tax
+✅ Collect tax automatically (recommended for AU GST compliance)
+(Stripe will apply 10% GST if configured in tax settings)
+
+Total
+Total (before tax): $4.99
+
++ GST (if applied): $0.50
+
+Final Total: ~$5.49 AUD
+
+Payment Collection
+Option: Request payment
+
+Due Date: (Recommended: +7 days from today) → e.g. April 16, 2026
+
+(Alternative)
+
+Use Autocharge customer ONLY if a saved card exists
+
+Additional Options (IMPORTANT for compliance)
+Memo (Recommended)
+Service fee for international money transfer processing.
+Footer (Compliance-friendly)
+This invoice is issued by [Your Company Name].
+ABN: [Your ABN]
+All transactions are subject to AML/CTF compliance checks.
+Custom Fields
+Add:
+
+Transfer Reference ID: (e.g. TXN-00012345)
+
+Service Type: International Transfer
+
+Tax ID Section
+Add your ABN (required for Australian invoices)
+
+PDF Settings
+Page Size: Letter ✅ (OK, but A4 is more standard in Australia → optional change)
+
+⚠️ Key Recommendations (Important for your fintech build)
+Always include a transaction/reference ID
+→ Required for audit + dispute tracking
+
+Enable Stripe Tax
+→ Ensures GST compliance (AUSTRAC alignment indirectly)
+
+Do NOT describe as “transfer amount”
+→ Keep it as “service fee”
+(avoids being treated like holding client funds)
+
+Avoid autocharge unless user consent is stored
+→ Required for compliance + card network rules
+
+💡 If you want next step
+I can:
+
+Turn this into a dynamic invoice generator (code patch)
+
+Map it to your ewallet backend + ledger entries
+
+Or check if this flow is fully AUSTRAC compliant end-to-end
+
+Just tell me 👍
+
+
+tep 1 — Personal Information
+Required before document upload — AML/CTF Act 2006, AUSTRAC CDD requirements
+
+Full Legal Name *
+OY X
+Must match your government-issued ID exactly
+
+Date of Birth *
+dd/mm/yyyy
+Country of Nationality *
+Australia
+Mobile Phone Number *
+0412356780
+Mandatory Declarations
+
+Sanctions Declaration *(supplementary — not a substitute for formal screening)
+I declare that I am not a designated person or entity under Australian sanctions law (Autonomous Sanctions Act 2011), UN Security Council Resolutions, or DFAT sanctions lists. I understand AMAX independently screens all customers against official sanctions databases.
+
+
+Politically Exposed Person (PEP) Confirmation
+I confirm that I am not a politically exposed person and am not a close associate of a domestic or foreign politically exposed person (including current or former senior government officials, politicians, military officers, or international organisation executives). Leave unchecked if you are, or may be, a PEP — AMAX will contact you to complete enhanced verification.
+
+
+Consent to Verification & Privacy Collection *
+I consent to AMAX Global Pty Ltd collecting, holding, and using my personal information for the purposes of identity verification, compliance with the AML/CTF Act 2006, and as described in the AMAX Privacy Policy. I understand this information may be shared with authorised third-party verification providers and AUSTRAC. what else to add -  i didnt see that in wise or the other app
+
+You’re already covering the core CDD basics (name, DOB, nationality, declarations), which is good — but apps like Wise and others actually include a few more layers behind the scenes to meet AUSTRAC expectations and reduce fraud risk.
+
+Here’s what you’re missing vs real-world fintech onboarding 👇
+
+✅ 1. Address (MANDATORY — you must add this)
+Wise, banks, and any AUSTRAC-reporting entity always collect this.
+
+Add:
+Residential Address (no PO Box)
+
+City / State / Postcode
+
+Country
+
+Why:
+Required under customer identification procedures (KYC)
+→ Needed for:
+
+Identity verification
+
+Risk profiling
+
+Jurisdiction screening
+
+✅ 2. Purpose of Account / Intended Use
+This is standard in Wise, Revolut, etc.
+
+Add dropdown:
+Personal transfers
+
+Business payments
+
+Investment
+
+Remittances to family
+
+Other (specify)
+
+Why:
+AUSTRAC requires understanding:
+
+“nature and purpose of the business relationship”
+
+✅ 3. Source of Funds (VERY IMPORTANT)
+You must include this if you're doing transfers.
+
+Add:
+Employment income
+
+Business income
+
+Savings
+
+Investment returns
+
+Crypto assets
+
+Other
+
+Why:
+This is critical for:
+
+AML risk scoring
+
+Suspicious matter reporting (SMR)
+
+✅ 4. Occupation / Employment Status
+Wise asks this (sometimes indirectly).
+
+Add:
+Employed / Self-employed / Unemployed / Student
+
+Occupation (text field)
+
+Why:
+Used for:
+
+Risk profiling
+
+Transaction monitoring context
+
+✅ 5. Country of Tax Residency + TIN
+Often skipped in MVPs, but real apps include it.
+
+Add:
+Tax residency country
+
+Tax Identification Number (optional but recommended)
+
+Why:
+CRS / FATCA obligations
+
+Cross-border compliance
+
+✅ 6. Enhanced PEP Handling (Fix your current version)
+Your current checkbox is too simplistic.
+
+Improve to:
+Are you a Politically Exposed Person (PEP)?
+
+Are you a family member of a PEP?
+
+Are you a close associate of a PEP?
+
+(3 separate questions)
+
+Why:
+This is how regulated apps do it — not just one checkbox.
+
+✅ 7. Sanctions Disclosure (Refine wording)
+What you have is good, but improve legally:
+
+Add:
+“I acknowledge my information will be screened against DFAT and international sanctions lists.”
+
+✅ 8. Risk Acknowledgement (Missing in your flow)
+Most fintech apps include this implicitly.
+
+Add checkbox:
+“I understand my account may be restricted or suspended if required under AML/CTF laws.”
+
+✅ 9. Terms & Conditions Acceptance (CRITICAL)
+You didn’t include this — big gap.
+
+Add:
+Accept Terms of Service
+
+Accept Privacy Policy
+
+⚠️ 10. What Wise DOES but hides (you should plan later)
+Even if not visible in UI:
+
+Device fingerprinting
+
+IP geolocation checks
+
+Sanctions screening APIs
+
+Transaction monitoring rules
+
+Velocity checks
+
+You don’t need this in the form — but your backend must handle it.
+
+🧠 Final “Real-World Ready” Structure
+Your onboarding should look like:
+
+Section 1 — Personal Info
+✔ Name
+✔ DOB
+✔ Nationality
+✔ Phone
+
+Section 2 — Address
+✔ Full residential address
+
+Section 3 — Financial Profile
+✔ Occupation
+✔ Source of funds
+✔ Purpose of account
+
+Section 4 — Compliance Declarations
+✔ Sanctions
+✔ PEP (3-part)
+✔ Consent
+
+Section 5 — Legal
+✔ Terms & Conditions
+✔ Privacy Policy
+
+🚨 Straight Answer to Your Question
+“why I didn’t see that in Wise?”
+
+Because apps like Wise:
+
+Progressively disclose (multi-step flow)
+
+Hide complexity behind UX
+
+Pre-fill data from verification providers
+
+Ask some questions later when risk increases
+
+👉 You’re building a more explicit / compliance-first version, which is actually good for MVP + audit readiness.
+
+👍 My Recommendation
+For your current stage:
+
+MUST ADD NOW
+Address
+
+Source of funds
+
+Purpose of account
+
+Occupation
+
+Terms acceptance
+
+CAN ADD LATER
+Tax residency
+
+Advanced risk logic
+
+If you want, next I can:
+
+Turn this into a production-ready form schema (frontend + backend validation)
+
+Or audit if your current onboarding passes AUSTRAC expectations realistically (not theoretically)
+
+
+what about the 3 boxes - shall we show it later
+
+Short answer: yes — show the 3 PEP boxes later (conditionally), not upfront.
+That’s exactly how apps like Wise handle it.
+
+✅ Recommended UX + Compliance Approach
+🎯 Step 1 (Initial onboarding — keep friction low)
+Show only:
+
+❏ Single checkbox
+
+“I am not a Politically Exposed Person (PEP) or a close associate of one”
+
+👉 This keeps your conversion high and matches real fintech UX.
+
+⚠️ Step 2 (Trigger detailed PEP flow ONLY if needed)
+Show the 3 detailed questions only if:
+
+Trigger conditions:
+User unticks the declaration
+
+OR backend flags medium/high risk
+
+OR user sends large transfer / cross-border corridor risk
+
+OR manual review triggered
+
+📋 Step 2 Form (Expanded PEP — show later)
+Then display:
+
+Are you a Politically Exposed Person (PEP)?
+
+Are you a family member of a PEP?
+
+Are you a close associate of a PEP?
+
+Optional:
+
+Country of political exposure
+
+Position held
+
+Source of wealth
+
+🧠 Why this is the correct approach
+1. Matches AUSTRAC expectations
+Under the AML/CTF Act:
+
+You must identify PEPs
+
+But you can apply risk-based controls
+
+👉 Not everything must be collected upfront
+
+2. Matches real fintech UX patterns
+Apps avoid asking sensitive questions unless needed because:
+
+Reduces drop-off
+
+Avoids scaring users
+
+Keeps onboarding fast
+
+3. Still compliant (if backend enforces it)
+As long as you:
+
+Screen users against PEP databases
+
+Trigger Enhanced Due Diligence (EDD) when flagged
+
+Log decisions
+
+👉 You’re compliant
+
+⚠️ What NOT to do
+❌ Don’t force all 3 questions upfront
+→ hurts conversion badly
+
+❌ Don’t rely ONLY on checkbox
+→ you still need backend screening
+
+✅ Best Practice Architecture (what you should implement)
+Frontend:
+Simple checkbox (Step 1)
+
+Conditional expansion (Step 2)
+
+Backend:
+PEP screening API (or mock for now)
+
+Risk scoring
+
+Flag system:
+
+user.riskLevel = LOW / MEDIUM / HIGH
+user.pepFlag = true/false
+💡 Pro Tip (what Wise-style apps actually do)
+They:
+
+Ask minimal upfront
+
+Run silent screening
+
+Then:
+
+Ask more questions later
+
+OR restrict account
+
+OR request documents
+
+👉 You should copy this model.
+
+🚀 Final Recommendation
+Do this NOW:
+✅ Keep 1 checkbox upfront
+
+✅ Add conditional 3-question expansion
+
+✅ Log PEP responses
+
+Add NEXT:
+Backend screening + EDD trigger
+
+If you want, I can next:
+
+Design the exact conditional UI logic (React form + validation)
+
+Or map this into your existing eWallet onboarding flow + database schema
+
+
+
