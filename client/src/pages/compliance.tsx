@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -99,6 +99,10 @@ export default function Compliance() {
   const [selfieFile,       setSelfieFile]       = useState<string | null>(null);
   const [idVerifyAnimStep, setIdVerifyAnimStep] = useState(0);   // 0=idle 1-4=running 5=done
   const [idVerifyComplete, setIdVerifyComplete] = useState(false);
+  // Veriff integration state
+  type VerifyMode = "idle" | "loading" | "veriff_iframe" | "manual_review" | "approved" | "declined";
+  const [verifyMode, setVerifyMode] = useState<VerifyMode>("idle");
+  const [verifyUrl,  setVerifyUrl]  = useState<string>("");
 
   const { data: kycProfile, refetch: refetchProfile } = useQuery<{
     kycProfileComplete: boolean;
@@ -132,6 +136,45 @@ export default function Compliance() {
       toast({ title: "Error", description: err.message ?? "Failed to save profile", variant: "destructive" });
     },
   });
+
+  // ── Identity verification: start Veriff session ────────────────────────────
+  const identityMutation = useMutation({
+    mutationFn: (payload: { documentType: string }) =>
+      apiRequest("POST", "/api/kyc/identity/start", payload),
+    onSuccess: async (res: any) => {
+      const data = await res.json();
+      if (data.mode === "veriff") {
+        setVerifyMode("veriff_iframe");
+        setVerifyUrl(data.url);
+      } else {
+        // No Veriff key — manual review queued
+        setVerifyMode("manual_review");
+        toast({
+          title: "Identity Documents Received",
+          description: "Your documents have been queued for manual review by our compliance team. You will be notified within 1–2 business days.",
+        });
+      }
+    },
+    onError: (err: any) => {
+      setVerifyMode("idle");
+      toast({ title: "Verification Error", description: err.message ?? "Failed to start identity verification. Please try again.", variant: "destructive" });
+    },
+  });
+
+  // ── Poll /api/kyc/identity/status while Veriff iframe is open ─────────────
+  const { data: idStatusData } = useQuery<{ complete: boolean; documentType: string | null }>({
+    queryKey: ["/api/kyc/identity/status"],
+    refetchInterval: verifyMode === "veriff_iframe" ? 5000 : false,
+    enabled: verifyMode === "veriff_iframe" || verifyMode === "manual_review",
+  });
+
+  useEffect(() => {
+    if (idStatusData?.complete && !idVerifyComplete) {
+      setIdVerifyComplete(true);
+      setVerifyMode("approved");
+      toast({ title: "Identity Verified", description: "Your identity has been successfully verified. You may now proceed to the next step." });
+    }
+  }, [idStatusData?.complete]);
 
   function handleProfileSubmit() {
     if (!piiFullName || !piiDob || !piiNationality || !piiPhone) {
@@ -333,15 +376,8 @@ export default function Compliance() {
       toast({ title: "Selfie Required", description: "A biometric selfie is required for identity matching under AUSTRAC electronic verification standards.", variant: "destructive" });
       return;
     }
-    // Run the 4-step animated verification sequence
-    setIdVerifyAnimStep(1);
-    setTimeout(() => setIdVerifyAnimStep(2), 1800);
-    setTimeout(() => setIdVerifyAnimStep(3), 3600);
-    setTimeout(() => setIdVerifyAnimStep(4), 5200);
-    setTimeout(() => {
-      setIdVerifyAnimStep(5);
-      setIdVerifyComplete(true);
-    }, 6800);
+    setVerifyMode("loading");
+    identityMutation.mutate({ documentType: docType });
   }
 
   function handleCompleteRiskAssessment() {
@@ -745,7 +781,7 @@ export default function Compliance() {
                         </div>
                       </div>
 
-                      {idVerifyAnimStep === 0 && (
+                      {verifyMode === "idle" && (
                         <div className="px-4 pb-5 space-y-4">
                           {/* Document type selector */}
                           <div className="bg-white border rounded-xl p-4 space-y-3">
@@ -870,9 +906,10 @@ export default function Compliance() {
 
                           <Button
                             className="w-full bg-gray-900 hover:bg-gray-800 text-white"
+                            disabled={verifyMode === "loading"}
                             onClick={handleIdVerifySubmit}
                           >
-                            Submit for verification
+                            {verifyMode === "loading" ? "Starting verification…" : "Submit for verification"}
                           </Button>
                           <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
                             <Lock className="w-3 h-3" /> 256-bit encrypted — data handled under the AMAX Privacy Policy &amp; AML/CTF Act 2006
@@ -880,45 +917,84 @@ export default function Compliance() {
                         </div>
                       )}
 
-                      {/* Verification animation */}
-                      {idVerifyAnimStep >= 1 && idVerifyAnimStep < 5 && (
+                      {/* Loading state */}
+                      {verifyMode === "loading" && (
+                        <div className="px-4 pb-5 flex flex-col items-center gap-3 py-6">
+                          <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
+                          <p className="text-sm font-medium text-gray-700">Connecting to verification provider…</p>
+                          <p className="text-xs text-muted-foreground">Please wait while we prepare your secure session.</p>
+                        </div>
+                      )}
+
+                      {/* Veriff iframe — external verification session */}
+                      {verifyMode === "veriff_iframe" && (
                         <div className="px-4 pb-5 space-y-3">
-                          <div className="bg-white border rounded-xl p-5 space-y-4">
-                            <p className="text-sm font-semibold text-center text-gray-700">Verifying your identity…</p>
-                            {animSteps.map((step, idx) => {
-                              const stepNum = idx + 1;
-                              const done    = idVerifyAnimStep > stepNum;
-                              const active  = idVerifyAnimStep === stepNum;
-                              const StepIcon = step.icon;
-                              return (
-                                <div key={idx} className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
-                                  done   ? "bg-green-50 border border-green-200" :
-                                  active ? "bg-blue-50 border border-blue-300"  :
-                                  "bg-gray-50 border border-gray-200 opacity-40"
-                                }`}>
-                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                    done   ? "bg-green-600" :
-                                    active ? "bg-blue-600 animate-pulse" :
-                                    "bg-gray-300"
-                                  }`}>
-                                    {done ? <CheckCircle className="w-4 h-4 text-white" /> : <StepIcon className="w-4 h-4 text-white" />}
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className={`text-sm font-medium ${done ? "text-green-800" : active ? "text-blue-800" : "text-gray-500"}`}>
-                                      {step.label}
-                                    </p>
-                                    {active && <p className="text-xs text-blue-600 animate-pulse">Processing…</p>}
-                                    {done  && <p className="text-xs text-green-600">Complete</p>}
-                                  </div>
-                                </div>
-                              );
-                            })}
+                          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                            <div className="flex items-start gap-3 mb-3">
+                              <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="font-semibold text-blue-900 text-sm">Secure Verification Session Active</p>
+                                <p className="text-xs text-blue-700 mt-0.5">
+                                  Complete your identity verification in the window below. Your documents are processed by our
+                                  AUSTRAC-approved identity verification provider. This typically takes 1–3 minutes.
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-xs text-blue-600 bg-blue-100 rounded-lg px-3 py-2 flex items-center gap-2">
+                              <RefreshCw className="w-3 h-3 animate-spin flex-shrink-0" />
+                              Polling for verification result every 5 seconds…
+                            </div>
+                          </div>
+                          {/* Veriff iframe — embedded verification flow */}
+                          <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm" style={{ height: "600px" }}>
+                            <iframe
+                              src={verifyUrl}
+                              title="Identity Verification"
+                              allow="camera; microphone"
+                              className="w-full h-full border-0"
+                            />
+                          </div>
+                          <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
+                            <Lock className="w-3 h-3" /> 256-bit encrypted — processed by Veriff under AUSTRAC AML/CTF Act 2006 obligations
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Manual review pending — no Veriff API key */}
+                      {verifyMode === "manual_review" && (
+                        <div className="px-4 pb-5">
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5 space-y-3">
+                            <div className="flex items-start gap-3">
+                              <Clock className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p className="font-semibold text-yellow-900">Documents Received — Awaiting Manual Review</p>
+                                <p className="text-sm text-yellow-700 mt-1">
+                                  Your identity documents have been received and queued for review by our compliance team
+                                  (Compliance Officer: Qin Xiong). You will be notified at your registered email address
+                                  within <strong>1–2 business days</strong>.
+                                </p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div className="bg-white border border-yellow-200 rounded-lg px-3 py-2">
+                                <p className="text-gray-500">Review Status</p>
+                                <p className="font-semibold text-yellow-700">In Queue</p>
+                              </div>
+                              <div className="bg-white border border-yellow-200 rounded-lg px-3 py-2">
+                                <p className="text-gray-500">Expected Turnaround</p>
+                                <p className="font-semibold text-yellow-700">1–2 business days</p>
+                              </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Contact <a href="mailto:info@amaxglobal.com.au" className="underline">info@amaxglobal.com.au</a> if
+                              you have not received confirmation within 2 business days.
+                            </p>
                           </div>
                         </div>
                       )}
 
-                      {/* Verification complete */}
-                      {idVerifyAnimStep === 5 && (
+                      {/* Verified — Veriff approved */}
+                      {verifyMode === "approved" && (
                         <div className="px-4 pb-5">
                           <div className="bg-green-50 border border-green-200 rounded-xl p-5 space-y-3">
                             <div className="flex items-center gap-3">
@@ -930,8 +1006,8 @@ export default function Compliance() {
                             </div>
                             <div className="grid grid-cols-2 gap-2 text-xs">
                               <div className="bg-white border border-green-200 rounded-lg px-3 py-2">
-                                <p className="text-gray-500">Risk Rating</p>
-                                <p className="font-semibold text-green-700">Low</p>
+                                <p className="text-gray-500">Provider</p>
+                                <p className="font-semibold text-green-700">Veriff</p>
                               </div>
                               <div className="bg-white border border-green-200 rounded-lg px-3 py-2">
                                 <p className="text-gray-500">Account Status</p>
@@ -939,8 +1015,30 @@ export default function Compliance() {
                               </div>
                             </div>
                             <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-                              <Lock className="w-3 h-3" /> 256-bit encrypted — data handled under the AMAX Privacy Policy &amp; AML/CTF Act 2006
+                              <Lock className="w-3 h-3" /> 256-bit encrypted — processed under the AMAX Privacy Policy &amp; AML/CTF Act 2006
                             </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Declined */}
+                      {verifyMode === "declined" && (
+                        <div className="px-4 pb-5">
+                          <div className="bg-red-50 border border-red-200 rounded-xl p-5 space-y-3">
+                            <div className="flex items-center gap-3">
+                              <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0" />
+                              <div>
+                                <p className="font-semibold text-red-900">Verification Unsuccessful</p>
+                                <p className="text-sm text-red-700">
+                                  We were unable to verify your identity. Please contact{" "}
+                                  <a href="mailto:info@amaxglobal.com.au" className="underline">info@amaxglobal.com.au</a>{" "}
+                                  for assistance.
+                                </p>
+                              </div>
+                            </div>
+                            <Button variant="outline" size="sm" className="w-full" onClick={() => setVerifyMode("idle")}>
+                              Try Again
+                            </Button>
                           </div>
                         </div>
                       )}

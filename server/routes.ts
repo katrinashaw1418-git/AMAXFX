@@ -3904,6 +3904,172 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ---------------------------------------------------------------------------
+  // Identity verification endpoints — Veriff integration
+  // POST /api/kyc/identity/start  — creates a Veriff session (or queues manual review)
+  // POST /api/kyc/identity/webhook — receives Veriff HMAC-signed decision
+  // GET  /api/kyc/identity/status  — frontend polls for webhook result
+  // ---------------------------------------------------------------------------
+  const VERIFF_API_URL = "https://stationapi.veriff.com";
+
+  // POST /api/kyc/identity/start
+  app.post("/api/kyc/identity/start", async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const apiKey = process.env.VERIFF_API_KEY;
+      const docType: string = req.body.documentType ?? "passport";
+      const docTypeMap: Record<string, string> = {
+        passport: "PASSPORT",
+        driver_licence: "DRIVERS_LICENSE",
+        national_id: "ID_CARD",
+      };
+
+      if (!apiKey) {
+        // No Veriff key — queue for manual review by compliance team
+        await db.update(users).set({
+          idDocumentType: docType,
+        }).where(eq(users.id, userId));
+        await db.insert(complianceActions as any).values({
+          actionType: "id_verification_started",
+          userId,
+          performedBy: "system",
+          notes: `Manual review queued — VERIFF_API_KEY not configured. Document type: ${docType}. Customer: ${user.firstName} ${user.lastName}.`,
+          outcome: "pending",
+        });
+        await db.insert(auditLogs as any).values({
+          userId,
+          action: "id_verification_manual_review_queued",
+          entityType: "user",
+          entityId: String(userId),
+          metadata: { documentType: docType, mode: "manual_review" },
+        });
+        return res.json({ mode: "manual_review" });
+      }
+
+      // Build Veriff session
+      const callbackUrl = `${req.protocol}://${req.get("host")}/api/kyc/identity/webhook`;
+      const sessionBody = {
+        verification: {
+          callback: callbackUrl,
+          person: {
+            firstName: user.firstName,
+            lastName: user.lastName,
+          },
+          document: {
+            type: docTypeMap[docType] ?? "PASSPORT",
+            country: "AU",
+          },
+          vendorData: `userId:${userId}`,
+          timestamp: new Date().toISOString(),
+        },
+      };
+
+      const veriffRes = await fetch(`${VERIFF_API_URL}/v1/sessions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-AUTH-CLIENT": apiKey,
+        },
+        body: JSON.stringify(sessionBody),
+      });
+
+      if (!veriffRes.ok) {
+        const errText = await veriffRes.text();
+        throw new Error(`Veriff API error (${veriffRes.status}): ${errText}`);
+      }
+
+      const veriffData: any = await veriffRes.json();
+      const sessionId: string = veriffData.verification?.id ?? "";
+      const sessionUrl: string = veriffData.verification?.url ?? "";
+
+      await db.update(users).set({ idDocumentType: docType }).where(eq(users.id, userId));
+      await db.insert(complianceActions as any).values({
+        actionType: "id_verification_started",
+        userId,
+        performedBy: "system",
+        notes: `Veriff session created. Session ID: ${sessionId}. Document type: ${docType}.`,
+        outcome: "pending",
+      });
+      await db.insert(auditLogs as any).values({
+        userId,
+        action: "id_verification_session_started",
+        entityType: "user",
+        entityId: String(userId),
+        metadata: { sessionId, documentType: docType, mode: "veriff" },
+      });
+
+      res.json({ mode: "veriff", url: sessionUrl, sessionId });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to start verification" });
+    }
+  });
+
+  // POST /api/kyc/identity/webhook — receives Veriff decision
+  // No auth — public endpoint called by Veriff servers
+  // Production TODO: verify x-hmac-signature header = sha256(VERIFF_SECRET + rawBody)
+  app.post("/api/kyc/identity/webhook", async (req: Request, res: any) => {
+    try {
+      const { verification } = req.body ?? {};
+      if (!verification?.vendorData) {
+        return res.status(400).json({ error: "Missing vendorData in webhook payload" });
+      }
+
+      // Parse userId encoded in vendorData by the start endpoint
+      const match = String(verification.vendorData).match(/userId:(\d+)/);
+      if (!match) return res.status(400).json({ error: "Invalid vendorData format" });
+      const userId = parseInt(match[1], 10);
+
+      const status: string = verification.status ?? "unknown"; // "approved" | "declined" | "resubmission_requested"
+      const approved = status === "approved";
+
+      if (approved) {
+        await db.update(users).set({
+          idVerificationComplete: true,
+        }).where(eq(users.id, userId));
+      }
+
+      await db.insert(complianceActions as any).values({
+        actionType: "id_verification_result",
+        userId,
+        performedBy: "veriff",
+        notes: `Veriff decision: ${status}. Verification ID: ${verification.id ?? "n/a"}. Person: ${verification.person?.firstName ?? ""} ${verification.person?.lastName ?? ""}.`,
+        outcome: approved ? "completed" : "pending",
+      });
+      await db.insert(auditLogs as any).values({
+        userId,
+        action: "id_verification_webhook_received",
+        entityType: "user",
+        entityId: String(userId),
+        metadata: { status, verificationId: verification.id, reason: verification.reason ?? null },
+      });
+
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Webhook processing failed" });
+    }
+  });
+
+  // GET /api/kyc/identity/status — frontend polls after starting Veriff session
+  app.get("/api/kyc/identity/status", async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      const [user] = await db
+        .select({ idVerificationComplete: users.idVerificationComplete, idDocumentType: users.idDocumentType })
+        .from(users)
+        .where(eq(users.id, userId));
+      if (!user) return res.status(404).json({ error: "User not found" });
+      res.json({
+        complete: user.idVerificationComplete ?? false,
+        documentType: user.idDocumentType ?? null,
+      });
+    } catch (err: any) {
+      res.status(401).json({ error: err.message ?? "Unauthorized" });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
   // Admin transaction lifecycle endpoints
   // Protected by X-Admin-Key header matched against ADMIN_SECRET env var.
   // No UI — used by AMAX ops team to approve/complete/fail transactions.
