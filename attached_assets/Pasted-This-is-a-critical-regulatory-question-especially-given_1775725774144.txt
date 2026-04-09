@@ -1,0 +1,73 @@
+This is a critical regulatory question, especially given the law that just changed 8 days ago. Let me think through this precisely.
+
+**The short answer: No — Coinbase does not solve your non-custodian claim, and the new law makes this more urgent, not less.**
+
+Here's the full breakdown:
+
+---
+
+**The core problem with the non-custodian framing**
+
+Whether you use Coinbase or any other external custodian, AMAX is still acting as an intermediary that:
+- takes fiat from users
+- routes it to a custodian
+- shows users a representative balance
+
+Under the brand new Corporations Amendment (Digital Assets Framework) Bill 2025 (passed 1 April 2026 — 8 days ago), the law defines a Digital Asset Platform (DAP) as an intermediary-operated facility that possesses clients' digital tokens and records client interests in an account — inclusive of exchanges, brokers, custodians and some wallet providers.
+
+AMAX fits that definition regardless of who the backend custodian is. The routing through Coinbase doesn't remove AMAX from the custody chain in ASIC's eyes — it just adds a layer to it.
+
+---
+
+**What your AUSTRAC DCE registration actually covers**
+
+Your DCE registration covers the exchange function only — converting fiat to crypto and back. It does not cover:
+
+- Acting as a DAP (recording client interests in an account)
+- Holding or arranging custody of digital assets on behalf of users
+- Remittance services (that's a separate AUSTRAC registration category — Remittance Sector Provider)
+
+These are three distinct regulatory boxes. A single DCE registration does not tick all three.
+
+---
+
+**Remittance specifically — a separate issue**
+
+If AMAX is also moving money on behalf of clients (e.g. fiat to crypto cross-border, or crypto transfers between users), that is remittance under the AML/CTF Act and requires a separate AUSTRAC Remittance Sector registration. DCE ≠ remittance. They can coexist but must be registered independently.
+
+---
+
+**So what should AMAX actually do?**
+
+Here's the honest regulatory map given the new law:
+
+| Function | Registration / Licence Required |
+|---|---|
+| Fiat ↔ crypto exchange | AUSTRAC DCE ✅ (you have this) |
+| Showing user balances / acting as DAP | AFSL required under new Digital Assets Framework — must apply |
+| Remittance (moving value cross-border or between users) | AUSTRAC Remittance Sector registration — separate |
+| Custody (holding crypto on user behalf) | AFSL + custody authorisation — or outsource to licensed custodian and disclose properly |
+
+---
+
+**The correct structure for AMAX if you want to operate cleanly**
+
+The cleanest model that keeps AMAX as a DCE-only entity without triggering AFSL obligations is:
+
+1. AMAX executes the exchange (DCE function — covered)
+2. An external licensed custodian (Independent Reserve, or a future AFSL-holding entity) holds the assets in the user's name — not AMAX's name
+3. AMAX shows a read-only balance pulled from the custodian's API — not its own ledger
+4. AMAX never touches the crypto — it only touches the fiat side of the transaction
+5. The user has a direct contractual relationship with the custodian for custody
+
+Under this model, AMAX's non-custodian claim is true and defensible. Under the current model where AMAX maintains its own internal ledger of crypto balances, it is not.
+
+---
+
+**Bottom line on Coinbase specifically**
+
+Coinbase is a credible custodian but it doesn't solve the structural problem. What solves it is the contractual and operational architecture — who legally holds the asset, whose name the account is in, and whether AMAX's internal ledger disappears entirely in favour of the custodian's own user-facing account.
+
+The urgent action right now given the 1 April 2026 law is: get legal advice on whether AMAX needs to apply for an AFSL under the new Digital Assets Framework before it continues operating the DAP function. There is likely a transition period, but you need to know how long it is and whether AMAX qualifies for it.
+
+Do you want me to map out the transition period provisions and draft the custodian architecture spec for the clean model?

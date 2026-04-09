@@ -1,0 +1,224 @@
+Absolutely — I’ve read your breakdown carefully, and your instincts are correct: **Coinbase alone does not let AMAX claim “non-custodian” status under the new Australian law**. The law passed 8 days ago explicitly redefines “Digital Asset Platform” (DAP), and AMAX’s current internal ledger + routing model is squarely in scope.
+
+Let’s go step by step, and then I’ll provide a **full crypto page design + code patches** that are compliant with the new regulatory framework.
+
+---
+
+## **1️⃣ Key Regulatory Insights**
+
+1. **Non-custodian claim only works if:**
+
+   * AMAX does not maintain internal crypto balances
+   * Users have a **direct contractual relationship with an external licensed custodian**
+   * AMAX only displays a **read-only balance** via API pull
+
+2. **AUSTRAC DCE registration covers:**
+
+   * Exchange of fiat ↔ crypto only
+   * **Does not cover** custody, ledger management, or remittance
+
+3. **Remittance requires a separate registration** if fiat moves between users or across borders.
+
+4. **AFSL may be required** under the new Digital Assets Framework if AMAX holds balances in its own ledger or maintains a DAP function.
+
+5. **Coinbase is credible, but offshore**:
+
+   * Safe operationally, but **jurisdiction mismatch**
+   * ASIC scrutiny possible
+   * A local AFSL-seeking custodian (Independent Reserve) is cleaner
+
+---
+
+## **2️⃣ Clean Operational Model**
+
+To be legally defensible under 2026 law:
+
+| Step                             | Who holds / executes                       | Notes                                         |
+| -------------------------------- | ------------------------------------------ | --------------------------------------------- |
+| User submits fiat → crypto order | AMAX arranges (DCE)                        | AMAX does not touch crypto                    |
+| Crypto execution                 | External licensed custodian                | Independent Reserve / AFSL-seeking custodian  |
+| Account balance display          | API pull from custodian                    | Read-only, representative balance             |
+| Fiat handling                    | AMAX handles remittance only if registered | Otherwise, must use external banking channels |
+
+**Key:** AMAX internal ledger disappears — no claims, no balances, only representative UI.
+
+---
+
+## **3️⃣ Crypto Page Design (Text / UX)**
+
+### **Header**
+
+```text
+Digital Asset Exchange
+AMAX arranges crypto trades via an external licensed custodian. AMAX does not hold or control your digital assets. Balances are read-only representations pulled from the custodian.
+```
+
+---
+
+### **Trade Form**
+
+**From (Fiat)**
+
+* AUD / USD
+* Input: Amount to spend
+* Display: Available fiat balance
+
+**To (Digital Asset)**
+
+* BTC / ETH / USDT / USDC
+* Display: Available custodian balance (read-only)
+
+**Swap** button toggles From/To
+
+---
+
+### **Trade Summary**
+
+| Field               | Value                                          |
+| ------------------- | ---------------------------------------------- |
+| You Send            | 500 AUD                                        |
+| Spot Rate           | 1 AUD = 0.00000992 BTC                         |
+| Processing Fee      | 0.5% (0.00002480 BTC)                          |
+| You Receive         | 0.0049352 BTC                                  |
+| Execution           | Order submitted to external licensed custodian |
+| Settlement          | Custodian-held account (not AMAX)              |
+| Status              | Pending → Executed → Settled                   |
+| Custodian Reference | ABC123XYZ (API-provided)                       |
+
+**Tooltip / Info Icon:**
+
+```text
+Your assets are held by the external custodian under a separate account. AMAX only arranges the trade and displays a representative balance.
+```
+
+---
+
+### **Confirm Modal**
+
+```text
+Confirm Exchange
+-----------------
+You Send: 500 AUD
+You Receive: 0.0049352 BTC
+Processing Fee: 0.5%
+Execution: Order submitted to external licensed custodian
+Settlement: Custodian-held account
+
+Legal Disclosure:
+This trade is arranged by AMAX Financial Pty Ltd (ABN 54 690 827 608) and executed through an external licensed custodian. AMAX does not hold or control your digital assets at any point. Your AMAX account balance reflects a representative balance from the custodian and does not constitute a claim against AMAX. Digital assets are not legal tender, are volatile, and trades are irreversible once confirmed. This transaction is subject to AML/CTF monitoring and may be reported to AUSTRAC.
+```
+
+* **Checkbox:** “I understand and confirm”
+* **Buttons:** `[Edit Trade] [Confirm Trade]`
+
+---
+
+### **Post-Trade Screen**
+
+* Display:
+
+  * Trade status (Pending / Executed / Settled)
+  * Custodian Reference / Transaction ID
+  * Timestamp
+  * “View in custodian portal” link (if custodian provides)
+
+```text
+Your trade has been executed via an external custodian. Your AMAX account balance has been updated to reflect this position. AMAX does not hold your crypto or private keys.
+```
+
+---
+
+## **4️⃣ Critical Code Patches (crypto.tsx)**
+
+### **Custody & Execution Language**
+
+```diff
+- Execution: T+0 account balance update
++ Execution: Order submitted to external licensed custodian
+
+- Settlement: AMAX account ledger
++ Settlement: Custodian-held account (read-only, representative balance)
+```
+
+---
+
+### **Representative Balance Update**
+
+```tsx
+const updateRepresentativeBalance = async (trade) => {
+  // Fetch updated balance from external custodian API
+  const balance = await custodianApi.getBalance(trade.asset);
+  setState({ balance });
+};
+```
+
+---
+
+### **Confirm Trade Button**
+
+```tsx
+const handleConfirmTrade = async () => {
+  await submitTradeToCustodian(selectedTrade);
+  await updateRepresentativeBalance(selectedTrade);
+  showConfirmationModal();
+};
+```
+
+---
+
+### **Custodian Reference Display**
+
+```tsx
+<div>Custodian Reference: {trade.custodianRef}</div>
+<div>Status: {trade.status}</div>
+```
+
+---
+
+### **Legal Disclosure Component**
+
+```tsx
+const LegalDisclosure = () => (
+  <div className="legal-disclosure">
+    <strong>Execution & Custody</strong>
+    <p>This trade is arranged by AMAX Financial Pty Ltd (ABN 54 690 827 608) and executed via an external licensed custodian. AMAX does not hold or control your digital assets. Your AMAX account balance reflects a representative balance only and does not constitute a claim against AMAX. Digital assets are not legal tender, are volatile, and trades are irreversible once confirmed. This transaction is subject to AML/CTF monitoring and may be reported to AUSTRAC.</p>
+  </div>
+);
+```
+
+---
+
+### **Status Tracking Component**
+
+```tsx
+<div className="trade-status">
+  <span>Status: {trade.status}</span>
+  <span>Custodian Reference: {trade.custodianRef}</span>
+  <a href={trade.custodianLink} target="_blank">View in Custodian Portal</a>
+</div>
+```
+
+---
+
+## ✅ **5️⃣ Key Implementation Notes**
+
+1. **No blockchain explorer link** — user does not have personal on-chain address.
+2. **All crypto balances must come from custodian API** — remove AMAX internal ledger for crypto.
+3. **Disclosure and confirm modal text is non-negotiable** — locks regulatory compliance.
+4. **Transaction references and status updates are mandatory** for audit trail.
+
+---
+
+### **6️⃣ Next Steps / Recommended**
+
+1. Map out **transition period for AFSL** under new law — confirm how long you can operate before AFSL is required.
+2. Consider switching to **Australian custodian (Independent Reserve)** if you want fully local compliance.
+3. Implement above **crypto.tsx patches** and remove all internal ledger handling for crypto.
+4. Keep **representative balances** pulled only via custodian API.
+5. Update **T&Cs** to include custodian dependency clause.
+
+---
+
+If you want, I can **draft the full crypto.tsx file** with these patches applied so you can drop it straight into the repo — all UI + legal disclosure + custodian integration ready.
+
+Do you want me to do that next?

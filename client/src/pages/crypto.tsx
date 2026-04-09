@@ -57,10 +57,10 @@ function formatRateAge(minutes: number | null | undefined): string {
 
 function getDisclosure(fromClass: AssetClass, toClass: AssetClass): string {
   if (fromClass === "fiat" && toClass === "crypto")
-    return "AMAX facilitates this as a registered DCE trade execution. Your AMAX account balance will be updated to reflect the purchased digital asset. AMAX does not hold, custody, or control your private keys — this is a ledger balance update, not an on-chain transfer. Digital assets are not legal tender, are subject to significant price volatility, and trade executions are irreversible once confirmed.";
+    return "This trade is arranged by AMAX Financial Pty Ltd (ABN 54 690 827 608) and executed through an external licensed custodian. AMAX does not hold, control, or take custody of your digital assets at any point. Your AMAX account displays a representative balance reflecting your holdings at the custodian. This balance is updated upon trade confirmation and is for account management purposes. It does not represent a claim against AMAX. Digital assets are not legal tender, are subject to significant price volatility, and trade executions are irreversible once confirmed.";
   if (fromClass === "crypto" && toClass === "fiat")
-    return "AMAX facilitates this as a registered DCE trade execution. Your digital asset account balance will be debited and the equivalent fiat amount credited. This is a ledger balance update — no on-chain transaction occurs. Rates are indicative and subject to market conditions at time of execution. Transactions are monitored for AML/CTF compliance.";
-  return "AMAX facilitates this swap as a registered DCE trade execution. Both asset balances will be updated in your AMAX account. This is a ledger balance update — no on-chain transaction occurs. Both assets are digital currencies under your AUSTRAC DCE registration. Market rates apply and swaps are irreversible once confirmed.";
+    return "This trade is arranged by AMAX Financial Pty Ltd (ABN 54 690 827 608) and executed through an external licensed custodian. AMAX does not hold, control, or take custody of your digital assets at any point. Your AMAX account balance is updated upon trade confirmation for account management purposes and does not represent a claim against AMAX. Rates are indicative and subject to market conditions at time of execution. Transactions are monitored for AML/CTF compliance.";
+  return "This swap is arranged by AMAX Financial Pty Ltd (ABN 54 690 827 608) and executed through an external licensed custodian. AMAX does not hold, control, or take custody of your digital assets. Your AMAX account displays representative balances for account management purposes only. These balances do not represent a claim against AMAX. Market rates apply and swaps are irreversible once confirmed.";
 }
 
 export default function Crypto() {
@@ -258,7 +258,7 @@ export default function Crypto() {
               <div className="flex items-start gap-2.5 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
                 <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                 <span>
-                  <strong>Trade Execution Notice:</strong> AMAX facilitates exchanges as a registered DCE. All trades are ledger balance updates on your AMAX account — AMAX does not hold, custody, or control private keys. Digital asset balances reflect your account position, not a direct on-chain holding.
+                  <strong>Custody Notice:</strong> AMAX arranges digital asset trades as a registered DCE. AMAX does not hold, control, or take custody of your digital assets at any point. Your AMAX account displays a representative balance reflecting your holdings with an external licensed custodian. This balance is for account management purposes only and does not represent a claim against AMAX.
                 </span>
               </div>
 
@@ -346,11 +346,11 @@ export default function Crypto() {
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Execution</span>
-                  <span className="font-medium text-green-600">Trade execution · T+0 balance update</span>
+                  <span className="font-medium text-green-600">Submitted to external licensed custodian</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
-                  <span>Settlement type</span>
-                  <span className="font-medium">AMAX account ledger (non-custodial)</span>
+                  <span>Settlement</span>
+                  <span className="font-medium">Custodian-held account (representative balance)</span>
                 </div>
                 <div className="flex justify-between font-semibold text-gray-900 pt-1 border-t text-base">
                   <span>You receive</span>
@@ -448,7 +448,7 @@ export default function Crypto() {
       <div className="flex items-start gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
         <Info className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-gray-500">
-          Digital currency exchange services provided by AMAX Financial Pty Ltd (ABN 54 690 827 608), registered as a Digital Currency Exchange (DCE) with AUSTRAC. All exchanges are trade executions that update your AMAX account balance — AMAX does not hold or custody digital assets on-chain on your behalf. Digital assets are not legal tender, not backed by government guarantee, and subject to significant price risk. Travel Rule and full AML/CTF compliance apply on all external on-chain withdrawals. Past performance is not indicative of future results.
+          Digital currency exchange services arranged by AMAX Financial Pty Ltd (ABN 54 690 827 608), registered as a Digital Currency Exchange (DCE) with AUSTRAC. AMAX does not hold, control, or take custody of your digital assets at any point. Your AMAX account displays representative balances reflecting your holdings with an external licensed custodian — these balances are for account management purposes and do not represent a claim against AMAX. Digital assets are not legal tender, not backed by government guarantee, and subject to significant price risk. Full AML/CTF compliance and FATF Travel Rule obligations apply. Past performance is not indicative of future results.
         </p>
       </div>
 
@@ -486,7 +486,7 @@ export default function Crypto() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Execution</span>
-                <span className="font-medium text-green-600">T+0 account balance update</span>
+                <span className="font-medium text-green-600">Submitted to external licensed custodian</span>
               </div>
               <div className="flex justify-between border-t pt-3 text-base">
                 <span className="font-semibold text-gray-900">You receive</span>
@@ -500,7 +500,7 @@ export default function Crypto() {
               <span>{disclosure}</span>
             </div>
             <p className="text-xs text-gray-500 text-center">
-              By confirming, you authorise AMAX Financial Pty Ltd (ABN 54 690 827 608) to process this digital asset exchange under its AUSTRAC DCE registration. This transaction is subject to AML/CTF monitoring and may be reported to AUSTRAC.
+              By confirming, you authorise AMAX Financial Pty Ltd (ABN 54 690 827 608) to arrange this digital asset trade through an external licensed custodian under its AUSTRAC DCE registration. Your AMAX account balance reflects a representative balance from the custodian and does not constitute a claim against AMAX. This transaction is subject to AML/CTF monitoring and may be reported to AUSTRAC.
             </p>
           </div>
           <DialogFooter className="gap-2">
