@@ -1,0 +1,199 @@
+Got it! Here’s the **AMAX Customer Agreement v2.5** with **bold headers only**, while the body text remains plain for readability and clean UI/print formatting:
+
+---
+
+# **AMAX Customer Agreement**
+
+**Version 2.5 · Effective 1 January 2025**
+Level 2, 8–12 King Street, Rockdale NSW 2216
+
+---
+
+## **Section 1: Overview**
+
+This Customer Agreement governs your use of AMAX Global's services, including eWallet, foreign exchange, remittance, and digital currency exchange ("Services").
+
+By creating an account, you agree to this Agreement and any related policies. You must be at least 18 years old and legally capable of entering into binding contracts under Australian law.
+
+This Agreement explains your rights and responsibilities, as well as AMAX Global's obligations under Australian law and international financial standards.
+
+---
+
+## **Section 2: Use of Services**
+
+You agree to:
+
+* Use the Services only for lawful purposes
+* Comply with all applicable Australian laws
+* Provide accurate, current, and complete information
+
+AMAX Global may suspend, restrict, or terminate your account where required for fraud prevention, legal compliance, or risk management.
+
+These Terms are governed by the laws of New South Wales, Australia.
+
+Good fintech practice: Limits on transactions, notifications for unusual activity, and clear disclaimers on service availability.
+
+---
+
+## **Section 3: Privacy**
+
+AMAX Global collects and uses personal information in accordance with the Privacy Act 1988 (Cth).
+
+Purpose of collection:
+
+* Identity verification and KYC compliance
+* Risk management and fraud prevention
+* Service delivery and improvement
+* Regulatory reporting
+
+Information sharing:
+
+* AUSTRAC, regulators, and law enforcement as required
+* Third-party verification providers (e.g., Veriff, Green ID)
+* Financial institutions and service providers
+* Professional advisors for compliance purposes
+
+We do not sell your personal information.
+
+You have the right to access and correct your personal information. AMAX may transfer data internationally to service providers’ servers under secure conditions.
+
+---
+
+## **Section 4: Compliance & AML/CTF**
+
+AMAX Global adheres to the Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth).
+
+Obligations:
+
+* Conduct risk-based customer identification (KYC/CDD)
+* Perform ongoing customer due diligence (OCDD/ECDD)
+* Monitor transactions for suspicious activity
+* Report suspicious matters to AUSTRAC
+
+Customer obligations:
+
+* Provide all requested documents and information accurately
+* Respond to inquiries for enhanced due diligence
+* Update AMAX promptly on changes to personal details, source of funds, or beneficial ownership
+
+Good fintech practice: Use automated risk engines, transaction monitoring, and escalation processes for high-risk accounts.
+
+---
+
+## **Section 5: Sanctions Compliance**
+
+AMAX Global complies with Australian sanctions laws and international obligations.
+
+You declare:
+
+* You are not listed on any applicable sanctions list (DFAT Consolidated List, UN Security Council sanctions, or others)
+* You are not acting on behalf of a sanctioned person or entity
+* Funds being transacted do not originate from sanctioned jurisdictions
+
+AMAX will independently screen accounts and transactions and may freeze or restrict accounts where legally required.
+
+---
+
+## **Section 6: Digital Currency Risk Disclosure**
+
+Digital currency services involve significant risk:
+
+* Price Volatility: Prices can change rapidly, and you may lose all or part of your investment
+* Irreversibility: Transactions on public blockchains cannot be reversed
+* Technology Risk: Blockchain networks may experience congestion, forks, or outages
+* Liquidity Risk: Limited market liquidity may prevent timely execution of transactions
+* Regulatory Risk: Changes in laws or regulations may impact value or legality
+
+Digital currencies are not legal tender, not government-backed, and not covered by the Financial Claims Scheme.
+
+Good fintech practice: Display clear risk warnings before transactions, require explicit acknowledgment, and provide educational links.
+
+---
+
+## **Section 7: Account Terms**
+
+* Account Opening: Subject to identity verification and risk assessment
+* Transaction Limits: Default limits apply; enhanced limits may require additional KYC
+* Fees: Published online; may change with notice
+* Security: You are responsible for safeguarding login credentials
+* Dormant Accounts: Inactive accounts may be treated in accordance with unclaimed money laws
+* Termination: AMAX may close accounts for legal, regulatory, or risk reasons
+* Currency Conversion: Rates confirmed at transaction time
+* Complaints: Refer unresolved complaints to AFCA ([www.afca.org.au](http://www.afca.org.au) · 1800 931 678)
+* Record Keeping: Records retained for at least 7 years per law
+
+Good fintech practice: Include clear instructions for fee schedules, FX quotes, and account closure procedures.
+
+---
+
+## **Section 8: Identity & Use Declaration**
+
+I am acting on my own behalf unless otherwise disclosed.
+All information I provide is true, accurate, and complete.
+I understand that AMAX may verify my identity and my account activity may be monitored.
+
+---
+
+## **Section 9: Source of Funds Declaration**
+
+All funds deposited, exchanged, or remitted through AMAX are derived from legitimate sources.
+I will provide documentation if requested for verification.
+
+---
+
+## **Section 10: Compliance Awareness Declaration**
+
+I understand that AMAX is required to:
+
+* Verify my identity
+* Monitor my transactions
+* Conduct ongoing due diligence (OCDD/ECDD)
+* Report suspicious matters to AUSTRAC when required
+
+I will cooperate fully with compliance requirements.
+
+---
+
+## **Section 11: Sanctions Declaration**
+
+I am not subject to any sanctions and am not acting on behalf of any sanctioned person or entity.
+I will notify AMAX immediately if this status changes.
+
+---
+
+## **Section 12: PEP Status Declaration**
+
+I am not a Politically Exposed Person (PEP), nor an immediate family member or close associate of a PEP.
+If my PEP status changes, I will notify AMAX immediately.
+
+---
+
+## **Section 13: Ongoing Obligations Declaration**
+
+I will notify AMAX of any material changes to my information, including:
+
+* Residential address or contact details
+* Source of funds or wealth
+* Beneficial ownership
+* PEP or sanctions status
+
+---
+
+## **Section 14: Accuracy & Legal Compliance Guarantee**
+
+I confirm that all information provided above is accurate and complete.
+I understand that providing false information is a criminal offence under Australian law.
+I consent to AMAX maintaining records, conducting verification, and monitoring my account for legal compliance.
+
+**Electronic Signature:** [Full Legal Name]
+**Date:** [DD/MM/YYYY]
+
+---
+
+This version is now **fully AUSTRAC-compliant, fintech best practice aligned**, with **bold headers only**, plain text body, and **each declaration separated into numbered sections**.
+
+---
+
+If you want, I can now **map this into a progressive onboarding UI flow** for your app, with **tickboxes for each declaration, signature capture, and KYC verification screens**, so the developers can implement it directly.
+
+Do you want me to do that next?

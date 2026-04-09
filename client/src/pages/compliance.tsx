@@ -95,7 +95,7 @@ export default function Compliance() {
   const [sectionsRead,   setSectionsRead]   = useState<Set<number>>(new Set());
   const agreementScrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs        = useRef<(HTMLDivElement | null)[]>([]);
-  const allSectionsRead    = sectionsRead.size >= 8;
+  const allSectionsRead    = sectionsRead.size >= 14;
 
   // ── Step 2: Identity document + biometric verification ────────────────────
   const [docType,          setDocType]          = useState<"passport" | "driver_licence" | "national_id">("passport");
@@ -1049,16 +1049,16 @@ export default function Compliance() {
                       title: "1. Overview",
                       content: `This Customer Agreement governs your use of AMAX Global's services, including eWallet, foreign exchange, remittance, and digital currency exchange ("Services").
 
-By creating an account, you agree to this Agreement and any related policies.
+By creating an account, you agree to this Agreement and any related policies. You must be at least 18 years old and legally capable of entering into binding contracts under Australian law.
 
-You must be at least 18 years old and legally capable of entering into binding contracts under Australian law.`,
+This Agreement explains your rights and responsibilities, as well as AMAX Global's obligations under Australian law and international financial standards.`,
                     },
                     {
                       title: "2. Use of Services",
                       content: `You agree to:
 • Use the Services only for lawful purposes
 • Comply with all applicable Australian laws
-• Provide accurate and current information
+• Provide accurate, current, and complete information
 
 AMAX Global may suspend, restrict, or terminate your account where required for fraud prevention, legal compliance, or risk management.
 
@@ -1066,101 +1066,116 @@ These Terms are governed by the laws of New South Wales, Australia.`,
                     },
                     {
                       title: "3. Privacy",
-                      content: `We collect and use your personal information in accordance with the Privacy Act 1988 (Cth).
+                      content: `AMAX Global collects and uses personal information in accordance with the Privacy Act 1988 (Cth).
 
-We use your information to:
-• Verify your identity
-• Provide and improve services
-• Detect and prevent fraud and financial crime
-• Comply with legal obligations
+Purpose of collection:
+• Identity verification and KYC compliance
+• Risk management and fraud prevention
+• Service delivery and improvement
+• Regulatory reporting
 
-We may share your information with:
-• AUSTRAC and regulators
-• Law enforcement agencies
-• Identity verification providers
+Information sharing:
+• AUSTRAC, regulators, and law enforcement as required
+• Third-party verification providers (e.g., Veriff, Green ID)
 • Financial institutions and service providers
+• Professional advisors for compliance purposes
 
-We do not sell your personal information.`,
+We do not sell your personal information. You have the right to access and correct your personal information. AMAX may transfer data internationally to service providers' servers under secure conditions.`,
                     },
                     {
                       title: "4. Compliance & AML/CTF",
-                      content: `AMAX Global complies with the Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth).
+                      content: `AMAX Global adheres to the Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth).
 
-You acknowledge that we:
-• Apply risk-based customer identification procedures (KYC/CDD)
-• Conduct ongoing customer due diligence (OCDD/ECDD)
+Obligations:
+• Conduct risk-based customer identification (KYC/CDD)
+• Perform ongoing customer due diligence (OCDD/ECDD)
 • Monitor transactions for suspicious activity
-• May report suspicious matters to AUSTRAC
+• Report suspicious matters to AUSTRAC
 
-We may request additional information at any time, including identity documents, source of funds or wealth, and transaction purpose.
-
-Failure to comply may result in account restriction or closure.`,
+Customer obligations:
+• Provide all requested documents and information accurately
+• Respond to inquiries for enhanced due diligence
+• Update AMAX promptly on changes to personal details, source of funds, or beneficial ownership`,
                     },
                     {
                       title: "5. Sanctions Compliance",
-                      content: `We comply with Australian sanctions laws and international obligations.
+                      content: `AMAX Global complies with Australian sanctions laws and international obligations.
 
-We:
-• Screen customers and transactions against sanctions lists
-• May restrict or freeze accounts where required by law`,
+You declare:
+• You are not listed on any applicable sanctions list (DFAT Consolidated List, UN Security Council sanctions, or others)
+• You are not acting on behalf of a sanctioned person or entity
+• Funds being transacted do not originate from sanctioned jurisdictions
+
+AMAX will independently screen accounts and transactions and may freeze or restrict accounts where legally required.`,
                     },
                     {
                       title: "6. Digital Currency Risk Disclosure",
-                      content: `Digital currency services involve significant risk, including:
-• Price volatility
-• Irreversible transactions
-• Technology or network failures
-• Liquidity constraints
-• Regulatory uncertainty
+                      content: `Digital currency services involve significant risk:
 
-Digital assets are not legal tender and are not government-backed. They are not covered by the Financial Claims Scheme.`,
+• Price Volatility: Prices can change rapidly, and you may lose all or part of your investment
+• Irreversibility: Transactions on public blockchains cannot be reversed
+• Technology Risk: Blockchain networks may experience congestion, forks, or outages
+• Liquidity Risk: Limited market liquidity may prevent timely execution of transactions
+• Regulatory Risk: Changes in laws or regulations may impact value or legality
+
+Digital currencies are not legal tender, not government-backed, and not covered by the Financial Claims Scheme.`,
                     },
                     {
                       title: "7. Account Terms",
-                      content: `Account Opening: Accounts are subject to identity verification and risk assessment.
-
-Transaction Limits: Limits apply and may be adjusted based on risk.
-
-Fees: Fees are published and may change with notice.
-
-Security: You are responsible for safeguarding your account credentials.
-
+                      content: `Account Opening: Subject to identity verification and risk assessment.
+Transaction Limits: Default limits apply; enhanced limits may require additional KYC.
+Fees: Published online; may change with notice.
+Security: You are responsible for safeguarding login credentials.
 Dormant Accounts: Inactive accounts may be treated in accordance with unclaimed money laws.
-
-Termination: We may close accounts for legal, regulatory, or risk reasons.
-
-Currency Conversion: Exchange rates are confirmed before transaction execution.
-
-Complaints: Unresolved complaints may be referred to AFCA (www.afca.org.au · 1800 931 678).
-
-Record Keeping: We retain records for at least 7 years as required by law.`,
+Termination: AMAX may close accounts for legal, regulatory, or risk reasons.
+Currency Conversion: Rates confirmed at transaction time.
+Complaints: Refer unresolved complaints to AFCA (www.afca.org.au · 1800 931 678).
+Record Keeping: Records retained for at least 7 years per law.`,
                     },
                     {
-                      title: "8. Declarations & Consent",
-                      content: `By signing this Agreement, I declare and agree that:
+                      title: "8. Identity & Use Declaration",
+                      content: `I am acting on my own behalf unless otherwise disclosed.
+All information I provide is true, accurate, and complete.
+I understand that AMAX may verify my identity and my account activity may be monitored.`,
+                    },
+                    {
+                      title: "9. Source of Funds Declaration",
+                      content: `All funds deposited, exchanged, or remitted through AMAX are derived from legitimate sources.
+I will provide documentation if requested for verification.`,
+                    },
+                    {
+                      title: "10. Compliance Awareness Declaration",
+                      content: `I understand that AMAX is required to:
+• Verify my identity
+• Monitor my transactions
+• Conduct ongoing due diligence (OCDD/ECDD)
+• Report suspicious matters to AUSTRAC when required
 
-Identity & Use
-• I am acting on my own behalf unless disclosed otherwise
-• The information I have provided is true, accurate, and complete
-
-Source of Funds
-• My funds are derived from legitimate sources
-
-Compliance Awareness
-• I understand AMAX Global is required to verify my identity, monitor my transactions, conduct ongoing due diligence, and report suspicious matters to AUSTRAC where required
-
-Sanctions
-• I am not subject to sanctions or acting on behalf of a sanctioned person
-
-PEP Status
-• I am not a Politically Exposed Person (PEP), or I have disclosed this where applicable
-
-Ongoing Obligations
-• I will notify AMAX Global of any material changes to my information
-
-I understand that my account may be subject to verification, monitoring, or restriction to comply with legal obligations.
-
-I agree to the Customer Agreement, Privacy Policy, and Risk Disclosure.`,
+I will cooperate fully with compliance requirements.`,
+                    },
+                    {
+                      title: "11. Sanctions Declaration",
+                      content: `I am not subject to any sanctions and am not acting on behalf of any sanctioned person or entity.
+I will notify AMAX immediately if this status changes.`,
+                    },
+                    {
+                      title: "12. PEP Status Declaration",
+                      content: `I am not a Politically Exposed Person (PEP), nor an immediate family member or close associate of a PEP.
+If my PEP status changes, I will notify AMAX immediately.`,
+                    },
+                    {
+                      title: "13. Ongoing Obligations Declaration",
+                      content: `I will notify AMAX of any material changes to my information, including:
+• Residential address or contact details
+• Source of funds or wealth
+• Beneficial ownership
+• PEP or sanctions status`,
+                    },
+                    {
+                      title: "14. Accuracy & Legal Compliance Guarantee",
+                      content: `I confirm that all information provided above is accurate and complete.
+I understand that providing false information is a criminal offence under Australian law.
+I consent to AMAX maintaining records, conducting verification, and monitoring my account for legal compliance.`,
                     },
                   ];
 
@@ -1172,6 +1187,12 @@ I agree to the Customer Agreement, Privacy Policy, and Risk Disclosure.`,
                     "bg-red-50 border-red-200",
                     "bg-yellow-50 border-yellow-200",
                     "bg-green-50 border-green-200",
+                    "bg-indigo-50 border-indigo-200",
+                    "bg-teal-50 border-teal-200",
+                    "bg-sky-50 border-sky-200",
+                    "bg-rose-50 border-rose-200",
+                    "bg-violet-50 border-violet-200",
+                    "bg-amber-50 border-amber-200",
                     "bg-indigo-50 border-indigo-300",
                   ];
 
@@ -1189,7 +1210,7 @@ I agree to the Customer Agreement, Privacy Policy, and Risk Disclosure.`,
                             <Badge className="bg-indigo-100 text-indigo-800">Action Required</Badge>
                           </div>
                           <p className="text-xs text-gray-500 mt-0.5">
-                            Read all 8 sections and sign below to proceed — Electronic Transactions Act 1999 (Cth)
+                            Read all 14 sections and sign below to proceed — Electronic Transactions Act 1999 (Cth)
                           </p>
                         </div>
                       </div>
@@ -1226,7 +1247,7 @@ I agree to the Customer Agreement, Privacy Policy, and Risk Disclosure.`,
                             {kycProfile?.agreementSignedAt && (
                               <p className="text-xs text-muted-foreground">
                                 Signed on {new Date(kycProfile.agreementSignedAt).toLocaleString("en-AU", { timeZone: "Australia/Sydney" })} AEST
-                                — v2.1 — Pursuant to Electronic Transactions Act 1999 (Cth)
+                                — v2.5 — Pursuant to Electronic Transactions Act 1999 (Cth)
                               </p>
                             )}
                           </div>
@@ -1246,7 +1267,7 @@ I agree to the Customer Agreement, Privacy Policy, and Risk Disclosure.`,
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-semibold truncate">{kycProfile?.fullLegalName ?? "Verified Customer"}</p>
-                                  <p className="text-[10px] text-gray-400">Identity verified · AMAX Global Customer Agreement v2.1</p>
+                                  <p className="text-[10px] text-gray-400">Identity verified · AMAX Global Customer Agreement v2.5</p>
                                 </div>
                                 <div className="text-[10px] text-gray-400 flex-shrink-0">
                                   {new Date().toLocaleDateString("en-AU")}
@@ -1257,7 +1278,7 @@ I agree to the Customer Agreement, Privacy Policy, and Risk Disclosure.`,
                               <div className="px-5 pt-4 pb-3 border-b">
                                 <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">AMAX Global Pty Ltd — ABN 54 690 827 608</p>
                                 <h3 className="text-base font-bold text-gray-900 mt-1">Customer Agreement</h3>
-                                <p className="text-xs text-gray-500 mt-0.5">Version 2.1 · Effective 1 January 2025 · Level 2, 8–12 King Street, Rockdale NSW 2216</p>
+                                <p className="text-xs text-gray-500 mt-0.5">Version 2.5 · Effective 1 January 2025 · Level 2, 8–12 King Street, Rockdale NSW 2216</p>
                               </div>
 
                               {/* 8 sections */}
@@ -1319,7 +1340,7 @@ I agree to the Customer Agreement, Privacy Policy, and Risk Disclosure.`,
                               <div className={`rounded-lg border p-3 text-xs text-gray-600 leading-relaxed transition-all ${
                                 allSectionsRead ? "bg-indigo-50 border-indigo-200" : "bg-gray-50 border-gray-200 opacity-50"
                               }`}>
-                                By signing, I confirm I have read and agree to all 8 sections of this Agreement, including the declarations in Section 8 regarding my identity, source of funds, sanctions status, and PEP status.
+                                By signing, I confirm I have read and agree to all 14 sections of this Agreement, including the declarations in Sections 8–14 regarding my identity, source of funds, compliance awareness, sanctions status, PEP status, ongoing obligations, and accuracy guarantee.
                               </div>
                               <Button
                                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
