@@ -45,3 +45,6 @@ integrations = ["javascript_websocket:1.0.0", "javascript_stripe:1.0.0", "javasc
 
 [userenv.development]
 ALLOW_LOCAL_DEV_AUTH = "true"
+
+[userenv.shared]
+JWT_SECRET = "ddcade8a8d61329dc984cdbbaee1e2a849f5201e21bd9a836e869f3110f6f110a8b6b798e646e64829d8a7bfed18cff1f1de1a45e530e9391aa47e73acc53da6"
