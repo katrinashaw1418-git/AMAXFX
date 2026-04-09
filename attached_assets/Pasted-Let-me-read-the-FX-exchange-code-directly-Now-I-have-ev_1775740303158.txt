@@ -1,0 +1,68 @@
+Let me read the FX exchange code directly.Now I have everything. Here is the precise audit.
+
+---
+
+## FX Confirmation Modal — Compliance Audit
+
+**Your model: AMAX = remittance provider + DCE. Not custodian. No AFSL.**
+
+---
+
+### ❌ CRITICAL — One string fails
+
+**Line 423:**
+> `By confirming, you authorise AMAX Financial Pty Ltd (ABN 54 690 827 608) to process this foreign exchange transaction.`
+
+**Two problems:**
+
+**Problem 1 — Wrong entity name.** Your ABN 54 690 827 608 is registered to **AMAX Global Pty Ltd**, not "AMAX Financial Pty Ltd." "AMAX Financial" does not exist in your registration. This is a misrepresentation of your legal entity — a direct compliance risk if a regulator or client disputes the transaction.
+
+**Problem 2 — "process this foreign exchange transaction"** is ambiguous. For a non-custodial remittance provider the correct framing is that AMAX *instructs* a regulated banking partner to execute the conversion, not that AMAX processes it directly.
+
+**Fix:**
+```
+By confirming, you authorise AMAX Global Pty Ltd (ABN 54 690 827 608) 
+to instruct our regulated banking partner to execute this foreign 
+exchange conversion on your behalf.
+```
+
+---
+
+### ⚠️ CONDITIONAL — One string needs backend verification
+
+**Line 295 / 420:**
+> `Settlement is T+0 for internal transfers.`
+
+This is only true if the FX conversion is purely a ledger rebalance within your partner's system (e.g. Airwallex wallet-to-wallet). If it routes through an actual FX market, T+0 is not guaranteed and stating it creates a consumer expectation you may not be able to meet. Confirm with your banking partner what the actual settlement SLA is and match the UI to that.
+
+---
+
+### ✅ Everything else passes
+
+| String | Status |
+|---|---|
+| `FX Conversion — Fiat → Fiat` badge | ✅ |
+| `You send / Spot Rate / Processing Fee / You receive` layout | ✅ |
+| `Processing Fee (0.5%)` — fee disclosed upfront | ✅ |
+| `Foreign exchange transactions are executed at prevailing market rates` | ✅ |
+| Rate freshness indicator (`< 1 min ago`, stale warning) | ✅ |
+| Regulatory footer — ABN, AUSTRAC registration, AML/CTF Act citation | ✅ correct content, but see below |
+
+---
+
+### ⚠️ Footer also has the wrong entity name
+
+**Line 371:**
+> `Currency exchange and international payment services provided by AMAX Financial Pty Ltd (ABN 54 690 827 608).`
+
+Same error — "AMAX Financial Pty Ltd" does not exist. Fix to **AMAX Global Pty Ltd**.
+
+---
+
+## Summary — 2 fixes, 1 verification
+
+| | Issue | Fix |
+|---|---|---|
+| Modal authorisation line (423) | Wrong entity name + "process" language | `AMAX Global Pty Ltd` + `instruct our regulated banking partner to execute` |
+| Footer (371) | Wrong entity name | `AMAX Global Pty Ltd` |
+| T+0 settlement claim | Conditional on backend reality | Verify with banking partner; change to `Typically same day` if T+0 not guaranteed |

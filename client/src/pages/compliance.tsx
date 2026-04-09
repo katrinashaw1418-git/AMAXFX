@@ -519,7 +519,7 @@ export default function Compliance() {
         <div>
           <h1 className="text-2xl font-bold">Compliance Centre</h1>
           <p className="text-gray-600 text-sm">
-            AMAX Financial Pty Ltd (ABN 54 690 827 608) — regulatory verification and document management
+            AMAX Global Pty Ltd (ABN 54 690 827 608) — regulatory verification and document management
           </p>
         </div>
         {kycPct === 100 ? (

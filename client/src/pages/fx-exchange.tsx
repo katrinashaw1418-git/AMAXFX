@@ -277,7 +277,7 @@ export default function FxExchange() {
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Estimated Settlement</span>
-                  <span className="font-medium text-green-600">Instant (T+0)</span>
+                  <span className="font-medium text-green-600">Typically same day</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Liquidity Source</span>
@@ -292,7 +292,7 @@ export default function FxExchange() {
               {/* Disclosure */}
               <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-blue-50 border border-blue-200 text-blue-800">
                 <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                <span>Foreign exchange transactions are executed at prevailing market rates. Settlement is T+0 for internal transfers. AMAX is registered with AUSTRAC for remittance and FX services.</span>
+                <span>Foreign exchange transactions are executed at prevailing market rates. Settlement is typically same day, subject to regulated banking partner processing times. AMAX Global Pty Ltd is registered with AUSTRAC for remittance and FX services.</span>
               </div>
 
               <Button className="w-full" onClick={openConfirm} disabled={exchangeMutation.isPending || rateLoading}>
@@ -368,7 +368,7 @@ export default function FxExchange() {
       <div className="flex items-start gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
         <Info className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-gray-500">
-          Currency exchange and international payment services provided by AMAX Financial Pty Ltd (ABN 54 690 827 608). Registered with AUSTRAC for remittance and foreign exchange services. Exchange rates are indicative and subject to change. All transactions are subject to AML/CTF monitoring obligations under the Anti-Money Laundering and Counter-Terrorism Financing Act 2006.
+          Currency exchange and international payment services provided by AMAX Global Pty Ltd (ABN 54 690 827 608). Registered with AUSTRAC for remittance and foreign exchange services. Exchange rates are indicative and subject to change. All transactions are subject to AML/CTF monitoring obligations under the Anti-Money Laundering and Counter-Terrorism Financing Act 2006.
         </p>
       </div>
 
@@ -406,7 +406,7 @@ export default function FxExchange() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Settlement</span>
-                <span className="font-medium text-green-600">Instant (T+0)</span>
+                <span className="font-medium text-green-600">Typically same day</span>
               </div>
               <div className="flex justify-between border-t pt-3 text-base">
                 <span className="font-semibold text-gray-900">You receive</span>
@@ -417,10 +417,10 @@ export default function FxExchange() {
             </div>
             <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-blue-50 border border-blue-200 text-blue-800">
               <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-              <span>Foreign exchange transactions are executed at prevailing market rates. Settlement is T+0 for internal transfers.</span>
+              <span>Foreign exchange transactions are executed at prevailing market rates. Settlement is typically same day, subject to regulated banking partner processing times.</span>
             </div>
             <p className="text-xs text-gray-500 text-center">
-              By confirming, you authorise AMAX Financial Pty Ltd (ABN 54 690 827 608) to process this foreign exchange transaction.
+              By confirming, you authorise AMAX Global Pty Ltd (ABN 54 690 827 608) to instruct our regulated banking partner to execute this foreign exchange conversion on your behalf.
             </p>
           </div>
           <DialogFooter className="gap-2">
