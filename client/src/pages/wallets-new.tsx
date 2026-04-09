@@ -432,14 +432,14 @@ export default function Wallets() {
       return response.json();
     },
     onSuccess: () => {
-      const successMessage = `Your ${amount} ${selectedWallet?.currency} withdrawal is under review. AMAX will process it within 1 business day.`;
+      const successMessage = `Your transfer-out request for ${amount} ${selectedWallet?.currency} has been submitted. Funds will be released by our regulated banking partner and sent to your nominated account — typically within 1 business day.`;
       
       toast({
-        title: "⏳ Withdrawal Submitted",
+        title: "⏳ Transfer Submitted",
         description: successMessage,
       });
       
-      narrateSuccess("Withdrawal submitted and under review");
+      narrateSuccess("Transfer submitted and under review");
       
       queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
       queryClient.invalidateQueries({ queryKey: ['/api/portfolio'] });
@@ -805,7 +805,7 @@ export default function Wallets() {
                           <Button 
                             variant="outline" 
                             size="icon"
-                            title="Withdraw"
+                            title="Transfer Out"
                             onClick={() => {
                               setSelectedWallet(wallet);
                               setWithdrawModalOpen(true);
@@ -1282,9 +1282,9 @@ export default function Wallets() {
       <Dialog open={withdrawModalOpen} onOpenChange={setWithdrawModalOpen}>
         <DialogContent className="sm:max-w-[400px] max-h-[80vh] overflow-y-auto p-4">
           <DialogHeader>
-            <DialogTitle>Withdraw {selectedWallet?.currency}</DialogTitle>
+            <DialogTitle>Transfer Out — {selectedWallet?.currency}</DialogTitle>
             <DialogDescription>
-              Withdraw funds from your {selectedWallet?.currency} wallet
+              Instruct our regulated banking partner to send {selectedWallet?.currency} funds to your nominated account
             </DialogDescription>
           </DialogHeader>
 
@@ -1554,15 +1554,15 @@ export default function Wallets() {
               {withdrawMethod === 'payid' && (
                 <div className="space-y-3">
                   <div className="p-3 bg-muted rounded-lg">
-                    <h4 className="font-medium mb-2 text-sm">⚡ PayID / NPP Withdrawal</h4>
+                    <h4 className="font-medium mb-2 text-sm">⚡ PayID / NPP Transfer Out</h4>
                     <div className="text-xs text-muted-foreground space-y-1">
                       <p>• Instant payout via Australia's NPP / Osko network</p>
                       <p>• Settlement: seconds to minutes (business hours)</p>
-                      <p>• AUD wallets only — receive funds at your PayID</p>
+                      <p>• AUD accounts only — funds delivered to your PayID</p>
                       <p>• No fees charged by AMAX for PayID payouts</p>
                       <p>• PayID must be registered in your verified legal name</p>
-                      <p>• Third-party PayID withdrawals are not permitted</p>
-                      <p>• All withdrawals are subject to AML/CTF monitoring and may be reported to AUSTRAC</p>
+                      <p>• Third-party PayID transfers are not permitted</p>
+                      <p>• All outbound transfers are subject to AML/CTF monitoring and may be reported to AUSTRAC</p>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -1589,7 +1589,7 @@ export default function Wallets() {
                     </div>
                   </div>
                   <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
-                    ⏳ Withdrawal requests are reviewed by AMAX before payout. Funds will be sent once approved (typically within 1 business day).
+                    ⏳ Transfer-out requests are reviewed before release. Funds will be sent from the regulated partner account to your PayID once approved — typically within 1 business day.
                   </p>
                 </div>
               )}
@@ -1602,8 +1602,8 @@ export default function Wallets() {
                       <p>• Funds transferred to your nominated Australian bank account</p>
                       <p>• Processing time: 1–3 business days</p>
                       <p>• Withdrawal fee applies (see fee schedule)</p>
-                      <p>• Bank account must be held in the same legal name as your verified AMAX account — third-party withdrawals are not permitted</p>
-                      <p>• All withdrawals are subject to AML/CTF monitoring and may be reported to AUSTRAC where required by law</p>
+                      <p>• Bank account must be held in the same legal name as your verified AMAX account — third-party transfers are not permitted</p>
+                      <p>• All outbound transfers are subject to AML/CTF monitoring and may be reported to AUSTRAC where required by law</p>
                     </div>
                   </div>
                   <div className="space-y-2">

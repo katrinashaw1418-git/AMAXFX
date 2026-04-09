@@ -1,0 +1,238 @@
+Good — this is exactly the kind of question regulators and partners will ask.
+Let’s make it **crystal clear and defensible**.
+
+---
+
+# 🧠 THE CORE TRUTH
+
+You are correct:
+
+👉 **AMAX is NOT custody**
+👉 **AMAX does NOT hold funds**
+
+So:
+
+❌ You cannot “withdraw from AMAX”
+✅ You must always **withdraw from the custodian**
+
+In your case:
+
+👉 Airwallex
+
+---
+
+# ⚖️ WHAT THE USER IS ACTUALLY DOING
+
+When a user clicks “Withdraw” in your UI:
+
+They are NOT withdrawing from you.
+
+They are:
+
+```id="t4c4sz"
+Instructing Airwallex (via AMAX) to send their funds
+```
+
+---
+
+# 🧱 CORRECT SYSTEM FLOW
+
+## 💸 Withdrawal Flow (REAL)
+
+```id="r9p3sp"
+User clicks "Withdraw"
+   ↓
+AMAX creates payout request
+   ↓
+AMAX calls Airwallex API (/payouts)
+   ↓
+Airwallex sends money from safeguarded funds
+   ↓
+Webhook confirms payout
+   ↓
+AMAX updates status
+```
+
+---
+
+# 🧠 WHERE THE MONEY SITS
+
+Not in AMAX.
+
+It sits:
+
+```id="s2m7bh"
+User funds → Airwallex safeguarded accounts → Banking system
+```
+
+---
+
+# ❗ IMPORTANT: “E-WALLET” WORDING PROBLEM
+
+This is where many fintechs get into trouble.
+
+## ❌ DON’T SAY:
+
+* “Withdraw from your AMAX wallet”
+* “Your balance is held with AMAX”
+
+---
+
+## ✅ SAY INSTEAD:
+
+### UI:
+
+* **“Withdraw funds”**
+* **“Transfer out”**
+* **“Send money”**
+
+---
+
+### Disclosure (MUST HAVE):
+
+> “Funds are held with regulated financial partners including Airwallex. AMAX does not hold client funds.”
+
+---
+
+# 🧠 HOW TO THINK ABOUT YOUR “BALANCE”
+
+What you show in UI is:
+
+```id="j6y6pj"
+A mirror of funds held at Airwallex
+```
+
+NOT:
+
+```id="h1r3rx"
+actual money in your system
+```
+
+---
+
+# 🔍 TECHNICAL MAPPING (IMPORTANT)
+
+## Your DB
+
+```ts
+wallet_balance = mirror_of_external_balance
+```
+
+---
+
+## Airwallex
+
+```ts
+real_balance = source_of_truth
+```
+
+---
+
+## Withdrawal Call
+
+```ts
+POST /api/v1/payouts
+```
+
+Mapped as:
+
+```ts
+{
+  amount,
+  currency,
+  beneficiary,
+  client_order_id: AMAX_TX_ID
+}
+```
+
+---
+
+# 🧠 WHAT HAPPENS LEGALLY
+
+## User relationship:
+
+### Funds custody:
+
+👉 Airwallex
+
+### Interface:
+
+👉 AMAX
+
+---
+
+# ⚠️ CRITICAL REGULATORY TEST
+
+Ask yourself:
+
+> “If AMAX shuts down, where is the money?”
+
+Correct answer:
+
+👉 **Still with Airwallex**
+
+If not:
+
+❌ you are acting as custodian
+
+---
+
+# 🧠 E-WALLET — WHAT YOU ACTUALLY HAVE
+
+You DO have something that looks like an e-wallet.
+
+But technically it is:
+
+👉 **A virtual account interface backed by a custodian**
+
+---
+
+# 🧾 CORRECT TERMINOLOGY
+
+Use this everywhere:
+
+* “Account”
+* “Balance available for transfer”
+* “Funds held with regulated partners”
+
+Avoid:
+
+* wallet
+* stored value
+* held funds
+
+---
+
+# 🧠 FINAL SIMPLE EXPLANATION
+
+## What user thinks:
+
+“I withdraw from AMAX”
+
+## Reality:
+
+“I instruct AMAX to tell Airwallex to send my money”
+
+---
+
+# 🔥 ONE LINE TRUTH
+
+You don’t move money.
+
+👉 You move **instructions**.
+
+---
+
+# 🚀 IF YOU WANT NEXT STEP
+
+We can tighten this even further:
+
+### ⚖️ Exact legal wording (Terms & Conditions + UI)
+
+### 🧾 User flow that passes compliance review
+
+### 🧱 Named accounts vs pooled (what you should choose)
+
+### 🔍 Airwallex contract structure (who owns customer)
+
+Just tell me 👍

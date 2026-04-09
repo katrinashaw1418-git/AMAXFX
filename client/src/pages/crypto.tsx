@@ -601,7 +601,7 @@ export default function Crypto() {
                     <span>
                       <strong>Your crypto goes directly to Independent Reserve (DCE-100461150-001) — not to AMAX.</strong>{" "}
                       AMAX never receives, holds, or controls your digital assets at any point.
-                      AUD proceeds are credited to your AMAX fiat wallet within 1 business day of on-chain confirmation.
+                      AUD proceeds are credited to your AMAX fiat account within 1 business day of on-chain confirmation.
                     </span>
                   </div>
 
@@ -900,8 +900,8 @@ export default function Crypto() {
                           detail: `Only after receiving written confirmation should you send ${sellCurrency} — directly to Independent Reserve's one-time deposit address. Do not send to any other address. AMAX does not maintain crypto wallets and will never ask you to send crypto to an AMAX address.`,
                         },
                         {
-                          step: "Step 4 — AUD credited to your AMAX wallet",
-                          detail: `Independent Reserve confirms receipt on-chain${sellCurrency === "BTC" ? " (typically 3+ BTC confirmations)" : ""}, executes the exchange at your confirmed rate, and remits AUD proceeds to AMAX. Your AMAX AUD wallet is credited within 1 business day of on-chain confirmation.`,
+                          step: "Step 4 — AUD credited to your AMAX account",
+                          detail: `Independent Reserve confirms receipt on-chain${sellCurrency === "BTC" ? " (typically 3+ BTC confirmations)" : ""}, executes the exchange at your confirmed rate, and remits AUD proceeds to AMAX. Your AMAX AUD account is credited within 1 business day of on-chain confirmation.`,
                         },
                       ].map(({ step, detail }) => (
                         <div key={step} className="flex gap-3">
@@ -938,7 +938,7 @@ export default function Crypto() {
                         <p>
                           AMAX does not hold, receive, control, or custody your digital assets at any point in this
                           process. Your crypto is sent directly to Independent Reserve. AUD proceeds are remitted by
-                          Independent Reserve to AMAX and credited to your AMAX fiat wallet. This does not constitute
+                          Independent Reserve to AMAX and credited to your AMAX fiat account. This does not constitute
                           a claim against AMAX Global Pty Ltd.
                         </p>
                         <p>
