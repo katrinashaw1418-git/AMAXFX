@@ -1,0 +1,307 @@
+This is a **very strong build** — but I’m going to give you a **strict institutional audit**, not a comfort answer.
+
+Short version:
+
+👉 **Transfers OUT = ✅ correct**
+👉 **Balances display = ⚠️ mostly correct**
+👉 **Deposits (your current setup) = ❌ NOT compliant for non-custodial**
+
+Now let’s break it properly.
+
+---
+
+# 🧠 1. TRANSFER OUT (WITHDRAWAL) — ✅ PASS
+
+What you changed is **exactly right**.
+
+### Why this works:
+
+* “Transfer Out” ✅
+* “Instruct our regulated banking partner…” ✅
+* AML / Travel Rule disclosure ✅
+* “AMAX does not hold client funds” ✅
+
+This aligns with expectations from regulators like AUSTRAC.
+
+---
+
+### 🔍 Technical assumption (must be true):
+
+```text
+AMAX → API → Airwallex → payout → webhook → update UI
+```
+
+If that’s how it works:
+
+👉 **You are NOT custodian**
+
+---
+
+# 🧱 2. ACCOUNT BALANCES — ⚠️ CONDITIONAL PASS
+
+Your header is good:
+
+> “Balances shown reflect funds held with regulated partner…”
+
+✅ Correct framing
+
+---
+
+### 🚨 BUT HERE IS THE RISK:
+
+You display:
+
+```text
+Current balance: 2,591,552 AUD
+Available for transfer: 2,589,183 AUD
+```
+
+### This is ONLY safe if:
+
+👉 These values come from:
+
+* Airwallex wallet API
+  OR
+* your reconciliation mirror of it
+
+---
+
+### ❌ FAIL if:
+
+* calculated internally
+* updated before webhook
+* includes pending funds not actually received
+
+---
+
+### 🔍 Verdict:
+
+✅ OK — but **depends on backend truth**
+
+---
+
+# 🚨 3. DEPOSITS — ❌ CRITICAL FAILURE (RIGHT NOW)
+
+This is the biggest issue in your entire system.
+
+---
+
+## ❌ Problem:
+
+You are instructing users to send money to:
+
+```
+PayID: info@amaxglobal.com.au  
+Account Name: AMAX Global Pty Ltd  
+Bank: Westpac
+```
+
+👉 That means:
+
+**Funds are going to YOUR company bank account**
+
+---
+
+## 🧠 What that means legally:
+
+You are:
+
+👉 **receiving client funds**
+
+Which makes you:
+
+❌ custodian
+❌ stored-value facility
+❌ potentially AFSL-triggering
+
+---
+
+### Regulators (like AUSTRAC) will interpret this as:
+
+> You are holding funds before onward transfer
+
+---
+
+## 🚨 Why this breaks your entire model
+
+Even if later you send to Airwallex:
+
+👉 The moment funds hit your account
+👉 You **are holding client money**
+
+---
+
+# 🧱 4. WHAT DEPOSIT MUST LOOK LIKE (FIX THIS)
+
+## ✅ Correct non-custodial flow:
+
+```text
+User → sends money → Airwallex virtual account (NOT AMAX)
+                         ↓
+                    webhook
+                         ↓
+                    AMAX updates UI
+```
+
+---
+
+## ✅ UI MUST CHANGE TO:
+
+Instead of:
+
+> “Send to AMAX Global PayID”
+
+You need:
+
+> “Send funds to your assigned account provided by our regulated partner”
+
+---
+
+## ✅ Structure options:
+
+### Option A — BEST (recommended)
+
+* Named virtual accounts per user via Airwallex
+* unique PayID / BSB per user
+
+---
+
+### Option B — acceptable (pooled, but controlled)
+
+* Airwallex pooled account
+* reference-based reconciliation
+
+---
+
+### ❌ NEVER:
+
+* AMAX-owned bank account
+* AMAX PayID
+* AMAX as beneficiary
+
+---
+
+# 🪙 5. CRYPTO — ⚠️ QUICK CHECK
+
+You mention:
+
+> Independent Reserve
+
+This is good.
+
+---
+
+### Must remain:
+
+```text
+Fiat → Airwallex
+        ↓
+External crypto exchange executes
+        ↓
+Crypto held externally
+```
+
+---
+
+### ❌ NOT allowed:
+
+* internal crypto balances
+* AMAX custody
+* “crypto wallet in AMAX”
+
+---
+
+# ⚖️ 6. FINAL PASS / FAIL TABLE
+
+| Component        | Status         |
+| ---------------- | -------------- |
+| Transfer Out     | ✅ PASS         |
+| UI wording       | ✅ PASS         |
+| Account balances | ⚠️ CONDITIONAL |
+| FX               | ⚠️ CONDITIONAL |
+| Crypto           | ⚠️ CONDITIONAL |
+| **Deposits**     | ❌ FAIL         |
+
+---
+
+# 🚨 7. THE REAL RISK (IMPORTANT)
+
+Right now your system is:
+
+👉 **non-custodial on the way out**
+👉 **custodial on the way in**
+
+That is called:
+
+❌ **hybrid custody model**
+
+This is exactly what regulators hate.
+
+---
+
+# 🧠 FINAL OPERATOR VERDICT
+
+👉 You are **95% architecturally correct**
+
+But:
+
+👉 **Deposits break your entire legal positioning**
+
+---
+
+# 🔥 ONE LINE TRUTH
+
+You cannot say “we don’t hold funds”
+👉 while receiving money into your own bank account
+
+---
+
+# 🚀 WHAT TO FIX IMMEDIATELY
+
+### 1. Kill this:
+
+* AMAX PayID
+* AMAX Westpac account
+
+---
+
+### 2. Replace with:
+
+* Airwallex virtual accounts
+* or partner-provided funding rails
+
+---
+
+### 3. Update UI text:
+
+From:
+
+> “Send to AMAX…”
+
+To:
+
+> “Send to your account issued by our regulated partner”
+
+---
+
+# 🧠 IF YOU FIX THIS
+
+You become:
+
+✅ fully non-custodial
+✅ regulator-safe
+✅ bank-partner friendly
+✅ investor-grade
+
+---
+
+# 🔥 If you want next step
+
+I can help you:
+
+✅ redesign your deposit flow (exact API + UI)
+✅ map Airwallex virtual account setup
+✅ draft regulator-safe wording
+✅ build reconciliation logic for deposits
+
+Just say the word 👍

@@ -3716,21 +3716,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/deposit/instructions
-  // Returns AMAX bank/PayID settlement instructions from server environment config.
-  // Centralises all payment identifiers so they never appear hardcoded in the frontend.
+  // Non-custodial model: AMAX does not receive funds directly. Bank/PayID deposits are
+  // routed to the regulated partner (Airwallex) via partner-issued virtual accounts.
+  // Partner-issued account details are provided to each user individually — they are NOT
+  // AMAX's bank account. Until Airwallex virtual account provisioning is live, users
+  // are directed to contact AMAX to receive their partner-issued account details.
   app.get("/api/deposit/instructions", (_req: Request, res: any) => {
     res.json({
-      payid: {
-        identifier: process.env.AMAX_PAYID ?? "info@amaxglobal.com.au",
-        accountName: "AMAX Global Pty Ltd",
-      },
-      bank: {
-        bank: process.env.AMAX_BANK_NAME ?? "Westpac Banking Corporation",
-        bsb: process.env.AMAX_BSB ?? "032-000",
-        account: process.env.AMAX_ACCOUNT_NUMBER ?? "123456789",
-        accountName: "AMAX Global Pty Ltd",
-        swift: process.env.AMAX_SWIFT ?? "WPACAU2S",
-      },
+      partnerAccountsPending: true,
+      contactEmail: "info@amaxglobal.com.au",
+      contactPhone: "+61 2 1234 5678",
+      note: "Your designated account details are issued by our regulated banking partner. Contact us to receive your individual funding account details.",
     });
   });
 

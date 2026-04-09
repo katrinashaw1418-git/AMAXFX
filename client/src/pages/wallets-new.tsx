@@ -918,46 +918,24 @@ export default function Wallets() {
                 <p className="text-xs text-blue-700 dark:text-blue-300">Include this reference in your transfer so AMAX can match your payment.</p>
               </div>
 
-              {depositSubmitted.method === 'payid' && (
+              {(depositSubmitted.method === 'payid' || depositSubmitted.method === 'bank_transfer') && (
                 <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
-                  <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">⚡ Send to AMAX PayID:</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">PayID Address</p>
-                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 break-all">{depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au'}</p>
-                    </div>
-                    <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText(depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au'); toast({ title: "PayID Copied", description: depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au' }); }}>Copy</Button>
-                  </div>
-                  <p className="text-xs text-blue-700 dark:text-blue-300"><span className="font-medium">Account Name:</span> {depositInstructions?.payid.accountName ?? 'AMAX Global Pty Ltd'}</p>
-                </div>
-              )}
-
-              {depositSubmitted.method === 'bank_transfer' && (
-                <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
-                  <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">🏦 Transfer to AMAX Bank Account:</p>
-                  <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Bank:</span> {depositInstructions?.bank.bank ?? 'Westpac Banking Corporation'}</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">BSB</p>
-                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{depositInstructions?.bank.bsb ?? '032-000'}</p>
-                    </div>
-                    <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText((depositInstructions?.bank.bsb ?? '032-000').replace(/-/g,'')); toast({ title: "BSB Copied" }); }}>Copy</Button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">Account Number</p>
-                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{depositInstructions?.bank.account ?? '123456789'}</p>
-                    </div>
-                    <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.account ?? '123456789'); toast({ title: "Account Copied" }); }}>Copy</Button>
-                  </div>
-                  <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account Name:</span> {depositInstructions?.bank.accountName ?? 'AMAX Global Pty Ltd'}</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">SWIFT / BIC</p>
-                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{depositInstructions?.bank.swift ?? 'WPACAU2S'}</p>
-                    </div>
-                    <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.swift ?? 'WPACAU2S'); toast({ title: "SWIFT Copied" }); }}>Copy</Button>
-                  </div>
+                  <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">
+                    {depositSubmitted.method === 'payid' ? '⚡ Next Step — Receive Your Account Details' : '🏦 Next Step — Receive Your Account Details'}
+                  </p>
+                  <p className="text-xs text-blue-800 dark:text-blue-200">
+                    Your request has been recorded. Our team will send you the account details issued by our regulated banking partner. <strong>Do not send funds until you receive these details.</strong>
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    Funds go directly to your designated account at our regulated partner — not to AMAX. AMAX does not receive or hold your funds.
+                  </p>
+                  <a
+                    href={`mailto:info@amaxglobal.com.au?subject=Fund%20Account%20Request%20%E2%80%94%20Ref%20${depositSubmitted.referenceCode}&body=Hello%20AMAX%20Team%2C%0A%0AI%20have%20submitted%20a%20deposit%20request%20(Ref%3A%20${depositSubmitted.referenceCode})%20and%20would%20like%20to%20receive%20my%20designated%20account%20details%20from%20your%20regulated%20banking%20partner.%0A%0AMethod%3A%20${depositSubmitted.method === 'payid' ? 'PayID%20%2F%20NPP' : 'Bank%20Transfer'}%0AAmount%3A%20${depositSubmitted.amount}%20${depositSubmitted.currency}%0A%0AThank%20you.`}
+                    className="block w-full text-center text-xs py-2 px-3 rounded bg-blue-700 hover:bg-blue-800 text-white font-medium"
+                  >
+                    ✉ Email us to receive your account details
+                  </a>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 text-center">Or call: <strong>+61 2 1234 5678</strong></p>
                 </div>
               )}
 
@@ -1151,44 +1129,19 @@ export default function Wallets() {
                       </div>
                     </div>
                     <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
-                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">⚡ Send to AMAX Global PayID:</p>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">PayID Address</p>
-                          <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 break-all">{depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au'}</p>
-                        </div>
-                        <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText(depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au'); toast({ title: "PayID Copied", description: depositInstructions?.payid.identifier ?? 'info@amaxglobal.com.au' }); }}>Copy</Button>
+                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">⚡ How PayID / NPP Funding Works</p>
+                      <div className="text-xs text-blue-800 dark:text-blue-200 space-y-1.5">
+                        <p>1. Submit this request — a unique reference code will be generated.</p>
+                        <p>2. Our team will email you the PayID details issued by our regulated banking partner.</p>
+                        <p>3. Send funds to that partner-issued PayID — <strong>not to AMAX</strong>. AMAX does not receive or hold your funds.</p>
+                        <p>4. Your account will be credited once the regulated partner confirms receipt.</p>
                       </div>
-                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account Name:</span> {depositInstructions?.payid.accountName ?? 'AMAX Global Pty Ltd'}</p>
-                      <div className="pt-1 border-t border-blue-200 dark:border-blue-700 space-y-2">
-                        <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">Or pay by BSB (manual fallback):</p>
-                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Bank:</span> {depositInstructions?.bank.bank ?? 'Westpac Banking Corporation'}</p>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">BSB</p>
-                            <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{depositInstructions?.bank.bsb ?? '032-000'}</p>
-                          </div>
-                          <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText((depositInstructions?.bank.bsb ?? '032-000').replace(/-/g,'')); toast({ title: "BSB Copied" }); }}>Copy</Button>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">Account Number</p>
-                            <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{depositInstructions?.bank.account ?? '123456789'}</p>
-                          </div>
-                          <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.account ?? '123456789'); toast({ title: "Account Copied" }); }}>Copy</Button>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">SWIFT / BIC</p>
-                            <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{depositInstructions?.bank.swift ?? 'WPACAU2S'}</p>
-                          </div>
-                          <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.swift ?? 'WPACAU2S'); toast({ title: "SWIFT Copied" }); }}>Copy</Button>
-                        </div>
-                        <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account Name:</span> {depositInstructions?.bank.accountName ?? 'AMAX Global Pty Ltd'}</p>
-                      </div>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 pt-1 border-t border-blue-200 dark:border-blue-700">
+                        Funds are held at our regulated banking partner, not at AMAX Global Pty Ltd.
+                      </p>
                     </div>
                     <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
-                      ⏳ Click Submit to record your deposit. A unique reference code will be generated — include it with your transfer so AMAX can match your payment.
+                      ⏳ Click Submit to record your request. You will receive your partner-issued account details by email before sending funds.
                     </p>
                   </div>
                 )}
@@ -1200,38 +1153,24 @@ export default function Wallets() {
                       <div className="text-xs text-muted-foreground space-y-1">
                         <p>• SWIFT international transfers accepted</p>
                         <p>• Processing time: 1–3 business days</p>
-                        <p>• Include your registered email as payment reference</p>
-                        <p>• Balance credited once AMAX confirms receipt</p>
+                        <p>• Include your unique reference code in the transfer description</p>
+                        <p>• Balance credited once our regulated partner confirms receipt</p>
                       </div>
                     </div>
                     <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
-                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">🏦 AMAX Global Bank Details:</p>
-                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Bank:</span> {depositInstructions?.bank.bank ?? 'Westpac Banking Corporation'}</p>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">BSB</p>
-                          <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{depositInstructions?.bank.bsb ?? '032-000'}</p>
-                        </div>
-                        <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText((depositInstructions?.bank.bsb ?? '032-000').replace(/-/g,'')); toast({ title: "BSB Copied" }); }}>Copy</Button>
+                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">🏦 How International Bank Transfer Funding Works</p>
+                      <div className="text-xs text-blue-800 dark:text-blue-200 space-y-1.5">
+                        <p>1. Submit this request — a unique reference code will be generated.</p>
+                        <p>2. Our team will email you the bank details issued by our regulated banking partner (BSB, account number, SWIFT).</p>
+                        <p>3. Send funds to those partner-issued details — <strong>not to AMAX</strong>. AMAX does not receive or hold your funds.</p>
+                        <p>4. Your account will be credited once the regulated partner confirms receipt — typically 1–3 business days.</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">Account Number</p>
-                          <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{depositInstructions?.bank.account ?? '123456789'}</p>
-                        </div>
-                        <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.account ?? '123456789'); toast({ title: "Account Copied" }); }}>Copy</Button>
-                      </div>
-                      <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">Account Name:</span> {depositInstructions?.bank.accountName ?? 'AMAX Global Pty Ltd'}</p>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">SWIFT / BIC</p>
-                          <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{depositInstructions?.bank.swift ?? 'WPACAU2S'}</p>
-                        </div>
-                        <Button variant="outline" size="sm" className="h-7 text-xs px-3 shrink-0 border-blue-300 dark:border-blue-700" onClick={() => { navigator.clipboard.writeText(depositInstructions?.bank.swift ?? 'WPACAU2S'); toast({ title: "SWIFT Copied" }); }}>Copy</Button>
-                      </div>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 pt-1 border-t border-blue-200 dark:border-blue-700">
+                        Funds are held at our regulated banking partner, not at AMAX Global Pty Ltd.
+                      </p>
                     </div>
                     <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
-                      ⏳ Click Submit to record your deposit. A unique reference code will be generated — include it in your bank transfer description so AMAX can identify your payment.
+                      ⏳ Click Submit to record your request. You will receive your partner-issued bank details by email before sending funds.
                     </p>
                   </div>
                 )}
