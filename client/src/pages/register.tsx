@@ -5,15 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Loader2, Shield, Coins, Eye, EyeOff, Mail, CheckCircle2,
   ArrowRight, ArrowLeft, Wallet, RefreshCw, Bitcoin, Globe,
+  Smartphone, ChevronRight, X,
 } from "lucide-react";
 import { SiGoogle, SiApple } from "react-icons/si";
 
-type Step = 1 | 2 | 3;
+type Step = "method" | "email-form" | "verify" | "profile";
 
 const PURPOSES = [
   { value: "remittance",  label: "Remittance",   icon: Globe },
@@ -29,28 +29,28 @@ const PRODUCTS = [
   { value: "remittance", label: "Remittance" },
 ];
 
-function StepIndicator({ current }: { current: Step }) {
-  const steps = [
-    { n: 1, label: "Account" },
-    { n: 2, label: "Email" },
-    { n: 3, label: "Profile" },
-  ];
+function StepDots({ step }: { step: Step }) {
+  const order: Step[] = ["method", "email-form", "verify", "profile"];
+  const labels = ["Method", "Details", "Verify", "Profile"];
+  const idx = order.indexOf(step);
   return (
     <div className="flex items-center justify-center gap-2 mb-8">
-      {steps.map((s, i) => (
-        <div key={s.n} className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-            s.n < current ? "bg-green-500 text-white" :
-            s.n === current ? "bg-white text-slate-900" :
-            "bg-slate-700 text-slate-400"
+      {order.map((s, i) => (
+        <div key={s} className="flex items-center gap-2">
+          <div className={`flex items-center justify-center rounded-full transition-all duration-300 ${
+            i < idx
+              ? "w-7 h-7 bg-green-500 text-white text-xs font-bold"
+              : i === idx
+              ? "w-7 h-7 bg-white text-slate-900 text-xs font-bold"
+              : "w-6 h-6 bg-slate-700 text-slate-500 text-xs"
           }`}>
-            {s.n < current ? <CheckCircle2 className="w-4 h-4" /> : s.n}
+            {i < idx ? <CheckCircle2 className="w-3.5 h-3.5" /> : i + 1}
           </div>
-          <span className={`text-xs hidden sm:block ${s.n === current ? "text-white font-medium" : "text-slate-500"}`}>
-            {s.label}
+          <span className={`text-xs hidden sm:block ${i === idx ? "text-white font-medium" : "text-slate-600"}`}>
+            {labels[i]}
           </span>
-          {i < steps.length - 1 && (
-            <div className={`w-8 h-px mx-1 ${s.n < current ? "bg-green-500" : "bg-slate-700"}`} />
+          {i < order.length - 1 && (
+            <div className={`w-6 h-px mx-0.5 ${i < idx ? "bg-green-500" : "bg-slate-700"}`} />
           )}
         </div>
       ))}
@@ -62,20 +62,20 @@ export default function Register() {
   const { register } = useAuth();
   const [, navigate] = useLocation();
 
-  const [step, setStep]         = useState<Step>(1);
-  const [error, setError]       = useState<string | null>(null);
+  const [step, setStep] = useState<Step>("method");
+  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Step 1 — account
-  const [firstName, setFirstName] = useState("");
-  const [lastName,  setLastName]  = useState("");
-  const [email,     setEmail]     = useState("");
-  const [password,  setPassword]  = useState("");
-  const [showPw,    setShowPw]    = useState(false);
+  const [socialNotice, setSocialNotice] = useState<"google" | "apple" | "phone" | null>(null);
 
-  // Step 3 — risk profiling
-  const [purpose,   setPurpose]   = useState<string>("");
-  const [products,  setProducts]  = useState<Set<string>>(new Set());
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName]   = useState("");
+  const [email, setEmail]         = useState("");
+  const [password, setPassword]   = useState("");
+  const [showPw, setShowPw]       = useState(false);
+
+  const [purpose, setPurpose]     = useState("");
+  const [products, setProducts]   = useState<Set<string>>(new Set());
 
   function toggleProduct(v: string) {
     setProducts(prev => {
@@ -85,16 +85,15 @@ export default function Register() {
     });
   }
 
-  // ── Step 1 submit — create account, move to step 2 ─────────────────────
-  async function handleStep1(e: React.FormEvent) {
+  async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!firstName.trim() || !lastName.trim()) { setError("Please enter your first and last name."); return; }
+    if (!firstName.trim() || !lastName.trim()) { setError("Please enter your full name."); return; }
     if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
     setIsLoading(true);
     try {
       await register(firstName.trim(), lastName.trim(), email.trim(), password);
-      setStep(2);
+      setStep("verify");
     } catch (err: any) {
       setError(err.message || "Registration failed. Please try again.");
     } finally {
@@ -102,33 +101,37 @@ export default function Register() {
     }
   }
 
-  // ── Step 3 submit — save risk profile, go to compliance ────────────────
-  async function handleStep3(e: React.FormEvent) {
+  async function handleProfileSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!purpose) { setError("Please select your primary purpose."); return; }
     navigate("/compliance");
   }
 
-  // ── Shared shell ────────────────────────────────────────────────────────
+  const socialNotices: Record<string, string> = {
+    google: "Google sign-in is coming soon. Please use email registration for now.",
+    apple:  "Apple sign-in is coming soon. Please use email registration for now.",
+    phone:  "Mobile / phone sign-up is coming soon. Please use email registration for now.",
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
 
         {/* Logo */}
         <div className="text-center mb-6">
-          <div className="flex items-center justify-center gap-2 mb-3">
+          <div className="flex items-center justify-center gap-2 mb-4">
             <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center">
               <Coins className="w-5 h-5 text-slate-900" />
             </div>
             <span className="text-2xl font-bold text-white">AMAX</span>
           </div>
-          <StepIndicator current={step} />
+          <StepDots step={step} />
         </div>
 
-        {/* ── STEP 1: Create account ────────────────────────────────────── */}
-        {step === 1 && (
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-5">
-            <div>
+        {/* ── METHOD SELECTION ─────────────────────────────────────────────── */}
+        {step === "method" && (
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-4">
+            <div className="mb-1">
               <h2 className="text-xl font-bold text-white">Create your account</h2>
               <p className="text-sm text-slate-400 mt-1">
                 Already have an account?{" "}
@@ -136,29 +139,110 @@ export default function Register() {
               </p>
             </div>
 
-            {/* Social buttons */}
-            <div className="grid grid-cols-2 gap-3">
-              <Button type="button" variant="outline"
-                className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white"
-                onClick={() => setError("Google sign-up coming soon — please use email registration.")}
-              >
-                <SiGoogle className="w-4 h-4 mr-2" /> Google
-              </Button>
-              <Button type="button" variant="outline"
-                className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white"
-                onClick={() => setError("Apple sign-up coming soon — please use email registration.")}
-              >
-                <SiApple className="w-4 h-4 mr-2" /> Apple
-              </Button>
-            </div>
+            {socialNotice && (
+              <Alert className="bg-amber-500/10 border-amber-500/30 text-amber-300">
+                <AlertDescription className="flex items-start justify-between gap-2">
+                  <span className="text-sm">{socialNotices[socialNotice]}</span>
+                  <button onClick={() => setSocialNotice(null)} className="shrink-0 mt-0.5">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </AlertDescription>
+              </Alert>
+            )}
 
+            {/* Email — primary */}
+            <button
+              onClick={() => { setSocialNotice(null); setStep("email-form"); }}
+              className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-white text-slate-900 hover:bg-slate-100 transition-all font-semibold group"
+            >
+              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                <Mail className="w-5 h-5 text-slate-700" />
+              </div>
+              <div className="text-left flex-1">
+                <div className="text-sm font-semibold">Continue with Email</div>
+                <div className="text-xs text-slate-500 font-normal">Sign up with your email address</div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+
+            {/* Google */}
+            <button
+              onClick={() => setSocialNotice("google")}
+              className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-slate-700/60 border border-slate-600 text-white hover:bg-slate-700 transition-all group"
+            >
+              <div className="w-9 h-9 rounded-lg bg-slate-600 flex items-center justify-center flex-shrink-0">
+                <SiGoogle className="w-5 h-5 text-white" />
+              </div>
+              <div className="text-left flex-1">
+                <div className="text-sm font-semibold">Continue with Google</div>
+                <div className="text-xs text-slate-400 font-normal">Use your Google account</div>
+              </div>
+              <span className="text-[10px] bg-slate-600 text-slate-300 px-2 py-0.5 rounded-full font-medium shrink-0">
+                Coming soon
+              </span>
+            </button>
+
+            {/* Apple */}
+            <button
+              onClick={() => setSocialNotice("apple")}
+              className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-slate-700/60 border border-slate-600 text-white hover:bg-slate-700 transition-all group"
+            >
+              <div className="w-9 h-9 rounded-lg bg-slate-600 flex items-center justify-center flex-shrink-0">
+                <SiApple className="w-5 h-5 text-white" />
+              </div>
+              <div className="text-left flex-1">
+                <div className="text-sm font-semibold">Continue with Apple</div>
+                <div className="text-xs text-slate-400 font-normal">Use your Apple ID</div>
+              </div>
+              <span className="text-[10px] bg-slate-600 text-slate-300 px-2 py-0.5 rounded-full font-medium shrink-0">
+                Coming soon
+              </span>
+            </button>
+
+            {/* Phone / Mobile */}
+            <button
+              onClick={() => setSocialNotice("phone")}
+              className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-slate-700/60 border border-slate-600 text-white hover:bg-slate-700 transition-all group"
+            >
+              <div className="w-9 h-9 rounded-lg bg-slate-600 flex items-center justify-center flex-shrink-0">
+                <Smartphone className="w-5 h-5 text-white" />
+              </div>
+              <div className="text-left flex-1">
+                <div className="text-sm font-semibold">Continue with Mobile</div>
+                <div className="text-xs text-slate-400 font-normal">Sign up with your phone number</div>
+              </div>
+              <span className="text-[10px] bg-slate-600 text-slate-300 px-2 py-0.5 rounded-full font-medium shrink-0">
+                Coming soon
+              </span>
+            </button>
+
+            <p className="text-xs text-slate-500 text-center leading-relaxed pt-1">
+              By signing up you agree to our{" "}
+              <Link href="/terms" className="underline text-slate-400 hover:text-slate-200">Terms</Link>
+              {" "}and{" "}
+              <Link href="/privacy-policy" className="underline text-slate-400 hover:text-slate-200">Privacy Policy</Link>.
+              Identity verification is required as we are AUSTRAC-registered.
+            </p>
+          </div>
+        )}
+
+        {/* ── EMAIL FORM ───────────────────────────────────────────────────── */}
+        {step === "email-form" && (
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-5">
             <div className="flex items-center gap-3">
-              <Separator className="flex-1 bg-slate-700" />
-              <span className="text-xs text-slate-500">or continue with email</span>
-              <Separator className="flex-1 bg-slate-700" />
+              <button
+                onClick={() => { setError(null); setStep("method"); }}
+                className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-300 hover:text-white transition-all"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <div>
+                <h2 className="text-xl font-bold text-white">Sign up with Email</h2>
+                <p className="text-xs text-slate-400">Create your AMAX account</p>
+              </div>
             </div>
 
-            <form onSubmit={handleStep1} className="space-y-4">
+            <form onSubmit={handleEmailSubmit} className="space-y-4">
               {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
               <div className="grid grid-cols-2 gap-3">
@@ -201,45 +285,39 @@ export default function Register() {
                 )}
               </div>
 
-              <p className="text-xs text-slate-500 leading-relaxed">
-                By signing up you agree to our{" "}
-                <Link href="/terms" className="underline text-slate-400 hover:text-slate-200">Terms</Link>
-                {" "}and{" "}
-                <Link href="/privacy-policy" className="underline text-slate-400 hover:text-slate-200">Privacy Policy</Link>.
-                AMAX Global is AUSTRAC-registered — identity verification is required.
-              </p>
-
               <Button type="submit" disabled={isLoading} className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold">
-                {isLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating account…</> : <>Create account <ArrowRight className="w-4 h-4 ml-1" /></>}
+                {isLoading
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating account…</>
+                  : <>Create account <ArrowRight className="w-4 h-4 ml-1" /></>}
               </Button>
             </form>
           </div>
         )}
 
-        {/* ── STEP 2: Email verification notice ────────────────────────── */}
-        {step === 2 && (
+        {/* ── EMAIL VERIFICATION ───────────────────────────────────────────── */}
+        {step === "verify" && (
           <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-6 text-center">
             <div className="flex flex-col items-center gap-3">
               <div className="w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center">
                 <Mail className="w-8 h-8 text-blue-400" />
               </div>
-              <h2 className="text-xl font-bold text-white">Check your email</h2>
+              <h2 className="text-xl font-bold text-white">Check your inbox</h2>
               <p className="text-sm text-slate-400 max-w-xs">
-                We've sent a verification link to <span className="text-white font-medium">{email}</span>.
-                Click the link to confirm your address.
+                We've sent a verification link to{" "}
+                <span className="text-white font-medium">{email}</span>. Click the link to confirm your email address.
               </p>
             </div>
 
-            <div className="bg-slate-700/50 rounded-xl p-4 text-left space-y-2">
-              <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">What to expect</p>
+            <div className="bg-slate-700/40 border border-slate-600/50 rounded-xl p-4 text-left space-y-3">
               {[
-                "A verification email from noreply@amaxglobal.com.au",
-                "Subject: Confirm your AMAX account",
-                "Link expires in 24 hours",
-              ].map(item => (
-                <div key={item} className="flex items-start gap-2 text-sm text-slate-300">
-                  <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
-                  {item}
+                { label: "From",    val: "noreply@amaxglobal.com.au" },
+                { label: "Subject", val: "Confirm your AMAX Global account" },
+                { label: "Expires", val: "24 hours" },
+              ].map(({ label, val }) => (
+                <div key={label} className="flex items-center gap-3">
+                  <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
+                  <span className="text-xs text-slate-400 w-14 font-medium">{label}:</span>
+                  <span className="text-xs text-slate-300">{val}</span>
                 </div>
               ))}
             </div>
@@ -247,40 +325,51 @@ export default function Register() {
             <div className="space-y-3">
               <Button
                 className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold"
-                onClick={() => { setError(null); setStep(3); }}
+                onClick={() => { setError(null); setStep("profile"); }}
               >
                 I've verified my email <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
               <Button
                 variant="ghost"
                 className="w-full text-slate-400 hover:text-white hover:bg-slate-700"
-                onClick={() => setStep(3)}
+                onClick={() => setStep("profile")}
               >
-                Skip for now — verify later
+                Skip for now — I'll verify later
               </Button>
             </div>
+
+            {error && <p className="text-xs text-amber-400">{error}</p>}
             <p className="text-xs text-slate-500">
-              Didn't receive it?{" "}
-              <button className="text-slate-300 underline hover:text-white" onClick={() => setError("Resend available once GMAIL is configured.")}>
-                Resend email
+              Didn't get it? Check your spam folder or{" "}
+              <button
+                className="text-slate-300 underline hover:text-white"
+                onClick={() => setError("Resend available once email sending is configured.")}
+              >
+                resend the email
               </button>
-              {error && <span className="block text-amber-400 mt-1">{error}</span>}
             </p>
           </div>
         )}
 
-        {/* ── STEP 3: Risk profiling ────────────────────────────────────── */}
-        {step === 3 && (
+        {/* ── RISK PROFILE ─────────────────────────────────────────────────── */}
+        {step === "profile" && (
           <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-5">
-            <div>
-              <h2 className="text-xl font-bold text-white">How will you use AMAX?</h2>
-              <p className="text-sm text-slate-400 mt-1">This helps us personalise your experience and meet regulatory requirements.</p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => { setError(null); setStep("verify"); }}
+                className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-300 hover:text-white transition-all"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <div>
+                <h2 className="text-xl font-bold text-white">How will you use AMAX?</h2>
+                <p className="text-xs text-slate-400">Helps us meet regulatory requirements</p>
+              </div>
             </div>
 
-            <form onSubmit={handleStep3} className="space-y-5">
+            <form onSubmit={handleProfileSubmit} className="space-y-5">
               {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
-              {/* Primary purpose — single select */}
               <div className="space-y-2">
                 <Label className="text-slate-300 text-sm font-medium">Primary purpose of your account</Label>
                 <div className="grid grid-cols-2 gap-3">
@@ -302,9 +391,8 @@ export default function Register() {
                 </div>
               </div>
 
-              {/* Products — multi select checkboxes */}
               <div className="space-y-2">
-                <Label className="text-slate-300 text-sm font-medium">Products you plan to use</Label>
+                <Label className="text-slate-300 text-sm font-medium">Products you plan to use <span className="text-slate-500 font-normal">(optional)</span></Label>
                 <div className="grid grid-cols-2 gap-2">
                   {PRODUCTS.map(({ value, label }) => (
                     <label
@@ -326,16 +414,9 @@ export default function Register() {
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-1">
-                <Button type="button" variant="ghost"
-                  className="text-slate-400 hover:text-white hover:bg-slate-700 px-3"
-                  onClick={() => setStep(2)}>
-                  <ArrowLeft className="w-4 h-4" />
-                </Button>
-                <Button type="submit" className="flex-1 bg-white hover:bg-slate-100 text-slate-900 font-semibold">
-                  Continue to KYC <ArrowRight className="w-4 h-4 ml-1" />
-                </Button>
-              </div>
+              <Button type="submit" className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold">
+                Continue to verification <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
             </form>
           </div>
         )}

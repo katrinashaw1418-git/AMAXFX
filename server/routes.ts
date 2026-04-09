@@ -869,13 +869,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       // Create a default AUD wallet
       await storage.createWallet({ userId: newUser.id, currency: "AUD", balance: "0.00", availableBalance: "0.00", walletType: "fiat" });
+      // Generate email verification token
+      const verifyToken = randomBytes(32).toString("hex");
+      const verifyExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      await db.update(users).set({
+        emailVerificationToken: verifyToken,
+        emailVerificationTokenExpiry: verifyExpiry,
+        emailVerified: false,
+      }).where(eq(users.id, newUser.id));
+
+      // Send verification email (no-op if GMAIL not configured)
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      await sendVerificationEmail(newUser.email, newUser.firstName, verifyToken, baseUrl).catch(() => {});
+
       await writeAuditLog(newUser.id, "register", "user", String(newUser.id), { email, username }, req.ip || null);
       const token = signToken({ userId: newUser.id, username: newUser.username, email: newUser.email });
-      res.status(201).json({ token, user: { id: newUser.id, username: newUser.username, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName, kycStatus: newUser.kycStatus, userTier: newUser.userTier } });
+      res.status(201).json({
+        token,
+        user: { id: newUser.id, username: newUser.username, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName, kycStatus: newUser.kycStatus, userTier: newUser.userTier },
+        emailSent: emailConfigured,
+      });
     } catch (error: any) {
       console.error("[register] error:", error?.message, error?.code, error?.detail);
       if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Registration failed. Please try again." });
+    }
+  });
+
+  // Resend verification email
+  app.post("/api/auth/resend-verification", async (req, res) => {
+    try {
+      const auth = requireAuth(req);
+      const [user] = await db.select().from(users).where(eq(users.id, auth.userId));
+      if (!user) return res.status(404).json({ error: "User not found" });
+      if (user.emailVerified) return res.json({ message: "Email already verified" });
+      if (!emailConfigured) return res.status(503).json({ error: "Email service not configured. Please contact support@amaxglobal.com.au" });
+
+      const verifyToken = randomBytes(32).toString("hex");
+      const verifyExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      await db.update(users).set({ emailVerificationToken: verifyToken, emailVerificationTokenExpiry: verifyExpiry }).where(eq(users.id, user.id));
+
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      await sendVerificationEmail(user.email, user.firstName, verifyToken, baseUrl);
+      res.json({ message: "Verification email sent" });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to resend verification email" });
+    }
+  });
+
+  // Verify email token (clicked from email link)
+  app.get("/api/auth/verify-email", async (req, res) => {
+    const { token } = req.query as { token?: string };
+    if (!token) return res.redirect("/#verify=missing");
+    try {
+      const [user] = await db.select().from(users).where(eq(users.emailVerificationToken, token));
+      if (!user) return res.redirect("/verify-email?status=invalid");
+      if (user.emailVerified) return res.redirect("/verify-email?status=already");
+      const expiry = user.emailVerificationTokenExpiry;
+      if (expiry && new Date() > expiry) return res.redirect("/verify-email?status=expired");
+
+      await db.update(users).set({ emailVerified: true, emailVerificationToken: null, emailVerificationTokenExpiry: null }).where(eq(users.id, user.id));
+      res.redirect("/verify-email?status=success");
+    } catch {
+      res.redirect("/verify-email?status=error");
     }
   });
 
