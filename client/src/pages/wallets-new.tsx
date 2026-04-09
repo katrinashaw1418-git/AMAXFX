@@ -683,7 +683,10 @@ export default function Wallets() {
   return (
     <div className="container mx-auto px-4 py-6 space-y-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Your Wallets</h1>
+        <div>
+          <h1 className="text-3xl font-bold">Your Accounts</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Multi-Currency FX Accounts</p>
+        </div>
         <div className="flex items-center gap-2">
           {isVoiceSupported && (
             <Button
@@ -695,10 +698,19 @@ export default function Wallets() {
               Voice Settings
             </Button>
           )}
-          <Badge variant="secondary" className="text-sm">
-            Multi-Currency Management
-          </Badge>
         </div>
+      </div>
+
+      {/* Non-custodial disclosure */}
+      <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+        <Info className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-amber-800">
+          <span className="font-semibold">AMAX Global Pty Ltd (ABN 54 690 827 608) does not hold client funds.</span>{" "}
+          Balances shown reflect funds held with regulated partner banking institutions and, for crypto exchange
+          purposes, with Independent Reserve Pty Ltd (AUSTRAC DCE-100461150-001). AMAX acts as a payment
+          facilitator and Digital Currency Exchange (DCE) only. Account balances are available for instructed
+          transactions subject to AML/CTF screening and KYC verification.
+        </p>
       </div>
 
       {/* Section 1: Your Balances */}
@@ -707,7 +719,7 @@ export default function Wallets() {
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <DollarSign className="w-5 h-5" />
-              Your Balances
+              Your Account Balances
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-normal text-muted-foreground">Show values in:</span>
@@ -765,7 +777,7 @@ export default function Wallets() {
                             {wallet.config?.symbol}{wallet.balance ? parseFloat(wallet.balance).toLocaleString() : '0.00'}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            Available: {wallet.config?.symbol}{wallet.availableBalance ? parseFloat(wallet.availableBalance).toLocaleString() : '0.00'}
+                            Available for transfer: {wallet.config?.symbol}{wallet.availableBalance ? parseFloat(wallet.availableBalance).toLocaleString() : '0.00'}
                           </div>
                         </div>
                       </td>
@@ -1398,7 +1410,7 @@ export default function Wallets() {
                       min="0"
                     />
                     {selectedWallet && (
-                      <p className="text-xs text-muted-foreground mt-0.5">Available: {selectedWallet.balance} {selectedWallet.currency}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Available for transfer: {selectedWallet.balance} {selectedWallet.currency}</p>
                     )}
                   </div>
                   <div>
@@ -1498,7 +1510,7 @@ export default function Wallets() {
                 />
                 {selectedWallet && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Available: {selectedWallet.availableBalance} {selectedWallet.currency}
+                    Available for transfer: {selectedWallet.availableBalance} {selectedWallet.currency}
                   </p>
                 )}
                 {parseFloat(amount) >= 10000 && (
@@ -1658,7 +1670,7 @@ export default function Wallets() {
             {/* Current Balance Display */}
             <div className="p-3 bg-gray-50 rounded-lg">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Available Balance</span>
+                <span className="text-sm text-gray-600">Available for Transfer</span>
                 <span className="font-medium">
                   {selectedWallet?.availableBalance} {selectedWallet?.currency}
                 </span>
@@ -1676,7 +1688,7 @@ export default function Wallets() {
                 className="h-8"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Available: {selectedWallet?.availableBalance} {selectedWallet?.currency}
+                Available for transfer: {selectedWallet?.availableBalance} {selectedWallet?.currency}
               </p>
             </div>
             
