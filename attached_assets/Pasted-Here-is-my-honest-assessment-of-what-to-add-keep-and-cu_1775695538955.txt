@@ -1,0 +1,69 @@
+Here is my honest assessment of what to add, keep, and cut:
+
+---
+
+**Keep as-is — these are solid:**
+
+The 4-step verification animation is good UX and accurately reflects what your backend needs to do. The document type switcher (passport / licence / national ID) is clean and necessary. The selfie section with photo tips is exactly right for AUSTRAC electronic verification compliance. The encryption notice at the bottom is important — keep it.
+
+---
+
+**Add these — genuinely missing:**
+
+**1. Proof of address document upload**
+
+You collect the address in Section 1 but never verify it. AUSTRAC CDD requires address verification, not just self-declaration. Add a third upload card after the ID card:
+
+- Accepted documents: utility bill, bank statement, or government letter
+- Must be issued within 3 months
+- This is what Wise, Revolut, and every regulated remittance provider asks for
+
+**2. Expiry date check on the document**
+
+When a user uploads their passport or licence, the form should ask for the document expiry date as a text field. Your backend needs to reject expired documents before even sending to the KYC provider. Saves API costs and user frustration.
+
+**3. Country of document issue**
+
+For the passport specifically, you need to capture which country issued it. This feeds directly into your jurisdiction risk scoring — a passport from a FATF high-risk country triggers enhanced due diligence automatically.
+
+**4. Failed verification state**
+
+The current flow only shows the success path. You need a failure card that tells the user what went wrong and what to do next — for example "Name does not match ID" or "Document image unclear — please retake." Without this, failed users hit a dead end and abandon.
+
+**5. Manual review state**
+
+Between pass and fail there is a third outcome — "Under review." This happens when the automated check is inconclusive. Users need to know their account is pending manual review by the AMAX compliance officer, with an estimated timeframe (typically 1–2 business days).
+
+---
+
+**Delete or defer these:**
+
+**Remove the animated verification from the frontend entirely** — or at minimum make it clear it is illustrative. In production, KYC verification takes 30 seconds to several minutes depending on the provider. You should not run the verification inline in the page. Instead, after upload, redirect the user to a "we are verifying your identity" waiting screen and notify them by email/SMS when it is done. Inline animation creates a false expectation that verification is instant.
+
+**The "256-bit encrypted" badge** — the wording is fine but "256-bit" is technically meaningless to most users and reads like marketing. Replace with something more specific and honest: "Your documents are encrypted in transit and stored securely by our KYC provider in accordance with the Australian Privacy Act 1988."
+
+---
+
+**Structural suggestion — split into two screens:**
+
+Right now Section 2 has three upload cards plus a verification panel all on one page. That is too much. Wise splits this into:
+
+```
+Screen 2a — Document type selection + upload
+Screen 2b — Selfie capture
+Screen 2c — "Verification in progress" waiting screen
+```
+
+This reduces cognitive load and makes it much easier to handle errors on a per-step basis.
+
+---
+
+**Priority order if you are building now:**
+
+1. Add proof of address upload — AUSTRAC compliance gap right now
+2. Add document expiry date field — backend needs it
+3. Add failed verification and manual review states — essential for production
+4. Split into two screens — UX improvement
+5. Replace inline animation with an email notification flow — do before go-live
+
+Want me to rebuild the section with these changes applied?

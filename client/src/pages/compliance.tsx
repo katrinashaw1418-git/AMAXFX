@@ -97,11 +97,14 @@ export default function Compliance() {
 
   // ── Step 2: Identity document + biometric verification ────────────────────
   const [docType,          setDocType]          = useState<"passport" | "driver_licence" | "national_id">("passport");
+  const [docExpiry,        setDocExpiry]        = useState("");           // YYYY-MM-DD from date input
+  const [docIssueCountry,  setDocIssueCountry]  = useState("");           // issuing country (passport risk scoring)
   const [idFrontFile,      setIdFrontFile]      = useState<string | null>(null);
   const [idBackFile,       setIdBackFile]       = useState<string | null>(null);
   const [selfieFile,       setSelfieFile]       = useState<string | null>(null);
   const [idVerifyAnimStep, setIdVerifyAnimStep] = useState(0);   // 0=idle 1-4=running 5=done
   const [idVerifyComplete, setIdVerifyComplete] = useState(false);
+  const [addrPoaFile,      setAddrPoaFile]      = useState<string | null>(null); // Step 3 proof of address
   // Veriff integration state
   type VerifyMode = "idle" | "loading" | "veriff_iframe" | "manual_review" | "approved" | "declined";
   const [verifyMode, setVerifyMode] = useState<VerifyMode>("idle");
@@ -142,7 +145,7 @@ export default function Compliance() {
 
   // ── Identity verification: start Veriff session ────────────────────────────
   const identityMutation = useMutation({
-    mutationFn: (payload: { documentType: string }) =>
+    mutationFn: (payload: { documentType: string; documentExpiry?: string; issueCountry?: string }) =>
       apiRequest("POST", "/api/kyc/identity/start", payload),
     onSuccess: async (res: any) => {
       const data = await res.json();
@@ -371,6 +374,18 @@ export default function Compliance() {
   }
 
   function handleIdVerifySubmit() {
+    if (!docExpiry) {
+      toast({ title: "Expiry Date Required", description: "Please enter your document's expiry date.", variant: "destructive" });
+      return;
+    }
+    if (new Date(docExpiry) <= new Date()) {
+      toast({ title: "Document Expired", description: "Your document has expired. Please provide a valid, in-date government-issued ID.", variant: "destructive" });
+      return;
+    }
+    if (docType === "passport" && !docIssueCountry) {
+      toast({ title: "Issuing Country Required", description: "Please enter the country that issued your passport.", variant: "destructive" });
+      return;
+    }
     if (!idFrontFile) {
       toast({ title: "Document Required", description: "Please upload your identity document before submitting.", variant: "destructive" });
       return;
@@ -380,7 +395,7 @@ export default function Compliance() {
       return;
     }
     setVerifyMode("loading");
-    identityMutation.mutate({ documentType: docType });
+    identityMutation.mutate({ documentType: docType, documentExpiry: docExpiry, issueCountry: docIssueCountry || undefined });
   }
 
   function handleCompleteRiskAssessment() {
@@ -871,6 +886,41 @@ export default function Compliance() {
                             <div className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">{dl.hint}</div>
                           </div>
 
+                          {/* Document details — expiry + issuing country */}
+                          <div className="bg-white border rounded-xl p-4 space-y-3">
+                            <h4 className="font-semibold text-sm">Document details</h4>
+                            <p className="text-xs text-muted-foreground">Required before submission — expired documents are rejected automatically.</p>
+                            <div className={`grid gap-3 ${docType === "passport" ? "grid-cols-2" : "grid-cols-1"}`}>
+                              <div>
+                                <Label className="text-xs">Document expiry date <span className="text-red-500">*</span></Label>
+                                <input
+                                  type="date"
+                                  value={docExpiry}
+                                  onChange={e => setDocExpiry(e.target.value)}
+                                  min={new Date().toISOString().split("T")[0]}
+                                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring mt-1"
+                                />
+                                {docExpiry && new Date(docExpiry) <= new Date() && (
+                                  <p className="text-xs text-red-600 mt-0.5 flex items-center gap-1">
+                                    <AlertTriangle className="w-3 h-3" /> Document has expired — you must use a current document
+                                  </p>
+                                )}
+                              </div>
+                              {docType === "passport" && (
+                                <div>
+                                  <Label className="text-xs">Country of issue <span className="text-red-500">*</span></Label>
+                                  <Input
+                                    placeholder="e.g. Australia, China, UK"
+                                    value={docIssueCountry}
+                                    onChange={e => setDocIssueCountry(e.target.value)}
+                                    className="h-9 text-sm mt-1"
+                                  />
+                                  <p className="text-xs text-muted-foreground mt-0.5">Jurisdiction risk scoring — AUSTRAC requirement</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
                           {/* Document upload zone(s) */}
                           <div className="bg-white border rounded-xl p-4 space-y-3">
                             <h4 className="font-semibold text-sm">Upload your document</h4>
@@ -970,7 +1020,7 @@ export default function Compliance() {
                             {verifyMode === "loading" ? "Starting verification…" : "Submit for verification"}
                           </Button>
                           <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-                            <Lock className="w-3 h-3" /> 256-bit encrypted — data handled under the AMAX Privacy Policy &amp; AML/CTF Act 2006
+                            <Lock className="w-3 h-3" /> Your documents are encrypted in transit and stored securely by our KYC provider in accordance with the Australian Privacy Act 1988.
                           </p>
                         </div>
                       )}
@@ -1013,7 +1063,7 @@ export default function Compliance() {
                             />
                           </div>
                           <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-                            <Lock className="w-3 h-3" /> 256-bit encrypted — processed by Veriff under AUSTRAC AML/CTF Act 2006 obligations
+                            <Lock className="w-3 h-3" /> Your documents are encrypted in transit and stored securely by our KYC provider in accordance with the Australian Privacy Act 1988 and AML/CTF Act 2006.
                           </p>
                         </div>
                       )}
@@ -1081,25 +1131,142 @@ export default function Compliance() {
 
                       {/* Declined */}
                       {verifyMode === "declined" && (
-                        <div className="px-4 pb-5">
+                        <div className="px-4 pb-5 space-y-3">
                           <div className="bg-red-50 border border-red-200 rounded-xl p-5 space-y-3">
                             <div className="flex items-center gap-3">
                               <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0" />
                               <div>
                                 <p className="font-semibold text-red-900">Verification Unsuccessful</p>
                                 <p className="text-sm text-red-700">
-                                  We were unable to verify your identity. Please contact{" "}
-                                  <a href="mailto:info@amaxglobal.com.au" className="underline">info@amaxglobal.com.au</a>{" "}
-                                  for assistance.
+                                  Your identity could not be verified automatically. Common reasons include:
                                 </p>
                               </div>
                             </div>
-                            <Button variant="outline" size="sm" className="w-full" onClick={() => setVerifyMode("idle")}>
-                              Try Again
+                            <ul className="text-xs text-red-700 space-y-1 pl-2">
+                              {[
+                                "Document image was blurry or partially obscured — please retake in good lighting",
+                                "Name on document does not match your registered account name",
+                                "Document is expired or from a country not currently accepted",
+                                "Selfie did not match the photo on your ID — ensure your face is clearly visible",
+                              ].map(r => (
+                                <li key={r} className="flex items-start gap-1.5">
+                                  <span className="text-red-400 mt-0.5">•</span>{r}
+                                </li>
+                              ))}
+                            </ul>
+                            <p className="text-xs text-red-600">
+                              If the problem persists, contact our compliance team at{" "}
+                              <a href="mailto:info@amaxglobal.com.au" className="underline font-medium">info@amaxglobal.com.au</a>.
+                            </p>
+                            <Button className="w-full bg-gray-900 hover:bg-gray-800 text-white" onClick={() => { setVerifyMode("idle"); setIdFrontFile(null); setIdBackFile(null); setSelfieFile(null); }}>
+                              Try Again with Better Documents
                             </Button>
                           </div>
                         </div>
                       )}
+                    </div>
+                  );
+                }
+
+                // ── Step 3 expanded address verification card ───────────────
+                if (def.id === 3 && status === "in_progress") {
+                  return (
+                    <div key={def.id} className="border-2 border-yellow-300 bg-yellow-50 rounded-xl overflow-hidden">
+                      {/* Header */}
+                      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-yellow-500">
+                          <MapPin className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-gray-400 font-medium">Step 3 of 5</span>
+                            <h3 className="font-semibold text-gray-900">Address Verification</h3>
+                            <Badge className="bg-yellow-100 text-yellow-800">In Progress</Badge>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">Required under AUSTRAC CDD — your residential address must be verified by a third-party document</p>
+                        </div>
+                      </div>
+
+                      <div className="px-4 pb-5 space-y-4">
+                        {/* Why is this needed */}
+                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2 text-xs text-blue-800">
+                          <Shield className="w-4 h-4 flex-shrink-0 mt-0.5 text-blue-600" />
+                          <span>
+                            <strong>AUSTRAC CDD requirement:</strong> Simply providing an address during registration is not sufficient. You must verify it with an independent document dated within the last 3 months.
+                          </span>
+                        </div>
+
+                        {/* Accepted documents */}
+                        <div className="bg-white border rounded-xl p-4 space-y-3">
+                          <h4 className="font-semibold text-sm">Accepted proof of address documents</h4>
+                          <div className="grid grid-cols-1 gap-2">
+                            {[
+                              { emoji: "💡", doc: "Utility bill", detail: "Electricity, gas, water, or internet — must show your name and address" },
+                              { emoji: "🏦", doc: "Bank statement", detail: "From an Australian or internationally recognised bank" },
+                              { emoji: "🏛️", doc: "Government letter", detail: "ATO, Centrelink, Medicare, or local council correspondence" },
+                              { emoji: "📄", doc: "Lease agreement", detail: "Signed tenancy agreement showing current address" },
+                            ].map(item => (
+                              <div key={item.doc} className="flex items-start gap-2.5 text-xs text-gray-700">
+                                <span className="text-base flex-shrink-0 mt-0.5">{item.emoji}</span>
+                                <div>
+                                  <span className="font-medium">{item.doc}</span>
+                                  <span className="text-muted-foreground"> — {item.detail}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800 flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                            Document must be issued within the <strong>last 3 months</strong>. Older documents will not be accepted.
+                          </div>
+                        </div>
+
+                        {/* Upload zone */}
+                        <div className="bg-white border rounded-xl p-4 space-y-3">
+                          <h4 className="font-semibold text-sm">Upload your proof of address</h4>
+                          <p className="text-xs text-muted-foreground">JPG, PNG or PDF — max 10 MB. Ensure the full document is visible, including date and your name.</p>
+                          <label htmlFor="kyc-poa-upload" className="cursor-pointer block">
+                            <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${
+                              addrPoaFile ? "border-green-400 bg-green-50" : "border-gray-300 hover:border-blue-400"
+                            }`}>
+                              <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                              {addrPoaFile ? (
+                                <>
+                                  <p className="text-sm font-medium text-green-700">✓ {addrPoaFile}</p>
+                                  <p className="text-xs text-green-600">Tap to replace</p>
+                                </>
+                              ) : (
+                                <>
+                                  <p className="text-sm font-medium">Click to upload or drag &amp; drop</p>
+                                  <p className="text-xs text-muted-foreground">Utility bill, bank statement, or government letter</p>
+                                </>
+                              )}
+                            </div>
+                            <input
+                              id="kyc-poa-upload"
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png,.heic"
+                              className="hidden"
+                              onChange={e => {
+                                const f = e.target.files?.[0];
+                                if (f) {
+                                  setAddrPoaFile(f.name);
+                                  setStepFiles(prev => ({ ...prev, [3]: f.name }));
+                                  toast({
+                                    title: "Proof of Address Received",
+                                    description: `${f.name} submitted. Our compliance team will verify it within 1–2 business days.`,
+                                  });
+                                  e.target.value = "";
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+
+                        <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
+                          <Lock className="w-3 h-3" /> Your documents are encrypted in transit and stored securely in accordance with the Australian Privacy Act 1988.
+                        </p>
+                      </div>
                     </div>
                   );
                 }
