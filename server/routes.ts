@@ -4040,7 +4040,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agreementSigned: true,
         agreementSignedAt: signedAt,
         agreementRef,
-        agreementVersion: "v2.5",
+        agreementVersion: "v2.0",
         agreementSignature: data.signature.trim(),
         // Capture declarations included in the agreement body
         sanctionsDeclaration: true,
@@ -4049,7 +4049,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }).where(eq(users.id, userId));
 
       await writeAuditLog(userId, "agreement_signed", "user", String(userId), {
-        agreementRef, agreementVersion: "v2.5", signature: data.signature.trim(),
+        agreementRef, agreementVersion: "v2.0", signature: data.signature.trim(),
       }, null);
 
       res.json({ success: true, agreementRef, signedAt: signedAt.toISOString() });
