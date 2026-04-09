@@ -1405,9 +1405,8 @@ export default function Wallets() {
                   <p className="text-sm font-medium">💱 Option 2 — Convert to AUD, then bank withdraw</p>
                   <div className="text-xs text-muted-foreground space-y-0.5">
                     <p>Convert {selectedWallet?.currency} to AUD via the Crypto Exchange, then withdraw to your verified Australian bank account via Bank Transfer or PayID.</p>
-                    <p className="mt-1">• Bank account must be held in the same legal name as your verified AMAX account</p>
-                    <p>• Third-party withdrawals are not permitted</p>
-                    <p>• All fiat withdrawals are monitored for AML/CTF compliance and are auditable under AUSTRAC regulations</p>
+                    <p className="mt-1">• Bank account must be registered in your KYC-verified legal name — third-party transfers are not permitted</p>
+                    <p>• All fiat transfers are monitored for AML/CTF compliance and are auditable under AUSTRAC regulations</p>
                   </div>
                   <Button
                     variant="outline"
@@ -1542,7 +1541,7 @@ export default function Wallets() {
                       <p>• Funds transferred to your nominated Australian bank account</p>
                       <p>• Processing time: 1–3 business days</p>
                       <p>• Withdrawal fee applies (see fee schedule)</p>
-                      <p>• Bank account must be held in the same legal name as your verified AMAX account — third-party transfers are not permitted</p>
+                      <p>• Bank account must be registered in your KYC-verified legal name — third-party transfers are not permitted</p>
                       <p>• All outbound transfers are subject to AML/CTF monitoring and may be reported to AUSTRAC where required by law</p>
                     </div>
                   </div>
