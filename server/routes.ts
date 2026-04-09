@@ -209,9 +209,11 @@ const fxExchangeSchema = z.object({
   // external wallet address is required for delivery. AMAX does not hold crypto.
   destinationWallet: z.string().max(200).optional(),
   // FATF Travel Rule fields (effective 1 July 2026, AML/CTF Amendment Act 2024):
-  // AMAX is originator VASP and must collect + transmit destination wallet type.
+  // AMAX is originator VASP and must collect + transmit destination wallet type and beneficiary name.
   walletType: z.enum(["custodial", "self_hosted"]).optional(),
   custodianName: z.string().max(120).optional(),
+  // FATF R.16: beneficiary full legal name (the person receiving the crypto at the destination wallet)
+  beneficiaryFullName: z.string().min(2).max(200).optional(),
 }).refine(d => d.fromCurrency !== d.toCurrency, {
   message: "Source and target currencies must differ",
 });
@@ -2436,7 +2438,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.errors[0].message });
       }
-      const { fromCurrency, toCurrency, amount: rawAmount, destinationWallet, walletType, custodianName } = parsed.data;
+      const { fromCurrency, toCurrency, amount: rawAmount, destinationWallet, walletType, custodianName, beneficiaryFullName } = parsed.data;
       const amount = new Decimal(rawAmount);
 
       // Enforce risk-based daily transaction limit
@@ -2535,11 +2537,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           blockchainTxHash: null,
           assetType: classifyAssetType(fromCurrency, toCurrency),
           direction: "exchange",
-          // AUSTRAC FATF Travel Rule: beneficiaryAddress = destination wallet
-          // beneficiaryName = wallet type + custodian (for audit trail)
+          // AUSTRAC FATF Travel Rule: beneficiaryAddress = destination wallet address;
+          // beneficiaryName = beneficiary full legal name (FATF R.16 mandatory element)
           beneficiaryAddress: destinationWallet ?? null,
-          beneficiaryName: isFiatToCrypto && walletType
-            ? (walletType === "self_hosted" ? "Self-hosted wallet" : `Custodial — ${custodianName ?? "unknown"}`)
+          beneficiaryName: isFiatToCrypto
+            ? [
+                beneficiaryFullName ?? null,
+                walletType === "self_hosted"
+                  ? "(Self-hosted wallet)"
+                  : walletType === "custodial"
+                  ? `(Custodial — ${custodianName ?? "unknown institution"})`
+                  : null,
+              ].filter(Boolean).join(" ") || null
             : null,
           riskFlag: false,
           reviewStatus: "clear",

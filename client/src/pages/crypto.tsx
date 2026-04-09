@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useFxRates, useFxRate } from "@/hooks/use-fx-rates";
 import { useWallets } from "@/hooks/use-portfolio";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -91,6 +91,10 @@ export default function Crypto() {
   const [originatorWallet,        setOriginatorWallet]        = useState("");
   const [originatorWalletType,    setOriginatorWalletType]    = useState<"" | "custodial" | "self_hosted">("");
   const [originatorCustodianName, setOriginatorCustodianName] = useState("");
+  // Travel Rule — beneficiary/originator legal names (FATF R.16 mandatory elements)
+  const [beneficiaryName,  setBeneficiaryName]  = useState("");
+  const [originatorName,   setOriginatorName]   = useState("");
+
   // SELL acknowledgements — 5 discrete checkboxes
   const [sellAck, setSellAck] = useState({
     wallet: false, walletType: false, notConfirmed: false, amlCtf: false, irreversible: false,
@@ -107,10 +111,20 @@ export default function Crypto() {
   // Sell-side: indicative rate for sellCurrency → AUD (e.g. BTC/AUD)
   const { data: sellFxRate, isLoading: sellRateLoading } = useFxRate(sellCurrency, "AUD");
 
+  // Fetch KYC profile to auto-populate FATF R.16 beneficiary/originator name fields
+  const { data: kycProfile } = useQuery<{ fullLegalName?: string }>({ queryKey: ["/api/kyc/profile"] });
+  useEffect(() => {
+    if (kycProfile?.fullLegalName) {
+      setBeneficiaryName(prev => prev || kycProfile.fullLegalName!);
+      setOriginatorName(prev => prev || kycProfile.fullLegalName!);
+    }
+  }, [kycProfile?.fullLegalName]);
+
   const exchangeMutation = useMutation({
     mutationFn: async (data: {
       fromCurrency: string; toCurrency: string; amount: number;
       destinationWallet: string; walletType?: string; custodianName?: string;
+      beneficiaryFullName?: string;
     }) => {
       const res = await apiRequest("POST", "/api/fx-exchange", data);
       if (!res.ok) {
@@ -189,6 +203,10 @@ export default function Crypto() {
       toast({ title: "Custodian Name Required", description: "Please enter the name of the exchange or institution that holds the destination wallet.", variant: "destructive" });
       return;
     }
+    if (!beneficiaryName.trim()) {
+      toast({ title: "Beneficiary Name Required", description: "Please enter the full legal name of the person who will receive the digital assets. This is required under the FATF Travel Rule.", variant: "destructive" });
+      return;
+    }
     if (rateIsStale) {
       const rateAge = (fxRate as any)?.rateAgeMinutes ?? 0;
       toast({ title: "Rate Expired — Please Wait", description: `Rate is ${rateAge} minute${rateAge !== 1 ? "s" : ""} old. Rates must be within 5 minutes. A fresh rate will load automatically.`, variant: "destructive" });
@@ -208,6 +226,7 @@ export default function Crypto() {
       destinationWallet,
       walletType: destWalletType,
       custodianName: destWalletType === "custodial" ? destCustodianName : undefined,
+      beneficiaryFullName: beneficiaryName.trim() || undefined,
     });
   };
 
@@ -451,6 +470,24 @@ export default function Crypto() {
                         />
                       </div>
                     )}
+                    {/* FATF R.16 — Beneficiary full legal name (mandatory Travel Rule element) */}
+                    <div className="space-y-1 pt-1 border-t border-blue-200">
+                      <Label htmlFor="beneficiary-name" className="text-xs text-blue-800 font-medium">
+                        Beneficiary Full Legal Name <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="beneficiary-name"
+                        value={beneficiaryName}
+                        onChange={e => setBeneficiaryName(e.target.value)}
+                        placeholder="Full legal name of the person receiving the digital assets"
+                        className="text-sm h-9"
+                      />
+                      <p className="text-xs text-blue-700">
+                        Under FATF Recommendation 16, AMAX must record the beneficiary's full legal name alongside
+                        the destination wallet address. If you are sending to your own wallet, enter your full legal
+                        name as it appears on your government-issued ID.
+                      </p>
+                    </div>
                   </div>
 
                   {/* ─── Breakdown ─── */}
@@ -731,6 +768,25 @@ export default function Crypto() {
                       )}
                     </div>
 
+                    {/* FATF R.16 — Originator full legal name (mandatory Travel Rule element) */}
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-1.5">
+                      <Label htmlFor="originator-name" className="text-xs font-semibold text-blue-800 flex items-center gap-1">
+                        <Shield className="w-3 h-3" /> Originator Full Legal Name <span className="text-red-500">*</span>
+                        <span className="font-normal text-blue-600 ml-1">(FATF Travel Rule)</span>
+                      </Label>
+                      <Input
+                        id="originator-name"
+                        value={originatorName}
+                        onChange={e => setOriginatorName(e.target.value)}
+                        placeholder="Your full legal name as it appears on your government-issued ID"
+                        className="text-sm h-9"
+                      />
+                      <p className="text-xs text-blue-700">
+                        Under FATF Recommendation 16, AMAX must record the originator's full legal name alongside
+                        the sending wallet address before transmitting Travel Rule data to Independent Reserve.
+                      </p>
+                    </div>
+
                     {/* Email field for written confirmation */}
                     <div className="space-y-1.5">
                       <Label htmlFor="sell-email" className="text-xs font-medium">
@@ -795,6 +851,10 @@ export default function Crypto() {
                           toast({ title: "Institution Name Required", description: "Please enter the name of the exchange or institution holding your sending wallet.", variant: "destructive" });
                           return;
                         }
+                        if (!originatorName.trim()) {
+                          toast({ title: "Originator Name Required", description: "Your full legal name is required under the FATF Travel Rule. Please enter it above.", variant: "destructive" });
+                          return;
+                        }
                         if (!sellEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sellEmail)) {
                           toast({ title: "Valid Email Required", description: "A valid email address is required so we can send your written rate confirmation and deposit address.", variant: "destructive" });
                           return;
@@ -807,7 +867,7 @@ export default function Crypto() {
                           : "TBD";
                         const subject = encodeURIComponent(`AMAX Crypto SELL Enquiry — ${sellAmount} ${sellCurrency}`);
                         const body = encodeURIComponent(
-                          `Hello AMAX Compliance Team,\n\nI would like to sell the following digital assets via Independent Reserve:\n\nAsset: ${sellCurrency}\nAmount: ${sellAmount}\nIndicative AUD proceeds: ${estProceeds}\n\nTravel Rule Information:\nSending wallet address: ${originatorWallet}\nSending wallet type: ${walletTypeStr}\n\nPlease confirm the rate, verify my KYC, and instruct Independent Reserve to provide a one-time deposit address for my transaction.\n\nI understand this is an enquiry only. I will not send any crypto until I receive written confirmation from AMAX with Independent Reserve's deposit address.\n\nReply to: ${sellEmail}\n\nThank you.`
+                          `Hello AMAX Compliance Team,\n\nI would like to sell the following digital assets via Independent Reserve:\n\nAsset: ${sellCurrency}\nAmount: ${sellAmount}\nIndicative AUD proceeds: ${estProceeds}\n\nFATF Travel Rule Information (FATF R.16):\nOriginator full legal name: ${originatorName.trim()}\nSending wallet address: ${originatorWallet}\nSending wallet type: ${walletTypeStr}\n\nPlease confirm the rate, verify my KYC, and instruct Independent Reserve to provide a one-time deposit address for my transaction.\n\nI understand this is an enquiry only. I will not send any crypto until I receive written confirmation from AMAX with Independent Reserve's deposit address.\n\nReply to: ${sellEmail}\n\nThank you.`
                         );
                         window.open(`mailto:info@amaxglobal.com.au?subject=${subject}&body=${body}`, "_self");
                       }}

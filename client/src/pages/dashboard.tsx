@@ -184,8 +184,8 @@ export default function Dashboard() {
               <Wallet className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="font-semibold text-gray-900">eWallet</p>
-              <p className="text-xs text-gray-500">Balances &amp; deposits</p>
+              <p className="font-semibold text-gray-900">Accounts</p>
+              <p className="text-xs text-gray-500">Balances &amp; transfers</p>
             </div>
           </CardContent>
         </Card>
