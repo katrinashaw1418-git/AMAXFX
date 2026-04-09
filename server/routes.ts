@@ -915,22 +915,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await db.execute(sql.raw(`
       CREATE UNIQUE INDEX IF NOT EXISTS unique_wallet_user_currency ON wallets (user_id, currency);
     `));
-    // Seed demo user if not present (handles fresh production DB)
-    const demoUser = await storage.getUserByUsername("Johnchen");
-    if (!demoUser) {
+    // Seed/sync demo user — always ensure Johnchen exists with correct password
+    {
       const hashed = await hashPassword("Johnchen888");
-      await db.insert(users).values({
-        username: "Johnchen",
-        email: "demo@amaxglobal.com.au",
-        password: hashed,
-        firstName: "John",
-        lastName: "Chen",
-        kycStatus: "verified",
-        userTier: "premium",
-      }).onConflictDoNothing();
-    } else if (!demoUser.password.startsWith("$2")) {
-      const hashed = await hashPassword(demoUser.password);
-      await storage.updateUser(demoUser.id, { password: hashed });
+      // Try to find by email first (handles username case changes)
+      const [existingByEmail] = await db.select().from(users)
+        .where(eq(users.email, "demo@amaxglobal.com.au"));
+      if (existingByEmail) {
+        // Update username and password to current expected values
+        await db.update(users)
+          .set({ username: "Johnchen", password: hashed, kycStatus: "verified", userTier: "premium" })
+          .where(eq(users.email, "demo@amaxglobal.com.au"));
+      } else {
+        await db.insert(users).values({
+          username: "Johnchen",
+          email: "demo@amaxglobal.com.au",
+          password: hashed,
+          firstName: "John",
+          lastName: "Chen",
+          kycStatus: "verified",
+          userTier: "premium",
+        }).onConflictDoNothing();
+      }
     }
   }
 
