@@ -87,7 +87,7 @@ export default function Register() {
     e.preventDefault();
     setError(null);
     if (!firstName.trim() || !lastName.trim()) { setError("Please enter your full name."); return; }
-    if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
+    if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) { setError("Password must be at least 8 characters and include at least one letter and one number."); return; }
     setIsLoading(true);
     try {
       await register(firstName.trim(), lastName.trim(), email.trim(), password);
@@ -278,8 +278,8 @@ export default function Register() {
                     {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                {password.length > 0 && password.length < 8 && (
-                  <p className="text-xs text-amber-400">Password must be at least 8 characters</p>
+                {password.length > 0 && (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) && (
+                  <p className="text-xs text-amber-400">Password must be at least 8 characters and include at least one letter and one number. Special characters are optional.</p>
                 )}
               </div>
 
