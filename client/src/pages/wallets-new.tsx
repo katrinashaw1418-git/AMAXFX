@@ -393,7 +393,7 @@ export default function Wallets() {
       setCryptoWithdrawAmount('');
     },
     onError: (error: any) => {
-      toast({ title: 'Withdrawal Failed', description: error.message, variant: 'destructive' });
+      toast({ title: 'Transfer Failed', description: 'The transfer could not be processed by our banking partner. Please try again or contact support.', variant: 'destructive' });
     },
   });
 
@@ -461,11 +461,11 @@ export default function Wallets() {
       const errorMessage = error.message || "Please try again later.";
       
       // Voice narration
-      narrateError(`Withdrawal failed: ${errorMessage}`);
+      narrateError(`Transfer could not be processed: ${errorMessage}`);
       
       toast({
-        title: "Withdrawal Failed",
-        description: errorMessage,
+        title: "Transfer Failed",
+        description: `The transfer could not be processed by our regulated banking partner. ${errorMessage}`,
         variant: "destructive",
       });
     }
@@ -720,6 +720,7 @@ export default function Wallets() {
             <div className="flex items-center gap-2">
               <DollarSign className="w-5 h-5" />
               Your Account Balances
+                <span className="text-xs font-normal text-muted-foreground ml-1">(held with regulated partners)</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-normal text-muted-foreground">Show values in:</span>
@@ -1589,7 +1590,7 @@ export default function Wallets() {
                     </div>
                   </div>
                   <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
-                    ⏳ Transfer-out requests are reviewed before release. Funds will be sent from the regulated partner account to your PayID once approved — typically within 1 business day.
+                    ⏳ Transfer-out requests are subject to review before being processed by our regulated banking partner. Funds will be sent from the partner account to your PayID — typically within 1 business day.
                   </p>
                 </div>
               )}
@@ -1640,18 +1641,27 @@ export default function Wallets() {
                   </div>
                 </div>
               )}
+              {withdrawMethod === 'bank_transfer' && (
+                <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
+                  ⏳ Transfer-out requests are subject to review before being processed by our regulated banking partner. Funds will be sent to your nominated account — typically 1–3 business days.
+                </p>
+              )}
               <div className="flex space-x-2 pt-2">
                 <Button
                   onClick={handleWithdraw}
                   disabled={withdrawMutation.isPending}
                   className="flex-1 h-8 text-sm"
                 >
-                  {withdrawMutation.isPending ? "Processing..." : "Confirm Withdrawal"}
+                  {withdrawMutation.isPending ? "Processing..." : "Confirm Transfer"}
                 </Button>
                 <Button variant="outline" className="h-8 text-sm" onClick={() => setWithdrawModalOpen(false)}>
                   Cancel
                 </Button>
               </div>
+              {/* Modal footer persistent disclosure (Item 1) */}
+              <p className="text-xs text-center text-muted-foreground pt-1 border-t">
+                Transfers are executed by regulated financial partners. AMAX does not hold client funds.
+              </p>
             </div>
           )}
         </DialogContent>
