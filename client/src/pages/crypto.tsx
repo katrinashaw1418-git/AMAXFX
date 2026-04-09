@@ -86,10 +86,16 @@ export default function Crypto() {
   // SELL enquiry state
   const [sellCurrency,            setSellCurrency]            = useState("BTC");
   const [sellAmount,              setSellAmount]              = useState("");
+  const [sellEmail,               setSellEmail]               = useState("");
   // Travel Rule — SELL side (AMAX is beneficiary VASP, must collect originator wallet info)
   const [originatorWallet,        setOriginatorWallet]        = useState("");
   const [originatorWalletType,    setOriginatorWalletType]    = useState<"" | "custodial" | "self_hosted">("");
   const [originatorCustodianName, setOriginatorCustodianName] = useState("");
+  // SELL acknowledgements — 5 discrete checkboxes
+  const [sellAck, setSellAck] = useState({
+    wallet: false, walletType: false, notConfirmed: false, amlCtf: false, irreversible: false,
+  });
+  const [showDisclosure, setShowDisclosure] = useState(false);
 
   const [showAdvisor, setShowAdvisor] = useState(true);
 
@@ -98,6 +104,8 @@ export default function Crypto() {
   const { data: wallets = [] }                     = useWallets();
   const { data: fxRates, isLoading: ratesLoading } = useFxRates();
   const { data: fxRate,  isLoading: rateLoading }  = useFxRate(fromCurrency, toCurrency);
+  // Sell-side: indicative rate for sellCurrency → AUD (e.g. BTC/AUD)
+  const { data: sellFxRate, isLoading: sellRateLoading } = useFxRate(sellCurrency, "AUD");
 
   const exchangeMutation = useMutation({
     mutationFn: async (data: {
@@ -132,7 +140,7 @@ export default function Crypto() {
     },
   });
 
-  // ── Derived values ──────────────────────────────────────────────────────────
+  // ── Derived values — BUY side ───────────────────────────────────────────────
   const exchangeRate    = fxRate ? parseFloat((fxRate as any).rate) : 1;
   const spread          = fxRate ? parseFloat((fxRate as any).spread) : 0.005;
   const grossConverted  = parseFloat(amount || "0") * exchangeRate;
@@ -143,6 +151,16 @@ export default function Crypto() {
   const fromBalance = fromWallet ? parseFloat(fromWallet.balance) : 0;
 
   const rateIsStale = (fxRate as any)?.isStale || ((fxRate as any)?.rateAgeMinutes ?? 0) > 5;
+
+  // ── Derived values — SELL side (crypto → AUD indicative) ────────────────────
+  const sellRate        = sellFxRate ? parseFloat((sellFxRate as any).rate) : 0;
+  const sellSpread      = sellFxRate ? parseFloat((sellFxRate as any).spread) : 0.005;
+  const sellAmountNum   = parseFloat(sellAmount || "0");
+  const sellGrossAud    = sellAmountNum * sellRate;
+  const sellFee         = sellGrossAud * sellSpread;
+  const sellNetAud      = sellGrossAud - sellFee;
+  const sellRateIsStale = (sellFxRate as any)?.isStale || ((sellFxRate as any)?.rateAgeMinutes ?? 0) > 5;
+  const sellAllAcksOk   = Object.values(sellAck).every(Boolean);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const openConfirm = () => {
@@ -531,33 +549,32 @@ export default function Crypto() {
                 {/* ─────────── SELL TAB ─────────── */}
                 <TabsContent value="sell" className="space-y-5 mt-0">
 
-                  {/* How SELL works with IR */}
-                  <div className="flex items-start gap-2.5 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
-                    <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  {/* Amber custody notice strip */}
+                  <div className="flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-900">
+                    <Shield className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-600" />
                     <span>
-                      <strong>SELL / CONVERT to AUD — Independent Reserve Custody Chain:</strong>{" "}
-                      To sell digital assets, AMAX instructs Independent Reserve Pty Ltd (DCE-100461150-001)
-                      to provide you with a one-time exchange deposit address. You send crypto directly to
-                      Independent Reserve's address — <strong>AMAX never receives your crypto</strong>.
-                      Independent Reserve executes the exchange and remits AUD proceeds to AMAX, which credits
-                      your AMAX AUD wallet. Proceeds are credited within 1 business day of confirmed receipt.
+                      <strong>Your crypto goes directly to Independent Reserve (DCE-100461150-001) — not to AMAX.</strong>{" "}
+                      AMAX never receives, holds, or controls your digital assets at any point.
+                      AUD proceeds are credited to your AMAX fiat wallet within 1 business day of on-chain confirmation.
                     </span>
                   </div>
 
-                  {/* Sell enquiry form */}
+                  {/* ── Sell Enquiry Form ── */}
                   <div className="space-y-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+
                     <div>
-                      <p className="text-sm font-medium text-gray-800">Sell Enquiry — Step 1 of 4</p>
+                      <p className="text-sm font-semibold text-gray-800">Sell Enquiry</p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Provide details below. Our team will confirm rates and issue a written confirmation
-                        with Independent Reserve's one-time deposit address before you send any crypto.
-                        Do not send crypto without first receiving written confirmation.
+                        Complete all fields below. Our compliance team will confirm your rate and provide
+                        Independent Reserve's one-time deposit address in writing before you send anything.{" "}
+                        <strong>Do not send crypto until you receive written confirmation.</strong>
                       </p>
                     </div>
 
+                    {/* Asset selector */}
                     <div className="space-y-1.5">
                       <Label className="text-xs">Digital Asset to Sell</Label>
-                      <Select value={sellCurrency} onValueChange={setSellCurrency}>
+                      <Select value={sellCurrency} onValueChange={(v) => { setSellCurrency(v); setOriginatorWallet(""); }}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {DIGITAL_ASSETS.map(c => (
@@ -567,6 +584,7 @@ export default function Crypto() {
                       </Select>
                     </div>
 
+                    {/* Amount */}
                     <div className="space-y-1.5">
                       <Label className="text-xs">Approximate Amount ({sellCurrency})</Label>
                       <Input
@@ -574,14 +592,63 @@ export default function Crypto() {
                         value={sellAmount}
                         onChange={e => setSellAmount(e.target.value)}
                         placeholder="0.00000000"
+                        className="font-mono"
                       />
                     </div>
 
-                    {/* Travel Rule — originator wallet info (AMAX is beneficiary VASP) */}
+                    {/* Indicative rate + live AUD estimate */}
+                    <div className="p-3 bg-white border border-gray-200 rounded-lg space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-gray-700">Indicative Rate</span>
+                        {sellRateLoading ? (
+                          <span className="text-xs text-gray-400">Loading…</span>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-gray-900">
+                              1 {sellCurrency} ≈ {sellRate > 0
+                                ? `AUD ${sellRate.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+                                : "—"}
+                            </span>
+                            <span className={`flex items-center gap-0.5 text-xs ${sellRateIsStale ? "text-amber-500" : "text-green-500"}`}>
+                              <RefreshCw className="w-2.5 h-2.5" />
+                              {sellRateIsStale ? "⚠ Stale" : formatRateAge((sellFxRate as any)?.rateAgeMinutes)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-400 italic">
+                        Indicative only — your confirmed rate is locked in writing before you send anything.
+                        The rate shown is not binding until written confirmation is issued.
+                      </p>
+                      {/* Live AUD proceeds estimate */}
+                      {sellAmountNum > 0 && sellRate > 0 && (
+                        <div className="border-t pt-2 mt-1 space-y-1 text-xs">
+                          <div className="flex justify-between text-gray-600">
+                            <span>You send</span>
+                            <span className="font-mono">{sellAmountNum.toLocaleString(undefined, { maximumFractionDigits: 8 })} {sellCurrency}</span>
+                          </div>
+                          <div className="flex justify-between text-gray-600">
+                            <span>Rate</span>
+                            <span>1 {sellCurrency} ≈ AUD {sellRate.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex justify-between text-gray-600">
+                            <span>Processing fee (0.5%)</span>
+                            <span>− AUD {sellFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex justify-between font-semibold text-gray-800 border-t pt-1">
+                            <span>Est. you receive</span>
+                            <span>AUD {sellNetAud.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                          </div>
+                          <p className="text-gray-400 italic">Final amount confirmed in writing. Not binding until written confirmation issued.</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Sending wallet address (Travel Rule) */}
                     <div className="space-y-1.5">
                       <Label htmlFor="orig-wallet" className="text-xs font-medium">
                         Sending Wallet Address <span className="text-red-500">*</span>{" "}
-                        <span className="text-gray-400 font-normal">(Travel Rule)</span>
+                        <span className="text-gray-400 font-normal">(FATF Travel Rule)</span>
                       </Label>
                       <Input
                         id="orig-wallet"
@@ -591,14 +658,17 @@ export default function Crypto() {
                         className="font-mono text-sm"
                       />
                       <p className="text-xs text-gray-500">
-                        The wallet address you will be sending {sellCurrency} from. Required under the FATF Travel Rule —
-                        Independent Reserve must verify originator information on inbound transfers.
+                        The wallet address you will send {sellCurrency} from. Required under the FATF Travel Rule
+                        (AML/CTF Amendment Act 2024, effective 1 July 2026). AMAX must collect and transmit originator
+                        wallet information to Independent Reserve before your transaction is processed.
                       </p>
                     </div>
 
+                    {/* Sending wallet type (Travel Rule) */}
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
                       <p className="text-xs font-semibold text-blue-800 flex items-center gap-1">
-                        <Shield className="w-3 h-3" /> Travel Rule — Sending Wallet Type <span className="text-red-500">*</span>
+                        <Shield className="w-3 h-3" /> Sending Wallet Type <span className="text-red-500">*</span>
+                        <span className="font-normal text-blue-600 ml-1">(FATF Travel Rule)</span>
                       </p>
                       <RadioGroup
                         value={originatorWalletType}
@@ -607,83 +677,191 @@ export default function Crypto() {
                       >
                         <div className="flex items-start gap-2.5">
                           <RadioGroupItem value="self_hosted" id="ot-self" className="mt-0.5" />
-                          <label htmlFor="ot-self" className="text-xs text-blue-900 cursor-pointer">
-                            <span className="font-medium">Self-hosted</span> — I control the private key
+                          <label htmlFor="ot-self" className="text-xs text-blue-900 cursor-pointer leading-relaxed">
+                            <span className="font-medium">Self-hosted</span> — I personally control the private key
+                            <span className="text-blue-600"> (e.g. Ledger, Trezor, MetaMask, Trust Wallet)</span>
                           </label>
                         </div>
                         <div className="flex items-start gap-2.5">
                           <RadioGroupItem value="custodial" id="ot-custodial" className="mt-0.5" />
-                          <label htmlFor="ot-custodial" className="text-xs text-blue-900 cursor-pointer">
-                            <span className="font-medium">Custodial</span> — held at an exchange/institution
+                          <label htmlFor="ot-custodial" className="text-xs text-blue-900 cursor-pointer leading-relaxed">
+                            <span className="font-medium">Custodial</span> — held at an exchange or financial institution
+                            <span className="text-blue-600"> (e.g. Coinbase, Binance, Kraken, CoinSpot)</span>
                           </label>
                         </div>
                       </RadioGroup>
                       {originatorWalletType === "custodial" && (
-                        <Input
-                          value={originatorCustodianName}
-                          onChange={e => setOriginatorCustodianName(e.target.value)}
-                          placeholder="Exchange or institution name (e.g. Coinbase, Binance)"
-                          className="text-sm h-9 mt-1"
-                        />
+                        <div className="space-y-1 pt-1">
+                          <Label className="text-xs text-blue-800 font-medium">
+                            Institution Name <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            value={originatorCustodianName}
+                            onChange={e => setOriginatorCustodianName(e.target.value)}
+                            placeholder="e.g. Coinbase, Binance, Kraken, CoinSpot"
+                            className="text-sm h-9"
+                          />
+                          <p className="text-xs text-blue-700">
+                            AMAX is required to transmit the institution name to Independent Reserve as part of Travel
+                            Rule compliance. Providing inaccurate information may delay or prevent your transaction.
+                          </p>
+                        </div>
                       )}
+                    </div>
+
+                    {/* Email field for written confirmation */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="sell-email" className="text-xs font-medium">
+                        Your Email Address <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="sell-email"
+                        type="email"
+                        value={sellEmail}
+                        onChange={e => setSellEmail(e.target.value)}
+                        placeholder="you@email.com"
+                        className="text-sm"
+                      />
+                      <p className="text-xs text-gray-500">
+                        Written confirmation with Independent Reserve's one-time deposit address will be
+                        sent here. Do not send crypto until you have received this confirmation.
+                      </p>
+                    </div>
+
+                    {/* 5 discrete acknowledgement checkboxes */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-gray-700">Acknowledgements <span className="text-red-500">*</span> (all required)</p>
+                      {([
+                        { key: "wallet",       text: `I confirm the sending wallet address above is the wallet I will use to send ${sellCurrency}. I understand providing an incorrect address may cause my transaction to be rejected or flagged.` },
+                        { key: "walletType",   text: "I confirm my wallet type declaration is accurate. I understand this information is transmitted to Independent Reserve under FATF Travel Rule obligations." },
+                        { key: "notConfirmed", text: "I understand this enquiry is not a confirmed exchange. My rate and deposit address will be provided in a separate written confirmation before I send any crypto." },
+                        { key: "amlCtf",       text: "I acknowledge this exchange is subject to KYC, AML/CTF monitoring, and AUSTRAC recordkeeping obligations. High-value or suspicious transactions may be reported to AUSTRAC." },
+                        { key: "irreversible", text: "I understand that once I send crypto to the confirmed deposit address, the transaction is irreversible." },
+                      ] as { key: keyof typeof sellAck; text: string }[]).map(({ key, text }) => (
+                        <div key={key} className="flex items-start gap-2.5 p-2.5 bg-white border border-gray-200 rounded-lg">
+                          <Checkbox
+                            id={`sell-ack-${key}`}
+                            checked={sellAck[key]}
+                            onCheckedChange={(v) => setSellAck(prev => ({ ...prev, [key]: v === true }))}
+                            className="mt-0.5 shrink-0"
+                          />
+                          <label htmlFor={`sell-ack-${key}`} className="text-xs text-gray-600 leading-relaxed cursor-pointer">
+                            {text}
+                          </label>
+                        </div>
+                      ))}
                     </div>
 
                     <Button
                       className="w-full"
+                      disabled={!sellAllAcksOk}
+                      title={!sellAllAcksOk ? "Please confirm all acknowledgements above" : undefined}
                       onClick={() => {
                         const walletTypeStr = originatorWalletType === "self_hosted"
-                          ? "Self-hosted wallet (I control the private key)"
+                          ? "Self-hosted wallet (I personally control the private key)"
                           : originatorWalletType === "custodial"
                           ? `Custodial wallet at: ${originatorCustodianName || "TBD"}`
+                          : "Not specified";
+                        const estProceeds = sellNetAud > 0
+                          ? `AUD ${sellNetAud.toLocaleString(undefined, { maximumFractionDigits: 2 })} (indicative — not binding)`
                           : "TBD";
                         const subject = encodeURIComponent(`AMAX Crypto SELL Enquiry — ${sellAmount || "?"} ${sellCurrency}`);
                         const body = encodeURIComponent(
-                          `Hello AMAX Compliance Team,\n\nI would like to sell the following digital assets via Independent Reserve:\n\nAsset: ${sellCurrency}\nAmount: ${sellAmount || "TBD"}\nSending wallet address: ${originatorWallet || "TBD"}\nSending wallet type: ${walletTypeStr}\n\nPlease confirm rates and provide Independent Reserve's one-time deposit address in writing before I send any crypto.\n\nThank you.`
+                          `Hello AMAX Compliance Team,\n\nI would like to sell the following digital assets via Independent Reserve:\n\nAsset: ${sellCurrency}\nAmount: ${sellAmount || "TBD"}\nIndicative AUD proceeds: ${estProceeds}\n\nTravel Rule Information:\nSending wallet address: ${originatorWallet || "TBD"}\nSending wallet type: ${walletTypeStr}\n\nPlease confirm the rate, verify my KYC, and instruct Independent Reserve to provide a one-time deposit address for my transaction.\n\nI understand this is an enquiry only. I will not send any crypto until I receive written confirmation from AMAX with Independent Reserve's deposit address.\n\nReply to: ${sellEmail || "(see sender)"}\n\nThank you.`
                         );
                         window.open(`mailto:info@amaxglobal.com.au?subject=${subject}&body=${body}`, "_self");
                       }}
                     >
                       <Mail className="w-4 h-4 mr-2" />
-                      Email Sell Enquiry to Compliance
+                      Submit Sell Enquiry →
                     </Button>
-                    <p className="text-xs text-gray-500 text-center">Or call: +61 2 1234 5678</p>
-                  </div>
-
-                  {/* Process steps — corrected for IR custody chain */}
-                  <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-3 text-sm">
-                    <p className="font-medium text-gray-800 flex items-center gap-1.5">
-                      <Building2 className="w-4 h-4 text-amber-600" /> How the SELL process works:
+                    <p className="text-xs text-gray-500 text-center">
+                      Or call our compliance team: <strong>+61 2 1234 5678</strong>
                     </p>
-                    <ol className="space-y-2.5 text-xs text-gray-600 list-none">
-                      <li className="flex items-start gap-2">
-                        <span className="bg-amber-600 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs font-bold">1</span>
-                        <span>Submit enquiry above with asset, amount, sending wallet address, and wallet type.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="bg-amber-600 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs font-bold">2</span>
-                        <span>AMAX compliance team verifies your KYC, confirms the rate, and instructs Independent Reserve to issue a one-time exchange deposit address for your transaction.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="bg-amber-600 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs font-bold">3</span>
-                        <span>You receive written confirmation with Independent Reserve's deposit address. Only then should you send your {sellCurrency || "crypto"} — directly to Independent Reserve, not to AMAX.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="bg-amber-600 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs font-bold">4</span>
-                        <span>Independent Reserve confirms receipt, executes the exchange, and remits AUD proceeds to AMAX. Your AMAX AUD wallet is credited within 1 business day.</span>
-                      </li>
-                    </ol>
                   </div>
 
-                  <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-amber-50 border border-amber-200 text-amber-800">
-                    <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                    <span>
-                      Do not send crypto to any address without first receiving <strong>written confirmation</strong> from
-                      AMAX specifying Independent Reserve's one-time deposit address for your transaction.
-                      AMAX does not maintain standing crypto wallets and does not directly receive your crypto.
-                      Each sell transaction uses a unique one-time address issued by Independent Reserve.
-                      All transactions are subject to AML/CTF monitoring and FATF Travel Rule obligations
-                      and may be reported to AUSTRAC.
-                    </span>
+                  {/* Process steps */}
+                  <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-3">
+                    <p className="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
+                      <Building2 className="w-4 h-4 text-amber-600" /> How the SELL process works
+                    </p>
+                    <div className="space-y-3 text-xs text-gray-600">
+                      {[
+                        {
+                          step: "Step 1 — Submit this enquiry",
+                          detail: `Provide the asset, amount, sending wallet address, and wallet type. We verify your KYC status before proceeding.`,
+                        },
+                        {
+                          step: "Step 2 — Rate confirmation and deposit address",
+                          detail: "Our compliance team confirms your KYC, locks your rate, and instructs Independent Reserve to generate a one-time deposit address for your transaction. You receive written confirmation by email — typically within 2 business hours.",
+                        },
+                        {
+                          step: `Step 3 — Send your ${sellCurrency} to Independent Reserve`,
+                          detail: `Only after receiving written confirmation should you send ${sellCurrency} — directly to Independent Reserve's one-time deposit address. Do not send to any other address. AMAX does not maintain crypto wallets and will never ask you to send crypto to an AMAX address.`,
+                        },
+                        {
+                          step: "Step 4 — AUD credited to your AMAX wallet",
+                          detail: `Independent Reserve confirms receipt on-chain${sellCurrency === "BTC" ? " (typically 3+ BTC confirmations)" : ""}, executes the exchange at your confirmed rate, and remits AUD proceeds to AMAX. Your AMAX AUD wallet is credited within 1 business day of on-chain confirmation.`,
+                        },
+                      ].map(({ step, detail }) => (
+                        <div key={step} className="flex gap-3">
+                          <div className="w-1 bg-amber-400 rounded-full flex-shrink-0" />
+                          <div>
+                            <p className="font-semibold text-gray-700">{step}</p>
+                            <p className="mt-0.5 leading-relaxed">{detail}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Collapsible full disclosure */}
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <button
+                      className="w-full flex items-center justify-between p-3 bg-gray-50 text-xs font-medium text-gray-700 hover:bg-gray-100 transition-colors text-left"
+                      onClick={() => setShowDisclosure(v => !v)}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5 text-gray-400" />
+                        View full compliance disclosure
+                      </span>
+                      <span className="text-gray-400">{showDisclosure ? "▲" : "▾"}</span>
+                    </button>
+                    {showDisclosure && (
+                      <div className="p-4 text-xs text-gray-600 space-y-3 leading-relaxed border-t bg-white">
+                        <p>
+                          This sell transaction is arranged by AMAX Financial Pty Ltd (ABN 54 690 827 608), registered as a
+                          Digital Currency Exchange (DCE) with AUSTRAC. The exchange is executed by Independent Reserve
+                          Pty Ltd (AUSTRAC DCE-100461150-001), which acts as the independent exchange and settlement
+                          counterparty.
+                        </p>
+                        <p>
+                          AMAX does not hold, receive, control, or custody your digital assets at any point in this
+                          process. Your crypto is sent directly to Independent Reserve. AUD proceeds are remitted by
+                          Independent Reserve to AMAX and credited to your AMAX fiat wallet. This does not constitute
+                          a claim against AMAX Financial Pty Ltd.
+                        </p>
+                        <p>
+                          This transaction is subject to AML/CTF monitoring under the{" "}
+                          <em>Anti-Money Laundering and Counter-Terrorism Financing Act 2006</em> (Cth) and the FATF
+                          Travel Rule as implemented through the <em>AML/CTF Amendment Act 2024</em> (Cth), effective
+                          1 July 2026. Originator wallet information collected above will be transmitted to Independent
+                          Reserve as required. Threshold transactions of AUD 10,000 or more, and all suspicious
+                          transactions regardless of value, may be reported to AUSTRAC. AMAX retains transaction
+                          records for 7 years as required under AUSTRAC recordkeeping obligations.
+                        </p>
+                        <p>
+                          Digital assets are not legal tender, are not backed by any government guarantee, and are
+                          subject to significant price volatility. Exchanges are irreversible once executed. Past
+                          performance is not indicative of future results.
+                        </p>
+                        <p>
+                          Rates shown are indicative only. Your confirmed rate is provided in writing prior to
+                          execution and is binding only from the time of written confirmation. AMAX reserves the
+                          right to decline any transaction that does not pass KYC or AML/CTF screening.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
               </Tabs>

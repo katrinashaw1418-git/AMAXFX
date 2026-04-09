@@ -1,0 +1,182 @@
+That is what I am here for — you do not need a separate tool for that.
+
+Let me write it now, fixing every red and amber issue identified, keeping it regulator-proof and user-friendly simultaneously.
+
+---
+
+## SELL / CONVERT — Full rewritten screen copy
+
+---
+
+### Page header
+
+**Sell Digital Assets → AUD**
+Arranged by AMAX Financial Pty Ltd · Executed via Independent Reserve
+
+---
+
+### Custody notice strip (amber banner, top of page)
+
+> Your crypto goes directly to Independent Reserve (DCE-100461150-001) — not to AMAX. AMAX never receives, holds, or controls your digital assets at any point. AUD proceeds are credited to your AMAX fiat wallet within 1 business day of on-chain confirmation.
+
+---
+
+### Sell Enquiry Form
+
+**Sell Enquiry** *(not "Step 1 of 4" — remove that label entirely)*
+
+---
+
+**Digital asset to sell**
+`₿ BTC – Bitcoin ▾`
+
+---
+
+**Approximate amount**
+`0.00000000 BTC`
+
+---
+
+**Indicative rate** *(live, auto-refreshing)*
+```
+1 BTC ≈ AUD 101,215   |   Rate updated 1 min ago   ⟳
+```
+*Indicative only — your confirmed rate is provided in writing before you send anything. Rate is locked at time of written confirmation, not at time of enquiry.*
+
+---
+
+**Estimated AUD proceeds** *(calculated live from amount field)*
+```
+You send       0.00000000 BTC
+Indicative rate   1 BTC ≈ AUD 101,215
+Processing fee    0.5%
+Est. you receive  AUD —
+```
+*Final amount confirmed in writing. Not binding until written confirmation issued.*
+
+---
+
+**Sending wallet address** *(Travel Rule — required)*
+`bc1q… or 1A1z…`
+
+> This is the wallet address you will send BTC *from*. Required under the FATF Travel Rule (AML/CTF Amendment Act 2024, effective 1 July 2026). AMAX must collect and transmit originator wallet information to Independent Reserve before your transaction is processed.
+
+---
+
+**Sending wallet type** *(Travel Rule — required)*
+
+```
+○  Self-hosted — I personally control the private key
+   (e.g. Ledger, Trezor, MetaMask, Trust Wallet)
+
+○  Custodial — held at an exchange or financial institution
+   Institution name: [_______________________]
+   (e.g. Coinbase, Binance, Kraken, CoinSpot)
+```
+
+> If custodial, AMAX is required to transmit the institution name to Independent Reserve as part of Travel Rule compliance. Failure to provide accurate information may delay or prevent your transaction.
+
+---
+
+**Your email address** *(for written confirmation)*
+`you@email.com`
+
+> Written confirmation containing Independent Reserve's one-time deposit address will be sent here. Do not send crypto until you have received this confirmation.
+
+---
+
+**Acknowledgements** *(all required before submission)*
+
+```
+☐  I confirm the sending wallet address above is the wallet 
+   I will use to send BTC. I understand providing an incorrect 
+   address may cause my transaction to be rejected or flagged.
+
+☐  I confirm my wallet type declaration is accurate. 
+   I understand this information is transmitted to 
+   Independent Reserve under FATF Travel Rule obligations.
+
+☐  I understand this enquiry is not a confirmed exchange. 
+   My rate and deposit address will be provided in a separate 
+   written confirmation before I send any crypto.
+
+☐  I acknowledge this exchange is subject to KYC, AML/CTF 
+   monitoring, and AUSTRAC recordkeeping obligations. 
+   High-value or suspicious transactions may be reported 
+   to AUSTRAC.
+
+☐  I understand that once I send BTC to the confirmed 
+   deposit address, the transaction is irreversible.
+```
+
+---
+
+**`Submit Sell Enquiry →`**
+
+Or call our compliance team: **+61 [actual number]**
+Available Monday–Friday 9am–5pm AEST
+
+---
+
+### How the sell process works *(4 steps — numbered, not "Step X of 4")*
+
+```
+Step 1 — Submit this enquiry
+Provide the asset, amount, sending wallet address, 
+and wallet type. We verify your KYC status before 
+proceeding.
+
+Step 2 — Rate confirmation and deposit address
+Our compliance team confirms your KYC, locks your 
+rate, and instructs Independent Reserve to generate 
+a one-time deposit address for your transaction. 
+You receive written confirmation by email — 
+typically within 2 business hours.
+
+Step 3 — Send your crypto to Independent Reserve
+Only after receiving written confirmation should you 
+send BTC — directly to Independent Reserve's 
+one-time deposit address. Do not send to any other 
+address. AMAX does not maintain crypto wallets and 
+will never ask you to send crypto to an AMAX address.
+
+Step 4 — AUD credited to your AMAX wallet
+Independent Reserve confirms receipt on-chain 
+(typically 3+ BTC confirmations), executes the 
+exchange at your confirmed rate, and remits AUD 
+proceeds to AMAX. Your AMAX AUD wallet is credited 
+within 1 business day of on-chain confirmation.
+```
+
+---
+
+### Full compliance disclosure *(collapsed by default, expandable — "View full disclosure ▾")*
+
+> This sell transaction is arranged by AMAX Financial Pty Ltd (ABN 54 690 827 608), registered as a Digital Currency Exchange (DCE) and Remittance Sector Provider with AUSTRAC. The exchange is executed by Independent Reserve Pty Ltd (AUSTRAC DCE-100461150-001), which acts as the independent exchange and settlement counterparty.
+>
+> AMAX does not hold, receive, control, or custody your digital assets at any point in this process. Your crypto is sent directly to Independent Reserve. AUD proceeds are remitted by Independent Reserve to AMAX under AMAX's AUSTRAC Remittance registration and credited to your AMAX fiat wallet. This does not constitute a claim against AMAX Financial Pty Ltd.
+>
+> This transaction is subject to AML/CTF monitoring under the Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth) and the FATF Travel Rule as implemented through the AML/CTF Amendment Act 2024 (Cth), effective 1 July 2026. Originator and beneficiary wallet information collected above will be transmitted to Independent Reserve as required. Threshold transactions of AUD $10,000 or more, and all suspicious transactions regardless of value, may be reported to AUSTRAC. Records are retained for 7 years in accordance with AUSTRAC recordkeeping obligations.
+>
+> Digital assets are not legal tender, are not backed by any government guarantee, and are subject to significant price volatility. Exchanges are irreversible once executed. Past performance is not indicative of future results.
+>
+> Rates shown are indicative only. Your confirmed rate is provided in writing prior to execution and is binding only from the time of written confirmation. AMAX reserves the right to decline any transaction that does not pass KYC or AML/CTF screening.
+
+---
+
+## What each fix resolves
+
+| Previous issue | Fix applied |
+|---|---|
+| No indicative rate on sell form | Live indicative rate with "not binding" caveat added |
+| "Step 1 of 4" without steps 2–4 | Removed label, replaced with full 4-step plain English process |
+| Custodial wallet type — no institution name field | Institution name field added, conditionally shown |
+| Placeholder phone number | Flagged as `+61 [actual number]` — replace before launch |
+| Settlement timing unqualified | "1 business day of on-chain confirmation, typically 3+ BTC confirmations" |
+| Travel Rule transmission not addressed | Full disclosure states data is transmitted to Independent Reserve |
+| Single long checkbox | Split into 5 discrete acknowledgements — each independently confirmable |
+| Compliance officer name in UI | Removed — replaced with "compliance team" generically |
+| Text too regulatory-heavy for retail users | Two-layer design: clean form up top, full disclosure collapsed below |
+| Audit trail not referenced | 7-year AUSTRAC recordkeeping obligation stated explicitly in disclosure |
+
+This is ready to hand directly to your developer. The collapsed disclosure section should be toggled open by default on first visit and remembered as collapsed on return visits via localStorage.
