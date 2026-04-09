@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLocation } from "wouter";
-import { useFxRate } from "@/hooks/use-fx-rates";
+import { useFxRate, useFxRates } from "@/hooks/use-fx-rates";
+import { useWallets } from "@/hooks/use-portfolio";
 import {
   ArrowRightLeft, Wallet, Shield, Phone,
-  MessageSquare, X, RefreshCw, Bitcoin, AlertTriangle, Lock, ChevronRight,
+  MessageSquare, X, RefreshCw, Bitcoin, AlertTriangle, Lock, ChevronRight, TrendingUp,
 } from "lucide-react";
 import YtdRateChart from "@/components/fx/ytd-rate-chart";
 import CurrencyBalances from "@/components/dashboard/currency-balances";
@@ -51,6 +52,19 @@ export default function Dashboard() {
   }>({
     queryKey: ["/api/kyc/profile"],
   });
+
+  // Portfolio totals for the summary column
+  const { data: rawWallets } = useWallets();
+  const { data: fxRates } = useFxRates();
+  const wallets: any[] = (rawWallets || []).filter((w: any) => parseFloat(w.balance || "0") > 0);
+  function toAud(currency: string, amount: number): number | null {
+    if (currency === "AUD") return amount;
+    const rate = (fxRates as any[])?.find((r: any) => r.baseCurrency === "AUD" && r.targetCurrency === currency);
+    return rate && parseFloat(rate.rate) > 0 ? amount / parseFloat(rate.rate) : null;
+  }
+  const fiatAud = fxRates ? wallets.filter((w: any) => w.walletType === "fiat").reduce((s, w) => { const v = toAud(w.currency, parseFloat(w.balance || "0")); return v !== null ? s + v : s; }, 0) : null;
+  const cryptoAud = fxRates ? wallets.filter((w: any) => w.walletType === "crypto").reduce((s, w) => { const v = toAud(w.currency, parseFloat(w.balance || "0")); return v !== null ? s + v : s; }, 0) : null;
+  const totalAud = fiatAud !== null && cryptoAud !== null ? fiatAud + cryptoAud : null;
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
@@ -227,12 +241,45 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* ── Balances + Recent Transactions ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <CurrencyBalances />
+      {/* ── Portfolio Value | Balances | Transactions ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+
+        {/* Column 1 — Total Portfolio Value */}
+        <div className="space-y-4">
+          <Card className="bg-slate-800 text-white border-slate-700">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-4 h-4 text-slate-400" />
+                <p className="text-slate-400 text-xs uppercase tracking-wide">Total Portfolio Value</p>
+              </div>
+              <p className="text-4xl font-bold">
+                {totalAud !== null
+                  ? `A$${totalAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                  : "A$0"}
+              </p>
+              <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-slate-700">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">Fiat Holdings</span>
+                  <span className="text-white font-medium">{fiatAud !== null ? `A$${fiatAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "A$0"}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">Digital Assets</span>
+                  <span className="text-white font-medium">{cryptoAud !== null ? `A$${cryptoAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "A$0"}</span>
+                </div>
+              </div>
+              <p className="text-xs text-slate-600 mt-4 italic">Digital assets subject to market volatility</p>
+            </CardContent>
+          </Card>
+
         </div>
-        <div className="lg:col-span-2">
+
+        {/* Column 2 — Balances */}
+        <div className="lg:col-span-1">
+          <CurrencyBalances hideSummary />
+        </div>
+
+        {/* Column 3 — Recent Transactions */}
+        <div className="lg:col-span-1">
           <TransactionHistory />
         </div>
       </div>

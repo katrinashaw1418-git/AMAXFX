@@ -29,7 +29,7 @@ function toAud(currency: string, amount: number, fxRates: any[]): number | null 
   return null;
 }
 
-export default function CurrencyBalances() {
+export default function CurrencyBalances({ hideSummary = false }: { hideSummary?: boolean }) {
   const [, navigate] = useLocation();
   const { data: rawWallets, isLoading: walletsLoading } = useWallets();
   const { data: portfolio } = usePortfolio();
@@ -87,22 +87,24 @@ export default function CurrencyBalances() {
   return (
     <div className="space-y-4">
 
-      {/* ── Portfolio Summary ── */}
-      <Card className="bg-slate-800 text-white border-slate-700">
-        <CardContent className="p-5">
-          <p className="text-slate-400 text-xs uppercase tracking-wide mb-1">Total Portfolio Value</p>
-          <p className="text-3xl font-bold">
-            {totalAud !== null
-              ? `A$${totalAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-              : "—"}
-          </p>
-          <div className="flex gap-4 mt-3 text-xs text-slate-400">
-            <span>Fiat: <span className="text-slate-200 font-medium">{fiatAud !== null ? `A$${fiatAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}</span></span>
-            <span>Crypto: <span className="text-slate-200 font-medium">{cryptoAud !== null ? `A$${cryptoAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}</span></span>
-          </div>
-          <p className="text-xs text-slate-600 mt-2 italic">Digital assets subject to market volatility</p>
-        </CardContent>
-      </Card>
+      {/* ── Portfolio Summary (hidden when shown separately in dashboard) ── */}
+      {!hideSummary && (
+        <Card className="bg-slate-800 text-white border-slate-700">
+          <CardContent className="p-5">
+            <p className="text-slate-400 text-xs uppercase tracking-wide mb-1">Total Portfolio Value</p>
+            <p className="text-3xl font-bold">
+              {totalAud !== null
+                ? `A$${totalAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                : "—"}
+            </p>
+            <div className="flex gap-4 mt-3 text-xs text-slate-400">
+              <span>Fiat: <span className="text-slate-200 font-medium">{fiatAud !== null ? `A$${fiatAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}</span></span>
+              <span>Crypto: <span className="text-slate-200 font-medium">{cryptoAud !== null ? `A$${cryptoAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}</span></span>
+            </div>
+            <p className="text-xs text-slate-600 mt-2 italic">Digital assets subject to market volatility</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Section 1: Currency Balances (Fiat) ── */}
       <Card className="border-blue-100">
