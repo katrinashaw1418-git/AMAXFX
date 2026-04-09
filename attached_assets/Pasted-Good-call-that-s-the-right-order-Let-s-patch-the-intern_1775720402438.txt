@@ -1,0 +1,308 @@
+Good call — that’s the right order.
+
+Let’s **patch the internal transfer properly (end-to-end)** so it’s safe, defensible, and regulator-friendly.
+
+---
+
+# 🔧 INTERNAL TRANSFER — FULL PATCH (PRODUCTION-READY)
+
+We’ll fix this across:
+
+1. Backend validation
+2. Transaction model
+3. AML rules
+4. Limits
+5. Frontend UX
+
+---
+
+# ✅ 1. BACKEND — REPLACE EMAIL WITH VERIFIED USER
+
+## Before (problem)
+
+```ts
+// sends to raw email
+const recipientEmail = req.body.email;
+```
+
+---
+
+## After (secure)
+
+```ts
+// routes.ts
+
+app.post("/api/transfer/internal", async (req, res) => {
+  const { amount, currency, recipientEmail } = req.body;
+  const sender = req.user;
+
+  // ✅ Enforce sender KYC
+  if (sender.kycStatus !== "verified") {
+    throw new Error("KYC required");
+  }
+
+  // ✅ Resolve recipient
+  const recipient = await db.users.findOne({ email: recipientEmail });
+
+  if (!recipient) {
+    throw new Error("Recipient not found");
+  }
+
+  // ✅ Enforce recipient KYC
+  if (recipient.kycStatus !== "verified") {
+    throw new Error("Recipient must be KYC verified");
+  }
+
+  // ✅ Prevent self-transfer edge case
+  if (recipient.id === sender.id) {
+    throw new Error("Cannot transfer to yourself");
+  }
+
+  // continue below...
+});
+```
+
+---
+
+# ✅ 2. LEDGER + TRANSACTION CLASSIFICATION
+
+Add proper classification (CRITICAL for compliance + reporting)
+
+```ts
+await db.transactions.create({
+  userId: sender.id,
+  counterpartyUserId: recipient.id,
+  type: "internal_transfer",
+  subType: currency === "BTC" ? "crypto" : "fiat",
+  channel: "closed_loop",
+  amount,
+  currency,
+  status: "completed",
+  metadata: {
+    recipientEmail,
+    transferMethod: "internal",
+  }
+});
+```
+
+---
+
+# ✅ 3. BALANCE MOVEMENT (ATOMIC)
+
+```ts
+await db.$transaction(async (tx) => {
+  await tx.wallets.decrement(sender.id, currency, amount);
+  await tx.wallets.increment(recipient.id, currency, amount);
+});
+```
+
+---
+
+# ✅ 4. VELOCITY + LIMIT CONTROL
+
+```ts
+const dailyTotal = await getDailyInternalTransferTotal(sender.id);
+
+const limit = getLimitByRisk(sender.riskLevel);
+
+if (dailyTotal + amount > limit) {
+  throw new Error("Daily internal transfer limit exceeded");
+}
+```
+
+---
+
+## Helper
+
+```ts
+function getLimitByRisk(riskLevel: string) {
+  switch (riskLevel) {
+    case "low": return 50000;
+    case "medium": return 20000;
+    case "high": return 5000;
+    default: return 10000;
+  }
+}
+```
+
+---
+
+# ✅ 5. AML RULES (ADD TO applyAmlRules)
+
+```ts
+// rapid internal transfers
+if (tx.type === "internal_transfer") {
+  const recentTransfers = await getRecentTransfers(tx.userId, 1); // 1 hour
+
+  if (recentTransfers.length > 5) {
+    flags.push("high_velocity_internal");
+  }
+}
+
+// fan-out pattern
+if (isFanOutPattern(tx.userId)) {
+  flags.push("fan_out_distribution");
+}
+
+// circular movement
+if (isCircularFlow(tx.userId)) {
+  flags.push("circular_transfer_pattern");
+}
+```
+
+---
+
+# ✅ 6. RAPID WITHDRAWAL LINK (CRITICAL)
+
+```ts
+if (
+  tx.type === "withdrawal" &&
+  wasRecentInternalTransfer(tx.userId, 60) // 60 mins
+) {
+  flags.push("rapid_outflow_after_internal");
+}
+```
+
+---
+
+# ✅ 7. FRONTEND PATCH (wallets.tsx)
+
+## Replace raw email input with validation flow
+
+```tsx
+const [recipientEmail, setRecipientEmail] = useState("");
+const [recipientVerified, setRecipientVerified] = useState(null);
+
+const verifyRecipient = async () => {
+  const res = await api.verifyUserByEmail(recipientEmail);
+  setRecipientVerified(res);
+};
+```
+
+---
+
+## UI
+
+```tsx
+<Input
+  placeholder="recipient@example.com"
+  value={recipientEmail}
+  onChange={(e) => setRecipientEmail(e.target.value)}
+/>
+
+<Button onClick={verifyRecipient}>
+  Verify Recipient
+</Button>
+
+{recipientVerified && (
+  <div>
+    ✅ {recipientVerified.name} (Verified AMAX user)
+  </div>
+)}
+```
+
+---
+
+# ✅ 8. BACKEND — VERIFY ENDPOINT
+
+```ts
+app.get("/api/users/verify", async (req, res) => {
+  const { email } = req.query;
+
+  const user = await db.users.findOne({ email });
+
+  if (!user || user.kycStatus !== "verified") {
+    return res.json({ valid: false });
+  }
+
+  res.json({
+    valid: true,
+    name: user.fullName
+  });
+});
+```
+
+---
+
+# ✅ 9. ADD PURPOSE TAG (LIGHT VERSION)
+
+```tsx
+<Select onValueChange={setPurpose}>
+  <SelectItem value="personal">Personal</SelectItem>
+  <SelectItem value="family">Family</SelectItem>
+  <SelectItem value="business">Business</SelectItem>
+</Select>
+```
+
+---
+
+# ✅ 10. SAVE PURPOSE IN TRANSACTION
+
+```ts
+metadata: {
+  purpose,
+  recipientEmail
+}
+```
+
+---
+
+# ✅ 11. USER WARNING (IMPORTANT)
+
+```tsx
+<div className="warning">
+  Transfers are instant and irreversible. Only send to trusted users.
+</div>
+```
+
+---
+
+# 🎯 RESULT AFTER PATCH
+
+## Before
+
+* Email-only routing ❌
+* No AML controls ❌
+* No limits ❌
+* No classification ❌
+
+## After
+
+* Verified recipient ✅
+* KYC enforced both sides ✅
+* AML monitored ✅
+* Limits enforced ✅
+* Classified transaction ✅
+
+---
+
+# 🔥 FINAL POSITION
+
+After this patch:
+
+> ✅ Internal transfer becomes **compliant, controlled, and defensible**
+
+But still:
+
+> ⚠️ Not fully regulator-ready until:
+
+* Reporting automation complete
+* Risk engine upgraded
+* Travel Rule added
+
+---
+
+# 🚀 NEXT STEP
+
+Now you’re ready for:
+
+👉 **“architecture” phase**
+
+This is where we:
+
+* Unify wallet / FX / crypto flows
+* Build proper compliance engine
+* Prepare for AUSTRAC registration
+
+Just say:
+👉 “architecture next”

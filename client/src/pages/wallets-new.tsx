@@ -163,6 +163,10 @@ export default function Wallets() {
   const [payerBsb, setPayerBsb] = useState('');
   const [internalTransferEmail, setInternalTransferEmail] = useState('');
   const [internalTransferAmount, setInternalTransferAmount] = useState('');
+  const [internalTransferPurpose, setInternalTransferPurpose] = useState('personal');
+  const [recipientVerified, setRecipientVerified] = useState<{ maskedName: string } | null>(null);
+  const [recipientVerifyPending, setRecipientVerifyPending] = useState(false);
+  const [recipientVerifyError, setRecipientVerifyError] = useState('');
   const [withdrawBankName, setWithdrawBankName] = useState('');
   const [withdrawBsb, setWithdrawBsb] = useState('');
   const [withdrawAccountNumber, setWithdrawAccountNumber] = useState('');
@@ -466,7 +470,7 @@ export default function Wallets() {
   });
 
   const internalTransferMutation = useMutation({
-    mutationFn: async (data: { currency: string; amount: number; recipientEmail: string }) => {
+    mutationFn: async (data: { currency: string; amount: number; recipientEmail: string; purpose: string }) => {
       const response = await apiRequest("POST", "/api/transfer/internal", data);
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Transfer failed");
@@ -474,7 +478,7 @@ export default function Wallets() {
     },
     onSuccess: (data) => {
       toast({
-        title: "✅ Transfer Sent",
+        title: "Transfer Sent",
         description: `${internalTransferAmount} ${selectedWallet?.currency} transferred to ${internalTransferEmail}. Reference: ${data.referenceId}`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
@@ -482,6 +486,9 @@ export default function Wallets() {
       setWithdrawModalOpen(false);
       setInternalTransferEmail('');
       setInternalTransferAmount('');
+      setInternalTransferPurpose('personal');
+      setRecipientVerified(null);
+      setRecipientVerifyError('');
     },
     onError: (error: any) => {
       toast({
@@ -491,6 +498,26 @@ export default function Wallets() {
       });
     },
   });
+
+  const verifyRecipient = async () => {
+    if (!internalTransferEmail.trim()) return;
+    setRecipientVerifyPending(true);
+    setRecipientVerified(null);
+    setRecipientVerifyError('');
+    try {
+      const response = await apiRequest("GET", `/api/users/verify-recipient?email=${encodeURIComponent(internalTransferEmail.trim())}`);
+      const json = await response.json();
+      if (json.valid) {
+        setRecipientVerified({ maskedName: json.maskedName });
+      } else {
+        setRecipientVerifyError(json.error || "Recipient could not be verified.");
+      }
+    } catch {
+      setRecipientVerifyError("Verification failed. Please try again.");
+    } finally {
+      setRecipientVerifyPending(false);
+    }
+  };
 
   const handleDeposit = () => {
     if (!selectedWallet || !amount || !depositMethod) {
@@ -1410,48 +1437,105 @@ export default function Wallets() {
                 <div className="rounded-lg border p-3 space-y-2">
                   <p className="text-sm font-medium">🔄 Option 2 — Internal Transfer (Instant, Zero Fees)</p>
                   <p className="text-xs text-muted-foreground">
-                    Send {selectedWallet?.currency} instantly to another AMAX user by their registered email address. No blockchain fees — settled on the AMAX internal ledger.
+                    Send {selectedWallet?.currency} instantly to another verified AMAX user. No blockchain fees — settled on the AMAX internal ledger. Both parties must be fully KYC-verified.
                   </p>
-                  <div>
-                    <Label htmlFor="internal-transfer-amount" className="text-xs">Amount ({selectedWallet?.currency})</Label>
-                    <Input
-                      id="internal-transfer-amount"
-                      type="number"
-                      value={internalTransferAmount}
-                      onChange={(e) => setInternalTransferAmount(e.target.value)}
-                      placeholder="0.00"
-                      className="h-8 text-sm"
-                      min="0"
-                    />
+
+                  {/* Irreversibility warning */}
+                  <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-xs text-amber-800">
+                    <span className="flex-shrink-0 mt-0.5">⚠️</span>
+                    <span>Internal transfers are <strong>instant and irreversible</strong>. Only send to trusted, verified AMAX users. You cannot recall a completed transfer.</span>
                   </div>
-                  <div>
-                    <Label htmlFor="crypto-internal-email" className="text-xs">Recipient AMAX Email</Label>
-                    <Input
-                      id="crypto-internal-email"
-                      type="email"
-                      value={internalTransferEmail}
-                      onChange={(e) => setInternalTransferEmail(e.target.value)}
-                      placeholder="recipient@example.com"
-                      className="h-8 text-sm"
-                    />
+
+                  {/* Step 1: Verify recipient */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="crypto-internal-email" className="text-xs">Recipient AMAX Email <span className="text-red-500">*</span></Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="crypto-internal-email"
+                        type="email"
+                        value={internalTransferEmail}
+                        onChange={(e) => {
+                          setInternalTransferEmail(e.target.value);
+                          setRecipientVerified(null);
+                          setRecipientVerifyError('');
+                        }}
+                        placeholder="recipient@amax.com"
+                        className="h-8 text-sm flex-1"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs shrink-0"
+                        disabled={!internalTransferEmail.trim() || recipientVerifyPending}
+                        onClick={verifyRecipient}
+                      >
+                        {recipientVerifyPending ? "Checking…" : "Verify"}
+                      </Button>
+                    </div>
+                    {recipientVerified && (
+                      <div className="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 border border-green-200 rounded p-2">
+                        <span>✅</span>
+                        <span><strong>{recipientVerified.maskedName}</strong> — Verified AMAX user</span>
+                      </div>
+                    )}
+                    {recipientVerifyError && (
+                      <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded p-2">{recipientVerifyError}</p>
+                    )}
                   </div>
-                  <Button
-                    className="w-full mt-1 h-8 text-sm"
-                    disabled={internalTransferMutation.isPending || !internalTransferEmail || !internalTransferAmount}
-                    onClick={() => {
-                      if (!selectedWallet || !internalTransferEmail || !internalTransferAmount) {
-                        toast({ title: "Missing fields", description: "Enter amount and recipient email.", variant: "destructive" });
-                        return;
-                      }
-                      internalTransferMutation.mutate({
-                        currency: selectedWallet.currency,
-                        amount: parseFloat(internalTransferAmount),
-                        recipientEmail: internalTransferEmail,
-                      });
-                    }}
-                  >
-                    {internalTransferMutation.isPending ? "Transferring..." : `⚡ Send ${selectedWallet?.currency} Instantly`}
-                  </Button>
+
+                  {/* Step 2: Amount + Purpose — only shown after verification */}
+                  {recipientVerified && (
+                    <>
+                      <div>
+                        <Label htmlFor="internal-transfer-amount" className="text-xs">Amount ({selectedWallet?.currency}) <span className="text-red-500">*</span></Label>
+                        <Input
+                          id="internal-transfer-amount"
+                          type="number"
+                          value={internalTransferAmount}
+                          onChange={(e) => setInternalTransferAmount(e.target.value)}
+                          placeholder="0.00"
+                          className="h-8 text-sm"
+                          min="0"
+                        />
+                        {selectedWallet && (
+                          <p className="text-xs text-muted-foreground mt-0.5">Available: {selectedWallet.balance} {selectedWallet.currency}</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="internal-transfer-purpose" className="text-xs">Purpose <span className="text-red-500">*</span></Label>
+                        <Select value={internalTransferPurpose} onValueChange={setInternalTransferPurpose}>
+                          <SelectTrigger className="h-8 text-sm" id="internal-transfer-purpose">
+                            <SelectValue placeholder="Select purpose" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="personal">Personal transfer</SelectItem>
+                            <SelectItem value="family">Family support</SelectItem>
+                            <SelectItem value="business">Business payment</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-0.5">Required for AML/CTF transaction monitoring.</p>
+                      </div>
+                      <Button
+                        className="w-full mt-1 h-8 text-sm"
+                        disabled={internalTransferMutation.isPending || !internalTransferAmount}
+                        onClick={() => {
+                          if (!selectedWallet || !internalTransferAmount) {
+                            toast({ title: "Missing fields", description: "Enter the amount to transfer.", variant: "destructive" });
+                            return;
+                          }
+                          internalTransferMutation.mutate({
+                            currency: selectedWallet.currency,
+                            amount: parseFloat(internalTransferAmount),
+                            recipientEmail: internalTransferEmail,
+                            purpose: internalTransferPurpose,
+                          });
+                        }}
+                      >
+                        {internalTransferMutation.isPending ? "Sending…" : `Send ${internalTransferAmount || "0"} ${selectedWallet?.currency} to ${recipientVerified.maskedName}`}
+                      </Button>
+                    </>
+                  )}
                 </div>
 
                 <div className="rounded-lg border p-3 space-y-1">

@@ -1,0 +1,339 @@
+Perfect — now we do this properly.
+
+What you have today is a **feature-driven fintech app**.
+What you need is a **regulated financial system architecture**.
+
+I’ll design this in a way that:
+
+* Matches **AUSTRAC expectations**
+* Works with your **existing codebase (not a rebuild)**
+* Scales to **eWallet + FX + crypto + internal transfers**
+
+---
+
+# 🧠 AMAX — TARGET ARCHITECTURE (REGULATED STACK)
+
+## 🔴 Core principle (everything hangs off this)
+
+> Every transaction must be:
+> **classified → risk assessed → monitored → reportable**
+
+---
+
+# 🧩 1. SYSTEM LAYERS (CLEAN SEPARATION)
+
+## ✅ Layer 1 — Identity & KYC
+
+Handles:
+
+* KYC / CDD / EDD
+* Risk scoring
+* PEP / sanctions
+
+---
+
+## ✅ Layer 2 — Wallet & Ledger
+
+Handles:
+
+* User balances
+* Internal transfers
+* Multi-currency storage
+
+---
+
+## ✅ Layer 3 — Transaction Engine (CRITICAL NEW LAYER)
+
+This is what you’re missing.
+
+It decides:
+
+```text
+What type of transaction is this?
+```
+
+---
+
+## ✅ Layer 4 — Compliance Engine
+
+Handles:
+
+* AML rules
+* Monitoring
+* Flags
+* Reporting triggers
+
+---
+
+## ✅ Layer 5 — Execution Layer
+
+Handles:
+
+* Bank rails
+* FX providers
+* Crypto custodians
+
+---
+
+# 🔁 FULL FLOW (HOW IT SHOULD WORK)
+
+```text
+User Action
+   ↓
+Transaction Engine (classify)
+   ↓
+Risk Engine (score)
+   ↓
+Compliance Engine (check rules)
+   ↓
+Execution Layer (only if approved)
+   ↓
+Ledger update
+   ↓
+Reporting (if required)
+```
+
+---
+
+# 🧩 2. TRANSACTION CLASSIFICATION ENGINE (MOST IMPORTANT)
+
+You must explicitly tag every transaction.
+
+## Add this function:
+
+```ts
+function classifyTransaction(tx) {
+  if (tx.internal) return "INTERNAL_TRANSFER";
+
+  if (tx.currencyFrom !== tx.currencyTo) {
+    if (isCrypto(tx.currencyFrom) || isCrypto(tx.currencyTo)) {
+      return "CRYPTO_EXCHANGE";
+    }
+    return "FX_CONVERSION";
+  }
+
+  if (tx.crossBorder) return "REMITTANCE";
+
+  if (tx.deposit) return "DEPOSIT";
+  if (tx.withdrawal) return "WITHDRAWAL";
+
+  return "UNKNOWN";
+}
+```
+
+---
+
+## Why this matters
+
+| Type              | Regulatory impact |
+| ----------------- | ----------------- |
+| INTERNAL_TRANSFER | AML monitoring    |
+| FX_CONVERSION     | Remittance rules  |
+| REMITTANCE        | IFTI reporting    |
+| CRYPTO_EXCHANGE   | DCE registration  |
+| WITHDRAWAL        | AML + audit trail |
+
+---
+
+# 🧩 3. RISK ENGINE (UPGRADE YOUR CURRENT ONE)
+
+## Current:
+
+```ts
+riskScore → limits
+```
+
+## Required:
+
+```ts
+riskScore = f(
+  customerRisk,
+  geographyRisk,
+  productRisk,
+  behaviourRisk,
+  transactionRisk
+)
+```
+
+---
+
+## Example implementation
+
+```ts
+function calculateRisk(tx, user) {
+  let score = user.baseRisk || 1;
+
+  if (tx.amount > 10000) score += 2;
+  if (tx.crossBorder) score += 3;
+  if (isCrypto(tx.currency)) score += 2;
+  if (isHighRiskCountry(tx.destinationCountry)) score += 4;
+
+  return score;
+}
+```
+
+---
+
+# 🧩 4. COMPLIANCE ENGINE (CONNECT TO YOUR EXISTING RULES)
+
+You already have `applyAmlRules()` — good.
+
+Now formalise it:
+
+```ts
+function complianceCheck(tx, user) {
+  const risk = calculateRisk(tx, user);
+
+  const flags = applyAmlRules(tx, user);
+
+  if (risk > 8) {
+    return { status: "BLOCK", flags };
+  }
+
+  if (flags.length > 0) {
+    return { status: "REVIEW", flags };
+  }
+
+  return { status: "APPROVE" };
+}
+```
+
+---
+
+# 🧩 5. REPORTING ENGINE (YOU NEED THIS LAYER)
+
+## Add auto-report triggers:
+
+```ts
+function reportingEngine(tx) {
+  if (tx.type === "REMITTANCE") {
+    createIFTI(tx);
+  }
+
+  if (tx.amount >= 10000 && tx.isCash) {
+    createTTR(tx);
+  }
+
+  if (tx.flags.includes("suspicious")) {
+    queueSMR(tx);
+  }
+}
+```
+
+---
+
+# 🧩 6. WALLET ARCHITECTURE (FIX CLASSIFICATION)
+
+You must separate balances logically:
+
+```text
+User Wallet
+ ├── Fiat Ledger (AUD, USD)
+ ├── FX Ledger (conversion tracking)
+ ├── Crypto Ledger (custodian-linked)
+ ├── Internal Transfer Ledger
+```
+
+---
+
+# 🧩 7. EXECUTION LAYER (DECOUPLE THIS)
+
+Right now everything is mixed.
+
+Split into:
+
+| Function          | Provider    |
+| ----------------- | ----------- |
+| Bank deposit      | Bank API    |
+| FX                | FX provider |
+| Crypto            | Custodian   |
+| Internal transfer | Your ledger |
+
+---
+
+# 🧩 8. TRAVEL RULE LAYER (ADD NOW, EVEN IF BASIC)
+
+```ts
+if (tx.type === "CRYPTO_TRANSFER") {
+  require:
+    - sender identity
+    - recipient identity
+    - wallet ownership
+}
+```
+
+---
+
+# 🧩 9. GOVERNANCE LAYER (REQUIRED FOR AUSTRAC)
+
+You need to define in system:
+
+* AML Officer
+* Manual review queue
+* Audit logs immutable
+
+---
+
+# 🧩 10. MINIMUM SYSTEM DIAGRAM
+
+```text
+Frontend
+   ↓
+API Layer
+   ↓
+Transaction Engine
+   ↓
+Risk Engine
+   ↓
+Compliance Engine
+   ↓
+Execution Layer
+   ↓
+Ledger DB
+   ↓
+Reporting Engine
+```
+
+---
+
+# 🔥 WHAT THIS FIXES (BIG PICTURE)
+
+## Before
+
+* Feature-based logic
+* No classification
+* Compliance bolted on
+
+## After
+
+* Structured financial system
+* Compliance embedded in flow
+* Regulator-ready foundation
+
+---
+
+# 🎯 FINAL TRUTH
+
+You do NOT need to rebuild your app.
+
+You need to:
+
+> Insert **Transaction + Compliance layers in the middle**
+
+That’s it.
+
+---
+
+# 🚀 NEXT STEP (HIGH IMPACT)
+
+I can now:
+
+### 1. 🔧 Map this architecture directly onto your codebase (file-by-file)
+
+### 2. 🧱 Design database schema changes
+
+### 3. 📄 Generate AUSTRAC submission pack (based on this architecture)
+
+Most powerful next move:
+
+👉 **“map to codebase”**

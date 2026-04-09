@@ -3311,6 +3311,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ---------------------------------------------------------------------------
+  // Verify recipient by email — returns masked name if KYC-verified AMAX user.
+  // Used by the frontend verify-before-send flow.
+  // ---------------------------------------------------------------------------
+  app.get("/api/users/verify-recipient", async (req, res) => {
+    try {
+      const { userId } = requireAuth(req);
+      const email = (req.query.email as string || "").toLowerCase().trim();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.json({ valid: false, error: "Invalid email address" });
+      }
+
+      const sender = await storage.getUser(userId);
+      if (!sender) return res.json({ valid: false, error: "Sender not found" });
+
+      if (sender.email.toLowerCase() === email) {
+        return res.json({ valid: false, error: "You cannot transfer to your own account" });
+      }
+
+      const recipient = await storage.getUserByEmail(email);
+      if (!recipient) {
+        return res.json({ valid: false, error: "No AMAX account found for that email address" });
+      }
+      if (recipient.kycStatus !== "verified") {
+        return res.json({ valid: false, error: "Recipient has not completed identity verification. Both parties must be verified before an internal transfer can proceed." });
+      }
+
+      // Return enough to confirm without exposing full PII
+      const fullName: string = (recipient as any).fullLegalName || "";
+      const maskedName = fullName
+        ? fullName.split(" ").map((part: string, i: number) =>
+            i === 0 ? part : part[0] + "*".repeat(part.length - 1)
+          ).join(" ")
+        : "Verified AMAX User";
+
+      res.json({ valid: true, maskedName });
+    } catch (err: any) {
+      if (err.status === 401) return res.status(401).json({ valid: false, error: "Not authenticated" });
+      res.status(500).json({ valid: false, error: "Verification failed" });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
   // Internal Transfer — user-to-user crypto/fiat transfer on the AMAX ledger.
   // No external settlement; both sides recorded atomically; AUSTRAC-aware.
   // ---------------------------------------------------------------------------
@@ -3318,6 +3360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     currency: z.string().min(1, "Currency is required"),
     amount: z.number().positive("Amount must be positive").max(9999999),
     recipientEmail: z.string().email("Invalid recipient email"),
+    purpose: z.enum(["personal", "family", "business", "other"]).optional().default("personal"),
   });
 
   app.post("/api/transfer/internal", moneyMovementLimiter, async (req, res) => {
@@ -3328,7 +3371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const parsed = internalTransferSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0].message });
 
-      const { currency, amount: rawAmount, recipientEmail } = parsed.data;
+      const { currency, amount: rawAmount, recipientEmail, purpose } = parsed.data;
       const amount = new Decimal(rawAmount);
 
       // Enforce risk-based daily transaction limit
@@ -3345,8 +3388,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const recipient = await storage.getUserByEmail(recipientEmail.toLowerCase());
       if (!recipient) return res.status(404).json({ error: "No AMAX account found for that email address" });
 
+      // Enforce recipient KYC — both parties must be verified (AUSTRAC CDD requirement)
+      if (recipient.kycStatus !== "verified") {
+        return res.status(403).json({ error: "Recipient has not completed identity verification. Internal transfers are only permitted between fully verified AMAX users." });
+      }
+
+      // Velocity check — flag if sender has made >5 internal transfers in the last hour (layering/fan-out detection)
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const recentInternalTxs = await db.select().from(transactions)
+        .where(and(
+          eq(transactions.userId, userId),
+          eq(transactions.type, "transfer"),
+          eq(transactions.settlementStatus as any, "internal_only"),
+          eq(transactions.direction as any, "out"),
+          sql`${transactions.createdAt} >= ${oneHourAgo}`,
+        ));
+      const highVelocity = recentInternalTxs.length >= 5;
+
       // AUSTRAC: flag large transfers (>= AUD 10,000 equivalent — simplified: flag any currency >= 10000)
-      const amlFlagged = amount.gte(10000);
+      const amlFlagged = amount.gte(10000) || highVelocity;
 
       // Generate a shared reference ID linking both transaction records
       const referenceId = `ITX-${randomBytes(8).toString("hex").toUpperCase()}`;
@@ -3406,14 +3466,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           exchangeRate: "1.00000000",
           status: "completed",
           settlementStatus: "internal_only",
-          description: `Internal transfer of ${rawAmount} ${currency} to ${recipient.email}`,
+          description: `Internal transfer of ${rawAmount} ${currency} to ${recipient.email} — purpose: ${purpose}`,
           sourceExchange: null,
           blockchainTxHash: null,
           assetType: CRYPTO_CURRENCIES.includes(currency) ? "crypto" : "fiat",
           direction: "out",
           riskFlag: amlFlagged,
           reviewStatus: amlFlagged ? "flagged" : "clear",
-          reviewNotes: amlFlagged ? `Large internal transfer >= 10000 ${currency} — AUSTRAC threshold review` : null,
+          reviewNotes: amlFlagged
+            ? (highVelocity
+                ? `HIGH VELOCITY internal transfers detected (≥5 in 1 hour) — possible layering/fan-out pattern. Amount: ${rawAmount} ${currency}`
+                : `Large internal transfer >= 10000 ${currency} — AUSTRAC threshold review`)
+            : null,
           referenceId,
           counterpartyUserId: recipient.id,
         }).returning();
@@ -3429,7 +3493,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           exchangeRate: "1.00000000",
           status: "completed",
           settlementStatus: "internal_only",
-          description: `Internal transfer received: ${rawAmount} ${currency} from ${sender.email}`,
+          description: `Internal transfer received: ${rawAmount} ${currency} from ${sender.email} — purpose: ${purpose}`,
           sourceExchange: null,
           blockchainTxHash: null,
           assetType: CRYPTO_CURRENCIES.includes(currency) ? "crypto" : "fiat",
@@ -3443,7 +3507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       await writeAuditLog(userId, "internal_transfer", "transaction", String(senderTx?.id), {
-        currency, amount: rawAmount, recipientEmail, referenceId, amlFlagged,
+        currency, amount: rawAmount, recipientEmail, referenceId, amlFlagged, highVelocity, purpose,
       }, req.ip || null);
 
       res.json({
