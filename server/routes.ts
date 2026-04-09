@@ -3810,6 +3810,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         taxCountry: user.taxCountry ?? "",
         idDocumentType: user.idDocumentType ?? "",
         idVerificationComplete: user.idVerificationComplete ?? false,
+        agreementSigned: user.agreementSigned ?? false,
+        agreementSignedAt: user.agreementSignedAt ?? null,
+        agreementRef: user.agreementRef ?? null,
       });
     } catch (err: any) {
       res.status(401).json({ error: err.message ?? "Unauthorized" });
@@ -3903,6 +3906,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err: any) {
       if (err instanceof z.ZodError) return res.status(400).json({ error: err.errors[0].message });
       res.status(500).json({ error: err.message ?? "Failed to save KYC profile" });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // POST /api/kyc/agreement/sign — records the customer's signed agreement
+  // Electronic Transactions Act 1999 (Cth) — typed name constitutes valid signature
+  // ---------------------------------------------------------------------------
+  app.post("/api/kyc/agreement/sign", async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      const schema = z.object({
+        signature: z.string().min(2, "Signature required"),
+        pepDeclaration: z.boolean().optional(),
+      });
+      const data = schema.parse(req.body);
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      // Signature must match full legal name (case-insensitive trim)
+      if (user.fullLegalName && data.signature.trim().toLowerCase() !== user.fullLegalName.trim().toLowerCase()) {
+        return res.status(400).json({ error: "Signature does not match your verified legal name. Please type your name exactly as registered." });
+      }
+
+      const agreementRef = `AMXAGR-${randomBytes(4).toString("hex").toUpperCase()}`;
+      const signedAt = new Date();
+
+      await db.update(users).set({
+        agreementSigned: true,
+        agreementSignedAt: signedAt,
+        agreementRef,
+        agreementVersion: "v2.0",
+        agreementSignature: data.signature.trim(),
+        // Capture declarations included in the agreement body
+        sanctionsDeclaration: true,
+        consentDeclaration: true,
+        ...(data.pepDeclaration !== undefined ? { pepDeclaration: data.pepDeclaration } : {}),
+      }).where(eq(users.id, userId));
+
+      await writeAuditLog(userId, "agreement_signed", "user", String(userId), {
+        agreementRef, agreementVersion: "v2.0", signature: data.signature.trim(),
+      }, null);
+
+      res.json({ success: true, agreementRef, signedAt: signedAt.toISOString() });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) return res.status(400).json({ error: err.errors[0].message });
+      res.status(500).json({ error: err.message ?? "Failed to record agreement" });
     }
   });
 

@@ -43,6 +43,12 @@ export const users = pgTable("users", {
   riskLevel: text("risk_level"),           // "low" | "medium" | "high"
   dailyTransactionLimit: decimal("daily_transaction_limit", { precision: 15, scale: 2 }),
   kycRefreshDue: timestamp("kyc_refresh_due"), // Annual refresh trigger
+  // Customer agreement signing — Electronic Transactions Act 1999 (Cth)
+  agreementSigned: boolean("agreement_signed").default(false),
+  agreementSignedAt: timestamp("agreement_signed_at"),
+  agreementRef: text("agreement_ref"),          // unique reference e.g. AMXAGR-XXXXXXXX
+  agreementVersion: text("agreement_version"),  // e.g. "v2.0"
+  agreementSignature: text("agreement_signature"), // typed legal name at signing
 });
 
 export const portfolios = pgTable("portfolios", {

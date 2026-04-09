@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +33,8 @@ import {
   BookOpen,
   Briefcase,
   Home,
+  PenLine,
+  FileCheck,
 } from "lucide-react";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -87,13 +89,15 @@ export default function Compliance() {
   const [piiPurpose,         setPiiPurpose]         = useState("");
   const [piiSourceFunds,     setPiiSourceFunds]     = useState("");
   const [piiTaxCountry,      setPiiTaxCountry]      = useState("");
-  // Declarations
+  // PEP status — identity data for risk scoring (moved to agreement step for signing)
   const [piiPep,             setPiiPep]             = useState(false);
-  const [piiSanctions,       setPiiSanctions]       = useState(false);
-  const [piiConsent,         setPiiConsent]         = useState(false);
-  const [piiTerms,           setPiiTerms]           = useState(false);
-  const [piiRiskAck,         setPiiRiskAck]         = useState(false);
-  const [piiAccuracy,        setPiiAccuracy]        = useState(false);
+
+  // ── Step 3: Customer Agreement ─────────────────────────────────────────────
+  const [signatureName,  setSignatureName]  = useState("");
+  const [sectionsRead,   setSectionsRead]   = useState<Set<number>>(new Set());
+  const agreementScrollRef = useRef<HTMLDivElement>(null);
+  const sectionRefs        = useRef<(HTMLDivElement | null)[]>([]);
+  const allSectionsRead    = sectionsRead.size >= 6;
 
   // ── Step 2: Identity document + biometric verification ────────────────────
   const [docType,          setDocType]          = useState<"passport" | "driver_licence" | "national_id">("passport");
@@ -128,6 +132,9 @@ export default function Compliance() {
     sourceOfFunds?: string;
     taxCountry?: string;
     kycRefreshDue?: string | null;
+    agreementSigned?: boolean;
+    agreementSignedAt?: string | null;
+    agreementRef?: string | null;
   }>({
     queryKey: ["/api/kyc/profile"],
   });
@@ -168,6 +175,35 @@ export default function Compliance() {
     },
   });
 
+  // ── Customer Agreement signing mutation ────────────────────────────────────
+  const agreementMutation = useMutation({
+    mutationFn: (payload: { signature: string; pepDeclaration: boolean }) =>
+      apiRequest("POST", "/api/kyc/agreement/sign", payload),
+    onSuccess: async (res: any) => {
+      const data = await res.json();
+      toast({ title: "Agreement Signed", description: `Customer agreement signed — ref ${data.agreementRef}` });
+      refetchProfile();
+      queryClient.invalidateQueries({ queryKey: ["/api/kyc/profile"] });
+    },
+    onError: (err: any) => {
+      toast({ title: "Signing Failed", description: err.message ?? "Failed to record your signature. Please try again.", variant: "destructive" });
+    },
+  });
+
+  // ── Agreement scroll tracking — marks sections as read on scroll ──────────
+  function handleAgreementScroll() {
+    const container = agreementScrollRef.current;
+    if (!container) return;
+    const containerBottom = container.getBoundingClientRect().bottom;
+    const newRead = new Set(sectionsRead);
+    sectionRefs.current.forEach((el, idx) => {
+      if (!el) return;
+      const elBottom = el.getBoundingClientRect().bottom;
+      if (elBottom <= containerBottom + 40) newRead.add(idx + 1);
+    });
+    setSectionsRead(newRead);
+  }
+
   // ── Poll /api/kyc/identity/status while Veriff iframe is open ─────────────
   const { data: idStatusData } = useQuery<{ complete: boolean; documentType: string | null }>({
     queryKey: ["/api/kyc/identity/status"],
@@ -196,20 +232,15 @@ export default function Compliance() {
       toast({ title: "Financial Profile Required", description: "Please select your employment status, purpose of account, and source of funds.", variant: "destructive" });
       return;
     }
-    if (!piiSanctions || !piiConsent || !piiTerms || !piiRiskAck || !piiAccuracy) {
-      toast({ title: "All Declarations Required", description: "You must accept all mandatory declarations (marked *) to proceed.", variant: "destructive" });
-      return;
-    }
     profileMutation.mutate({
       fullLegalName: piiFullName,
       dateOfBirth: piiDob,
       nationality: piiNationality,
       phoneNumber: piiPhone,
-      // piiPep checked = user CONFIRMS they are NOT a PEP → store false (not a PEP)
-      // piiPep unchecked = user has NOT confirmed non-PEP status → store true (flag for ECDD review)
-      pepDeclaration: !piiPep,
-      sanctionsDeclaration: piiSanctions,
-      consentDeclaration: piiConsent,
+      // pepDeclaration will be captured during Customer Agreement signing (Step 3)
+      pepDeclaration: false,
+      sanctionsDeclaration: false,
+      consentDeclaration: false,
       residentialAddress: piiAddress,
       suburb: piiSuburb,
       stateRegion: piiStateRegion,
@@ -224,29 +255,30 @@ export default function Compliance() {
   }
 
   // ── derive step statuses dynamically ──────────────────────────────────────
-  // Step 2: in_progress until idVerifyComplete, then completed
-  // Step 3: pending until step 2 complete, then in_progress → under_review once file uploaded
-  // Step 4: pending until step 3 uploaded, then in_progress → under_review once uploaded
-  // Step 5: pending until step 4 uploaded, then in_progress → completed once risk submitted
+  // Step 2: identity verification
+  // Step 3: customer agreement (new) — unlocked after identity verified
+  // Step 4: address verification — unlocked after agreement signed
+  // Step 5: source of funds — unlocked after address uploaded
+  const agreementSigned = kycProfile?.agreementSigned ?? false;
   const stepStatuses = useMemo((): Record<number, StepStatus> => {
     const s2: StepStatus = idVerifyComplete ? "completed" : "in_progress";
     const s3: StepStatus = !idVerifyComplete
       ? "pending"
-      : stepFiles[3]
-      ? "under_review"
+      : agreementSigned
+      ? "completed"
       : "in_progress";
-    const s4: StepStatus = !stepFiles[3]
+    const s4: StepStatus = !agreementSigned
       ? "pending"
       : stepFiles[4]
       ? "under_review"
       : "in_progress";
     const s5: StepStatus = !stepFiles[4]
       ? "pending"
-      : riskSubmitted
+      : riskSubmitted || stepFiles[5]
       ? "completed"
       : "in_progress";
     return { 2: s2, 3: s3, 4: s4, 5: s5 };
-  }, [idVerifyComplete, stepFiles, riskSubmitted]);
+  }, [idVerifyComplete, agreementSigned, stepFiles, riskSubmitted]);
 
   // derive current active step (first non-completed step)
   const currentStepId = useMemo(() => {
@@ -261,17 +293,17 @@ export default function Compliance() {
     let total = 0;
     if (kycProfile?.kycProfileComplete) total += 20; // step 1
     if (idVerifyComplete)               total += 20; // step 2
-    if (stepFiles[3])                   total += 20; // step 3
-    if (stepFiles[4])                   total += 20; // step 4
-    if (riskSubmitted)                  total += 20; // step 5
+    if (kycProfile?.agreementSigned)    total += 20; // step 3 customer agreement
+    if (stepFiles[4])                   total += 20; // step 4 address
+    if (riskSubmitted || stepFiles[5])  total += 20; // step 5 source of funds
     return total;
-  }, [kycProfile?.kycProfileComplete, idVerifyComplete, stepFiles, riskSubmitted]);
+  }, [kycProfile?.kycProfileComplete, kycProfile?.agreementSigned, idVerifyComplete, stepFiles, riskSubmitted]);
 
   // derive doc verification %
   const docPct = useMemo(() => {
     let done = 2; // passport (approved) + utility bill (under_review) = 2 of 4
-    if (stepFiles[3] || docUploads[3]) done = Math.min(4, done + 1);
     if (stepFiles[4] || docUploads[4]) done = Math.min(4, done + 1);
+    if (stepFiles[5] || docUploads[5]) done = Math.min(4, done + 1);
     return Math.round((done / 4) * 100);
   }, [stepFiles, docUploads]);
 
@@ -316,24 +348,24 @@ export default function Compliance() {
     },
     {
       id: 3,
+      title: "Customer Agreement",
+      icon: FileCheck,
+      baseDescription: "Read and sign the AMAX Global Customer Agreement",
+      uploadId: undefined as string | undefined,
+    },
+    {
+      id: 4,
       title: "Address Verification",
       icon: MapPin,
       baseDescription: "Upload a recent utility bill, bank statement, or government letter (dated within 3 months)",
       uploadId: "kyc-address",
     },
     {
-      id: 4,
+      id: 5,
       title: "Source of Funds",
       icon: CreditCard,
       baseDescription: "Upload payslips, tax returns, or a letter from your employer",
       uploadId: "kyc-funds",
-    },
-    {
-      id: 5,
-      title: "Risk Assessment",
-      icon: Shield,
-      baseDescription: "Complete the risk questionnaire",
-      uploadId: undefined,
     },
   ];
 
@@ -718,33 +750,14 @@ export default function Compliance() {
                   </div>
                 </div>
 
-                {/* Declarations */}
-                <div className="rounded-lg border p-4 space-y-4 bg-slate-50">
+                {/* PEP status — kept here for risk-scoring during profile save */}
+                <div className="rounded-lg border p-4 space-y-3 bg-slate-50">
                   <div>
-                    <h4 className="text-sm font-semibold">Mandatory Declarations</h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">All items marked <span className="text-red-500 font-medium">*</span> are required. The PEP confirmation is optional — leave unchecked if you are, or may be, a PEP.</p>
+                    <h4 className="text-sm font-semibold">Politically Exposed Person (PEP) Status</h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Used for risk assessment. All other declarations are captured in Step 3 — Customer Agreement.
+                    </p>
                   </div>
-
-                  {/* 1. Sanctions Declaration */}
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="pii-sanctions"
-                      checked={piiSanctions}
-                      onCheckedChange={v => setPiiSanctions(Boolean(v))}
-                    />
-                    <div>
-                      <Label htmlFor="pii-sanctions" className="text-sm font-medium cursor-pointer">
-                        Sanctions Declaration <span className="text-red-500">*</span>
-                      </Label>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        I declare that I am not a designated person or entity under Australian sanctions laws (including the Autonomous Sanctions Act 2011),
-                        United Nations Security Council sanctions, or the DFAT Consolidated List. I acknowledge that AMAX Global Pty Ltd will independently
-                        screen my information against relevant sanctions lists.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* 2. PEP — optional, positive wording */}
                   <div className="flex items-start gap-3">
                     <Checkbox
                       id="pii-pep"
@@ -753,85 +766,12 @@ export default function Compliance() {
                     />
                     <div>
                       <Label htmlFor="pii-pep" className="text-sm font-medium cursor-pointer">
-                        Politically Exposed Person (PEP) Confirmation
-                        <span className="ml-1 text-xs font-normal text-muted-foreground">(optional — leave unchecked if you are a PEP)</span>
+                        I confirm I am <span className="underline">not</span> a Politically Exposed Person (PEP)
+                        <span className="ml-1 text-xs font-normal text-muted-foreground">(leave unchecked if you are a PEP)</span>
                       </Label>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        I confirm that I am not a Politically Exposed Person (PEP), nor a family member or close associate of a PEP,
-                        whether domestic or foreign. I understand that if I am, or become, a PEP, I must notify AMAX and may be subject
-                        to enhanced due diligence.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* 3. Consent to Verification & Privacy */}
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="pii-consent"
-                      checked={piiConsent}
-                      onCheckedChange={v => setPiiConsent(Boolean(v))}
-                    />
-                    <div>
-                      <Label htmlFor="pii-consent" className="text-sm font-medium cursor-pointer">
-                        Consent to Verification &amp; Privacy Collection <span className="text-red-500">*</span>
-                      </Label>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        I consent to AMAX Global Pty Ltd collecting, verifying, and using my personal information for identity verification,
-                        fraud prevention, and compliance with the AML/CTF Act 2006. I understand that my information may be disclosed to
-                        authorised third-party verification providers, regulatory bodies including AUSTRAC, and as outlined in the AMAX Privacy Policy.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* 4. Terms & Conditions */}
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="pii-terms"
-                      checked={piiTerms}
-                      onCheckedChange={v => setPiiTerms(Boolean(v))}
-                    />
-                    <div>
-                      <Label htmlFor="pii-terms" className="text-sm font-medium cursor-pointer">
-                        Terms &amp; Conditions Acceptance <span className="text-red-500">*</span>
-                      </Label>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        I agree to the AMAX Global Terms and Conditions and acknowledge that I have read and understood them.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* 5. Account Use & Risk Acknowledgement */}
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="pii-riskack"
-                      checked={piiRiskAck}
-                      onCheckedChange={v => setPiiRiskAck(Boolean(v))}
-                    />
-                    <div>
-                      <Label htmlFor="pii-riskack" className="text-sm font-medium cursor-pointer">
-                        Account Use &amp; Monitoring Acknowledgement <span className="text-red-500">*</span>
-                      </Label>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        I understand that my account and transactions may be monitored and, where required, restricted, delayed, or reported
-                        to comply with applicable laws and regulations including the AML/CTF Act 2006.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* 6. Accuracy Declaration */}
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="pii-accuracy"
-                      checked={piiAccuracy}
-                      onCheckedChange={v => setPiiAccuracy(Boolean(v))}
-                    />
-                    <div>
-                      <Label htmlFor="pii-accuracy" className="text-sm font-medium cursor-pointer">
-                        Accuracy Declaration <span className="text-red-500">*</span>
-                      </Label>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        I declare that all information provided is true, accurate, and complete. I understand that providing false or
-                        misleading information may result in account suspension or reporting to relevant authorities.
+                        A PEP is a person who holds, or has held, a prominent public position or function. Leave unchecked if you are,
+                        or may be, a PEP — you will be subject to enhanced due diligence before account activation.
                       </p>
                     </div>
                   </div>
@@ -1210,8 +1150,271 @@ export default function Compliance() {
                   );
                 }
 
-                // ── Step 3 expanded address verification card ───────────────
+                // ── Step 3 expanded Customer Agreement card ─────────────────
                 if (def.id === 3 && status === "in_progress") {
+                  const agreementSections = [
+                    {
+                      title: "1. Terms of Service",
+                      content: `These Terms of Service govern your use of AMAX Global Pty Ltd's (ABN 54 690 827 608) digital financial services platform, including foreign exchange, eWallet, digital currency exchange, and remittance services ("Services"). By accepting these terms you agree to be bound by all provisions herein and any supplementary policies published by AMAX Global from time to time.
+
+You must be at least 18 years of age and have legal capacity to enter into binding contracts under Australian law. You agree to use the Services only for lawful purposes and in compliance with all applicable Australian laws, including but not limited to the Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth) ("AML/CTF Act"), the Currency (Restrictions on the Use of Cash) Act 2019 (Cth), and the Australian Consumer Law.
+
+AMAX Global reserves the right to suspend, restrict, or terminate your account where there is reasonable suspicion of fraud, money laundering, terrorism financing, sanctions evasion, or any other illegal activity. Transaction limits, fees, and foreign exchange rates are published on our website and may change without prior notice to the extent permitted by law.
+
+These Terms are governed by the laws of New South Wales, Australia. Disputes are subject to the exclusive jurisdiction of courts of competent jurisdiction in New South Wales.`,
+                    },
+                    {
+                      title: "2. Privacy Policy",
+                      content: `AMAX Global Pty Ltd collects, uses, and discloses your personal information in accordance with the Australian Privacy Act 1988 (Cth) and the Australian Privacy Principles (APPs). Information collected includes identity documents, biometric data (for identity verification), financial information, transaction history, and device and usage data.
+
+Your personal information is used to: (a) verify your identity and comply with CDD/ECDD obligations under the AML/CTF Act; (b) provide and improve our Services; (c) detect, prevent, and investigate fraud, money laundering, and sanctions evasion; (d) comply with our legal and regulatory obligations; and (e) communicate with you regarding your account.
+
+We may disclose your information to: AUSTRAC and other regulatory authorities as required by law; DFAT and law enforcement agencies; identity verification providers (including Veriff Pty Ltd); financial institutions processing your transactions; and our professional advisors. We do not sell your personal information.
+
+You have the right to access and correct your personal information. Contact our Privacy Officer at info@amaxglobal.com.au. Data may be transferred to servers in Australia and internationally where our service providers operate.`,
+                    },
+                    {
+                      title: "3. AML/CTF Declaration",
+                      content: `Anti-Money Laundering and Counter-Terrorism Financing Declaration — required under the AML/CTF Act 2006 (Cth) and AUSTRAC obligations.
+
+I declare that:
+(a) I am opening this account solely on my own behalf and not as an agent, trustee, or nominee for any other person or entity, unless I have separately disclosed a third-party arrangement in writing to AMAX Global;
+(b) The funds I deposit, exchange, or remit through AMAX Global are derived from legitimate sources and do not, to the best of my knowledge and belief, constitute proceeds of crime;
+(c) I understand that AMAX Global is required by law to monitor my transactions and may be required to report suspicious matters to AUSTRAC under Part 3 of the AML/CTF Act;
+(d) I will promptly notify AMAX Global in writing if any of the information I have provided changes, including changes to my source of funds, beneficial ownership, or residency status;
+(e) I consent to AMAX Global conducting ongoing CDD and ECDD as required, including re-verification of my identity, and understand that failure to cooperate may result in account restriction or closure.`,
+                    },
+                    {
+                      title: "4. Sanctions Declaration",
+                      content: `Sanctions Compliance Declaration — required under Australian autonomous sanctions laws and international obligations.
+
+I declare that:
+(a) I am not a designated person or entity listed on the DFAT Consolidated List, the United Nations Security Council consolidated sanctions list, or any other applicable Australian or international sanctions list;
+(b) I am not acting on behalf of, or for the benefit of, any designated person or entity;
+(c) I do not reside in, and the funds to be transacted are not derived from, a jurisdiction subject to comprehensive Australian autonomous sanctions or United Nations Security Council sanctions;
+(d) I understand that AMAX Global will independently screen my identity information against relevant sanctions lists on an ongoing basis and may freeze or restrict my account if a match is identified, without prior notice, as required by law;
+(e) I will immediately notify AMAX Global if I become aware that I or any beneficial owner of my account becomes subject to any sanctions designation.
+
+Breach of Australian sanctions law is a serious criminal offence. AMAX Global is required to report any suspected sanctions breach to DFAT and may refer the matter to the Australian Federal Police.`,
+                    },
+                    {
+                      title: "5. Risk Disclosure (Digital Currency Exchange)",
+                      content: `Digital Currency Exchange Risk Disclosure — issued by AMAX Global Pty Ltd, registered with AUSTRAC as a Digital Currency Exchange (DCE) provider.
+
+IMPORTANT RISKS — PLEASE READ CAREFULLY:
+
+(a) Price Volatility: Digital currencies (including Bitcoin, Ethereum, and other crypto-assets) are highly volatile. Their value can decrease significantly in a short period. You may lose all or a substantial part of your investment.
+
+(b) Regulatory Risk: The regulatory environment for digital currencies is evolving. New laws or regulatory actions may adversely affect the value, transferability, or legality of digital currencies.
+
+(c) Technology Risk: Blockchain networks may experience congestion, forks, or technical failures. Transactions on public blockchains are generally irreversible. Errors in wallet addresses will result in permanent loss of funds.
+
+(d) Liquidity Risk: Digital currency markets may lack sufficient liquidity, particularly during periods of high volatility, which may prevent you from executing transactions at your desired price or time.
+
+(e) No Government Guarantee: Digital currencies are not legal tender in Australia and are not backed or guaranteed by the Australian Government, the Reserve Bank of Australia, or any other government or central bank.
+
+(f) Custody Risk: AMAX Global holds digital currencies on your behalf. While we maintain industry-standard security, we are not a bank and your digital currency holdings are not covered by the Financial Claims Scheme.
+
+By proceeding, you acknowledge that you have read and understood these risks and that you are making an informed decision to use AMAX Global's digital currency exchange services.`,
+                    },
+                    {
+                      title: "6. Account Terms & Conditions",
+                      content: `AMAX Global Account Terms — these terms govern your eWallet and transactional account with AMAX Global Pty Ltd.
+
+Account Opening: Your account is subject to successful completion of our Know Your Customer (KYC) process, including identity verification and risk assessment. We reserve the right to decline any application without providing reasons.
+
+Transaction Limits: Default daily transaction limits apply and are displayed in your account settings. Enhanced limits may be available following ECDD review. Limits may be reduced or suspended for risk management or regulatory compliance reasons.
+
+Fees: Fee schedules are published on our website and may be updated with notice. Fees are deducted from your transaction amount or eWallet balance. No fees apply to incoming deposits unless otherwise specified.
+
+Account Maintenance: You are responsible for maintaining the security of your login credentials. Report any unauthorised access immediately to info@amaxglobal.com.au. AMAX Global is not liable for losses arising from your failure to maintain account security.
+
+Dormant Accounts: Accounts with no activity for 7 years may be subject to unclaimed money obligations under the Banking Act 1959 (Cth). We will contact you before any funds are transferred.
+
+Termination: You may close your account at any time by contacting info@amaxglobal.com.au. AMAX Global may close your account with 30 days' notice, or immediately in cases of fraud, regulatory direction, or material breach of these terms.
+
+Currency Conversion: Exchange rates for FX and remittance transactions are indicative until your transaction is confirmed. We will display the rate applicable to your transaction before you confirm.
+
+Complaints: AMAX Global has an internal dispute resolution process. If unresolved, complaints may be referred to the Australian Financial Complaints Authority (AFCA) at www.afca.org.au or 1800 931 678.
+
+Record Keeping: AMAX Global is required to retain transaction records for 7 years under the AML/CTF Act 2006. Account and KYC records are retained for the period required by applicable law.`,
+                    },
+                  ];
+
+                  const sectionColors = [
+                    "bg-blue-50 border-blue-200",
+                    "bg-purple-50 border-purple-200",
+                    "bg-orange-50 border-orange-200",
+                    "bg-red-50 border-red-200",
+                    "bg-yellow-50 border-yellow-200",
+                    "bg-green-50 border-green-200",
+                  ];
+
+                  return (
+                    <div key={def.id} className="border-2 border-indigo-300 bg-indigo-50 rounded-xl overflow-hidden">
+                      {/* Header */}
+                      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-indigo-600">
+                          <FileCheck className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-gray-400 font-medium">Step 3 of 5</span>
+                            <h3 className="font-semibold text-gray-900">Customer Agreement</h3>
+                            <Badge className="bg-indigo-100 text-indigo-800">Action Required</Badge>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Read all 6 sections and sign below to proceed — Electronic Transactions Act 1999 (Cth)
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="px-4 pb-5 space-y-4">
+                        {/* Section progress pills */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {agreementSections.map((sec, idx) => (
+                            <span
+                              key={idx}
+                              className={`text-xs px-2 py-0.5 rounded-full border font-medium transition-all ${
+                                sectionsRead.has(idx + 1)
+                                  ? "bg-green-100 border-green-300 text-green-800"
+                                  : "bg-gray-100 border-gray-300 text-gray-500"
+                              }`}
+                            >
+                              {sectionsRead.has(idx + 1) ? "✓ " : ""}{idx + 1}. {sec.title.replace(/^\d+\. /, "").split(" ").slice(0, 2).join(" ")}
+                            </span>
+                          ))}
+                        </div>
+
+                        {agreementSigned ? (
+                          /* ── Already signed ── */
+                          <div className="bg-green-50 border border-green-200 rounded-xl p-5 space-y-3">
+                            <div className="flex items-center gap-3">
+                              <CheckCircle className="w-8 h-8 text-green-600 flex-shrink-0" />
+                              <div>
+                                <p className="font-semibold text-green-900">Customer Agreement Signed</p>
+                                <p className="text-sm text-green-700">
+                                  Agreement reference: <span className="font-mono font-semibold">{kycProfile?.agreementRef}</span>
+                                </p>
+                              </div>
+                            </div>
+                            {kycProfile?.agreementSignedAt && (
+                              <p className="text-xs text-muted-foreground">
+                                Signed on {new Date(kycProfile.agreementSignedAt).toLocaleString("en-AU", { timeZone: "Australia/Sydney" })} AEST
+                                — v2.0 — Pursuant to Electronic Transactions Act 1999 (Cth)
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <>
+                            {/* ── Scrollable agreement document ── */}
+                            <div
+                              ref={agreementScrollRef}
+                              onScroll={handleAgreementScroll}
+                              className="bg-white border rounded-xl overflow-y-auto"
+                              style={{ maxHeight: "420px" }}
+                            >
+                              {/* Identity strip */}
+                              <div className="sticky top-0 z-10 bg-gray-900 text-white px-4 py-3 flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                                  <User className="w-4 h-4 text-white" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-semibold truncate">{kycProfile?.fullLegalName ?? "Verified Customer"}</p>
+                                  <p className="text-[10px] text-gray-400">Identity verified · AMAX Global Customer Agreement v2.0</p>
+                                </div>
+                                <div className="text-[10px] text-gray-400 flex-shrink-0">
+                                  {new Date().toLocaleDateString("en-AU")}
+                                </div>
+                              </div>
+
+                              {/* Agreement header */}
+                              <div className="px-5 pt-4 pb-3 border-b">
+                                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">AMAX Global Pty Ltd — ABN 54 690 827 608</p>
+                                <h3 className="text-base font-bold text-gray-900 mt-1">Customer Agreement</h3>
+                                <p className="text-xs text-gray-500 mt-0.5">Version 2.0 · Effective 1 January 2025 · Level 2, 8–12 King Street, Rockdale NSW 2216</p>
+                              </div>
+
+                              {/* 6 sections */}
+                              {agreementSections.map((sec, idx) => (
+                                <div
+                                  key={idx}
+                                  ref={el => { sectionRefs.current[idx] = el; }}
+                                  className={`mx-4 my-3 rounded-lg border p-4 ${sectionColors[idx]}`}
+                                >
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <h4 className="text-sm font-bold text-gray-900">{sec.title}</h4>
+                                    {sectionsRead.has(idx + 1) && (
+                                      <CheckCircle className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-line">{sec.content}</p>
+                                </div>
+                              ))}
+
+                              {/* Footer nudge */}
+                              <div className="px-5 py-4 text-center text-xs text-gray-400">
+                                {allSectionsRead
+                                  ? "✓ All sections read — scroll down to sign"
+                                  : "↓ Continue scrolling to read all sections before signing"}
+                              </div>
+                            </div>
+
+                            {/* Signature section */}
+                            <div className={`bg-white border-2 rounded-xl p-4 space-y-3 transition-all ${
+                              allSectionsRead ? "border-indigo-300" : "border-gray-200 opacity-60"
+                            }`}>
+                              <div className="flex items-center gap-2">
+                                <PenLine className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                                <h4 className="text-sm font-semibold text-gray-900">Electronic Signature</h4>
+                                {!allSectionsRead && (
+                                  <span className="text-xs text-muted-foreground ml-auto">(unlock by reading all sections)</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-600">
+                                Type your full legal name exactly as registered (<span className="font-semibold">{kycProfile?.fullLegalName ?? "your name"}</span>)
+                                to apply your electronic signature under the <em>Electronic Transactions Act 1999</em> (Cth).
+                              </p>
+                              <input
+                                type="text"
+                                disabled={!allSectionsRead}
+                                placeholder={kycProfile?.fullLegalName ?? "Your full legal name"}
+                                value={signatureName}
+                                onChange={e => setSignatureName(e.target.value)}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-serif italic disabled:bg-gray-100 disabled:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                              />
+                              {/* PEP acknowledgement in agreement */}
+                              <div className="flex items-start gap-2 text-xs text-gray-600">
+                                <Checkbox
+                                  id="agreement-pep"
+                                  checked={piiPep}
+                                  disabled={!allSectionsRead}
+                                  onCheckedChange={v => setPiiPep(Boolean(v))}
+                                />
+                                <Label htmlFor="agreement-pep" className="text-xs cursor-pointer leading-relaxed">
+                                  I confirm I am <span className="underline">not</span> a Politically Exposed Person (PEP), nor an immediate family member or close associate of a PEP. I understand that leaving this unchecked will flag my account for Enhanced Customer Due Diligence.
+                                </Label>
+                              </div>
+                              <Button
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                                disabled={!allSectionsRead || !signatureName.trim() || agreementMutation.isPending}
+                                onClick={() => agreementMutation.mutate({ signature: signatureName.trim(), pepDeclaration: piiPep })}
+                              >
+                                {agreementMutation.isPending ? "Recording signature…" : "Sign Agreement & Continue"}
+                              </Button>
+                              <p className="text-[10px] text-center text-muted-foreground">
+                                Electronic signature valid under the Electronic Transactions Act 1999 (Cth) · AMAX Global records your IP address and timestamp
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // ── Step 4 expanded address verification card ───────────────
+                if (def.id === 4 && status === "in_progress") {
                   return (
                     <div key={def.id} className="border-2 border-yellow-300 bg-yellow-50 rounded-xl overflow-hidden">
                       {/* Header */}
@@ -1221,7 +1424,7 @@ export default function Compliance() {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-gray-400 font-medium">Step 3 of 5</span>
+                            <span className="text-xs text-gray-400 font-medium">Step 4 of 5</span>
                             <h3 className="font-semibold text-gray-900">Address Verification</h3>
                             <Badge className="bg-yellow-100 text-yellow-800">In Progress</Badge>
                           </div>
@@ -1293,7 +1496,7 @@ export default function Compliance() {
                                 const f = e.target.files?.[0];
                                 if (f) {
                                   setAddrPoaFile(f.name);
-                                  setStepFiles(prev => ({ ...prev, [3]: f.name }));
+                                  setStepFiles(prev => ({ ...prev, [4]: f.name }));
                                   toast({
                                     title: "Proof of Address Received",
                                     description: `${f.name} submitted. Our compliance team will verify it within 1–2 business days.`,
