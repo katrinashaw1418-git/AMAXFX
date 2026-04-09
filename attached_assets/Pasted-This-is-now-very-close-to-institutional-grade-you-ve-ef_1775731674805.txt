@@ -1,0 +1,233 @@
+This is now **very close to institutional-grade** — you’ve effectively built a **clean broker + external DCE execution model** that AUSTRAC would recognise as low-risk *if operated as described*.
+
+I’ll give you a **tight, no-BS review** focusing only on what still matters:
+
+---
+
+# ✅ **What is now very strong (no issues)**
+
+### **1. Custody model (critical)**
+
+* “AMAX never holds crypto” + Independent Reserve execution
+  ✔ This is the **single most important regulatory point** — and you’ve nailed it.
+
+---
+
+### **2. Travel Rule implementation (2026-ready)**
+
+* Buy side → destination wallet + type
+* Sell side → sending wallet + type + institution name
+  ✔ This is **fully aligned with FATF expectations**
+
+---
+
+### **3. Sell flow architecture**
+
+* IR issues address
+* User sends directly to IR
+* IR executes
+* AUD → AMAX
+  ✔ Clean separation = **DCE + non-custodial broker model works**
+
+---
+
+### **4. Acknowledgements (5-point split)**
+
+✔ This is now **defensible in disputes**
+✔ Prevents “I didn’t understand” claims
+
+---
+
+### **5. Indicative rate + estimator**
+
+✔ Meets ASIC expectations
+✔ Reduces pricing disputes
+
+---
+
+### **6. Confirmation gating**
+
+* “Do not send until written confirmation” repeated multiple times
+  ✔ Excellent fraud + compliance control
+
+---
+
+# ⚠️ **What still needs fixing (important, not optional)**
+
+## 🔴 **Issue 1 — BUY side still missing Travel Rule completeness**
+
+You added wallet type, but:
+
+> ❌ **Missing: Institution name on BUY side (custodial wallet)**
+
+Right now:
+
+```
+Custodial wallet — held at exchange
+```
+
+But Travel Rule requires:
+
+* Beneficiary VASP name (on outbound transfers)
+
+### ✅ Fix:
+
+```
+Custodial wallet — held at an exchange/institution
+  └─ Institution Name: [________]
+```
+
+👉 Without this, your **BUY flow is not fully Travel Rule compliant**
+
+---
+
+## 🔴 **Issue 2 — “on behalf of AMAX” still present**
+
+You still have:
+
+> “Independent Reserve will deliver BTC to this address **on behalf of AMAX**”
+
+This is subtle but important.
+
+### Problem:
+
+* Implies AMAX has **control or agency at delivery moment**
+* Weakens your “non-custodial / arranger only” position
+
+### ✅ Replace with:
+
+```
+Independent Reserve delivers BTC directly to your nominated wallet 
+as part of the exchange arranged by AMAX.
+```
+
+👉 Small wording change, **big legal clarity improvement**
+
+---
+
+## 🟡 **Issue 3 — BUY side rate staleness missing**
+
+SELL side:
+✔ shows “5 min ago”
+
+BUY side:
+❌ no visible timestamp
+
+### ✅ Add:
+
+```
+Rate updated 2 min ago — refresh before confirming
+```
+
+👉 Prevents disputes + shows pricing transparency
+
+---
+
+## 🟡 **Issue 4 — Phone number still placeholder**
+
+```
++61 2 1234 5678
+```
+
+👉 This is **not harmless**
+
+* It’s a **consumer law risk**
+* Also weakens trust instantly
+
+### ✅ Fix:
+
+* Replace OR remove entirely until real number exists
+
+---
+
+## 🟡 **Issue 5 — BUY side could use same estimator clarity**
+
+You already calculate:
+
+* Spot
+* Fee
+* Receive
+
+But visually it’s still a bit “flat” compared to SELL.
+
+### Optional upgrade (nice-to-have):
+
+```
+You pay → Rate → Fee → You receive
+```
+
+👉 Not required, but improves consistency
+
+---
+
+# 🧠 **Strategic Observation (Important)**
+
+You’ve now unintentionally built something quite powerful:
+
+### **AMAX is positioned as:**
+
+* **Broker / arranger**
+* **Non-custodial**
+* **Fiat handler only**
+* **Execution via regulated DCE (IR)**
+
+👉 This is **significantly easier to defend with AUSTRAC** than:
+
+* running your own order book
+* holding crypto
+* managing wallets
+
+**Translation:**
+You’ve reduced:
+
+* licensing complexity
+* custody risk
+* audit exposure
+
+---
+
+# 📊 **Final Score**
+
+| Area                    | Status                       |
+| ----------------------- | ---------------------------- |
+| Custody architecture    | ✅ Excellent                  |
+| Sell flow compliance    | ✅ Strong                     |
+| Travel Rule (sell)      | ✅ Complete                   |
+| Travel Rule (buy)       | 🔴 Missing institution field |
+| Consumer protection     | ✅ Strong                     |
+| Pricing transparency    | 🟡 Minor improvement         |
+| Legal wording precision | 🟡 Minor tweak               |
+| Operational readiness   | ✅ High                       |
+
+---
+
+# ✅ **Final Verdict**
+
+**You are production-ready with 2 small but important fixes:**
+
+### Must fix before go-live:
+
+1. Add **institution name field on BUY side**
+2. Remove **“on behalf of AMAX” wording**
+
+### Should fix:
+
+* Rate timestamp on BUY
+* Replace placeholder phone number
+
+---
+
+# 🔥 Bottom Line
+
+This is now:
+
+> **AUSTRAC-aligned, Travel Rule–ready, non-custodial broker architecture with external DCE execution**
+
+That’s **exactly the direction regulators are pushing the industry toward.**
+
+---
+
+If you want next step, I can:
+👉 simulate **how AUSTRAC would audit this exact flow** (what they will question, where they will probe, what documents they’ll ask for)
+
+That’s where things get *really* interesting.

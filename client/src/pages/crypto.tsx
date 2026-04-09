@@ -387,8 +387,9 @@ export default function Crypto() {
                       className="font-mono text-sm"
                     />
                     <p className="text-xs text-gray-500">
-                      Independent Reserve will deliver {toCurrency} to this address on behalf of AMAX.
-                      Neither AMAX nor Independent Reserve can reverse deliveries to incorrect addresses.
+                      Independent Reserve delivers {toCurrency} directly to your nominated wallet as part
+                      of the exchange arranged by AMAX. Deliveries to incorrect addresses cannot be
+                      reversed by AMAX or Independent Reserve.
                     </p>
                     {destinationWallet && !isValidWalletAddress(destinationWallet, toCurrency) && (
                       <p className="text-xs text-red-600 flex items-center gap-1">
@@ -460,7 +461,15 @@ export default function Crypto() {
                     </div>
                     <div className="flex justify-between text-gray-600">
                       <span>Spot Rate</span>
-                      <span className="font-medium">{rateLoading ? "Loading…" : `1 ${fromCurrency} = ${exchangeRate.toFixed(8)} ${toCurrency}`}</span>
+                      <div className="text-right">
+                        <span className="font-medium block">{rateLoading ? "Loading…" : `1 ${fromCurrency} = ${exchangeRate.toFixed(8)} ${toCurrency}`}</span>
+                        {!rateLoading && (
+                          <span className={`flex items-center justify-end gap-0.5 text-xs mt-0.5 ${rateIsStale ? "text-amber-500" : "text-green-500"}`}>
+                            <RefreshCw className="w-2.5 h-2.5" />
+                            {rateIsStale ? "⚠ Rate stale — refresh before confirming" : `Rate updated ${formatRateAge((fxRate as any)?.rateAgeMinutes)}`}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex justify-between text-gray-600">
                       <span>Processing Fee (0.5%)</span>
