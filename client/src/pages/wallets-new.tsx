@@ -884,7 +884,7 @@ export default function Wallets() {
                 );
               })}
             </div>
-            <p className="text-[10px] text-muted-foreground mt-2">Pending transactions are visible here until AMAX confirms and processes them. Contact info@amaxglobal.com.au for queries.</p>
+            <p className="text-[10px] text-muted-foreground mt-2">Pending transactions are visible here until our regulated banking partner confirms receipt and the transaction is settled. Contact info@amaxglobal.com.au for queries.</p>
           </CardContent>
         </Card>
       )}
@@ -905,7 +905,7 @@ export default function Wallets() {
                 <span className="text-xl">⏳</span>
                 <div>
                   <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">Deposit Submitted — Awaiting Funds</p>
-                  <p className="text-xs text-amber-700 dark:text-amber-400">Your balance will be credited once AMAX confirms receipt.</p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400">Your balance will be credited once our regulated banking partner confirms receipt of your funds.</p>
                 </div>
               </div>
 
@@ -915,7 +915,7 @@ export default function Wallets() {
                   <p className="text-sm font-mono font-bold text-blue-800 dark:text-blue-200">{depositSubmitted.referenceCode}</p>
                   <Button variant="outline" size="sm" className="h-7 text-xs px-3" onClick={() => { navigator.clipboard.writeText(depositSubmitted.referenceCode); toast({ title: "Copied", description: "Reference code copied to clipboard" }); }}>Copy</Button>
                 </div>
-                <p className="text-xs text-blue-700 dark:text-blue-300">Include this reference in your transfer so AMAX can match your payment.</p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">Include this reference code in your transfer so our team can match your payment.</p>
               </div>
 
               {(depositSubmitted.method === 'payid' || depositSubmitted.method === 'bank_transfer') && (
@@ -1397,7 +1397,7 @@ export default function Wallets() {
                       });
                     }}
                   >
-                    {cryptoWithdrawMutation.isPending ? 'Submitting…' : 'Submit Withdrawal Request'}
+                    {cryptoWithdrawMutation.isPending ? 'Submitting…' : 'Submit Transfer Request'}
                   </Button>
                 </div>
 
@@ -1428,10 +1428,10 @@ export default function Wallets() {
             /* ── FIAT WALLET — standard bank transfer ── */
             <div className="space-y-3">
               <div>
-                <Label htmlFor="withdraw-method">Withdrawal Method</Label>
+                <Label htmlFor="withdraw-method">Transfer Method</Label>
                 <Select value={withdrawMethod} onValueChange={setWithdrawMethod}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select withdrawal method" />
+                    <SelectValue placeholder="Select transfer method" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>

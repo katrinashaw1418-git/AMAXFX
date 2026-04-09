@@ -1,0 +1,213 @@
+
+
+AMAX Global
+Welcome back, Demo
+
+3
+Global
+
+Your Accounts
+Multi-Currency FX Accounts
+
+Voice Settings
+AMAX Global Pty Ltd (ABN 54 690 827 608) does not hold client funds. Balances shown reflect funds held with regulated partner banking institutions and, for crypto exchange purposes, with Independent Reserve Pty Ltd (AUSTRAC DCE-100461150-001). AMAX acts as a payment facilitator and Digital Currency Exchange (DCE) only. Account balances are available for instructed transactions subject to AML/CTF screening and KYC verification.
+
+Your Account Balances
+(held with regulated partners)
+Show values in:
+
+🇺🇸
+USD
+Currency	Balance	Approx. Value (USD)	YTD vs USD	Actions
+🇦🇺
+AUD
+Australian Dollar
+$2,591,552.563
+Available for transfer: $2,589,183.563
+≈ $1,828,729.066
+1 AUD = 0.705650 USD
++5.58%
+
+
+
+🇨🇦
+CAD
+Canadian Dollar
+$127,302
+Available for transfer: $127,302
+≈ $91,848.485
+1 CAD = 0.721501 USD
+-1.21%
+
+
+
+🇨🇳
+CNY
+Chinese Yuan
+¥1,837.795
+Available for transfer: ¥1,837.795
+≈ $269.089
+1 CNY = 0.146419 USD
++2.51%
+
+
+
+🇪🇺
+EUR
+Euro
+€2,800
+Available for transfer: €2,800
+≈ $3,277.691
+1 EUR = 1.17 USD
+-0.37%
+
+
+
+🇬🇧
+GBP
+British Pound
+£2,400
+Available for transfer: £2,400
+≈ $3,233.238
+1 GBP = 1.35 USD
++0.04%
+
+
+
+🇭🇰
+HKD
+Hong Kong Dollar
+$779.712
+Available for transfer: $779.712
+≈ $99.551
+1 HKD = 0.127676 USD
+-0.62%
+
+
+
+🇯🇵
+JPY
+Japanese Yen
+¥380,000
+Available for transfer: ¥380,000
+≈ $2,402.782
+1 JPY = 0.006323 USD
+-0.89%
+
+
+
+🇰🇷
+KRW
+South Korean Won
+₩4,797,984.59
+Available for transfer: ₩4,797,984.59
+≈ $3,254.569
+1 KRW = 0.000678 USD
+-1.69%
+
+
+
+🇳🇿
+NZD
+New Zealand Dollar
+NZ$174.493
+Available for transfer: NZ$174.493
+≈ $101.852
+1 NZD = 0.583703 USD
++1.24%
+
+
+
+🇸🇬
+SGD
+Singapore Dollar
+$44,712
+Available for transfer: $44,712
+≈ $35,126.09
+1 SGD = 0.785608 USD
++0.99%
+
+
+
+🇺🇸
+USD
+US Dollar
+$2,590.023
+Available for transfer: $2,590.023
+$2,590.023
+
+
+
+Pending Transactions (5)
+↓ Deposit
+bank transfer
+Pending
+76,890 AUD · Ref: #36
+08 Apr, 07:15 pm
+↓ Deposit
+bank transfer
+Pending
+112 CNY · Ref: #37
+08 Apr, 07:16 pm
+↓ Deposit
+bank transfer
+Pending
+4,347 CNY · Ref: #39
+08 Apr, 07:18 pm
+↓ Deposit
+bank transfer
+Pending
+3,425 GBP · Ref: #40
+08 Apr, 07:21 pm
+↑ Withdrawal
+payid
+Pending
+2,334 AUD · Ref: AMAX-W25A1E404
+08 Apr, 08:26 pm
+To PayID: 23333 (DFDS)
+Pending transactions are visible here until AMAX confirms and processes them. Contact info@amaxglobal.com.au for queries.
+
+0.665486
+Transfer Out — CAD
+Instruct our regulated banking partner to send CAD funds to your nominated account
+
+🛡️ AML / Travel Rule Compliance
+
+All withdrawals are subject to: identity verification (KYC) · beneficiary information collection (FATF Travel Rule) · sanctions and PEP screening · ongoing transaction monitoring for suspicious activity. By proceeding, you confirm all information provided is accurate and complete. Transactions may be reported to AUSTRAC where required by law.
+
+Withdrawal Method
+⚡ PayID / NPP (AUD instant)
+Amount
+Enter amount
+Available for transfer: 127302.00000000 CAD
+
+Purpose of Transfer * (AML/CTF required)
+Select purpose of transfer
+Required under AUSTRAC AML/CTF obligations. This information is collected for compliance monitoring.
+
+⚡ PayID / NPP Transfer Out
+• Instant payout via Australia's NPP / Osko network
+
+• Settlement: seconds to minutes (business hours)
+
+• AUD accounts only — funds delivered to your PayID
+
+• No fees charged by AMAX for PayID payouts
+
+• PayID must be registered in your verified legal name
+
+• Third-party PayID transfers are not permitted
+
+• All outbound transfers are subject to AML/CTF monitoring and may be reported to AUSTRAC
+
+Your PayID (email or phone)
+you@example.com or +61400000000
+Account Holder Name
+John Chen
+⏳ Transfer-out requests are subject to review before being processed by our regulated banking partner. Funds will be sent from the partner account to your PayID — typically within 1 business day.
+
+Confirm Transfer
+Cancel
+Transfers are executed by regulated financial partners. AMAX does not hold client funds.
+
+Close
