@@ -985,8 +985,7 @@ export default function Compliance() {
                               <div>
                                 <p className="font-semibold text-yellow-900">Documents Received — Awaiting Manual Review</p>
                                 <p className="text-sm text-yellow-700 mt-1">
-                                  Your identity documents have been received and queued for review by our compliance team
-                                  (Compliance Officer: Qin Xiong). You will be notified at your registered email address
+                                  Your identity documents have been received and queued for review by our external KYC provider, Sumsub. You will be notified at your registered email address
                                   within <strong>1–2 business days</strong>.
                                 </p>
                               </div>
@@ -1577,6 +1576,59 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                   );
                 }
 
+                // ── Step 3 completed — viewable summary card ────────────────
+                if (def.id === 3 && status === "completed") {
+                  return (
+                    <div key={def.id} className="border-2 border-green-200 bg-green-50 rounded-xl overflow-hidden">
+                      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-600">
+                          <CheckCircle className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-gray-400 font-medium">Step {def.id} of 4</span>
+                            <h3 className="font-semibold text-gray-900">Document upload &amp; ID verification</h3>
+                            <Badge className="bg-green-100 text-green-800">Completed</Badge>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">Identity verified by Sumsub, our external AUSTRAC-compliant KYC provider</p>
+                        </div>
+                      </div>
+                      <div className="px-4 pb-5">
+                        <div className="bg-white border border-green-200 rounded-xl p-4 space-y-3">
+                          <div className="flex items-center gap-3">
+                            <CheckCircle className="w-7 h-7 text-green-600 flex-shrink-0" />
+                            <div>
+                              <p className="font-semibold text-green-900">Identity Verified</p>
+                              <p className="text-xs text-green-700">All checks passed — document verified, face matched, sanctions clear</p>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                              <p className="text-gray-500">KYC Provider</p>
+                              <p className="font-semibold text-green-800">Sumsub (external)</p>
+                            </div>
+                            <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                              <p className="text-gray-500">Account Status</p>
+                              <p className="font-semibold text-green-800">Unlocked</p>
+                            </div>
+                            <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                              <p className="text-gray-500">Compliance Standard</p>
+                              <p className="font-semibold text-green-800">AUSTRAC CDD</p>
+                            </div>
+                            <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                              <p className="text-gray-500">Verification Result</p>
+                              <p className="font-semibold text-green-800">Approved</p>
+                            </div>
+                          </div>
+                          <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
+                            <Lock className="w-3 h-3" /> Biometric data processed by Sumsub under Privacy Act 1988 &amp; AML/CTF Act 2006 — not stored by AMAX Global
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <div
                     key={def.id}
@@ -1673,7 +1725,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                   </h4>
                   <p className="text-sm mb-3 text-blue-700">
                     {nextStep.id === 2 && "Read and sign the AMAX Customer Agreement — covers terms, privacy, AML/CTF, sanctions, and risk disclosure. Scroll through all sections then type your legal name to sign."}
-                    {nextStep.id === 3 && "Complete biometric identity verification using your government-issued ID. This typically takes 1–3 minutes via our AUSTRAC-approved provider."}
+                    {nextStep.id === 3 && "Complete biometric identity verification using your government-issued ID. This typically takes 1–3 minutes via Sumsub, our external AUSTRAC-compliant KYC provider."}
                     {nextStep.id === 4 && "Upload a utility bill, bank statement, or government letter dated within the last 3 months showing your full name and address."}
                   </p>
                   {nextStep.uploadId && (
