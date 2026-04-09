@@ -1,6 +1,7 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { createHash, randomBytes } from "crypto";
+import { sendVerificationEmail, sendPasswordResetEmail, emailConfigured } from "./email";
 import Stripe from "stripe";
 import { z } from "zod";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
@@ -872,6 +873,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const token = signToken({ userId: newUser.id, username: newUser.username, email: newUser.email });
       res.status(201).json({ token, user: { id: newUser.id, username: newUser.username, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName, kycStatus: newUser.kycStatus, userTier: newUser.userTier } });
     } catch (error: any) {
+      console.error("[register] error:", error?.message, error?.code, error?.detail);
       if (error.status) return res.status(error.status).json({ error: error.message });
       res.status(500).json({ error: "Registration failed. Please try again." });
     }

@@ -49,6 +49,10 @@ export const users = pgTable("users", {
   agreementRef: text("agreement_ref"),          // unique reference e.g. AMXAGR-XXXXXXXX
   agreementVersion: text("agreement_version"),  // e.g. "v2.0"
   agreementSignature: text("agreement_signature"), // typed legal name at signing
+  // Email verification
+  emailVerified: boolean("email_verified").default(false),
+  emailVerificationToken: text("email_verification_token"),
+  emailVerificationTokenExpiry: timestamp("email_verification_token_expiry"),
 });
 
 export const portfolios = pgTable("portfolios", {
