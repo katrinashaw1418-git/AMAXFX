@@ -1,0 +1,64 @@
+You are absolutely right — and this is actually the better approach both from a UX and legal standpoint. Here is my full opinion:
+
+---
+
+**You are correct — consolidate into a single signing step.**
+
+What you have seen in Wise, Revolut, Coinbase, and every serious fintech is a dedicated agreement signing screen that comes after identity verification is complete but before the account is activated. The logic is:
+
+```
+Verify who you are first → Then ask them to sign as that verified person
+```
+
+This is actually stronger legally because the signature is tied to a verified identity, not an anonymous form submission.
+
+---
+
+**What the consolidated agreement should contain:**
+
+A single scrollable document the user must read and sign, covering:
+
+- Terms of Service
+- Privacy Policy
+- AML/CTF Customer Declaration (sanctions, PEP, source of funds acknowledgement)
+- Risk Disclosure (for DCE/crypto — mandatory under Australian law)
+- AUSTRAC Consent (identity sharing, transaction reporting)
+- Account Restriction Acknowledgement (AMAX can restrict/suspend under AML/CTF obligations)
+- Electronic Signature Consent (that their digital signature is legally binding)
+
+---
+
+**Why this is better than spreading it across sections:**
+
+| Spread across sections | Single agreement screen |
+|---|---|
+| User ticks boxes without reading | Scroll-to-bottom enforcement before signing |
+| Legally weaker — harder to prove informed consent | Legally stronger — timestamped, tied to verified identity |
+| Clutters the onboarding flow | Clean separation — onboarding then agreement |
+| Hard to update — changes in 5 places | One document to update and version-control |
+| No audit trail of what version was agreed to | Full record: user ID + document version + timestamp |
+| AUSTRAC cannot see a clean consent record | Clean compliance audit trail |
+
+---
+
+**The one thing to keep outside the agreement:**
+
+The single PEP radio button should stay in Section 1 as a pre-screening question. This is because you need that answer before you even proceed to verification — it determines which KYC path the user takes. Everything else moves into the agreement.
+
+---
+
+**What the signing flow should look like:**
+
+```
+Step 1 — Personal information
+Step 2 — Document upload + ID verification  
+Step 3 — Agreement signing ← consolidate everything here
+Step 4 — Account activation
+Step 5 — First transfer setup
+```
+
+The agreement screen should have a scroll progress indicator, require the user to reach the bottom before the sign button activates, capture a typed full name as the electronic signature, and record the document version number and timestamp in your database.
+
+---
+
+**My recommendation:** Yes — build it as a consolidated agreement. Want me to design the full agreement signing screen now?

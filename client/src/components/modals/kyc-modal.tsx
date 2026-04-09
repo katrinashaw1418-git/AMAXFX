@@ -43,18 +43,18 @@ export default function KycModal({ isOpen, onClose }: KycModalProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <div className="text-center">
-            <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-              <Shield className="w-8 h-8 text-white" />
-            </div>
-            <DialogTitle className="text-xl font-semibold mb-2">
-              Complete KYC Verification
-            </DialogTitle>
-            <DialogDescription className="text-gray-600">
-              Verify your identity to access full platform features
-            </DialogDescription>
-          </div>
+          <DialogTitle className="text-xl font-semibold text-center">
+            Complete KYC Verification
+          </DialogTitle>
+          <DialogDescription className="text-gray-600 text-center">
+            Verify your identity to access full platform features
+          </DialogDescription>
         </DialogHeader>
+        <div className="flex justify-center mb-2">
+          <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
+            <Shield className="w-8 h-8 text-white" />
+          </div>
+        </div>
         
         <div className="space-y-4">
           {steps.map((step) => {

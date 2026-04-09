@@ -127,6 +127,7 @@ export default function Compliance() {
     purposeOfAccount?: string;
     sourceOfFunds?: string;
     taxCountry?: string;
+    kycRefreshDue?: string | null;
   }>({
     queryKey: ["/api/kyc/profile"],
   });
@@ -292,6 +293,17 @@ export default function Compliance() {
       status: riskSubmitted ? "completed" : "pending",
     },
   ], [kycPct, docPct, riskSubmitted]);
+
+  // ── KYC refresh notice ─────────────────────────────────────────────────────
+  const kycRefreshNotice = useMemo((): "overdue" | "due_soon" | null => {
+    if (!kycProfile?.kycRefreshDue) return null;
+    const due = new Date(kycProfile.kycRefreshDue);
+    const now = new Date();
+    const daysUntilDue = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysUntilDue <= 0)  return "overdue";
+    if (daysUntilDue <= 30) return "due_soon";
+    return null;
+  }, [kycProfile?.kycRefreshDue]);
 
   // ── step definitions ───────────────────────────────────────────────────────
   const kycStepDefs = [
@@ -490,6 +502,36 @@ export default function Compliance() {
 
         {/* ── KYC Status Tab ── */}
         <TabsContent value="kyc" className="space-y-4">
+
+          {/* ── KYC Refresh Notification ── */}
+          {kycRefreshNotice === "overdue" && (
+            <div className="flex items-start gap-3 p-4 rounded-xl border border-red-300 bg-red-50">
+              <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-red-800 text-sm">KYC Review Overdue</p>
+                <p className="text-sm text-red-700 mt-0.5">
+                  Your scheduled KYC review date has passed. Under AUSTRAC CDD obligations, periodic customer
+                  review is required. Please contact{" "}
+                  <a href="mailto:info@amaxglobal.com.au" className="underline font-medium">info@amaxglobal.com.au</a>
+                  {" "}to arrange your review or re-submit your information using the form below.
+                </p>
+              </div>
+            </div>
+          )}
+          {kycRefreshNotice === "due_soon" && (
+            <div className="flex items-start gap-3 p-4 rounded-xl border border-amber-300 bg-amber-50">
+              <RefreshCw className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-amber-800 text-sm">KYC Review Due Soon</p>
+                <p className="text-sm text-amber-700 mt-0.5">
+                  Your periodic KYC review is due within the next 30 days (due:{" "}
+                  {new Date(kycProfile!.kycRefreshDue!).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}).
+                  Please update your details or contact{" "}
+                  <a href="mailto:info@amaxglobal.com.au" className="underline font-medium">info@amaxglobal.com.au</a>.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* ── Step 1: Personal Information (mandatory first step) ── */}
           {kycProfile?.kycProfileComplete ? (

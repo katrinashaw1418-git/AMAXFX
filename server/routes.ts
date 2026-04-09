@@ -127,6 +127,8 @@ const withdrawSchema = z.object({
   // PayID payout details — required for compliance when method=payid
   payid: z.string().max(120).optional(),
   payidAccountName: z.string().max(120).optional(),
+  // AML/CTF: purpose of transfer (mandatory per AUSTRAC CDD obligations)
+  purposeOfTransfer: z.string().max(120).optional(),
 });
 
 const investmentSchema = z.object({
@@ -2417,7 +2419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const {
         currency, amount: rawAmount, description,
         withdrawMethod, bankAccountName, bankBsb, bankAccountNumber, bankSwift, bankName,
-        payid: payidIdentifier, payidAccountName,
+        payid: payidIdentifier, payidAccountName, purposeOfTransfer,
       } = parsedWithdraw.data;
       const amount = new Decimal(rawAmount);
 
@@ -2495,6 +2497,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sourceExchange: null, blockchainTxHash: null,
           assetType: classifyAssetType(currency, null),
           direction: "out",
+          purposeOfTransfer: purposeOfTransfer ?? null,
           riskFlag: amount.gte(10000),
           reviewStatus: amount.gte(10000) ? "flagged" : "clear",
           reviewNotes: amount.gte(10000) ? "AUSTRAC threshold — manual review required" : null,

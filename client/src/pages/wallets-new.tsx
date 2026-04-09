@@ -911,6 +911,11 @@ export default function Wallets() {
                     Current balance: {selectedWallet.balance} {selectedWallet.currency}
                   </p>
                 )}
+                {parseFloat(amount) >= 10000 && (
+                  <p className="text-xs text-muted-foreground mt-2 p-2 bg-muted rounded border border-border">
+                    Transactions of {selectedWallet?.currency ?? ""} $10,000 or more may be subject to regulatory reporting obligations under the <em>Anti-Money Laundering and Counter-Terrorism Financing Act 2006</em> (Cth).
+                  </p>
+                )}
               </div>
             )}
 
@@ -1362,6 +1367,11 @@ export default function Wallets() {
                 {selectedWallet && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Available: {selectedWallet.availableBalance} {selectedWallet.currency}
+                  </p>
+                )}
+                {parseFloat(amount) >= 10000 && (
+                  <p className="text-xs text-muted-foreground mt-2 p-2 bg-muted rounded border border-border">
+                    Transactions of {selectedWallet?.currency ?? ""} $10,000 or more may be subject to regulatory reporting obligations under the <em>Anti-Money Laundering and Counter-Terrorism Financing Act 2006</em> (Cth).
                   </p>
                 )}
               </div>
