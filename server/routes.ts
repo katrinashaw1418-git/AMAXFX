@@ -3983,12 +3983,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         beneficiaryName: z.string().min(2, "Beneficiary full legal name required"),
         beneficiaryAddress: z.string().min(5, "Beneficiary address required"),
         network: z.string().min(1, "Network required"),
+        isSelfHosted: z.boolean().optional().default(false),
+        vaspName: z.string().optional(),
       });
 
       const parsed = schema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0].message });
 
-      const { currency, walletId, amount: rawAmount, destinationAddress, beneficiaryName, beneficiaryAddress, network } = parsed.data;
+      const { currency, walletId, amount: rawAmount, destinationAddress, beneficiaryName, beneficiaryAddress, network, isSelfHosted, vaspName } = parsed.data;
       const amount = new Decimal(rawAmount);
 
       if (!CRYPTO_CURRENCIES_COINBASE.has(currency)) {
@@ -4035,7 +4037,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: "withdrawal",
           amount: amount.toFixed(8),
           currency,
-          description: `Crypto withdrawal to ${destinationAddress.substring(0, 12)}… (${network}) — pending processing`,
+          description: `Crypto withdrawal to ${destinationAddress.substring(0, 12)}… (${network}) — ${isSelfHosted ? "SELF-HOSTED WALLET — AUSTRAC reporting required within 10 business days" : `VASP: ${vaspName || "unknown"}`} — pending processing`,
           status: "pending",
           referenceCode: refCode,
           beneficiaryName,
@@ -4053,6 +4055,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             userId,
             actionType: "ttr",
             notes: `Auto-flagged: Crypto withdrawal ${currency} ${amount.toFixed(8)} (≥ AUD 10,000) to ${destinationAddress.substring(0, 20)}. Ref: ${refCode}`,
+            performedBy: "system",
+          });
+        }
+
+        // Self-hosted wallet: AUSTRAC requires reporting to the AUSTRAC CEO within 10 business days (from 1 Jul 2026)
+        if (isSelfHosted) {
+          await tx.insert(complianceActions as any).values({
+            userId,
+            actionType: "smr",
+            notes: `SELF-HOSTED WALLET TRANSFER — AUSTRAC reporting required within 10 business days. ${currency} ${amount.toFixed(8)} to ${destinationAddress.substring(0, 20)} (${network}). Beneficiary: ${beneficiaryName}. Ref: ${refCode}`,
             performedBy: "system",
           });
         }

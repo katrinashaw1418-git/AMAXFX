@@ -171,6 +171,8 @@ export default function Wallets() {
   const [beneficiaryName, setBeneficiaryName] = useState('');
   const [beneficiaryAddress, setBeneficiaryAddress] = useState('');
   const [beneficiaryPhysicalAddress, setBeneficiaryPhysicalAddress] = useState('');
+  const [isSelfHosted, setIsSelfHosted] = useState(false);
+  const [vaspName, setVaspName] = useState('');
   const [depositSubmitted, setDepositSubmitted] = useState<{ referenceCode: string; currency: string; amount: string; method: string } | null>(null);
 
   // Coinbase Commerce — crypto deposit / withdrawal
@@ -366,6 +368,7 @@ export default function Wallets() {
       currency: string; walletId: number; amount: string;
       destinationAddress: string; beneficiaryName: string;
       beneficiaryAddress: string; network: string;
+      isSelfHosted?: boolean; vaspName?: string;
     }) => {
       const response = await apiRequest('POST', '/api/crypto/withdraw', data);
       return response.json();
@@ -1307,6 +1310,40 @@ export default function Wallets() {
                     />
                     <p className="text-xs text-muted-foreground mt-0.5">Physical or registered address of the beneficiary — required under AUSTRAC AML/CTF Rule 77B.</p>
                   </div>
+
+                  {/* Travel Rule — wallet type (mandatory from 1 Jul 2026 per FATF / AUSTRAC) */}
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 space-y-2.5">
+                    <p className="text-xs font-semibold text-blue-900">Wallet Type Declaration — AUSTRAC Travel Rule (effective 1 Jul 2026)</p>
+                    <label className="flex items-start gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isSelfHosted}
+                        onChange={e => { setIsSelfHosted(e.target.checked); setVaspName(''); }}
+                        className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-blue-600 flex-shrink-0"
+                      />
+                      <span className="text-xs text-blue-800 leading-relaxed">
+                        This is a <strong>self-hosted wallet</strong> (hardware wallet, software wallet, or non-custodial address) not held with a regulated exchange or VASP.
+                      </span>
+                    </label>
+                    {isSelfHosted ? (
+                      <div className="rounded bg-amber-50 border border-amber-200 p-2 text-xs text-amber-800">
+                        ⚠️ Self-hosted wallet transfers must be reported to the AUSTRAC CEO within 10 business days from 1 July 2026. AMAX Compliance will process this report on your behalf.
+                      </div>
+                    ) : (
+                      <div>
+                        <Label htmlFor="vasp-name" className="text-xs">Receiving Exchange / VASP Name <span className="text-red-500">*</span></Label>
+                        <Input
+                          id="vasp-name"
+                          value={vaspName}
+                          onChange={e => setVaspName(e.target.value)}
+                          placeholder="e.g. Coinbase, Binance, Kraken, Independent Reserve"
+                          className="h-8 text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground mt-0.5">Name of the regulated exchange or VASP that controls the destination wallet — required to transmit Travel Rule data to the receiving institution.</p>
+                      </div>
+                    )}
+                  </div>
+
                   <div>
                     <Label htmlFor="crypto-withdraw-amount" className="text-xs">Amount ({selectedWallet?.currency}) <span className="text-red-500">*</span></Label>
                     <Input
@@ -1348,6 +1385,10 @@ export default function Wallets() {
                         toast({ title: "Fields Required", description: "All fields are required under the AUSTRAC Travel Rule (destination address, beneficiary name, beneficiary address, amount, network).", variant: "destructive" });
                         return;
                       }
+                      if (!isSelfHosted && !vaspName.trim()) {
+                        toast({ title: "VASP Name Required", description: "Please enter the name of the receiving exchange or VASP, or declare this as a self-hosted wallet.", variant: "destructive" });
+                        return;
+                      }
                       if (!selectedWallet) return;
                       cryptoWithdrawMutation.mutate({
                         currency: selectedWallet.currency,
@@ -1357,6 +1398,8 @@ export default function Wallets() {
                         beneficiaryName,
                         beneficiaryAddress: beneficiaryPhysicalAddress,
                         network: cryptoWithdrawNetwork,
+                        isSelfHosted,
+                        ...(vaspName.trim() ? { vaspName: vaspName.trim() } : {}),
                       });
                     }}
                   >
