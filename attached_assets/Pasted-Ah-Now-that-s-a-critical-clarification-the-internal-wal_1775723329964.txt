@@ -1,0 +1,68 @@
+Ah! Now that’s a **critical clarification** — the internal wallet is **client-controlled, not held by AMAX**. That changes things significantly from both a **compliance** and **UX** perspective. Let me break it down carefully.
+
+---
+
+## 1️⃣ Key Implications
+
+### a) Non-Custodial “Internal Wallet”
+
+* **AMAX cannot settle balances internally** because it **doesn’t hold the crypto**.
+* Any “internal exchange” is **effectively just a ledger entry off-platform**, or a **trade instruction** — not an actual transfer of crypto controlled by AMAX.
+* **Risk:** Without custody, you cannot guarantee **instant settlement**, **reversibility**, or **auditable transfer of crypto** internally.
+
+---
+
+### b) Compliance (AUSTRAC / FATF)
+
+* **Travel Rule:** Applies when crypto is moving between wallets that are not self-custody (or between VASPs).
+* **AML Monitoring:** You cannot track off-platform balances unless you rely on **client reporting** or an **on-chain verification system**.
+* **Audit Trail:** If AMAX doesn’t hold the crypto, **audit logs are weaker**, and regulators may question the enforceability of “internal exchange” balances.
+
+---
+
+### c) UX & Warnings
+
+* Users **might think AMAX holds their internal wallet balances**.
+* Must **clearly communicate** that AMAX is **only facilitating the exchange**, and crypto remains in the user’s control.
+* Any “instant transfer” is misleading — it’s really a **trade execution or ledger calculation**.
+
+---
+
+## 2️⃣ Feasible Approaches
+
+| Approach                                        | Feasible? | Notes                                                                                                                 |
+| ----------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------- |
+| Internal “ledger” between non-custodial wallets | ⚠️        | Only possible if both wallets support **off-chain state channels / smart contract accounting**. Otherwise misleading. |
+| Trade execution only (fiat ↔ crypto)            | ✅         | AMAX can process trades, update balances off-platform, but funds always stay in client wallets.                       |
+| External transfer to/from self-custody wallet   | ✅         | Compliant, tracked, Travel Rule can be applied if needed.                                                             |
+| Smart contract escrow for internal transfers    | ✅         | Advanced; allows on-chain ledger but AMAX doesn’t custody keys.                                                       |
+
+---
+
+## 3️⃣ Recommendations for Compliance & UX
+
+1. **Do not allow “internal transfers”** in the classic sense (like AMAX ledger).
+2. **Treat all internal exchanges as trade executions**:
+
+   * Users submit orders
+   * AMAX calculates resulting balances
+   * Crypto remains fully in client wallets
+3. **Clearly communicate non-custodial nature**:
+
+   > “All internal wallet balances are client-controlled. AMAX facilitates trades between your wallets but does not hold crypto.”
+4. **Handle Travel Rule only on external withdrawals**, where crypto leaves the client wallet to another VASP.
+5. **Optional:** Implement **smart contract-based internal ledger** if you want “internal transfers” to feel instant and auditable, while staying non-custodial.
+
+---
+
+💡 **Bottom Line:**
+
+* Internal wallet trades **can exist**, but they are **only ledger calculations**, not custody transfers.
+* Any UX implying AMAX “holds” or “settles” crypto **must be removed**, otherwise regulators could flag it as misleading.
+* External withdrawals remain the only point where **full Travel Rule and compliance flows** are triggered.
+
+---
+
+If you want, I can **rewrite the internal exchange / fiat-crypto page copy** for **client-controlled wallets**, making it **clear, compliant, and non-misleading**, while still allowing trading and balance updates.
+
+Do you want me to do that next?

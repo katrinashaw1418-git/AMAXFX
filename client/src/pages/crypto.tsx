@@ -57,10 +57,10 @@ function formatRateAge(minutes: number | null | undefined): string {
 
 function getDisclosure(fromClass: AssetClass, toClass: AssetClass): string {
   if (fromClass === "fiat" && toClass === "crypto")
-    return "You are purchasing a digital asset. Digital assets are not legal tender and are subject to significant price volatility. Once executed, crypto transactions are irreversible.";
+    return "AMAX facilitates this as a registered DCE trade execution. Your AMAX account balance will be updated to reflect the purchased digital asset. AMAX does not hold, custody, or control your private keys — this is a ledger balance update, not an on-chain transfer. Digital assets are not legal tender, are subject to significant price volatility, and trade executions are irreversible once confirmed.";
   if (fromClass === "crypto" && toClass === "fiat")
-    return "You are selling a digital asset for fiat currency. Proceeds will be credited to your fiat wallet. Rates are indicative and subject to market conditions at time of execution.";
-  return "You are swapping one digital asset for another. Both assets are classified as digital currencies under your AUSTRAC DCE registration. Market rates apply.";
+    return "AMAX facilitates this as a registered DCE trade execution. Your digital asset account balance will be debited and the equivalent fiat amount credited. This is a ledger balance update — no on-chain transaction occurs. Rates are indicative and subject to market conditions at time of execution. Transactions are monitored for AML/CTF compliance.";
+  return "AMAX facilitates this swap as a registered DCE trade execution. Both asset balances will be updated in your AMAX account. This is a ledger balance update — no on-chain transaction occurs. Both assets are digital currencies under your AUSTRAC DCE registration. Market rates apply and swaps are irreversible once confirmed.";
 }
 
 export default function Crypto() {
@@ -259,6 +259,14 @@ export default function Crypto() {
             </CardHeader>
             <CardContent className="space-y-5">
 
+              {/* Non-custodial notice */}
+              <div className="flex items-start gap-2.5 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+                <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                <span>
+                  <strong>Trade Execution Notice:</strong> AMAX facilitates exchanges as a registered DCE. All trades are ledger balance updates on your AMAX account — AMAX does not hold, custody, or control private keys. Digital asset balances reflect your account position, not a direct on-chain holding.
+                </span>
+              </div>
+
               {/* FROM */}
               <div className="space-y-2">
                 <Label className="text-xs text-gray-500 uppercase tracking-wide">From · Asset Class</Label>
@@ -368,12 +376,12 @@ export default function Crypto() {
                   <span className="font-medium">{fee.toFixed(8)} {toCurrency}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
-                  <span>Settlement</span>
-                  <span className="font-medium text-green-600">Instant (T+0)</span>
+                  <span>Execution</span>
+                  <span className="font-medium text-green-600">Trade execution · T+0 balance update</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
-                  <span>Network</span>
-                  <span className="font-medium">Internal ledger</span>
+                  <span>Settlement type</span>
+                  <span className="font-medium">AMAX account ledger (non-custodial)</span>
                 </div>
                 <div className="flex justify-between font-semibold text-gray-900 pt-1 border-t text-base">
                   <span>You receive</span>
@@ -471,7 +479,7 @@ export default function Crypto() {
       <div className="flex items-start gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
         <Info className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-gray-500">
-          Digital currency exchange services provided by AMAX Financial Pty Ltd (ABN 54 690 827 608). AMAX holds DCE registration with AUSTRAC. Digital assets are not legal tender, not backed by government guarantee, and subject to significant price risk. Past performance is not indicative of future results.
+          Digital currency exchange services provided by AMAX Financial Pty Ltd (ABN 54 690 827 608), registered as a Digital Currency Exchange (DCE) with AUSTRAC. All exchanges are trade executions that update your AMAX account balance — AMAX does not hold or custody digital assets on-chain on your behalf. Digital assets are not legal tender, not backed by government guarantee, and subject to significant price risk. Travel Rule and full AML/CTF compliance apply on all external on-chain withdrawals. Past performance is not indicative of future results.
         </p>
       </div>
 
@@ -508,8 +516,8 @@ export default function Crypto() {
                 <span className="font-medium">{fee.toFixed(8)} {toCurrency}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Settlement</span>
-                <span className="font-medium text-green-600">Instant (T+0)</span>
+                <span className="text-gray-600">Execution</span>
+                <span className="font-medium text-green-600">T+0 account balance update</span>
               </div>
               <div className="flex justify-between border-t pt-3 text-base">
                 <span className="font-semibold text-gray-900">You receive</span>
