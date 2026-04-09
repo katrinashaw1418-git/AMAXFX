@@ -19,13 +19,13 @@ const SERVICES = [
     value: "fx",
     icon: TrendingUp,
     title: "FX Exchange",
-    description: "Convert between 30+ fiat currencies at live rates. Send international payments and remittances with full AUD settlement.",
+    description: "Convert between major fiat currencies at live rates. Send international payments and remittances with full AUD settlement.",
   },
   {
     value: "digital-asset-fx",
     icon: Bitcoin,
     title: "Digital Asset FX Exchange",
-    description: "Buy, sell and exchange Bitcoin, Ethereum, stablecoins and other digital assets alongside your fiat currencies.",
+    description: "Buy, sell and exchange Bitcoin, Ethereum and stablecoins alongside your fiat currencies.",
   },
 ];
 
