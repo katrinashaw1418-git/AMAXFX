@@ -1,0 +1,169 @@
+ewallet, remove purpose of transfer. Again AMAX is not custody can we accept bank transfer in this case since its not with third party deposit provider??? the same as crypto and stable coin wallet, deposit and transfer shall we provide third party since amax is not custoday
+
+Got it — let’s carefully unpack your questions and give a compliance-safe answer for eWallets, bank transfers, crypto, and stablecoins, keeping in mind AMAX is not a custodian.
+
+1️⃣ eWallet deposits — no “purpose of transfer” field
+
+Yes, you can remove the “purpose of transfer” from your eWallet deposit form if:
+
+You still collect full KYC and assign a risk profile to the customer.
+You implement transaction monitoring to detect unusual behavior.
+You capture metadata like:
+Amount
+Source account
+Destination account (if sending out)
+
+⚠️ Regulators do not require a “purpose of transfer” if you have proper KYC + AML monitoring, but you must be able to reconstruct transaction intent in case of audit.
+
+2️⃣ Accepting bank transfers without a third-party deposit provider
+
+Since AMAX is not a custodian, you can accept deposits directly into your bank account, provided:
+
+The bank account is in AMAX’s name, under a regulated entity.
+All deposits are linked to a KYC-verified user.
+You monitor transactions for AML/CTF compliance, including unusual amounts or velocity.
+You keep audit logs: account name, account number, amount, timestamp.
+
+✅ This is the standard model for regulated eWallet providers.
+❌ You do not need a third-party deposit provider unless you want to offload AML risk.
+
+3️⃣ Crypto / stablecoin deposits & transfers
+
+Key points:
+
+AMAX is not a custodian, so you cannot hold users’ private keys.
+Users deposit to wallets you orchestrate through an external custodian (Fireblocks, BitGo, Coinbase Custody).
+Users can withdraw to external wallets if:
+Blockchain screening is applied (sanctions + high-risk checks)
+Travel Rule compliance is implemented
+AML transaction monitoring is active
+Options for deposit / withdrawal
+Asset	Who holds it	Can AMAX accept?	Notes
+Fiat bank transfer	AMAX bank account	✅ Yes	Must link to KYC, monitor AML
+Crypto / stablecoin	External custodian	✅ Yes	Must implement blockchain risk checks
+Third-party deposit provider	Custodian / PSP	Optional	Only if you want to offload AML responsibility
+4️⃣ Recommendation
+
+Since AMAX is not a custodian:
+
+Do not hold crypto/stablecoins in-house
+Use a trusted external custodian for all crypto and stablecoins
+Yes, you can accept bank transfers into AMAX’s own account without a third party
+No, you don’t need third-party for fiat deposits if AML and KYC are implemented correctly
+Yes, crypto/stablecoin deposits and withdrawals must flow through the custodian, with AML monitoring enforced
+5️⃣ Key compliance controls to implement
+Fiat transactions:
+KYC verified
+Bank account + user match
+AML monitoring
+Crypto / stablecoin:
+Custodian handles private keys
+You control wallet assignment + transaction approval
+Blockchain screening (Chainalysis / TRM)
+Travel Rule compliance
+Transaction logs:
+Must be auditable for all deposits and withdrawals
+
+✅ Bottom line:
+
+Bank transfers → direct to AMAX account is fine.
+Crypto/stablecoins → must go via custodian.
+You are not the custodian, but you are fully responsible for KYC/AML compliance.
+Third-party deposit provider is optional for fiat, mandatory for crypto if you don’t want custody risk.
+
+If you want, I can draw a clear diagram showing how eWallet, bank, crypto, and stablecoin flows work without AMAX being custodian — banks + AUSTRAC will love it.
+
+Do you want me to do that?
+
+External custodian who shall i use for crypto and stable coins 
+
+Here are the best institutional‑grade external custody solutions you can use for crypto and stablecoins when AMAX isn’t doing custody itself. These are widely used by fintechs, banks, exchanges, and institutions — and crucially, they support secure storage with compliance and governance built in.
+
+🥇 Top External Custodian Options for Crypto & Stablecoins
+1. Coinbase Custody
+One of the largest regulated custodians globally, part of Coinbase Institutional.
+Supports hundreds of assets, including major stablecoins and tokens.
+Institutional‑grade security and insurance coverage.
+Helps with compliance, reporting, and regulatory audits.
+
+✅ Best for: institutions and fintechs needing deep asset coverage, compliance assurance, and global recognition.
+
+2. Gemini Custody
+Highly regulated (New York trust company) with cold storage security standards.
+Offers segregation of customer assets and audit‑friendly statements.
+Insurance protections for stored digital assets.
+
+✅ Best for: compliant custody with strong audit trails and insurance backing.
+
+3. BitGo (Institutional Custody)
+Long‑standing institutional custody provider with multi‑sig and MPC key management.
+Regulated across multiple regions and offers high insurance.
+Also expanding stablecoin mint/redemption capabilities.
+
+✅ Best for: large, regulated fintechs that want flexible custody + governance.
+
+4. Anchorage Digital
+First federally‑chartered crypto bank in the U.S. with custody + staking + settlement services.
+Cold storage security and institutional control features.
+
+✅ Best for: businesses seeking deep integration with regulated banking permissions.
+
+5. Zodia Custody
+Backed by Standard Chartered and other global banks, focusing on institutional and regulated stablecoin support.
+Strong integration with traditional finance standards.
+
+✅ Best for: stablecoin‑centric infrastructure and bank‑aligned custody services.
+
+Other Notable Custodians
+Fidelity Digital Assets – Traditional finance‑grade custody with strong compliance.
+Ripple Custody (Metaco) – Enterprise‑oriented custody technology.
+Zypto – MPC vault and wallet infrastructure (less established than top tier).
+🧠 How to Choose the Right Custodian
+
+Here’s a simple decision guide:
+
+Criteria	Which Custodian Fits
+Highest compliance/market reputation	Coinbase Custody, Gemini Custody
+Strong insurance + governance	BitGo, Gemini
+Bank‑integrated stablecoin support	Zodia Custody
+Regulated bank charter + extended services	Anchorage Digital
+Flexible wallet + MPC infrastructure	BitGo, Zypto
+🔍 Stablecoins & Custody
+
+Most custodians above support major stablecoins (e.g., USDC, USDT) and in some cases regulated fiat‑backed tokens like AUDM through partnerships (e.g., Zodia supporting AUDM).
+
+If you plan to support stablecoin deposits/withdrawals:
+
+Ensure the custodian supports them natively.
+Confirm legal treatment (some jurisdictions have special rules for stablecoin custody).
+🏛️ Regulatory & Audit Benefits
+
+Choosing a regulated custodian brings key compliance advantages:
+
+Proof of reserves / audit statements
+Segregation of customer assets
+Insurance & risk controls
+AML/KYC integration support
+
+These are essential when dealing with bank partners and regulators like AUSTRAC.
+
+🧠 Integration Notes
+
+When linking a custodian with AMAX:
+
+KYC is your responsibility — custodian doesn’t onboard.
+Custodian holds assets; you manage transaction approvals.
+Integrate blockchain analytics + Travel Rule compliance for risk screening before movements.
+🏆 Recommendation (for your model)
+
+👉 Best overall match:
+
+Coinbase Custody or BitGo — global reach, regulatory compliance, deep stablecoin asset support.
+
+👉 Bank‑aligned & stablecoin‑focused:
+
+Zodia Custody — strong institutional backing and stablecoin infrastructure.
+
+👉 Highly regulated + extended services:
+
+Gemini Custody — robust audits and insurance.

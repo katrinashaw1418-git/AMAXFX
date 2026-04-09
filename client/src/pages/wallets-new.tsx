@@ -170,8 +170,21 @@ export default function Wallets() {
   const [beneficiaryAddress, setBeneficiaryAddress] = useState('');
   const [beneficiaryPhysicalAddress, setBeneficiaryPhysicalAddress] = useState('');
   const [depositSubmitted, setDepositSubmitted] = useState<{ referenceCode: string; currency: string; amount: string; method: string } | null>(null);
+
+  // Coinbase Commerce — crypto deposit / withdrawal
+  const [coinbaseCharge, setCoinbaseCharge] = useState<{
+    chargeCode: string; hostedUrl: string; address: string | null;
+    networkKey: string; expiresAt: string; allAddresses: Record<string, string>;
+  } | null>(null);
+  const [coinbaseLoading, setCoinbaseLoading] = useState(false);
+  const [cryptoWithdrawNetwork, setCryptoWithdrawNetwork] = useState('');
+  const [cryptoWithdrawAmount, setCryptoWithdrawAmount] = useState('');
+
   const { data: checkoutStatus } = useQuery<{ configured: boolean }>({
     queryKey: ['/api/checkout/status'],
+  });
+  const { data: coinbaseStatus } = useQuery<{ configured: boolean }>({
+    queryKey: ['/api/crypto/coinbase/status'],
   });
 
   const { data: depositInstructions } = useQuery<{
@@ -323,6 +336,55 @@ export default function Wallets() {
         variant: "destructive",
       });
     }
+  });
+
+  // Coinbase Commerce — generate deposit address for crypto/stablecoin wallet
+  // Coinbase holds the assets; AMAX credits on charge:confirmed webhook.
+  const handleCoinbaseDeposit = async () => {
+    if (!selectedWallet) return;
+    setCoinbaseLoading(true);
+    setCoinbaseCharge(null);
+    try {
+      const res = await apiRequest('POST', '/api/crypto/deposit-charge', {
+        currency: selectedWallet.currency,
+        walletId: selectedWallet.id,
+      });
+      const data = await res.json();
+      setCoinbaseCharge(data);
+    } catch (err: any) {
+      toast({ title: 'Deposit Address Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setCoinbaseLoading(false);
+    }
+  };
+
+  // Coinbase Commerce — crypto withdrawal (pending, processed via Coinbase account by admin)
+  const cryptoWithdrawMutation = useMutation({
+    mutationFn: async (data: {
+      currency: string; walletId: number; amount: string;
+      destinationAddress: string; beneficiaryName: string;
+      beneficiaryAddress: string; network: string;
+    }) => {
+      const response = await apiRequest('POST', '/api/crypto/withdraw', data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      toast({
+        title: '✅ Withdrawal Submitted',
+        description: `Ref: ${data.referenceCode} — ${data.message}`,
+      });
+      setWithdrawModalOpen(false);
+      setBeneficiaryAddress('');
+      setBeneficiaryName('');
+      setBeneficiaryPhysicalAddress('');
+      setCryptoWithdrawNetwork('');
+      setCryptoWithdrawAmount('');
+    },
+    onError: (error: any) => {
+      toast({ title: 'Withdrawal Failed', description: error.message, variant: 'destructive' });
+    },
   });
 
   // Checkout.com Hosted Payments — called for card deposits.
@@ -892,37 +954,84 @@ export default function Wallets() {
             )}
 
             {depositMethod === 'blockchain' && !['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(selectedWallet?.currency) ? (
-              <div className="space-y-4">
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-2">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-amber-600 text-sm font-bold">!</span>
+              <div className="space-y-3">
+                {/* Coinbase Commerce — live deposit address generation */}
+                {coinbaseStatus?.configured ? (
+                  <>
+                    <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800 p-3 text-xs text-blue-800 dark:text-blue-300 space-y-1">
+                      <p className="font-semibold text-sm text-blue-900 dark:text-blue-100">🔗 Blockchain Deposit via Coinbase Commerce</p>
+                      <p>Generate a secure, KYC-verified deposit address for your {selectedWallet?.currency} wallet. Custody is held by Coinbase — funds are credited automatically after blockchain confirmation.</p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400">⚠️ Only send <strong>{selectedWallet?.currency}</strong> to this address. Sending unsupported assets will result in permanent loss.</p>
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-amber-900">Crypto Deposit — Contact Required</p>
-                      <p className="text-sm text-amber-800 mt-1">
-                        To deposit {selectedWallet?.currency}, please contact our team directly. We will provide you with a verified deposit address specific to your account.
-                      </p>
-                      <p className="text-sm text-amber-800 mt-2">
-                        <span className="font-medium">Email:</span> info@amaxglobal.com.au
-                      </p>
-                      <p className="text-xs text-amber-700 mt-2">
-                        Do not send funds to any address not personally confirmed by AMAX Global in writing. AMAX Global will never display deposit addresses directly in the portal.
-                      </p>
-                    </div>
-                  </div>
-                </div>
 
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => window.location.href = "mailto:info@amaxglobal.com.au?subject=Crypto Deposit Request - " + selectedWallet?.currency}
-                >
-                  Email us to arrange deposit
-                </Button>
-                <p className="text-xs text-muted-foreground text-center mt-1">
-                  Live blockchain deposit processing is not enabled in this environment.
-                </p>
+                    {!coinbaseCharge ? (
+                      <Button
+                        className="w-full"
+                        onClick={handleCoinbaseDeposit}
+                        disabled={coinbaseLoading}
+                      >
+                        {coinbaseLoading ? 'Generating address…' : `Generate ${selectedWallet?.currency} Deposit Address`}
+                      </Button>
+                    ) : (
+                      <div className="space-y-3">
+                        {/* Primary address for selected currency */}
+                        <div className="rounded-lg border bg-muted p-3 space-y-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Deposit Address ({coinbaseCharge.networkKey})</p>
+                          {coinbaseCharge.address ? (
+                            <>
+                              <p className="text-xs font-mono break-all text-foreground select-all">{coinbaseCharge.address}</p>
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="outline" className="flex-1 h-7 text-xs"
+                                  onClick={() => { navigator.clipboard.writeText(coinbaseCharge.address!); toast({ title: 'Address Copied' }); }}>
+                                  Copy Address
+                                </Button>
+                                <Button size="sm" variant="outline" className="h-7 text-xs px-3"
+                                  onClick={() => window.open(coinbaseCharge.hostedUrl, '_blank')}>
+                                  <ExternalLink className="h-3 w-3 mr-1" /> Coinbase Page
+                                </Button>
+                              </div>
+                              {/* QR code via public service */}
+                              <div className="flex justify-center pt-1">
+                                <img
+                                  src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(coinbaseCharge.address)}`}
+                                  alt="Deposit address QR code"
+                                  className="rounded border"
+                                  width={140}
+                                  height={140}
+                                />
+                              </div>
+                            </>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">Address not available for {selectedWallet?.currency} — use the Coinbase-hosted page instead.</p>
+                          )}
+                        </div>
+
+                        <div className="text-xs text-muted-foreground bg-muted rounded p-2 space-y-1">
+                          <p>• Charge expires: <strong>{new Date(coinbaseCharge.expiresAt).toLocaleString()}</strong></p>
+                          <p>• Funds credit automatically after blockchain confirmation (typically 3–6 confirmations)</p>
+                          <p>• Charge ref: <span className="font-mono">{coinbaseCharge.chargeCode}</span></p>
+                        </div>
+
+                        <Button variant="outline" size="sm" className="w-full h-7 text-xs"
+                          onClick={() => { setCoinbaseCharge(null); }}>
+                          Generate New Address
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* Coinbase not yet configured — show contact prompt */
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800 p-4 space-y-2">
+                    <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">Crypto Deposit — Coinbase Commerce</p>
+                    <p className="text-sm text-amber-800 dark:text-amber-300">
+                      Coinbase Commerce is being configured. Contact us at <strong>info@amaxglobal.com.au</strong> and we will arrange a verified deposit address for your {selectedWallet?.currency} wallet.
+                    </p>
+                    <Button variant="outline" size="sm" className="w-full mt-2"
+                      onClick={() => window.location.href = `mailto:info@amaxglobal.com.au?subject=Crypto Deposit Request - ${selectedWallet?.currency}`}>
+                      Email us to arrange deposit
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : depositMethod && depositMethod !== 'blockchain' && (
               <>
@@ -1167,9 +1276,24 @@ export default function Wallets() {
                     <p className="text-xs text-muted-foreground mt-0.5">Physical or registered address of the beneficiary — required under AUSTRAC AML/CTF Rule 77B.</p>
                   </div>
                   <div>
+                    <Label htmlFor="crypto-withdraw-amount" className="text-xs">Amount ({selectedWallet?.currency}) <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="crypto-withdraw-amount"
+                      type="number"
+                      value={cryptoWithdrawAmount}
+                      onChange={e => setCryptoWithdrawAmount(e.target.value)}
+                      placeholder="0.00000000"
+                      className="h-8 text-sm font-mono"
+                      min="0"
+                    />
+                    {selectedWallet && (
+                      <p className="text-xs text-muted-foreground mt-0.5">Available: {selectedWallet.balance} {selectedWallet.currency}</p>
+                    )}
+                  </div>
+                  <div>
                     <Label htmlFor="crypto-withdraw-network" className="text-xs">Network <span className="text-red-500">*</span></Label>
-                    <Select>
-                      <SelectTrigger className="h-8 text-sm">
+                    <Select value={cryptoWithdrawNetwork} onValueChange={setCryptoWithdrawNetwork}>
+                      <SelectTrigger className="h-8 text-sm" id="crypto-withdraw-network">
                         <SelectValue placeholder="Select network" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1182,20 +1306,29 @@ export default function Wallets() {
                     </Select>
                   </div>
                   <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
-                    ⏳ Blockchain withdrawals are reviewed by our compliance team (Compliance Officer: Qin Xiong) before execution. Approved transfers settle within 1 business day. Network fees apply.
+                    ⏳ Withdrawals are processed via Coinbase by our compliance team (Compliance Officer: Qin Xiong) within 1 business day after review. Network fees apply.
                   </p>
                   <Button
-                    variant="outline"
                     className="w-full mt-1 h-8 text-sm"
+                    disabled={cryptoWithdrawMutation.isPending}
                     onClick={() => {
-                      if (!beneficiaryAddress || !beneficiaryName || !beneficiaryPhysicalAddress) {
-                        toast({ title: "Fields Required", description: "Please enter the destination wallet address, beneficiary full legal name, and beneficiary physical address — all required under the AUSTRAC Travel Rule.", variant: "destructive" });
+                      if (!beneficiaryAddress || !beneficiaryName || !beneficiaryPhysicalAddress || !cryptoWithdrawAmount || !cryptoWithdrawNetwork) {
+                        toast({ title: "Fields Required", description: "All fields are required under the AUSTRAC Travel Rule (destination address, beneficiary name, beneficiary address, amount, network).", variant: "destructive" });
                         return;
                       }
-                      window.location.href = `mailto:info@amaxglobal.com.au?subject=Crypto Withdrawal Request - ${selectedWallet?.currency}&body=Please process my withdrawal request.%0A%0ACurrency: ${selectedWallet?.currency}%0ADestination Wallet Address: ${beneficiaryAddress}%0ABeneficiary Full Legal Name: ${beneficiaryName}%0ABeneficiary Physical Address: ${encodeURIComponent(beneficiaryPhysicalAddress)}%0A%0AI confirm the above information is accurate for Travel Rule (FATF / AUSTRAC AML/CTF Rule 77B) compliance.`;
+                      if (!selectedWallet) return;
+                      cryptoWithdrawMutation.mutate({
+                        currency: selectedWallet.currency,
+                        walletId: selectedWallet.id,
+                        amount: cryptoWithdrawAmount,
+                        destinationAddress: beneficiaryAddress,
+                        beneficiaryName,
+                        beneficiaryAddress: beneficiaryPhysicalAddress,
+                        network: cryptoWithdrawNetwork,
+                      });
                     }}
                   >
-                    Submit Withdrawal Request
+                    {cryptoWithdrawMutation.isPending ? 'Submitting…' : 'Submit Withdrawal Request'}
                   </Button>
                 </div>
 

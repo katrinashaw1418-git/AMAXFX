@@ -2,6 +2,14 @@ import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { createHash, createHmac, randomBytes } from "crypto";
 import { sendVerificationEmail, sendPasswordResetEmail, emailConfigured } from "./email";
+import {
+  isCoinbaseConfigured,
+  createCharge,
+  getCharge,
+  verifyWebhookSignature as verifyCoinbaseSignature,
+  CURRENCY_TO_NETWORK,
+  CRYPTO_CURRENCIES_COINBASE,
+} from "./coinbase";
 import { z } from "zod";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { and, eq, or, sql } from "drizzle-orm";
@@ -3762,6 +3770,292 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     res.json({ received: true });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Coinbase Commerce — crypto & stablecoin deposits
+  // AMAX is NOT the custodian: Coinbase Commerce holds the assets.
+  // Funds are automatically credited to the user's wallet on charge:confirmed webhook.
+  // Requires env: COINBASE_COMMERCE_API_KEY, COINBASE_COMMERCE_WEBHOOK_SECRET
+  // ---------------------------------------------------------------------------
+
+  // GET /api/crypto/coinbase/status — frontend uses this to show/hide live deposit UI
+  app.get("/api/crypto/coinbase/status", (_req: Request, res: any) => {
+    res.json({ configured: isCoinbaseConfigured() });
+  });
+
+  // POST /api/crypto/deposit-charge — generate a Coinbase Commerce charge for a crypto deposit
+  // Returns: { chargeCode, hostedUrl, address, expiresAt }
+  app.post("/api/crypto/deposit-charge", async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      await requireKyc(userId, storage);
+
+      const schema = z.object({
+        currency: z.string().min(1),
+        walletId: z.number().int().positive(),
+      });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0].message });
+
+      const { currency, walletId } = parsed.data;
+
+      if (!CRYPTO_CURRENCIES_COINBASE.has(currency)) {
+        return res.status(400).json({ error: `${currency} is not supported via Coinbase Commerce. Supported: ${[...CRYPTO_CURRENCIES_COINBASE].join(", ")}` });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const charge = await createCharge({
+        name: `AMAX Global — ${currency} Deposit`,
+        description: `Deposit ${currency} to your AMAX wallet. Funds are credited automatically after blockchain confirmation.`,
+        metadata: {
+          userId: String(userId),
+          walletId: String(walletId),
+          currency,
+          userEmail: user.email,
+        },
+      });
+
+      const networkKey = CURRENCY_TO_NETWORK[currency];
+      const address = charge.addresses?.[networkKey] ?? null;
+
+      res.json({
+        chargeCode: charge.code,
+        chargeId: charge.id,
+        hostedUrl: charge.hosted_url,
+        address,
+        networkKey,
+        expiresAt: charge.expires_at,
+        allAddresses: charge.addresses,
+      });
+    } catch (err: any) {
+      console.error("[coinbase-deposit-charge]", err.message);
+      res.status(err.status ?? 500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/crypto/deposit-charge/:code — check charge status
+  app.get("/api/crypto/deposit-charge/:code", async (req: Request, res: any) => {
+    try {
+      requireAuth(req);
+      const charge = await getCharge(req.params.code);
+      const timeline = (charge as any).timeline ?? [];
+      const status = timeline.length > 0 ? timeline[timeline.length - 1].status : "NEW";
+      res.json({ status, charge });
+    } catch (err: any) {
+      console.error("[coinbase-charge-status]", err.message);
+      res.status(err.status ?? 500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/webhooks/coinbase-commerce — Coinbase Commerce webhook
+  // Verifies HMAC-SHA256 signature (X-CC-Webhook-Signature), credits wallet on charge:confirmed
+  app.post("/api/webhooks/coinbase-commerce", async (req: Request, res: any) => {
+    const sig = req.headers["x-cc-webhook-signature"] as string;
+    const rawBody = (req.body as Buffer).toString("utf8");
+
+    if (!verifyCoinbaseSignature(rawBody, sig)) {
+      console.error("[coinbase-webhook] signature verification failed");
+      return res.status(401).json({ error: "Invalid webhook signature" });
+    }
+
+    let event: any;
+    try {
+      event = JSON.parse(rawBody);
+    } catch {
+      return res.status(400).json({ error: "Invalid JSON body" });
+    }
+
+    if (event.type === "charge:confirmed") {
+      const chargeData = event.data ?? {};
+      const { userId, walletId, currency } = chargeData.metadata ?? {};
+
+      if (!userId || !walletId || !currency) {
+        console.error("[coinbase-webhook] missing metadata on charge", chargeData.id);
+        return res.status(400).json({ error: "Missing charge metadata" });
+      }
+
+      // Determine amount from payments array
+      const payments: any[] = chargeData.payments ?? [];
+      if (payments.length === 0) {
+        console.error("[coinbase-webhook] no payments on confirmed charge", chargeData.id);
+        return res.status(200).json({ received: true, note: "no payments to process" });
+      }
+
+      const payment = payments[payments.length - 1];
+      const valueObj = payment.value ?? {};
+      const rawAmount = valueObj.crypto?.amount ?? "0";
+      const amount = new Decimal(rawAmount);
+
+      if (amount.lte(0)) {
+        console.error("[coinbase-webhook] invalid amount", rawAmount);
+        return res.status(200).json({ received: true, note: "zero amount" });
+      }
+
+      try {
+        await db.transaction(async (tx) => {
+          await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+
+          const [wallet] = await tx.select().from(wallets)
+            .where(and(eq(wallets.id, parseInt(walletId)), eq(wallets.userId, parseInt(userId))))
+            .for("update");
+
+          if (!wallet) throw new Error(`Wallet ${walletId} not found for user ${userId}`);
+
+          const newBalance = new Decimal(wallet.balance ?? "0").plus(amount);
+          await tx.update(wallets)
+            .set({ balance: newBalance.toFixed(8) })
+            .where(eq(wallets.id, parseInt(walletId)));
+
+          const audRate = await storage.getFxRate(currency, "AUD");
+          const audValue = audRate ? amount.mul(audRate.rate) : new Decimal(0);
+          const isLargeTransaction = audValue.gte(10000);
+
+          await tx.insert(transactions).values({
+            userId: parseInt(userId),
+            walletId: parseInt(walletId),
+            type: "deposit",
+            amount: amount.toFixed(8),
+            currency,
+            description: `Coinbase Commerce crypto deposit — ${chargeData.code ?? chargeData.id}`,
+            status: "completed",
+            referenceCode: `CC-${chargeData.code ?? chargeData.id}`,
+            sourceExchange: "coinbase_commerce",
+            blockchainTxHash: payment.transaction_id ?? null,
+            riskFlag: isLargeTransaction,
+            reviewStatus: isLargeTransaction ? "flagged" : "ok",
+          } as any);
+
+          if (isLargeTransaction) {
+            await tx.insert(complianceActions as any).values({
+              userId: parseInt(userId),
+              actionType: "ttr",
+              notes: `Auto-flagged: Coinbase Commerce deposit ${currency} ${amount.toFixed(8)} (≥ AUD 10,000). Charge: ${chargeData.code ?? chargeData.id}`,
+              performedBy: "system",
+            });
+          }
+        });
+
+        console.log(`[coinbase-webhook] credited ${amount.toFixed(8)} ${currency} to wallet ${walletId} for user ${userId}`);
+        res.json({ received: true });
+      } catch (err: any) {
+        console.error("[coinbase-webhook] failed to credit wallet:", err.message);
+        return res.status(500).json({ error: "Failed to credit wallet" });
+      }
+    } else {
+      console.log(`[coinbase-webhook] unhandled event type: ${event.type}`);
+      res.json({ received: true });
+    }
+  });
+
+  // POST /api/crypto/withdraw — submit a crypto withdrawal (pending manual processing via Coinbase)
+  // Travel Rule fields required per AUSTRAC Digital Currency Exchange obligations.
+  app.post("/api/crypto/withdraw", async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      await requireKyc(userId, storage);
+
+      const schema = z.object({
+        currency: z.string().min(1),
+        walletId: z.number().int().positive(),
+        amount: z.string().regex(/^\d+(\.\d+)?$/, "Invalid amount"),
+        destinationAddress: z.string().min(10, "Destination wallet address required"),
+        beneficiaryName: z.string().min(2, "Beneficiary full legal name required"),
+        beneficiaryAddress: z.string().min(5, "Beneficiary address required"),
+        network: z.string().min(1, "Network required"),
+      });
+
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0].message });
+
+      const { currency, walletId, amount: rawAmount, destinationAddress, beneficiaryName, beneficiaryAddress, network } = parsed.data;
+      const amount = new Decimal(rawAmount);
+
+      if (!CRYPTO_CURRENCIES_COINBASE.has(currency)) {
+        return res.status(400).json({ error: `${currency} is not a supported crypto asset` });
+      }
+
+      await checkDailyLimit(userId, amount, currency);
+
+      const idemKey = req.headers["idempotency-key"] as string | undefined;
+      const payloadHash = hashPayload(req.body);
+      if (idemKey) {
+        const idem = await checkIdempotency(userId, "/api/crypto/withdraw", idemKey, payloadHash);
+        if (idem.conflict) return res.status(422).json({ error: "Idempotency-Key reused with different payload." });
+        if (idem.existing) return res.json({ ...(idem.response as object), idempotent: true });
+      }
+
+      let txRecord: any;
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+
+        const [wallet] = await tx.select().from(wallets)
+          .where(and(eq(wallets.id, walletId), eq(wallets.userId, userId)))
+          .for("update");
+
+        if (!wallet) throw Object.assign(new Error("Wallet not found"), { status: 404 });
+        if (new Decimal(wallet.balance ?? "0").lt(amount)) {
+          throw Object.assign(new Error(`Insufficient ${currency} balance`), { status: 400 });
+        }
+
+        const newBalance = new Decimal(wallet.balance ?? "0").minus(amount);
+        await tx.update(wallets)
+          .set({ balance: newBalance.toFixed(8) })
+          .where(eq(wallets.id, walletId));
+
+        const audRate = await storage.getFxRate(currency, "AUD");
+        const audValue = audRate ? amount.mul(audRate.rate) : new Decimal(0);
+        const isLargeTransaction = audValue.gte(10000);
+
+        const refCode = `CW-${randomBytes(4).toString("hex").toUpperCase()}`;
+
+        const [inserted] = await tx.insert(transactions).values({
+          userId,
+          walletId,
+          type: "withdrawal",
+          amount: amount.toFixed(8),
+          currency,
+          description: `Crypto withdrawal to ${destinationAddress.substring(0, 12)}… (${network}) — pending processing`,
+          status: "pending",
+          referenceCode: refCode,
+          beneficiaryName,
+          beneficiaryAddress,
+          sourceExchange: "coinbase_commerce",
+          blockchainTxHash: null,
+          riskFlag: isLargeTransaction,
+          reviewStatus: isLargeTransaction ? "flagged" : "pending",
+        } as any).returning();
+
+        txRecord = inserted;
+
+        if (isLargeTransaction) {
+          await tx.insert(complianceActions as any).values({
+            userId,
+            actionType: "ttr",
+            notes: `Auto-flagged: Crypto withdrawal ${currency} ${amount.toFixed(8)} (≥ AUD 10,000) to ${destinationAddress.substring(0, 20)}. Ref: ${refCode}`,
+            performedBy: "system",
+          });
+        }
+
+        await runAmlCheck(tx, userId, currency, amount, "out");
+      });
+
+      if (idemKey && txRecord) {
+        await saveIdempotencyResponse(userId, "/api/crypto/withdraw", idemKey, payloadHash, txRecord);
+      }
+
+      res.json({
+        success: true,
+        referenceCode: txRecord.referenceCode,
+        status: "pending",
+        message: "Your withdrawal request has been submitted. AMAX will process it via Coinbase within 1–2 business days. You will receive an email confirmation once sent.",
+      });
+    } catch (err: any) {
+      console.error("[crypto-withdraw]", err.message);
+      res.status(err.status ?? 500).json({ error: err.message });
+    }
   });
 
   // ---------------------------------------------------------------------------
