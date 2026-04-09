@@ -6,9 +6,10 @@ import { setupVite, serveStatic, log } from "./vite";
 const app = express();
 app.set("trust proxy", 1); // Trust first proxy hop (Replit's reverse proxy sets X-Forwarded-For)
 
-// Stripe webhooks require the raw request body for signature verification.
+// Webhook endpoints require the raw request body for HMAC signature verification.
 // This MUST be registered before express.json() so the raw buffer is preserved.
-app.use("/api/stripe/webhook", express.raw({ type: "application/json" }));
+app.use("/api/checkout/webhook", express.raw({ type: "application/json" }));
+app.use("/api/kyc/identity/webhook", express.raw({ type: "application/json" }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

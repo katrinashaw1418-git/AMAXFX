@@ -20,7 +20,6 @@ import { useWallets } from '@/hooks/use-portfolio';
 import RateSparkline from '@/components/fx/rate-sparkline';
 import { useVoiceNarration } from '@/hooks/use-voice-narration';
 import VoiceSettings from '@/components/voice/voice-settings';
-import StripePaymentForm from '@/components/stripe-payment-form';
 
 // Exchange Rate Display Component for Transfer Modal
 function ExchangeRateDisplay({ fromCurrency, toCurrency, amount }: { fromCurrency: string; toCurrency: string; amount: string }) {
@@ -157,7 +156,7 @@ export default function Wallets() {
   const [depositMethod, setDepositMethod] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState('');
   const [payerName, setPayerName] = useState('');
-  const [stripeLoading, setStripeLoading] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [payerAccountNumber, setPayerAccountNumber] = useState('');
   const [payerBsb, setPayerBsb] = useState('');
   const [internalTransferEmail, setInternalTransferEmail] = useState('');
@@ -171,11 +170,8 @@ export default function Wallets() {
   const [beneficiaryName, setBeneficiaryName] = useState('');
   const [beneficiaryAddress, setBeneficiaryAddress] = useState('');
   const [depositSubmitted, setDepositSubmitted] = useState<{ referenceCode: string; currency: string; amount: string; method: string } | null>(null);
-  const [cardClientSecret, setCardClientSecret] = useState<string | null>(null);
-  const [cardLoading, setCardLoading] = useState(false);
-
-  const { data: stripeStatus } = useQuery<{ configured: boolean; publishableKey: string | null }>({
-    queryKey: ['/api/stripe/status'],
+  const { data: checkoutStatus } = useQuery<{ configured: boolean }>({
+    queryKey: ['/api/checkout/status'],
   });
 
   const { data: depositInstructions } = useQuery<{
@@ -207,30 +203,31 @@ export default function Wallets() {
     }
   }, [wallets, voiceSettings.autoNarrate, narrateNavigation, narrateBalance]);
 
-  // Stripe Checkout return handler — runs once on mount.
-  // Stripe redirects back with ?stripe=success&session_id=cs_xxx or ?stripe=cancel.
-  // The actual balance credit happens via Stripe webhook (server-side), not here.
+  // Checkout.com return handler — runs once on mount.
+  // Checkout.com redirects back with ?checkout=success or ?checkout=cancel/failed.
+  // The actual balance credit happens via the Checkout.com webhook (server-side), not here.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const stripeStatus = params.get('stripe');
+    const checkoutResult = params.get('checkout');
 
-    if (stripeStatus === 'cancel') {
+    if (checkoutResult === 'cancel' || checkoutResult === 'failed') {
       window.history.replaceState({}, '', '/wallets');
       toast({
-        title: "Payment Cancelled",
-        description: "Your card payment was not completed. No funds were charged.",
+        title: checkoutResult === 'failed' ? "Payment Failed" : "Payment Cancelled",
+        description: checkoutResult === 'failed'
+          ? "Your card payment was declined. Please try again or use a different payment method."
+          : "Your card payment was not completed. No funds were charged.",
         variant: "destructive",
       });
       return;
     }
 
-    if (stripeStatus === 'success') {
+    if (checkoutResult === 'success') {
       window.history.replaceState({}, '', '/wallets');
       toast({
-        title: "✅ Payment Received by Stripe",
-        description: "Your card payment was successful. Funds will appear in your wallet shortly once confirmed.",
+        title: "✅ Payment Received",
+        description: "Your card payment was successful. Funds will appear in your wallet shortly once confirmed by Checkout.com.",
       });
-      // Refresh transactions so the user sees the incoming credit
       queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
     }
@@ -285,7 +282,7 @@ export default function Wallets() {
   });
 
   // Deposit mutation — used for bank_transfer and payid channels only.
-  // Card deposits go via Stripe checkout (handleStripeCheckout below).
+  // Card deposits go via Checkout.com hosted payment (handleCheckoutPayment below).
   const depositMutation = useMutation({
     mutationFn: async (data: { type: string; currency: string; amount: string; method: string }) => {
       const response = await apiRequest("POST", "/api/wallets/deposit", data);
@@ -328,55 +325,30 @@ export default function Wallets() {
     }
   });
 
-  // Stripe Checkout — called for card deposits.
-  // Creates a Stripe Checkout Session and redirects to Stripe's hosted payment page.
-  // Balance is credited ONLY after Stripe fires the webhook (server-side).
-  const handleStripeCheckout = async () => {
+  // Checkout.com Hosted Payments — called for card deposits.
+  // Creates a Checkout.com Hosted Payment Link and redirects to the secure payment page.
+  // Balance is credited ONLY after Checkout.com fires the webhook (server-side).
+  const handleCheckoutPayment = async () => {
     if (!selectedWallet || !amount) {
       toast({ title: "Missing Information", description: "Please enter an amount.", variant: "destructive" });
       return;
     }
-    setStripeLoading(true);
+    setCheckoutLoading(true);
     try {
-      const res = await apiRequest('POST', '/api/stripe/create-checkout-session', {
+      const res = await apiRequest('POST', '/api/checkout/create-payment-link', {
         walletId: selectedWallet.id,
         amount,
         currency: selectedWallet.currency,
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to start checkout');
+        throw new Error((err as any).error || 'Failed to create payment link');
       }
       const { url } = await res.json();
       window.location.href = url;
     } catch (err: any) {
       toast({ title: "Card Payment Error", description: err.message, variant: "destructive" });
-      setStripeLoading(false);
-    }
-  };
-
-  const handleCardPayment = async () => {
-    if (!selectedWallet || !amount) {
-      toast({ title: "Missing Information", description: "Please enter an amount.", variant: "destructive" });
-      return;
-    }
-    setCardLoading(true);
-    try {
-      const res = await apiRequest('POST', '/api/stripe/create-payment-intent', {
-        walletId: selectedWallet.id,
-        amount,
-        currency: selectedWallet.currency,
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to initialise payment');
-      }
-      const { clientSecret } = await res.json();
-      setCardClientSecret(clientSecret);
-    } catch (err: any) {
-      toast({ title: "Card Payment Error", description: err.message, variant: "destructive" });
-    } finally {
-      setCardLoading(false);
+      setCheckoutLoading(false);
     }
   };
 
@@ -460,9 +432,9 @@ export default function Wallets() {
       return;
     }
 
-    // Card deposits are handled by the inline Stripe Elements form — not this path.
+    // Card deposits are handled by Checkout.com hosted payment redirect — not this path.
     if (depositMethod === 'card') {
-      handleCardPayment();
+      handleCheckoutPayment();
       return;
     }
 
@@ -956,57 +928,25 @@ export default function Wallets() {
               <>
                 {depositMethod === 'card' && (
                   <div className="space-y-3">
-                    {stripeStatus && !stripeStatus.configured && (
+                    {checkoutStatus && !checkoutStatus.configured && (
                       <div className="p-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
                         <p className="text-xs font-semibold text-red-900 dark:text-red-100">Card payments temporarily unavailable</p>
                         <p className="text-xs text-red-700 dark:text-red-300 mt-1">Please use PayID or Bank Transfer instead, or contact AMAX support at info@amaxglobal.com.au.</p>
                       </div>
                     )}
-
-                    {cardClientSecret && stripeStatus?.publishableKey ? (
-                      <div className="space-y-3">
-                        <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded border border-blue-200 dark:border-blue-800">
-                          <p className="text-xs text-blue-800 dark:text-blue-200">
-                            Paying <strong>{amount} {selectedWallet?.currency}</strong> — enter your card details below
-                          </p>
-                        </div>
-                        <StripePaymentForm
-                          publishableKey={stripeStatus.publishableKey}
-                          clientSecret={cardClientSecret}
-                          onSuccess={() => {
-                            setCardClientSecret(null);
-                            queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
-                            queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
-                            toast({ title: "✅ Payment Submitted", description: "Your card payment is processing. Your balance will be updated shortly." });
-                            setDepositModalOpen(false);
-                            setAmount('');
-                            setDepositMethod('');
-                          }}
-                          onError={(msg) => {
-                            toast({ title: "Payment Failed", description: msg, variant: "destructive" });
-                          }}
-                        />
-                        <Button variant="ghost" size="sm" className="w-full h-7 text-xs" onClick={() => setCardClientSecret(null)}>
-                          ← Back
-                        </Button>
+                    <div className="p-3 bg-muted rounded-lg">
+                      <h4 className="font-medium mb-2 text-sm">💳 Card Payment via Checkout.com</h4>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>• Visa, Mastercard, American Express accepted</p>
+                        <p>• Processed by Checkout.com — PCI DSS Level 1 certified</p>
+                        <p>• Card details secured by Checkout.com — never stored by AMAX</p>
+                        <p>• Funds credited after payment confirmation</p>
+                        <p>• You will be redirected to Checkout.com's secure payment page</p>
                       </div>
-                    ) : (
-                      <>
-                        <div className="p-3 bg-muted rounded-lg">
-                          <h4 className="font-medium mb-2 text-sm">💳 Card Payment via Stripe</h4>
-                          <div className="text-xs text-muted-foreground space-y-1">
-                            <p>• Visa, Mastercard, American Express accepted</p>
-                            <p>• Processed by Stripe — PCI DSS Level 1 certified</p>
-                            <p>• Card details secured by Stripe — never stored by AMAX</p>
-                            <p>• Fee: 2.9% + $0.30 per transaction</p>
-                            <p>• Funds credited after payment confirmation</p>
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Enter the amount above, then click <strong>Pay Now</strong> to enter your card details securely.
-                        </p>
-                      </>
-                    )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Enter the amount above, then click <strong>Pay Now</strong> to complete your payment securely on Checkout.com.
+                    </p>
                   </div>
                 )}
                 
@@ -1109,15 +1049,13 @@ export default function Wallets() {
                 
                 <div className="flex space-x-2 pt-2">
                   {depositMethod === 'card' ? (
-                    !cardClientSecret && (
-                      <Button
-                        onClick={handleCardPayment}
-                        disabled={cardLoading || !amount || !stripeStatus?.configured}
-                        className="flex-1 h-8 text-sm"
-                      >
-                        {cardLoading ? "Preparing payment..." : "💳 Pay Now"}
-                      </Button>
-                    )
+                    <Button
+                      onClick={handleCheckoutPayment}
+                      disabled={checkoutLoading || !amount || !checkoutStatus?.configured}
+                      className="flex-1 h-8 text-sm"
+                    >
+                      {checkoutLoading ? "Redirecting to Checkout.com..." : "💳 Pay Now"}
+                    </Button>
                   ) : (
                     <Button
                       onClick={handleDeposit}

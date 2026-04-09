@@ -1,8 +1,7 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
-import { createHash, randomBytes } from "crypto";
+import { createHash, createHmac, randomBytes } from "crypto";
 import { sendVerificationEmail, sendPasswordResetEmail, emailConfigured } from "./email";
-import Stripe from "stripe";
 import { z } from "zod";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { and, eq, sql } from "drizzle-orm";
@@ -2432,11 +2431,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { currency, amount: rawAmount, description, method } = parsedDeposit.data;
       const amount = new Decimal(rawAmount);
 
-      // Card deposits must use the Stripe checkout route — never this handler.
+      // Card deposits must use the Checkout.com hosted payment route — never this handler.
       // Accepting card deposits here would credit balances without real payment confirmation.
       if ((method as string) === "card") {
         return res.status(400).json({
-          error: "Card deposits must use the Stripe checkout flow. Use POST /api/stripe/create-checkout-session.",
+          error: "Card deposits must use the Checkout.com hosted payment flow. Use POST /api/checkout/create-payment-link.",
         });
       }
 
@@ -2611,6 +2610,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (idemKey) await saveIdempotentResponse(userId, "/api/withdraw", idemKey, payloadHash, txRecord);
       await writeAuditLog(userId, "withdrawal", "transaction", String(txRecord?.id), { currency, amount: rawAmount }, req.ip || null);
+
+      // TTR auto-flag — AUSTRAC mandatory reporting for cash transactions >= AUD $10,000 equivalent.
+      // Creates a pending complianceActions record for the Compliance Officer (Qin Xiong) to review and file.
+      if (amount.gte(10000)) {
+        try {
+          await db.insert(complianceActions).values({
+            userId,
+            transactionId: txRecord?.id ?? null,
+            actionType: "ttr",
+            performedBy: "system",
+            notes: `Auto-flagged: ${currency} withdrawal of ${rawAmount} meets or exceeds AUD $10,000 AUSTRAC TTR threshold. Pending review by Compliance Officer.`,
+            outcome: null,
+            austracRef: null,
+          });
+        } catch (flagErr: any) {
+          console.error("[ttr-auto-flag] failed to insert complianceActions:", flagErr.message);
+        }
+      }
+
       res.json(txRecord);
     } catch (error: any) {
       if (error.status) return res.status(error.status).json({ error: error.message });
@@ -3392,28 +3410,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ---------------------------------------------------------------------------
-  // Stripe — Real card payment processing via Stripe Checkout
-  // Flow: Frontend calls create-checkout-session → redirects to Stripe hosted page
-  //       → Stripe redirects back → webhook fires → balance credited
-  // Requires env: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
-  // Zero-decimal currencies (JPY, KRW): amount passed as whole units.
+  // Checkout.com — Real card payment processing via Checkout.com Hosted Payments
+  // Flow: Frontend calls create-payment-link → redirects to Checkout.com hosted page
+  //       → Checkout.com redirects back → webhook fires → balance credited
+  // Requires env: CHECKOUT_SECRET_KEY, CHECKOUT_WEBHOOK_SECRET
+  // Zero-decimal currencies (JPY, KRW): amount passed as whole units (no cents).
   // ---------------------------------------------------------------------------
 
-  // Helper: currencies that Stripe treats as zero-decimal (no cents)
-  const STRIPE_ZERO_DECIMAL = new Set(["JPY", "KRW", "BIF", "CLP", "GNF", "ISK", "MGA", "PYG", "RWF", "UGX", "VND", "XAF", "XOF", "XPF"]);
+  // Currencies where the amount is the whole unit (no minor units / cents)
+  const CHECKOUT_ZERO_DECIMAL = new Set(["JPY", "KRW", "BIF", "CLP", "GNF", "ISK", "MGA", "PYG", "RWF", "UGX", "VND", "XAF", "XOF", "XPF"]);
 
-  function getStripeClient(): Stripe {
-    const key = process.env.STRIPE_SECRET_KEY;
-    if (!key) throw Object.assign(new Error("Stripe is not configured — STRIPE_SECRET_KEY missing"), { status: 503 });
-    return new Stripe(key, { apiVersion: "2025-02-24.acacia" });
+  function getCheckoutBaseUrl(): string {
+    const key = process.env.CHECKOUT_SECRET_KEY ?? "";
+    return key.startsWith("sk_sbox_")
+      ? "https://api.sandbox.checkout.com"
+      : "https://api.checkout.com";
   }
 
-  // GET /api/stripe/status — frontend uses this to show/hide card payment option
-  app.get("/api/stripe/status", (_req: Request, res: any) => {
-    res.json({
-      configured: !!process.env.STRIPE_SECRET_KEY,
-      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? null,
+  async function checkoutPost(path: string, body: object): Promise<any> {
+    const key = process.env.CHECKOUT_SECRET_KEY;
+    if (!key) throw Object.assign(new Error("Checkout.com is not configured — CHECKOUT_SECRET_KEY missing"), { status: 503 });
+    const res = await fetch(`${getCheckoutBaseUrl()}${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${key}`,
+      },
+      body: JSON.stringify(body),
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({})) as any;
+      throw Object.assign(new Error(err.message ?? `Checkout.com API error ${res.status}`), { status: res.status });
+    }
+    return res.json();
+  }
+
+  // GET /api/checkout/status — frontend uses this to show/hide card payment option
+  app.get("/api/checkout/status", (_req: Request, res: any) => {
+    res.json({ configured: !!process.env.CHECKOUT_SECRET_KEY });
   });
 
   // GET /api/deposit/instructions
@@ -3435,10 +3469,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // POST /api/stripe/create-checkout-session
+  // POST /api/checkout/create-payment-link
   // Body: { walletId: number, amount: string, currency: string }
-  // Returns: { sessionId, url }
-  app.post("/api/stripe/create-checkout-session", requireAuth, async (req: Request, res: any) => {
+  // Returns: { url } — Checkout.com hosted payment page URL
+  app.post("/api/checkout/create-payment-link", requireAuth, async (req: Request, res: any) => {
     try {
       const { userId } = requireAuth(req);
       const { walletId, amount, currency } = req.body;
@@ -3451,135 +3485,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid amount" });
       }
 
-      // Verify the wallet belongs to this user
       const [wallet] = await db.select().from(wallets)
         .where(and(eq(wallets.id, Number(walletId)), eq(wallets.userId, userId)));
       if (!wallet) return res.status(404).json({ error: "Wallet not found" });
 
-      const stripe = getStripeClient();
       const appDomain = process.env.REPLIT_DOMAINS
         ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
         : "http://localhost:5000";
 
-      // Convert amount to smallest currency unit
-      const unitAmount = STRIPE_ZERO_DECIMAL.has(currency.toUpperCase())
+      const unitAmount = CHECKOUT_ZERO_DECIMAL.has(currency.toUpperCase())
         ? Math.round(parsedAmount)
         : Math.round(parsedAmount * 100);
 
-      const session = await stripe.checkout.sessions.create({
-        mode: "payment",
-        payment_method_types: ["card"],
-        line_items: [
-          {
-            price_data: {
-              currency: currency.toLowerCase(),
-              product_data: {
-                name: `AMAX Global ${currency} Wallet Deposit`,
-                description: `Deposit funds into your AMAX ${currency} wallet`,
-              },
-              unit_amount: unitAmount,
-            },
-            quantity: 1,
-          },
-        ],
-        metadata: {
-          walletId: String(walletId),
-          userId: String(userId),
-          currency,
-          amountDecimal: amount,
-        },
-        success_url: `${appDomain}/wallets?stripe=success&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${appDomain}/wallets?stripe=cancel`,
-        billing_address_collection: "auto",
-        customer_email: req.body.email || undefined,
-      });
+      const reference = `AMAX-${randomBytes(4).toString("hex").toUpperCase()}`;
 
-      res.json({ sessionId: session.id, url: session.url });
-    } catch (error: any) {
-      if (error.status) return res.status(error.status).json({ error: error.message });
-      console.error("[stripe-create-session]", error?.message ?? error);
-      res.status(500).json({ error: "Failed to create Stripe checkout session" });
-    }
-  });
-
-  // POST /api/stripe/create-payment-intent
-  // Body: { walletId: number, amount: string, currency: string }
-  // Returns: { clientSecret } — used by Stripe Elements in the frontend
-  app.post("/api/stripe/create-payment-intent", requireAuth, async (req: Request, res: any) => {
-    try {
-      const { userId } = requireAuth(req);
-      const { walletId, amount, currency } = req.body;
-      if (!walletId || !amount || !currency) {
-        return res.status(400).json({ error: "walletId, amount and currency are required" });
-      }
-
-      const parsedAmount = parseFloat(amount);
-      if (isNaN(parsedAmount) || parsedAmount <= 0) {
-        return res.status(400).json({ error: "Invalid amount" });
-      }
-
-      const [wallet] = await db.select().from(wallets)
-        .where(and(eq(wallets.id, Number(walletId)), eq(wallets.userId, userId)));
-      if (!wallet) return res.status(404).json({ error: "Wallet not found" });
-
-      const stripe = getStripeClient();
-      const unitAmount = STRIPE_ZERO_DECIMAL.has(currency.toUpperCase())
-        ? Math.round(parsedAmount)
-        : Math.round(parsedAmount * 100);
-
-      const paymentIntent = await stripe.paymentIntents.create({
+      const data = await checkoutPost("/hosted-payments", {
         amount: unitAmount,
-        currency: currency.toLowerCase(),
-        automatic_payment_methods: { enabled: true },
+        currency: currency.toUpperCase(),
+        reference,
+        description: `AMAX Global ${currency} Wallet Deposit`,
+        billing: { address: { country: "AU" } },
         metadata: {
           walletId: String(walletId),
           userId: String(userId),
           currency,
           amountDecimal: amount,
         },
-        description: `AMAX Global ${currency} Wallet Deposit`,
+        success_url: `${appDomain}/wallets?checkout=success&ref=${reference}`,
+        failure_url: `${appDomain}/wallets?checkout=failed`,
+        cancel_url: `${appDomain}/wallets?checkout=cancel`,
       });
 
-      res.json({ clientSecret: paymentIntent.client_secret });
+      const redirectUrl = (data as any)._links?.redirect?.href;
+      if (!redirectUrl) throw new Error("No redirect URL in Checkout.com response");
+
+      res.json({ url: redirectUrl, reference });
     } catch (error: any) {
       if (error.status) return res.status(error.status).json({ error: error.message });
-      console.error("[stripe-payment-intent]", error?.message ?? error);
-      res.status(500).json({ error: "Failed to create payment intent" });
+      console.error("[checkout-create-link]", error?.message ?? error);
+      res.status(500).json({ error: "Failed to create Checkout.com payment link" });
     }
   });
 
-  // POST /api/stripe/webhook
-  // Stripe posts events here; body is raw Buffer (set up in server/index.ts)
-  // Handles: checkout.session.completed, payment_intent.succeeded → credit wallet balance
-  app.post("/api/stripe/webhook", async (req: Request, res: any) => {
-    const sig = req.headers["stripe-signature"];
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  // POST /api/checkout/webhook
+  // Checkout.com posts events here; body is raw Buffer (set up in server/index.ts)
+  // Handles: payment_captured → credit wallet balance
+  // Signature: HMAC-SHA256 of raw body using CHECKOUT_WEBHOOK_SECRET, sent in cko-signature header
+  app.post("/api/checkout/webhook", async (req: Request, res: any) => {
+    const sig = req.headers["cko-signature"] as string;
+    const webhookSecret = process.env.CHECKOUT_WEBHOOK_SECRET;
 
     if (!webhookSecret) {
-      console.error("[stripe-webhook] STRIPE_WEBHOOK_SECRET not set");
+      console.error("[checkout-webhook] CHECKOUT_WEBHOOK_SECRET not set");
       return res.status(503).json({ error: "Webhook not configured" });
     }
 
-    let event: Stripe.Event;
-    try {
-      const stripe = getStripeClient();
-      event = stripe.webhooks.constructEvent(req.body as Buffer, sig as string, webhookSecret);
-    } catch (err: any) {
-      console.error("[stripe-webhook] signature verification failed:", err.message);
-      return res.status(400).json({ error: `Webhook signature error: ${err.message}` });
+    const expected = createHmac("sha256", webhookSecret)
+      .update(req.body as Buffer)
+      .digest("hex");
+
+    if (!sig || sig !== expected) {
+      console.error("[checkout-webhook] signature verification failed");
+      return res.status(401).json({ error: "Invalid webhook signature" });
     }
 
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
+    let event: any;
+    try {
+      event = JSON.parse((req.body as Buffer).toString());
+    } catch {
+      return res.status(400).json({ error: "Invalid JSON body" });
+    }
 
-      // Only process if payment was actually collected (not just authorised)
-      if (session.payment_status !== "paid") {
-        return res.json({ received: true, skipped: "not paid" });
-      }
+    if (event.type === "payment_captured") {
+      const payment = event.data ?? {};
+      const { walletId, userId, currency, amountDecimal } = payment.metadata ?? {};
 
-      const { walletId, userId, currency, amountDecimal } = session.metadata ?? {};
       if (!walletId || !userId || !currency || !amountDecimal) {
-        console.error("[stripe-webhook] missing metadata on session", session.id);
+        console.error("[checkout-webhook] missing metadata on payment", payment.id);
         return res.status(400).json({ error: "Missing metadata" });
       }
 
@@ -3608,9 +3590,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             fee: "0.00000000",
             exchangeRate: null,
             status: "completed",
-            settlementStatus: "stripe_card",
-            description: `${currency} Deposit via Card (Stripe ${session.id})`,
-            sourceExchange: "stripe",
+            settlementStatus: "checkout_card",
+            description: `${currency} Deposit via Card (Checkout.com ${payment.id})`,
+            sourceExchange: "checkout",
             blockchainTxHash: null,
             assetType: "fiat",
             direction: "in",
@@ -3621,74 +3603,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         await writeAuditLog(
-          Number(userId), "stripe_deposit", "transaction", String(txRecord?.id),
-          { currency, amount: amountDecimal, stripeSessionId: session.id },
+          Number(userId), "checkout_deposit", "transaction", String(txRecord?.id),
+          { currency, amount: amountDecimal, checkoutPaymentId: payment.id },
           null,
         );
-
-        console.log(`[stripe-webhook] credited ${amount} ${currency} to wallet ${walletId} (session ${session.id})`);
+        console.log(`[checkout-webhook] credited ${amount} ${currency} to wallet ${walletId} (payment ${payment.id})`);
       } catch (err: any) {
-        console.error("[stripe-webhook] failed to credit wallet:", err.message);
+        console.error("[checkout-webhook] failed to credit wallet:", err.message);
         return res.status(500).json({ error: "Failed to credit wallet" });
       }
     }
 
-    if (event.type === "payment_intent.succeeded") {
-      const intent = event.data.object as Stripe.PaymentIntent;
-      const { walletId, userId, currency, amountDecimal } = intent.metadata ?? {};
-
-      if (!walletId || !userId || !currency || !amountDecimal) {
-        console.error("[stripe-webhook] missing metadata on payment_intent", intent.id);
-        return res.json({ received: true, skipped: "missing metadata" });
-      }
-
-      const amount = new Decimal(amountDecimal);
-
-      try {
-        let txRecord: any;
-        await db.transaction(async (tx) => {
-          await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
-          const [wallet] = await tx.select().from(wallets)
-            .where(and(eq(wallets.id, Number(walletId)), eq(wallets.userId, Number(userId))))
-            .for("update");
-          if (!wallet) throw new Error(`Wallet ${walletId} not found for userId ${userId}`);
-
-          await tx.update(wallets).set({
-            balance: new Decimal(wallet.balance).plus(amount).toFixed(8),
-            availableBalance: new Decimal(wallet.availableBalance).plus(amount).toFixed(8),
-          }).where(eq(wallets.id, wallet.id));
-
-          [txRecord] = await tx.insert(transactions).values({
-            userId: Number(userId),
-            type: "deposit",
-            fromCurrency: null,
-            toCurrency: currency,
-            amount: amount.toFixed(8),
-            fee: "0.00000000",
-            exchangeRate: null,
-            status: "completed",
-            settlementStatus: "stripe_card",
-            description: `${currency} Deposit via Card (Stripe ${intent.id})`,
-            sourceExchange: "stripe",
-            blockchainTxHash: null,
-            assetType: "fiat",
-            direction: "in",
-            riskFlag: false,
-            reviewStatus: "clear",
-            reviewNotes: null,
-          }).returning();
-        });
-
-        await writeAuditLog(
-          Number(userId), "stripe_deposit", "transaction", String(txRecord?.id),
-          { currency, amount: amountDecimal, stripeIntentId: intent.id },
-          null,
-        );
-        console.log(`[stripe-webhook] credited ${amount} ${currency} to wallet ${walletId} (intent ${intent.id})`);
-      } catch (err: any) {
-        console.error("[stripe-webhook] failed to credit wallet:", err.message);
-        return res.status(500).json({ error: "Failed to credit wallet" });
-      }
+    if (event.type === "payment_declined") {
+      console.log(`[checkout-webhook] payment declined: ${event.data?.id ?? "unknown"}`);
     }
 
     res.json({ received: true });
