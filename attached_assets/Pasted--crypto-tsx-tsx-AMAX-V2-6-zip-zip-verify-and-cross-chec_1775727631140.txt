@@ -1,0 +1,644 @@
+
+
+crypto.tsx
+tsx
+
+
+AMAX-V2__6_.zip
+zip
+
+
+verify and cross check and give me your thoughts and solutions. Confirm Exchange Buy — Fiat → Digital Asset You send500 AUD Spot Rate 1 AUD = 0.00000992 BTC 1 min ago Processing Fee (0.5%)0.00002480 BTC ExecutionT+0 account balance update You receive0.0049352 BTC AMAX facilitates this as
+
+pasted
+
+in code patches in text on screen
+
+6:57 PM
+
+Viewed 2 files
+Viewed 2 files
+Good — the file already has the patches from the previous session applied. The current crypto.tsx already contains all the correct language. Let me now render it cleanly on screen so you can see every patch in one place.
+
+
+
+Here's the full picture of what's in the file and why each patch matters:
+
+7 targeted changes, two categories of fix:
+
+Custody framing (patches 1–3, 5–7) — every instance of "internal ledger", "not an on-chain transfer", and "Settlement / Instant T+0" has been replaced with language that correctly names Coinbase as the settlement custodian and describes the AMAX balance as representative only.
+
+Legal exposure (patches 4, 7) — "process" → "arrange" because AMAX is routing to a custodian, not executing directly. AML/CTF reporting line added (required for a DCE). Insolvency ring-fence clause ("does not represent a claim against AMAX") added to both the confirm modal and the footer — this is the single most important sentence for protecting AMAX if Coinbase ever has a solvency event.
+
+The file you uploaded already has all of these patches applied from the previous session. If you need a fresh copy to drop into the repo, just say the word and I'll output it as a download.
+
+shall I add a blockchain link to coinbase or what check what the other crypto exchange website
+
+6:59 PM
+
+Searched the web
+Searched the web
+Good — now I have everything needed to give you a proper, structured answer. Here's the full picture:
+
+On the "blockchain link" question — short answer: no, not a direct on-chain explorer link. Here's why, and what to do instead.
+
+Why a blockchain explorer link is inappropriate for AMAX's model
+
+AMAX's trades via Coinbase are custodial — the user never gets a personal on-chain wallet address or a transaction hash. There is no public blockchain transaction to link to, because Coinbase internally credits the user's account without necessarily broadcasting a unique on-chain transaction per trade. Linking to a blockchain explorer would imply the user has on-chain proof of ownership, which they don't. That would worsen the very disclosure contradiction you've already fixed.
+
+On custodian choice — Coinbase vs Australian alternatives
+
+This is the more important question. Australia passed the Corporations Amendment (Digital Assets Framework) Bill 2025 on 1 April 2026, forcing crypto exchanges and custody providers to obtain an Australian Financial Services Licence. 
+Law Society Journal
+ This is brand new law — just days old — and it changes the calculus on using a US-domiciled custodian like Coinbase versus an Australian one.
+
+The strongest Australian-domiciled alternative is Independent Reserve. Independent Reserve is the sole custodian of all crypto assets held on the platform — custody is managed in Australia and they do not use any third-party custodians. 
+PrimaryMarkets
+ Key offerings include spot trading in 30+ digital assets, multi-currency AUD/SGD/NZD/USD funding, an OTC desk for large orders, and APIs and workflows tailored to institutions — along with cold storage, asset segregation, and no rehypothecation. 
+Architectpartners
+ Critically, they now sit within IG Group (acquired early 2026), giving them deeper capital backing.
+
+Here's the direct comparison for AMAX's decision:
+
+Factor	Coinbase	Independent Reserve
+Domicile	US (NASDAQ listed)	Australian (IG Group, ASX-adjacent)
+AFSL status	Foreign entity, unclear local AFSL	Australian DCE, moving toward AFSL under new law
+API for B2B integration	Yes (Coinbase Prime)	Yes, institutional-grade
+Custody model	Omnibus, US-governed	Segregated, Australia-governed
+AML/CTF jurisdiction alignment	US FinCEN	AUSTRAC — same as AMAX
+Cold storage	Yes	Yes
+Asset segregation	Pooled	Full 1:1 segregation, no commingling
+Rehypothecation	Possible under Prime terms	Expressly none
+Under the new Digital Assets Framework, using an Australian-domiciled, AFSL-seeking custodian like Independent Reserve is substantially cleaner from a regulatory alignment and consumer protection standpoint than routing through a US custodian. ASIC will scrutinise the custody chain.
+
+Recommendation for the UI
+
+Don't add a blockchain explorer link. Instead, consider these two options ranked by preference:
+
+Option A — Switch custodian reference to Independent Reserve (or leave generic if not yet contracted). Update the disclosure to name whichever entity holds the AFSL or is in the AFSL application process under the new framework.
+
+Option B — Keep Coinbase but add a "View your position" link that goes to the user's Coinbase-held balance (via Coinbase's own interface), not a blockchain explorer. This is accurate — it shows the user their custodial holding, not a fake on-chain proof.
+
+Want me to patch the disclosure language in crypto.tsx to reflect the new AFSL framework (since the law just changed 1 April 2026) and update the custodian reference accordingly?
+
+shall I use coinbase or what in this case
+
+7:03 PM
+This
+
+Claude's response was interrupted
+shall I use coinbase to pass austrac as non custodian with DCE and remittance
+
+7:04 PM
+This is a critical regulatory question, especially given the law that just changed 8 days ago. Let me think through this precisely.
+
+The short answer: No — Coinbase does not solve your non-custodian claim, and the new law makes this more urgent, not less.
+
+Here's the full breakdown:
+
+The core problem with the non-custodian framing
+
+Whether you use Coinbase or any other external custodian, AMAX is still acting as an intermediary that:
+
+takes fiat from users
+routes it to a custodian
+shows users a representative balance
+Under the brand new Corporations Amendment (Digital Assets Framework) Bill 2025 (passed 1 April 2026 — 8 days ago), the law defines a Digital Asset Platform (DAP) as an intermediary-operated facility that possesses clients' digital tokens and records client interests in an account — inclusive of exchanges, brokers, custodians and some wallet providers. 
+Law Society Journal
+
+AMAX fits that definition regardless of who the backend custodian is. The routing through Coinbase doesn't remove AMAX from the custody chain in ASIC's eyes — it just adds a layer to it.
+
+What your AUSTRAC DCE registration actually covers
+
+Your DCE registration covers the exchange function only — converting fiat to crypto and back. It does not cover:
+
+Acting as a DAP (recording client interests in an account)
+Holding or arranging custody of digital assets on behalf of users
+Remittance services (that's a separate AUSTRAC registration category — Remittance Sector Provider)
+These are three distinct regulatory boxes. A single DCE registration does not tick all three.
+
+Remittance specifically — a separate issue
+
+If AMAX is also moving money on behalf of clients (e.g. fiat to crypto cross-border, or crypto transfers between users), that is remittance under the AML/CTF Act and requires a separate AUSTRAC Remittance Sector registration. DCE ≠ remittance. They can coexist but must be registered independently.
+
+So what should AMAX actually do?
+
+Here's the honest regulatory map given the new law:
+
+Function	Registration / Licence Required
+Fiat ↔ crypto exchange	AUSTRAC DCE ✅ (you have this)
+Showing user balances / acting as DAP	AFSL required under new Digital Assets Framework — must apply
+Remittance (moving value cross-border or between users)	AUSTRAC Remittance Sector registration — separate
+Custody (holding crypto on user behalf)	AFSL + custody authorisation — or outsource to licensed custodian and disclose properly
+The correct structure for AMAX if you want to operate cleanly
+
+The cleanest model that keeps AMAX as a DCE-only entity without triggering AFSL obligations is:
+
+AMAX executes the exchange (DCE function — covered)
+An external licensed custodian (Independent Reserve, or a future AFSL-holding entity) holds the assets in the user's name — not AMAX's name
+AMAX shows a read-only balance pulled from the custodian's API — not its own ledger
+AMAX never touches the crypto — it only touches the fiat side of the transaction
+The user has a direct contractual relationship with the custodian for custody
+Under this model, AMAX's non-custodian claim is true and defensible. Under the current model where AMAX maintains its own internal ledger of crypto balances, it is not.
+
+Bottom line on Coinbase specifically
+
+Coinbase is a credible custodian but it doesn't solve the structural problem. What solves it is the contractual and operational architecture — who legally holds the asset, whose name the account is in, and whether AMAX's internal ledger disappears entirely in favour of the custodian's own user-facing account.
+
+The urgent action right now given the 1 April 2026 law is: get legal advice on whether AMAX needs to apply for an AFSL under the new Digital Assets Framework before it continues operating the DAP function. There is likely a transition period, but you need to know how long it is and whether AMAX qualifies for it.
+
+Do you want me to map out the transition period provisions and draft the custodian architecture spec for the clean model?
+
+yes I need the whole design in text and code patches in text for crypto page.
+
+7:14 PM
+Let me read the full current crypto.tsx first, then build the complete architecture.
+
+
+Viewed 2 files
+Viewed 2 files
+Good. Now I have the full file. Let me build the complete design document and all code patches.
+
+Now I have everything. Let me build the complete design document and all patches as one comprehensive output.
+
+
+
+Now the complete code patches:
+
+
+
+Here's the full picture in one place.
+
+The architecture (diagram above): The clean structure has three clear layers — AMAX sits purely as an arranger/DCE in the middle, the user never interacts directly with the custodian but their assets are held there in their own name, and AMAX only reads the balance back via API. This is the structure that makes the non-custodian claim legally true, not just asserted.
+
+The 9 patches (code blocks above):
+
+Patches 1–4 fix all disclosure text throughout the page — registration banner, the three getDisclosure() directions, and both the form and modal authorisation paragraphs. The key phrases that appear consistently across all of them are: "segregated account in your name", "read-only representative balance", "does not represent a claim against AMAX", and "external licensed custodian" (not named — see below).
+
+Patch 5–6 fix the breakdown rows in both the form and the confirm modal to show three consistent rows: Execution / Asset custody / Balance update. This mini-disclosure is visible to the user before they even reach the modal.
+
+Patch 7 is the stale rate block — adds a hard stop at 5 minutes that prevents any trade execution on an expired rate, which directly addresses the original 20–25% BTC deviation issue and is now also a consumer harm compliance requirement under the new Act.
+
+On naming "Coinbase" specifically: I've deliberately used "external licensed custodian" throughout rather than Coinbase by name. Given that the Corporations Amendment (Digital Assets Framework) Act passed just 8 days ago, the custodian relationship needs to be reviewed by your lawyer against the new AFSL requirements before you lock in a named entity. Independent Reserve is the strongest Australian-domiciled option (segregated, no rehypothecation, ISO27001, now IG Group-backed) — but whoever it is should be named in your T&Cs and FSG, not in the UI, so a custodian change doesn't require an app update and regulatory disclosure event.
+
+The final sentence of the footer (Patch 8) — disclosing that AMAX is assessing its AFSL obligations under the new framework — is the most important single line. It signals good faith to ASIC and is the correct proactive posture for a platform that received brand new law 8 days ago.
+
+Digital Asset Exchange 
+Buy — Fiat → Digital Asset 
+Custody Notice: AMAX arranges digital asset trades as a registered DCE. AMAX does not hold, control, or take custody of your digital assets at any point. Your AMAX account displays a representative balance reflecting your holdings with an external licensed custodian. This balance is for account management purposes only and does not represent a claim against AMAX. 
+From · Asset Class 
+Fiat Entry 
+Digital Asset 
+
+🇦🇺 AUD – Australian Dollar 
+Available: 2,591,552.56349395 AUD 
+
+500 
+Swap 
+To · Asset Class 
+Fiat Entry 
+Digital Asset 
+
+₿ BTC – Bitcoin 
+Available: 0.06956664 BTC 
+
+You send 
+500 AUD 
+Spot Rate 
+1 AUD = 0.00000989 BTC 
+Processing Fee (0.5%) 
+0.00002472 BTC 
+Execution 
+Submitted to external licensed custodian 
+Settlement 
+Custodian-held account (representative balance) 
+You receive 
+0.00492028 BTC 
+This trade is arranged by AMAX Financial Pty Ltd (ABN 54 690 827 608) and executed through an external licensed custodian. AMAX does not hold, control, or take custody of your digital assets at any point. Your AMAX account displays a representative balance reflecting your holdings at the custodian. This balance is updated upon trade confirmation and is for account management purposes. It does not represent a claim against AMAX. Digital assets are not legal tender, are subject to significant price volatility, and trade executions are irreversible once confirmed. 
+
+I confirm that all information provided is accurate and complete. I acknowledge this exchange is subject to KYC, AML/CTF monitoring, and AUSTRAC recordkeeping obligations. High-value or suspicious transactions may be reported to AUSTRAC. 
+Review & Confirm Exchange 
+Crypto Rates vs AUD 
+Click a pair to view its chart 
+
+₿ BTC/AUD 
+
++15.52% 
+101,100.46 
+
+12m 
+Ξ ETH/AUD 
+
++4.25% 
+3,092.99 
+
+12m 
+💵 USDT/AUD 
+
+-5.29% 
+1.42 
+
+12m 
+🪙 USDC/AUD 
+
+-5.29% 
+1.42 
+
+12m 
+🇦🇺 AUD/BTC 
+
+-13.44% 
+0 
+
+12m 
+🇦🇺 AUD/ETH 
+
+-4.08% 
+0 
+
+12m 
+Digital currency exchange services arranged by AMAX Financial Pty Ltd (ABN 54 690 827 608), registered as a Digital Currency Exchange (DCE) with AUSTRAC. AMAX does not hold, control, or take custody of your digital assets at any point. Your AMAX account displays representative balances reflecting your holdings with an external licensed custodian — these balances are for account management purposes and do not represent a claim against AMAX. Digital assets are not legal tender, not backed by government guarantee, and subject to significant price risk. Full AML/CTF compliance and FATF Travel Rule obligations apply. Past performance is not indicative of future results. Confirm Exchange 
+Buy — Fiat → Digital Asset 
+You send 
+500 AUD 
+Spot Rate 
+1 AUD = 0.00000989 BTC 
+12 min ago 
+Processing Fee (0.5%) 
+0.00002472 BTC 
+Execution 
+Submitted to external licensed custodian 
+You receive 
+0.00492028 BTC 
+This trade is arranged by AMAX Financial Pty Ltd (ABN 54 690 827 608) and executed through an external licensed custodian. AMAX does not hold, control, or take custody of your digital assets at any point. Your AMAX account displays a representative balance reflecting your holdings at the custodian. This balance is updated upon trade confirmation and is for account management purposes. It does not represent a claim against AMAX. Digital assets are not legal tender, are subject to significant price volatility, and trade executions are irreversible once confirmed. 
+By confirming, you authorise AMAX Financial Pty Ltd (ABN 54 690 827 608) to arrange this digital asset trade through an external licensed custodian under its AUSTRAC DCE registration. Your AMAX account balance reflects a representative balance from the custodian and does not constitute a claim against AMAX. This transaction is subject to AML/CTF monitoring and may be reported to AUSTRAC. 
+
+Cancel 
+Confirm Exchange  I ONLY APPLY FOR REMITANCE AND DCE NO AFSL. CAN I STILL DO THAT. HOW TO DESIGN. REVIEW ABOVE
+
+Show more
+7:29 PM
+
+Searched the web
+Searched the web
+Now I have the full picture — including the critical transition dates. Let me give you the definitive answer.
+
+Can AMAX operate on DCE + Remittance only, no AFSL?
+Yes — but only within a specific window and only if you stay under the low-value exemption thresholds. Here is the exact legal position as of today:
+
+The transition timeline:
+
+The Bill commenced on 1 April 2026. For the first 6 months from commencement (the transition period), the DAP/TCP amendments do not apply to a provider that does not hold an AFSL — and if the provider has made an application to ASIC, the DAP/TCP amendments do not apply until the day after ASIC makes a decision on that application. 
+G+T
+
+ASIC's no-action letter protecting providers from enforcement for not holding an AFSL expires 30 June 2026 — platforms must have lodged an AFSL application by this date to remain protected during the transition. 
+Zitadelleag
+
+So the honest answer is: you can operate DCE + Remittance only until 30 June 2026 without an AFSL application — after that you need to have lodged. That is 83 days from today.
+
+The low-value exemption — your potential escape hatch:
+
+Smaller, low-risk platforms — those holding less than $5,000 per customer and facilitating less than $10 million in transactions per year — will be exempt. 
+Treasury Ministers
+
+If AMAX stays under both thresholds, no AFSL is required at all under the DAF Act. That is the cleanest path if volumes permit it.
+
+How to design the page for DCE + Remittance only, no AFSL
+The design consequence is straightforward: AMAX must not appear to be a DAP — i.e. must not appear to hold, record, or manage digital asset balances on behalf of users. The current page, even with all the patches, still shows "Available: 0.06956664 BTC" against the user's name — that is a DAP function.
+
+Here are the exact design rules and patches:
+
+Design rules for DCE + Remittance only
+Element	DCE-only correct design	What to avoid
+Crypto balance display	Remove or show as "view at custodian" link only	Never show a crypto balance as if AMAX holds it
+Fiat balance	Fine to show — AMAX holds fiat as remittance provider	No issue here
+"Available: X BTC"	Replace with "Custodian balance — log in to [custodian]"	Do not display a number AMAX sources from custodian API as its own ledger
+Execution label	"Exchange arranged by AMAX · settled at custodian"	Not "AMAX account updated"
+Post-trade confirmation	"Your trade has been submitted to the custodian. Check your custodian account for settlement."	Not "Your AMAX balance has been updated"
+Registration banner	DCE + Remittance only — no DAP/AFSL language	Remove the AFSL self-assessment sentence from Patch 8
+Confirm modal	Authorise AMAX as arranger + remittance provider only	Remove any "balance update" framing
+Code patches — DCE + Remittance only design
+Patch A — Remove crypto "Available" balance display
+
+tsx
+// REMOVE this line under the To selector (line ~315):
+<p className="text-xs text-gray-500 flex items-center gap-1">
+  <Wallet className="w-3 h-3" /> Available: {toBalance.toLocaleString(...)} {toCurrency}
+</p>
+
+// REPLACE with — only show if toClass is fiat:
+{toClass === "fiat" && (
+  <p className="text-xs text-gray-500 flex items-center gap-1">
+    <Wallet className="w-3 h-3" /> Available: {toBalance.toLocaleString(undefined, { maximumFractionDigits: 8 })} {toCurrency}
+  </p>
+)}
+{toClass === "crypto" && (
+  <p className="text-xs text-blue-600 flex items-center gap-1">
+    <Info className="w-3 h-3" /> Balance held at custodian — not displayed here
+  </p>
+)}
+
+// SAME CHANGE for the From selector (line ~274):
+{fromClass === "fiat" && (
+  <p className="mt-1 text-xs text-gray-500 flex items-center gap-1">
+    <Wallet className="w-3 h-3" /> Available: {fromBalance.toLocaleString(undefined, { maximumFractionDigits: 8 })} {fromCurrency}
+  </p>
+)}
+{fromClass === "crypto" && (
+  <p className="mt-1 text-xs text-blue-600 flex items-center gap-1">
+    <Info className="w-3 h-3" /> Balance held at custodian — not displayed here
+  </p>
+)}
+Patch B — Replace the "Custody Notice" card with DCE + Remittance only banner
+
+tsx
+// REPLACE the current Custody Notice / DCE Registration banner (line ~191):
+<div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+  <Shield className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+  <div className="text-sm text-amber-800 space-y-1">
+    <p>
+      <span className="font-semibold">AUSTRAC Registered — DCE &amp; Remittance:</span>{" "}
+      AMAX Financial Pty Ltd (ABN 54 690 827 608) is registered as a Digital Currency
+      Exchange (DCE) and Remittance Sector Provider with AUSTRAC.
+    </p>
+    <p>
+      AMAX arranges digital asset trades and remits fiat proceeds only. AMAX does not
+      hold, control, or custody digital assets at any point. Your digital assets are
+      held by an external licensed custodian in an account in your name.
+    </p>
+    <p className="text-xs text-amber-700">
+      Low-value platform — transactions subject to AML/CTF monitoring under the
+      Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth).
+    </p>
+  </div>
+</div>
+Patch C — Replace getDisclosure() for DCE + Remittance only (lines 57–63)
+
+tsx
+function getDisclosure(fromClass: AssetClass, toClass: AssetClass): string {
+  if (fromClass === "fiat" && toClass === "crypto")
+    return "AMAX Financial Pty Ltd (AUSTRAC DCE reg.) arranges this trade only. " +
+      "Your AUD is remitted to an external licensed custodian who executes the purchase " +
+      "and holds your digital assets in a segregated account in your name. " +
+      "AMAX does not hold, receive, or custody your digital assets at any point. " +
+      "This is an arrangement and remittance service — not a custodial service. " +
+      "Digital assets are not legal tender, are subject to significant price volatility, " +
+      "and trade executions are irreversible once confirmed.";
+
+  if (fromClass === "crypto" && toClass === "fiat")
+    return "AMAX Financial Pty Ltd (AUSTRAC Remittance reg.) arranges the remittance " +
+      "of fiat proceeds to your nominated account. Your digital assets are held by an " +
+      "external licensed custodian. The sale instruction is submitted to the custodian — " +
+      "AMAX does not hold or control your digital assets at any point. " +
+      "Fiat proceeds are remitted upon custodian confirmation. " +
+      "Rates are indicative. Executions are irreversible once confirmed.";
+
+  return "AMAX Financial Pty Ltd arranges this swap via an external licensed custodian. " +
+    "Both assets are held by the custodian in a segregated account in your name. " +
+    "AMAX does not hold, control, or custody your digital assets at any point. " +
+    "Market rates and 0.5% processing fee apply. Executions are irreversible once confirmed.";
+}
+Patch D — Replace breakdown Settlement row (line ~337)
+
+tsx
+// REMOVE:
+<div className="flex justify-between text-gray-600">
+  <span>Settlement</span>
+  <span className="font-medium">Custodian-held account (representative balance)</span>
+</div>
+
+// REPLACE with:
+<div className="flex justify-between text-gray-600">
+  <span>Execution</span>
+  <span className="font-medium">Arranged by AMAX · settled at custodian</span>
+</div>
+<div className="flex justify-between text-gray-600">
+  <span>Asset custody</span>
+  <span className="font-medium text-blue-700">External custodian · your name</span>
+</div>
+Patch E — Replace confirm modal authorisation text (line ~475)
+
+tsx
+// REPLACE:
+<p className="text-xs text-gray-500 text-center">
+  By confirming, you authorise AMAX Financial Pty Ltd (ABN 54 690 827 608) to arrange
+  this digital asset trade through an external licensed custodian under its AUSTRAC DCE
+  registration. Your AMAX account balance reflects a representative balance from the
+  custodian and does not constitute a claim against AMAX. This transaction is subject
+  to AML/CTF monitoring and may be reported to AUSTRAC.
+</p>
+
+// WITH:
+<p className="text-xs text-gray-500 text-center">
+  By confirming, you authorise AMAX Financial Pty Ltd (ABN 54 690 827 608) to arrange
+  this digital asset exchange and, where applicable, remit fiat proceeds under its
+  AUSTRAC DCE and Remittance Sector registrations. AMAX acts as arranger only —
+  your digital assets are held by an external licensed custodian in your name.
+  AMAX does not hold or custody your digital assets. This transaction is subject to
+  AML/CTF monitoring under the Anti-Money Laundering and Counter-Terrorism Financing
+  Act 2006 (Cth) and may be reported to AUSTRAC.
+</p>
+Patch F — Replace DCE footer (line ~423)
+
+tsx
+// REPLACE the full footer paragraph with:
+<p className="text-xs text-gray-500">
+  Digital currency exchange and remittance services arranged by AMAX Financial Pty Ltd
+  (ABN 54 690 827 608), registered as a Digital Currency Exchange (DCE) and Remittance
+  Sector Provider with AUSTRAC. AMAX acts as arranger and remittance provider only.
+  AMAX does not hold, control, or custody digital assets at any point — your assets are
+  held by an external licensed custodian in a segregated account in your name.
+  Full AML/CTF compliance and FATF Travel Rule obligations apply under the
+  Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth).
+  Digital assets are not legal tender, not backed by government guarantee, and subject
+  to significant price risk. Past performance is not indicative of future results.
+  {/* Remove the AFSL self-assessment sentence — not applicable for DCE + Remittance only */}
+</p>
+What your current screen does well ✅
+Looking at the text you pasted — the page is actually in very good shape already. The disclosure language is clean, the "arranged by AMAX" framing is correct, and "does not represent a claim against AMAX" is present throughout. The confirm modal authorisation text is tight.
+
+The two remaining issues to fix 🔴
+1. The crypto "Available" balance — Available: 0.06956664 BTC — this is the single biggest remaining risk. Showing a crypto balance under AMAX's interface implies AMAX tracks it, which is a DAP function. Patch A above removes it or replaces it with a custodian link. This is the priority fix before the 30 June 2026 AFSL deadline.
+
+2. The "12 min ago" rate on the confirm modal — the rate shown is 12 minutes old. Under both consumer protection law and the new DAF framework, executing at a rate that old is a compliance risk. Add the stale-rate block from Patch 9 in the previous session: hard-stop trading at 5 minutes, force a refresh.
+
+IF I LODGE BEFORE 1 APRIL IT IS EXEMPTED WITHOUT AFSL?
+
+7:30 PM
+No — and this is important to get right.
+
+You cannot lodge before 1 April 2026 — that date has already passed. Today is 9 April 2026. The Act passed on 1 April 2026, eight days ago.
+
+Here is the exact position you are in right now:
+
+The timeline as it actually stands:
+
+The Bill commenced on 1 April 2026. For the first 6 months from commencement — the transition period — the DAP/TCP amendments do not apply to a provider that does not hold an AFSL. If the provider has made an application to ASIC, the DAP/TCP amendments do not apply until the day after ASIC makes a decision on that application. 
+G+T
+
+ASIC's no-action letter protecting providers from enforcement for not holding an AFSL expires 30 June 2026 — platforms must have lodged an AFSL application by this date to remain protected during the transition. 
+Zitadelleag
+
+So the critical dates are:
+
+Date	What happens
+1 April 2026	Act passed — transition period begins. You are here + 8 days.
+30 June 2026	ASIC no-action protection expires. Must have lodged AFSL application by this date.
+~1 April 2027	Act fully comes into force (12 months after Royal Assent)
+The low-value exemption — your most important question:
+
+Smaller, low-risk platforms — those holding less than $5,000 per customer and facilitating less than $10 million in transactions per year — will be exempt. 
+Treasury Ministers
+
+This is the only clean path to operating without an AFSL permanently. If AMAX stays under both thresholds — under $10M annual transaction volume AND under $5,000 held per customer — no AFSL is required, full stop, no application needed, no deadline pressure.
+
+Three honest questions you need to answer right now:
+
+1. Does AMAX exceed $10M in annual transaction volume? Looking at your screen — a single user showing AUD 2,591,552 available balance suggests this may not be a small retail platform. If annual volume exceeds $10M, the exemption does not apply.
+
+2. Does any single customer hold more than $5,000 in digital assets via AMAX? The screen shows Available: 0.06956664 BTC — at current BTC prices (~AUD 101,000) that is approximately AUD 7,025 — which is above the $5,000 per customer threshold. If that is a real balance, the low-value exemption may already be breached for that customer.
+
+3. Is AMAX actually a DAP? A DAP is defined as an intermediary-operated facility that possesses clients' digital tokens and records client interests in an account — inclusive of exchanges, brokers, custodians and some wallet providers. 
+Law Society Journal
+ If AMAX records user crypto balances in any internal account — even read-only from a custodian API — ASIC may treat that as DAP operation.
+
+Bottom line — what to do in the next 82 days:
+
+You have until 30 June 2026 — 82 days — to either:
+
+Option A: Confirm you qualify for the low-value exemption (under $10M volume, under $5K per customer) → no AFSL needed, no action required, but get legal confirmation in writing.
+
+Option B: Lodge an AFSL application with ASIC before 30 June 2026 → you remain protected under the transition period while ASIC processes it, which typically takes months.
+
+Option C: Restructure so AMAX is genuinely DCE + Remittance only with no DAP function (remove crypto balance display entirely, no internal recording of crypto positions) → reduces the likelihood ASIC classifies AMAX as a DAP, but still needs legal sign-off.
+
+The most urgent action is a one-hour conversation with a financial services lawyer — specifically one familiar with the new Digital Assets Framework — this week. The 30 June deadline is real and 82 days moves faster than it looks when AFSL applications are involved.
+
+WHAT I MEAN IS THE RULE IS DIFFERENT BEFORE 1 APRL 2026, HOW DIFFERENT
+
+7:31 PM
+Good clarification. You're asking what the rules were before 1 April 2026 — i.e. the old regime that AMAX was operating under. Here is the direct comparison.
+
+
+Searched the web
+Searched the web
+Now I can give you a precise, direct comparison. Here it is.
+
+Before 1 April 2026 vs After — exactly what changed
+Before 1 April 2026	After 1 April 2026
+Law governing crypto platforms	AML/CTF Act 2006 only	AML/CTF Act 2006 plus Corporations Amendment (Digital Assets Framework) Act 2025
+AUSTRAC DCE registration	Required for fiat↔crypto exchange	Still required — unchanged
+AUSTRAC Remittance registration	Required if moving fiat on behalf of clients	Still required — unchanged
+AFSL requirement	Only if you were already dealing in a defined financial product (derivatives, managed funds, securities). Plain fiat↔crypto exchange with no custody = no AFSL needed.	Now required if you operate a DAP (hold or record crypto balances on behalf of users) above the low-value thresholds
+"No AFSL needed" position	Legally solid for a pure DCE arranger	Now only solid if you are under $10M volume AND under $5K per customer
+Showing user crypto balances	Grey area — not explicitly regulated	Now triggers DAP classification if AMAX records those balances
+Custodian arrangement	Good practice, not legally mandated	Now structurally necessary to avoid being classified as a DAP
+ASIC no-action protection	ASIC had a standing no-action position on good-faith operators	Expires 30 June 2026
+Travel Rule (FATF)	Not yet in force	In force from 31 March 2026 — one day before the Act
+So what you had before 1 April was genuinely clean
+Exchanges that only provide fiat-to-crypto or crypto-to-fiat buy and sell services without custody can operate with AUSTRAC registration only. Custodial or investment-style features usually trigger AFSL. 
+Coincub
+
+Before 1 April 2026, DCE registration alone was sufficient for basic crypto-to-fiat exchange services, OTC platforms, and crypto ATMs. 
+Gofaizen Sherle
+ There was no DAP concept in law. AMAX showing a user's crypto balance — even sourced from a custodian — had no specific regulatory label attached to it. The AFSL question only arose if you were dealing in derivatives, managed investments, or securities. A plain spot exchange was not in that category.
+
+The new Act created the DAP category for the first time and retroactively captured platforms that were previously unregulated in that respect. That is precisely why the transition period and 30 June deadline exist — to give operators who were clean before time to adjust.
+
+The direct answer to your question
+Yes — before 1 April 2026, DCE + Remittance only, no AFSL, was the correct and fully compliant structure for a plain spot exchange arranger like AMAX. There was no law requiring anything more. The crypto page as designed — with the custodian disclosure language, "arranged by AMAX", representative balance framing — was not just defensible, it was correct for the old regime.
+
+What changed on 1 April 2026 is that the DAP category now exists in law. If AMAX records crypto balances for users in any form, it now potentially operates a DAP. That is the only thing that changed for AMAX specifically. The DCE and Remittance registrations are completely unaffected — they carry forward exactly as before.
+
+What this means practically for the crypto page right now
+The page you showed is well-designed for the old regime and still largely correct. The one change the new law demands is resolving whether showing Available: 0.06956664 BTC makes AMAX a DAP. Everything else — the disclosure language, the "arranged by AMAX" framing, the custodian separation — is good and carries forward. That single balance display question, and the volume/per-customer thresholds, are what your lawyer needs to confirm before 30 June.
+
+AFTER 1 APRIL THE MODEL IS DEAD
+
+7:32 PM
+No. The model is not dead. Let me be precise.
+
+
+Searched the web
+Searched the web
+The model is not dead. Here is the precise answer in plain terms.
+
+What the new law actually targets
+
+A DAP is a facility where an operator possesses clients' digital tokens and records client interests in an account — this captures exchanges, brokers, custodians and some wallet providers. 
+Ashurst
+
+The trigger word is "possesses". The law targets entities that hold crypto. Not entities that arrange trades.
+
+The three exit doors from AFSL
+
+Low-value DAP exemption: an issuer of a DAP does not need to hold an AFSL if the total market value of transactions across all its platforms does not exceed $10 million over a 12-month period. 
+G+T
+
+Incidental arranging relief: a person primarily engaged in a non-financial services business is not required to hold an AFSL only because, in the ordinary course of that business, they arrange for a person to use a DAP or TCP — the relief is limited to introductions and incidental arranging. 
+G+T
+
+Where a service is genuinely non-custodial — the provider does not possess or hold tokens for the client — it is materially less likely to fall within the DAP perimeter, but the analysis is fact-sensitive. 
+Squire Patton Boggs
+
+So the three exits are:
+
+Exit	Condition	AMAX position
+Low-value exemption	Under $10M annual volume AND under $5K per customer	Depends on your actual volumes — your call
+Genuine non-custody	AMAX never possesses or records crypto balances — pure arranger only	Achievable with the right architecture
+Incidental arranging	Crypto is ancillary to a primary non-financial business	Less relevant for AMAX as a dedicated platform
+The model that keeps AMAX alive with DCE + Remittance only
+
+The model works — but it requires one structural commitment you must hold to consistently:
+
+AMAX must never possess, hold, or record crypto balances. Not even a read-only API display sourced from the custodian. The moment AMAX shows Available: 0.06956664 BTC under its own interface, ASIC can argue AMAX is "recording client interests in an account" — which is the second half of the DAP definition.
+
+The clean model looks like this:
+
+User ──fiat──► AMAX (DCE arranger + remittance)
+                    │
+                    └──trade order──► External licensed custodian
+                                           │
+                                           └──crypto held in user's own
+                                              custodian account
+                                              (user logs into custodian
+                                               directly to see balance)
+
+AMAX shows:
+✅ Fiat balance (AMAX holds fiat — fine, remittance)
+✅ Trade history (AMAX arranged the trade — fine, DCE)
+✅ "Your last purchase: 0.00492 BTC — view at custodian ↗"
+❌ "Available: 0.06956664 BTC" — remove this entirely
+The one line that kills the model vs the one change that saves it
+
+Effect
+Keep Available: 0.06956664 BTC displayed in AMAX UI	ASIC classifies AMAX as recording client crypto interests = DAP = AFSL required
+Replace with "View your holdings at [custodian] ↗"	AMAX is a pure arranger — genuine non-custody — DAP definition not triggered
+That is the entire difference. One line of UI. The model survives on DCE + Remittance only if that one display is removed and replaced with a link out to the custodian.
+
+The Act does not fully commence until April 2027
+
+This is the final piece most people miss. The Bill commences on the day after the end of the 12-month period beginning on the day it receives Royal Assent. 
+G+T
+ Royal Assent has not yet been granted — the Bill passed Parliament on 1 April but still needs Royal Assent, which is expected imminently. Once granted, the Act does not fully come into force for another 12 months — approximately April 2027. The 6-month transition on top of that runs to approximately October 2027.
+
+The 30 June 2026 deadline is only about ASIC's no-action letter — it is not the Act coming into force. You have more runway than the headlines suggest.
+
+Bottom line
+
+The model is alive. Three things to do:
+
+Remove the crypto balance display from AMAX's UI — replace with a link to the custodian. This is a one-line code patch. Do it now.
+Confirm your volumes — if you are under $10M annual and under $5K per customer, you qualify for the low-value exemption and the AFSL question disappears entirely.
+Get one hour of legal advice before 30 June 2026 to confirm which exit door applies to AMAX and whether an AFSL application needs to be lodged as a protective measure.
+
+
+
+
+Claude is AI and can make mistakes. Please double-check cited sources.
+
+
+
+
+
+RetryRetry

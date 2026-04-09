@@ -1,0 +1,166 @@
+Perfect — here’s a **full set of text/code patches** for `crypto.tsx` that implements **DCE + Remittance only compliance** without showing crypto balances, keeping AMAX non-custodian. **Text-only**, ready to drop into your repo.
+
+---
+
+### **Patch A — Remove “Available” crypto balances**
+
+```tsx
+// From selector — replace existing crypto balance display (~line 274)
+{fromClass === "fiat" && (
+  <p className="mt-1 text-xs text-gray-500 flex items-center gap-1">
+    <Wallet className="w-3 h-3" /> Available: {fromBalance.toLocaleString(undefined, { maximumFractionDigits: 8 })} {fromCurrency}
+  </p>
+)}
+{fromClass === "crypto" && (
+  <p className="mt-1 text-xs text-blue-600 flex items-center gap-1">
+    <Info className="w-3 h-3" /> Balance held at custodian — view in your custodian account
+  </p>
+)}
+
+// To selector — replace existing crypto balance display (~line 315)
+{toClass === "fiat" && (
+  <p className="text-xs text-gray-500 flex items-center gap-1">
+    <Wallet className="w-3 h-3" /> Available: {toBalance.toLocaleString(undefined, { maximumFractionDigits: 8 })} {toCurrency}
+  </p>
+)}
+{toClass === "crypto" && (
+  <p className="text-xs text-blue-600 flex items-center gap-1">
+    <Info className="w-3 h-3" /> Balance held at custodian — view in your custodian account
+  </p>
+)}
+```
+
+---
+
+### **Patch B — DCE + Remittance Only Banner (~line 191)**
+
+```tsx
+<div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+  <Shield className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+  <div className="text-sm text-amber-800 space-y-1">
+    <p>
+      <span className="font-semibold">AUSTRAC Registered — DCE &amp; Remittance:</span>{" "}
+      AMAX Financial Pty Ltd (ABN 54 690 827 608) is registered as a Digital Currency
+      Exchange (DCE) and Remittance Sector Provider with AUSTRAC.
+    </p>
+    <p>
+      AMAX arranges digital asset trades and remits fiat proceeds only. AMAX does not
+      hold, control, or custody digital assets at any point. Your digital assets are
+      held by an external licensed custodian in an account in your name.
+    </p>
+    <p className="text-xs text-amber-700">
+      Low-value platform — transactions subject to AML/CTF monitoring under the
+      Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth).
+    </p>
+  </div>
+</div>
+```
+
+---
+
+### **Patch C — Update getDisclosure() (~lines 57–63)**
+
+```tsx
+function getDisclosure(fromClass: AssetClass, toClass: AssetClass): string {
+  if (fromClass === "fiat" && toClass === "crypto")
+    return "AMAX Financial Pty Ltd (AUSTRAC DCE reg.) arranges this trade only. " +
+      "Your AUD is remitted to an external licensed custodian who executes the purchase " +
+      "and holds your digital assets in a segregated account in your name. " +
+      "AMAX does not hold, receive, or custody your digital assets at any point. " +
+      "This is an arrangement and remittance service — not a custodial service. " +
+      "Digital assets are not legal tender, are subject to significant price volatility, " +
+      "and trade executions are irreversible once confirmed.";
+
+  if (fromClass === "crypto" && toClass === "fiat")
+    return "AMAX Financial Pty Ltd (AUSTRAC Remittance reg.) arranges the remittance " +
+      "of fiat proceeds to your nominated account. Your digital assets are held by an " +
+      "external licensed custodian. The sale instruction is submitted to the custodian — " +
+      "AMAX does not hold or control your digital assets at any point. " +
+      "Fiat proceeds are remitted upon custodian confirmation. " +
+      "Rates are indicative. Executions are irreversible once confirmed.";
+
+  return "AMAX Financial Pty Ltd arranges this swap via an external licensed custodian. " +
+    "Both assets are held by the custodian in a segregated account in your name. " +
+    "AMAX does not hold, control, or custody your digital assets at any point. " +
+    "Market rates and 0.5% processing fee apply. Executions are irreversible once confirmed.";
+}
+```
+
+---
+
+### **Patch D — Update breakdown rows (~line 337)**
+
+```tsx
+<div className="flex justify-between text-gray-600">
+  <span>Execution</span>
+  <span className="font-medium">Arranged by AMAX · settled at custodian</span>
+</div>
+<div className="flex justify-between text-gray-600">
+  <span>Asset custody</span>
+  <span className="font-medium text-blue-700">External custodian · your name</span>
+</div>
+```
+
+---
+
+### **Patch E — Confirm modal authorisation (~line 475)**
+
+```tsx
+<p className="text-xs text-gray-500 text-center">
+  By confirming, you authorise AMAX Financial Pty Ltd (ABN 54 690 827 608) to arrange
+  this digital asset exchange and remit fiat proceeds under its AUSTRAC DCE and
+  Remittance Sector registrations. AMAX acts as arranger only — your digital assets are
+  held by an external licensed custodian in your name.
+  AMAX does not hold or custody your digital assets. This transaction is subject to
+  AML/CTF monitoring under the Anti-Money Laundering and Counter-Terrorism Financing
+  Act 2006 (Cth) and may be reported to AUSTRAC.
+</p>
+```
+
+---
+
+### **Patch F — Footer (~line 423)**
+
+```tsx
+<p className="text-xs text-gray-500">
+  Digital currency exchange and remittance services arranged by AMAX Financial Pty Ltd
+  (ABN 54 690 827 608), registered as a Digital Currency Exchange (DCE) and Remittance
+  Sector Provider with AUSTRAC. AMAX acts as arranger and remittance provider only.
+  AMAX does not hold, control, or custody digital assets at any point — your assets are
+  held by an external licensed custodian in a segregated account in your name.
+  Full AML/CTF compliance and FATF Travel Rule obligations apply under the
+  Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth).
+  Digital assets are not legal tender, not backed by government guarantee, and subject
+  to significant price risk. Past performance is not indicative of future results.
+</p>
+```
+
+---
+
+### **Patch G — Rate expiry enforcement**
+
+```tsx
+// Before executing a trade, check rate freshness (~line 410)
+const now = new Date();
+const rateAgeMinutes = (now.getTime() - lastRateUpdate.getTime()) / 60000;
+if (rateAgeMinutes > 5) {
+  alert("The displayed rate is more than 5 minutes old. Please refresh before executing your trade.");
+  return;
+}
+```
+
+---
+
+✅ **Result of all patches**
+
+* AMAX UI **no longer shows crypto balances** → non-custodian safe.
+* Clear **DCE + Remittance only disclosures**.
+* Execution & settlement labels show **custodian responsibility**.
+* Rate execution enforces **fresh rates ≤5 min**.
+* Fully aligned with **low-value exemption** pathway if under thresholds.
+
+---
+
+If you want, I can also **write a “text on screen” summary for users** — what they see before confirming the trade — so it’s **100% compliant** visually.
+
+Do you want me to do that next?

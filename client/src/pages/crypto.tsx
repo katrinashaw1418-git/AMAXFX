@@ -120,6 +120,18 @@ export default function Crypto() {
       toast({ title: "Insufficient Balance", description: `You only have ${fromBalance.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${fromCurrency} available.`, variant: "destructive" });
       return;
     }
+    // Rate staleness check — block execution if rate is more than 5 minutes old.
+    // Consumer protection: executing against a stale rate exposes users to the risk
+    // of a materially incorrect price, which is also an AUSTRAC consumer harm concern.
+    const rateAge = (fxRate as any)?.rateAgeMinutes ?? 0;
+    if ((fxRate as any)?.isStale || rateAge > 5) {
+      toast({
+        title: "Rate Expired — Please Wait",
+        description: `The displayed rate is ${rateAge} minute${rateAge !== 1 ? "s" : ""} old. Rates must be within 5 minutes to execute a trade. A fresh rate will be loaded automatically — please try again in a moment.`,
+        variant: "destructive",
+      });
+      return;
+    }
     if (!complianceAgreed) {
       toast({ title: "Compliance Confirmation Required", description: "Please confirm the compliance declaration before proceeding.", variant: "destructive" });
       return;
@@ -377,8 +389,13 @@ export default function Crypto() {
                 </label>
               </div>
 
-              <Button className="w-full" onClick={openConfirm} disabled={exchangeMutation.isPending || rateLoading}>
-                {exchangeMutation.isPending ? "Processing…" : "Review & Confirm Exchange"}
+              <Button
+                className="w-full"
+                onClick={openConfirm}
+                disabled={exchangeMutation.isPending || rateLoading || (fxRate as any)?.isStale || ((fxRate as any)?.rateAgeMinutes ?? 0) > 5}
+                title={(fxRate as any)?.isStale || ((fxRate as any)?.rateAgeMinutes ?? 0) > 5 ? "Rate is stale — waiting for refresh" : undefined}
+              >
+                {exchangeMutation.isPending ? "Processing…" : (fxRate as any)?.isStale || ((fxRate as any)?.rateAgeMinutes ?? 0) > 5 ? "⚠ Rate Expired — Refreshing…" : "Review & Confirm Exchange"}
               </Button>
             </CardContent>
           </Card>
@@ -448,7 +465,7 @@ export default function Crypto() {
       <div className="flex items-start gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
         <Info className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-gray-500">
-          Digital currency exchange services arranged by AMAX Financial Pty Ltd (ABN 54 690 827 608), registered as a Digital Currency Exchange (DCE) with AUSTRAC. AMAX does not hold, control, or take custody of your digital assets at any point. Your AMAX account displays representative balances reflecting your holdings with an external licensed custodian — these balances are for account management purposes and do not represent a claim against AMAX. Digital assets are not legal tender, not backed by government guarantee, and subject to significant price risk. Full AML/CTF compliance and FATF Travel Rule obligations apply. Past performance is not indicative of future results.
+          Digital currency exchange services arranged by AMAX Financial Pty Ltd (ABN 54 690 827 608), registered as a Digital Currency Exchange (DCE) with AUSTRAC. AMAX does not hold, control, or take custody of your digital assets at any point. Your AMAX account displays representative balances reflecting your holdings with an external licensed custodian — these balances are for account management purposes and do not represent a claim against AMAX. Digital assets are not legal tender, not backed by government guarantee, and subject to significant price risk. Full AML/CTF compliance and FATF Travel Rule obligations apply. Past performance is not indicative of future results. AMAX Financial Pty Ltd is assessing its licensing obligations under the Corporations Amendment (Digital Assets Framework) Act 2025 (Cth), which came into force on 1 April 2026.
         </p>
       </div>
 
