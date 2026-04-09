@@ -38,8 +38,8 @@ const services = [
   },
   {
     icon: Wallet,
-    title: "Digital Wallet",
-    description: "Hold, send, and receive funds across multiple currencies from a single digital wallet with full transaction history.",
+    title: "Multi-Currency Accounts",
+    description: "Send and receive funds across multiple currencies with full transaction history. Balances reflect funds held with regulated partner institutions — AMAX does not hold client funds.",
     features: ["Multi-currency balances", "Instant transfers", "Full audit trail"],
     color: "bg-blue-500",
   },
@@ -62,7 +62,7 @@ const services = [
 
 const steps = [
   { step: "01", title: "Create Your Account", description: "Register and complete identity verification (KYC/AML) in minutes." },
-  { step: "02", title: "Fund Your Wallet",     description: "Deposit funds via bank transfer or crypto into your multi-currency eWallet." },
+  { step: "02", title: "Fund Your Account",     description: "Deposit funds via bank transfer into your multi-currency account, held with regulated partner institutions." },
   { step: "03", title: "Exchange or Remit",    description: "Convert currencies or send cross-border payments at transparent rates." },
   { step: "04", title: "Track Everything",     description: "Monitor all transactions in real time with a complete audit trail." },
 ];
@@ -77,7 +77,7 @@ const compliancePoints = [
 ];
 
 const keyFeatures = [
-  { icon: Zap,       label: "Instant Settlements",  description: "Near real-time FX and wallet transfers",     color: "text-purple-400", bg: "rgba(192,132,252,0.12)" },
+  { icon: Zap,       label: "Instant Settlements",  description: "Near real-time FX and account transfers",    color: "text-purple-400", bg: "rgba(192,132,252,0.12)" },
   { icon: BarChart3, label: "Competitive Rates",     description: "Tight spreads on 20+ currency pairs",       color: "text-green-400",  bg: "rgba(74,222,128,0.12)" },
   { icon: Globe2,    label: "Global Coverage",       description: "Send and receive in 40+ countries",          color: "text-blue-400",   bg: "rgba(96,165,250,0.12)" },
   { icon: Lock,      label: "Bank-Grade Security",   description: "256-bit TLS, 2FA, and session audit logs",   color: "text-white",      bg: "#111111" },
@@ -155,7 +155,7 @@ export default function Landing() {
           AUSTRAC Registered Digital Currency Exchange
         </Badge>
         <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-6">
-          Secure FX, Digital Wallet &{" "}
+          Secure FX, Multi-Currency Accounts &{" "}
           <span className="text-white">Crypto Exchange</span>
           <br />Platform
         </h1>
@@ -326,7 +326,7 @@ export default function Landing() {
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold mb-4">Who We Serve</h2>
             <p className="text-white max-w-xl mx-auto">
-              AMAX is designed for individuals and businesses that need regulated, transparent access to FX, digital wallets, crypto, and cross-border payments.
+              AMAX is designed for individuals and businesses that need regulated, transparent access to FX, multi-currency accounts, crypto, and cross-border payments.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 gap-6">
@@ -354,7 +354,7 @@ export default function Landing() {
           <Badge className="bg-white/10 text-white border border-white/20 mb-4">About AMAX</Badge>
           <h2 className="text-3xl font-bold mb-6">Australia-Based. Compliance-First.</h2>
           <p className="leading-relaxed text-lg text-white mb-4">
-            AMAX is an Australian-based FX and remittance service provider, building regulated infrastructure for foreign exchange, digital wallets, cryptocurrency trading, and cross-border remittance. Alongside our digital platform, AMAX will operate from our Kings Court headquarters in Rockdale, Sydney — giving Australians the option to access FX and remittance services in person.
+            AMAX is an Australian-based FX and remittance service provider, building regulated infrastructure for foreign exchange, multi-currency accounts, cryptocurrency trading, and cross-border remittance. Alongside our digital platform, AMAX will operate from our Kings Court headquarters in Rockdale, Sydney — giving Australians the option to access FX and remittance services in person.
           </p>
           <p className="leading-relaxed text-white mb-4">
             Our founding team brings experience across financial services, compliance, and technology — with a singular focus on building a platform that regulators, banks, and customers can trust.
@@ -468,7 +468,7 @@ export default function Landing() {
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Ready to Get Started?</h2>
           <p className="text-white mb-8">
-            Join AMAX and experience compliant, fast, and transparent FX exchange, digital wallet, crypto trading, and remittance — all in one platform.
+            Join AMAX and experience compliant, fast, and transparent FX exchange, multi-currency accounts, crypto trading, and remittance — all in one platform.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/register">
@@ -495,7 +495,7 @@ export default function Landing() {
                 <span className="font-bold text-white text-lg">AMAX</span>
               </div>
               <p className="text-sm text-white leading-relaxed">
-                Australia-based regulated platform for FX exchange, digital wallets, cryptocurrency trading, and cross-border remittance.
+                Australia-based regulated platform for FX exchange, multi-currency accounts, cryptocurrency trading, and cross-border remittance.
               </p>
               <p className="text-sm text-white leading-relaxed">ABN 54 690 827 608</p>
             </div>
