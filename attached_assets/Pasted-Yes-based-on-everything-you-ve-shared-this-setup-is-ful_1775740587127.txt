@@ -1,0 +1,93 @@
+Yes — based on everything you’ve shared, this **setup is fully compliant and aligned with AUSTRAC’s DCE framework**, provided the flows are implemented exactly as described. Let me break it down carefully:
+
+---
+
+## ✅ **Key Compliance Points**
+
+### 1. **AMAX is not custodian — Correctly disclosed**
+
+Your wording repeatedly says:
+
+> “AMAX does not hold, store, or custody digital assets on your behalf and does not maintain crypto accounts for users.”
+
+* This is exactly how a **non-custodial DCE** should operate.
+* All crypto sits with **Independent Reserve**, which is the **regulated custodian/exchange**.
+* AMAX is acting as **agent / orchestrator**, not counterparty.
+
+This avoids:
+
+* Stored value facility obligations
+* Custody regulations
+* Rehypothecation risk
+
+---
+
+### 2. **External custodian explicitly disclosed — ✅**
+
+> “Settlement custodian: Exchange and delivery is executed via Independent Reserve Pty Ltd … 1:1 asset segregation, no rehypothecation”
+
+* This is fully transparent and **regulator-friendly**.
+* AUSTRAC expects DCEs to disclose custody arrangements — you have done this.
+
+---
+
+### 3. **FATF Travel Rule / AML/CTF obligations — Covered**
+
+* You collect **originator & beneficiary wallet info**, wallet type, and full legal names.
+* You note that all transactions are monitored under **AML/CTF** and **FATF Travel Rule**.
+* This satisfies **Recommendation 16** and Australian amendments effective 1 July 2026.
+
+---
+
+### 4. **Exchange & delivery model — Correct**
+
+* Buy → crypto delivered directly to **user’s external wallet**.
+* Sell → crypto sent **only to Independent Reserve** deposit addresses.
+* AMAX never receives or controls the crypto.
+
+This is compliant **so long as AMAX does not intermediate funds outside its partner**.
+
+---
+
+### 5. **Reversibility & risk disclosures — Included**
+
+* You disclose **irreversibility**, **volatility**, and **no legal tender / no guarantee**.
+* Regulators want this for **user protection and KYC clarity**.
+
+---
+
+## ⚠️ **Critical Conditions for Compliance**
+
+1. **AMAX must never touch crypto**
+
+   * No temporary balances on AMAX platform
+   * No AMAX wallets for users
+
+2. **KYC / Travel Rule must be enforced**
+
+   * Must collect wallet type, full legal name, and wallet address before transaction instruction
+
+3. **Settlement via Independent Reserve only**
+
+   * AUD or crypto credited only **after partner confirms execution**
+
+4. **Audit trail**
+
+   * Log timestamps of confirmations, rates, AML checks, and Travel Rule data
+   * Regulators (AUSTRAC) can audit these logs
+
+5. **Rate confirmations**
+
+   * For sell flows, rate **must be confirmed in writing** by Independent Reserve before the user sends crypto
+
+---
+
+## ⚡ **Bottom line**
+
+> Using an external custodian (Independent Reserve) while AMAX **does not hold or control crypto** is **fully compliant under AUSTRAC DCE rules**, provided your AML/KYC, Travel Rule, and operational flows are strictly implemented as described.
+
+---
+
+If you want, I can **draw a clean “AMAX + Independent Reserve flow diagram”** showing exactly how custody, exchange, and settlement should work to remain regulator-safe — this is very useful for auditors and internal compliance teams.
+
+Do you want me to do that?
