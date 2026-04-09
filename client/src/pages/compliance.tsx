@@ -292,6 +292,30 @@ export default function Compliance() {
     return total;
   }, [profileDone, agreementSigned, idVerifyComplete, stepFiles, riskSubmitted]);
 
+  // ── Compliance metrics grid (4 tiles) ─────────────────────────────────────
+  const complianceMetrics = useMemo(() => [
+    {
+      label: "Personal Info",
+      status: stepStatuses[1],
+      value: profileDone ? 100 : 0,
+    },
+    {
+      label: "Agreement",
+      status: stepStatuses[2],
+      value: agreementSigned ? 100 : profileDone ? 50 : 0,
+    },
+    {
+      label: "Identity Check",
+      status: stepStatuses[3],
+      value: idVerifyComplete ? 100 : agreementSigned ? 30 : 0,
+    },
+    {
+      label: "Documentation",
+      status: stepStatuses[4] === "completed" || stepStatuses[4] === "under_review" ? stepStatuses[4] : stepStatuses[5],
+      value: (riskSubmitted || stepFiles[5]) ? 100 : stepFiles[4] ? 50 : agreementSigned ? 0 : 0,
+    },
+  ], [stepStatuses, profileDone, agreementSigned, idVerifyComplete, riskSubmitted, stepFiles]);
+
   // ── KYC refresh notice ─────────────────────────────────────────────────────
   const kycRefreshNotice = useMemo((): "overdue" | "due_soon" | null => {
     if (!kycProfile?.kycRefreshDue) return null;

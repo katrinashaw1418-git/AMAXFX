@@ -5,33 +5,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Loader2, Shield, Coins, Eye, EyeOff, Mail, CheckCircle2,
-  ArrowRight, ArrowLeft, Wallet, RefreshCw, Bitcoin, Globe,
-  Smartphone, ChevronRight, X,
+  ArrowRight, ArrowLeft, Smartphone, ChevronRight, X,
+  TrendingUp, Bitcoin, Check,
 } from "lucide-react";
 import { SiGoogle, SiApple } from "react-icons/si";
 
 type Step = "method" | "email-form" | "verify" | "profile";
 
-const PURPOSES = [
-  { value: "remittance",  label: "Remittance",   icon: Globe },
-  { value: "ewallet",     label: "eWallet",      icon: Wallet },
-  { value: "fx",          label: "FX Exchange",  icon: RefreshCw },
-  { value: "crypto",      label: "Crypto",       icon: Bitcoin },
-];
-
-const PRODUCTS = [
-  { value: "ewallet",    label: "eWallet" },
-  { value: "fx",         label: "FX Exchange" },
-  { value: "crypto",     label: "Crypto" },
-  { value: "remittance", label: "Remittance" },
+const SERVICES = [
+  {
+    value: "fx",
+    icon: TrendingUp,
+    title: "FX Exchange",
+    description: "Convert between 30+ fiat currencies at live rates. Send international payments and remittances with full AUD settlement.",
+  },
+  {
+    value: "digital-asset-fx",
+    icon: Bitcoin,
+    title: "Digital Asset FX Exchange",
+    description: "Buy, sell and exchange Bitcoin, Ethereum, stablecoins and other digital assets alongside your fiat currencies.",
+  },
 ];
 
 function StepDots({ step }: { step: Step }) {
   const order: Step[] = ["method", "email-form", "verify", "profile"];
-  const labels = ["Method", "Details", "Verify", "Profile"];
+  const labels = ["Method", "Details", "Verify", "Services"];
   const idx = order.indexOf(step);
   return (
     <div className="flex items-center justify-center gap-2 mb-8">
@@ -65,7 +65,6 @@ export default function Register() {
   const [step, setStep] = useState<Step>("method");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
   const [socialNotice, setSocialNotice] = useState<"google" | "apple" | "phone" | null>(null);
 
   const [firstName, setFirstName] = useState("");
@@ -74,11 +73,10 @@ export default function Register() {
   const [password, setPassword]   = useState("");
   const [showPw, setShowPw]       = useState(false);
 
-  const [purpose, setPurpose]     = useState("");
-  const [products, setProducts]   = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  function toggleProduct(v: string) {
-    setProducts(prev => {
+  function toggleService(v: string) {
+    setSelected(prev => {
       const next = new Set(prev);
       next.has(v) ? next.delete(v) : next.add(v);
       return next;
@@ -103,7 +101,7 @@ export default function Register() {
 
   async function handleProfileSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!purpose) { setError("Please select your primary purpose."); return; }
+    if (selected.size === 0) { setError("Please select at least one service."); return; }
     navigate("/compliance");
   }
 
@@ -199,7 +197,7 @@ export default function Register() {
               </span>
             </button>
 
-            {/* Phone / Mobile */}
+            {/* Mobile */}
             <button
               onClick={() => setSocialNotice("phone")}
               className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-slate-700/60 border border-slate-600 text-white hover:bg-slate-700 transition-all group"
@@ -310,7 +308,7 @@ export default function Register() {
 
             <div className="bg-slate-700/40 border border-slate-600/50 rounded-xl p-4 text-left space-y-3">
               {[
-                { label: "From",    val: "noreply@amaxglobal.com.au" },
+                { label: "From",    val: "info@amaxglobal.com.au" },
                 { label: "Subject", val: "Confirm your AMAX Global account" },
                 { label: "Expires", val: "24 hours" },
               ].map(({ label, val }) => (
@@ -351,7 +349,7 @@ export default function Register() {
           </div>
         )}
 
-        {/* ── RISK PROFILE ─────────────────────────────────────────────────── */}
+        {/* ── SERVICE SELECTION ────────────────────────────────────────────── */}
         {step === "profile" && (
           <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-5">
             <div className="flex items-center gap-3">
@@ -362,60 +360,51 @@ export default function Register() {
                 <ArrowLeft className="w-4 h-4" />
               </button>
               <div>
-                <h2 className="text-xl font-bold text-white">How will you use AMAX?</h2>
-                <p className="text-xs text-slate-400">Helps us meet regulatory requirements</p>
+                <h2 className="text-xl font-bold text-white">Choose your service</h2>
+                <p className="text-xs text-slate-400">Select one or both — you can add more later</p>
               </div>
             </div>
 
-            <form onSubmit={handleProfileSubmit} className="space-y-5">
+            <form onSubmit={handleProfileSubmit} className="space-y-4">
               {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
-              <div className="space-y-2">
-                <Label className="text-slate-300 text-sm font-medium">Primary purpose of your account</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  {PURPOSES.map(({ value, label, icon: Icon }) => (
+              <div className="space-y-3">
+                {SERVICES.map(({ value, icon: Icon, title, description }) => {
+                  const active = selected.has(value);
+                  return (
                     <button
                       key={value}
                       type="button"
-                      onClick={() => setPurpose(value)}
-                      className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
-                        purpose === value
-                          ? "border-white bg-white/10 text-white"
-                          : "border-slate-600 bg-slate-700/50 text-slate-400 hover:border-slate-500 hover:text-slate-200"
+                      onClick={() => toggleService(value)}
+                      className={`w-full text-left flex items-start gap-4 p-4 rounded-xl border-2 transition-all ${
+                        active
+                          ? "border-white bg-white/10"
+                          : "border-slate-600 bg-slate-700/40 hover:border-slate-500"
                       }`}
                     >
-                      <Icon className="w-5 h-5 flex-shrink-0" />
-                      <span className="text-sm font-medium">{label}</span>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
+                        active ? "bg-white text-slate-900" : "bg-slate-600 text-slate-300"
+                      }`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className={`text-sm font-semibold mb-1 ${active ? "text-white" : "text-slate-200"}`}>
+                          {title}
+                        </div>
+                        <div className="text-xs text-slate-400 leading-relaxed">{description}</div>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                        active ? "border-white bg-white" : "border-slate-500"
+                      }`}>
+                        {active && <Check className="w-3 h-3 text-slate-900" />}
+                      </div>
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-slate-300 text-sm font-medium">Products you plan to use <span className="text-slate-500 font-normal">(optional)</span></Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {PRODUCTS.map(({ value, label }) => (
-                    <label
-                      key={value}
-                      className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
-                        products.has(value)
-                          ? "border-white/40 bg-white/10 text-white"
-                          : "border-slate-600 bg-slate-700/50 text-slate-400 hover:border-slate-500"
-                      }`}
-                    >
-                      <Checkbox
-                        checked={products.has(value)}
-                        onCheckedChange={() => toggleProduct(value)}
-                        className="border-slate-500 data-[state=checked]:bg-white data-[state=checked]:border-white data-[state=checked]:text-slate-900"
-                      />
-                      <span className="text-sm">{label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <Button type="submit" className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold">
-                Continue to verification <ArrowRight className="w-4 h-4 ml-1" />
+              <Button type="submit" className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold mt-2">
+                Continue to identity verification <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </form>
           </div>
