@@ -21,7 +21,6 @@ import {
   FileText,
   User,
   MapPin,
-  CreditCard,
   Building,
   RefreshCw,
   Lock,
@@ -52,7 +51,6 @@ const kycStepDefs: { id: number; title: string; icon: any; uploadId: string | nu
   { id: 2, title: "Customer Agreement",    icon: BookOpen,   uploadId: null },
   { id: 3, title: "Identity Verification", icon: Camera,     uploadId: null },
   { id: 4, title: "Proof of Address",      icon: MapPin,     uploadId: "kyc-upload-4" },
-  { id: 5, title: "Source of Funds",       icon: CreditCard, uploadId: "kyc-upload-5" },
 ];
 
 // ── main ─────────────────────────────────────────────────────────────────────
@@ -64,12 +62,6 @@ export default function Compliance() {
   // which steps have had files uploaded (stepId → filename)
   const [stepFiles, setStepFiles] = useState<Record<number, string>>({});
 
-  // risk questionnaire
-  const [riskExperience, setRiskExperience] = useState("");
-  const [riskIncome,     setRiskIncome]     = useState("");
-  const [riskFunds,      setRiskFunds]      = useState("");
-  const [riskGoals,      setRiskGoals]      = useState("");
-  const [riskSubmitted,  setRiskSubmitted]  = useState(false);
 
 
   // ── Step 1: Personal Info (KYC Profile) ───────────────────────────────────
@@ -268,29 +260,26 @@ export default function Compliance() {
     const s2: StepStatus = !profileDone ? "pending" : agreementSigned ? "completed" : "in_progress";
     const s3: StepStatus = !agreementSigned ? "pending" : idVerifyComplete ? "completed" : "in_progress";
     const s4: StepStatus = !agreementSigned ? "pending" : stepFiles[4] ? "under_review" : "in_progress";
-    const s5: StepStatus = !agreementSigned ? "pending" : (riskSubmitted || stepFiles[5]) ? "completed" : "in_progress";
-    return { 1: s1, 2: s2, 3: s3, 4: s4, 5: s5 };
-  }, [profileDone, agreementSigned, idVerifyComplete, stepFiles, riskSubmitted]);
+    return { 1: s1, 2: s2, 3: s3, 4: s4 };
+  }, [profileDone, agreementSigned, idVerifyComplete, stepFiles]);
 
   const currentStepId = useMemo(() => {
     if (!profileDone) return 1;
     if (!agreementSigned) return 2;
     if (!idVerifyComplete) return 3;
     if (!stepFiles[4]) return 4;
-    if (!riskSubmitted && !stepFiles[5]) return 5;
     return null;
-  }, [profileDone, agreementSigned, idVerifyComplete, stepFiles, riskSubmitted]);
+  }, [profileDone, agreementSigned, idVerifyComplete, stepFiles]);
 
-  // KYC completion % — 20% per step
+  // KYC completion % — 25% per step
   const kycPct = useMemo(() => {
     let total = 0;
-    if (profileDone)                    total += 20;
-    if (agreementSigned)                total += 20;
-    if (idVerifyComplete)               total += 20;
-    if (stepFiles[4])                   total += 20;
-    if (riskSubmitted || stepFiles[5])  total += 20;
+    if (profileDone)      total += 25;
+    if (agreementSigned)  total += 25;
+    if (idVerifyComplete) total += 25;
+    if (stepFiles[4])     total += 25;
     return total;
-  }, [profileDone, agreementSigned, idVerifyComplete, stepFiles, riskSubmitted]);
+  }, [profileDone, agreementSigned, idVerifyComplete, stepFiles]);
 
   // ── Compliance metrics grid (4 tiles) ─────────────────────────────────────
   const complianceMetrics = useMemo(() => [
@@ -311,10 +300,10 @@ export default function Compliance() {
     },
     {
       label: "Documentation",
-      status: stepStatuses[4] === "completed" || stepStatuses[4] === "under_review" ? stepStatuses[4] : stepStatuses[5],
-      value: (riskSubmitted || stepFiles[5]) ? 100 : stepFiles[4] ? 50 : agreementSigned ? 0 : 0,
+      status: stepStatuses[4],
+      value: stepFiles[4] ? 100 : agreementSigned ? 0 : 0,
     },
-  ], [stepStatuses, profileDone, agreementSigned, idVerifyComplete, riskSubmitted, stepFiles]);
+  ], [stepStatuses, profileDone, agreementSigned, idVerifyComplete, stepFiles]);
 
   // ── KYC refresh notice ─────────────────────────────────────────────────────
   const kycRefreshNotice = useMemo((): "overdue" | "due_soon" | null => {
@@ -357,21 +346,6 @@ export default function Compliance() {
     identityMutation.mutate({ documentType: docType, documentExpiry: docExpiry, issueCountry: docIssueCountry || undefined });
   }
 
-  function handleCompleteRiskAssessment() {
-    if (!riskExperience || !riskIncome || !riskFunds) {
-      toast({
-        title: "Incomplete Form",
-        description: "Please complete all required fields before submitting.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setRiskSubmitted(true);
-    toast({
-      title: "Risk Assessment Submitted",
-      description: "Your risk profile has been recorded. KYC Step 5 is now complete.",
-    });
-  }
 
 
   // next step prompt — uses currentStepId so sequential steps 3→5 take priority
@@ -477,7 +451,7 @@ export default function Compliance() {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs text-gray-400 font-medium">Step 1 of 5</span>
+                  <span className="text-xs text-gray-400 font-medium">Step 1 of 4</span>
                   <h3 className="font-semibold text-gray-900">Personal Information</h3>
                   <Badge className="bg-green-100 text-green-800">Completed</Badge>
                 </div>
@@ -498,7 +472,7 @@ export default function Compliance() {
                       <User className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-white font-semibold text-sm">Step 1 of 5 — Personal Information</p>
+                      <p className="text-white font-semibold text-sm">Step 1 of 4 — Personal Information</p>
                       <p className="text-blue-200 text-xs mt-0.5">Takes about 3 minutes · Required by AUSTRAC</p>
                     </div>
                   </div>
@@ -774,7 +748,7 @@ export default function Compliance() {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-gray-400 font-medium">Step {def.id} of 5</span>
+                            <span className="text-xs text-gray-400 font-medium">Step {def.id} of 4</span>
                             <h3 className="font-semibold text-gray-900">Document upload &amp; ID verification</h3>
                             <Badge className="bg-yellow-100 text-yellow-800">In Progress</Badge>
                           </div>
@@ -1284,7 +1258,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-gray-400 font-medium">Step 3 of 5</span>
+                            <span className="text-xs text-gray-400 font-medium">Step 3 of 4</span>
                             <h3 className="font-semibold text-gray-900">Customer Agreement</h3>
                             <Badge className="bg-indigo-100 text-indigo-800">Action Required</Badge>
                           </div>
@@ -1451,7 +1425,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-gray-400 font-medium">Step 4 of 5</span>
+                            <span className="text-xs text-gray-400 font-medium">Step 4 of 4</span>
                             <h3 className="font-semibold text-gray-900">Address Verification</h3>
                             <Badge className="bg-yellow-100 text-yellow-800">In Progress</Badge>
                           </div>
@@ -1618,8 +1592,6 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                             onChange={(e) => handleKycUpload(def.id, def.title, e)}
                           />
                         </label>
-                      ) : def.id === 5 && status === "in_progress" ? (
-                        <div className="text-xs text-amber-600 font-medium">Upload ↓</div>
                       ) : (
                         <Clock className="w-4 h-4 text-gray-300" />
                       )}
@@ -1643,7 +1615,6 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                     {nextStep.id === 2 && "Read and sign the AMAX Customer Agreement — covers terms, privacy, AML/CTF, sanctions, and risk disclosure. Scroll through all sections then type your legal name to sign."}
                     {nextStep.id === 3 && "Complete biometric identity verification using your government-issued ID. This typically takes 1–3 minutes via our AUSTRAC-approved provider."}
                     {nextStep.id === 4 && "Upload a utility bill, bank statement, or government letter dated within the last 3 months showing your full name and address."}
-                    {nextStep.id === 5 && "Upload a recent payslip, tax return, or employer letter confirming your income and source of funds. Accepted formats: PDF, JPG, PNG, HEIC — max 10 MB."}
                   </p>
                   {nextStep.uploadId && (
                     <label htmlFor={`next-${nextStep.uploadId}`} className="cursor-pointer">
@@ -1677,81 +1648,6 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
             </Card>
           )}
 
-          {/* ── Inline Risk Assessment Section ── */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Shield className="w-4 h-4 text-purple-600" /> Risk Assessment
-              </CardTitle>
-              <p className="text-sm text-gray-500">Completes your KYC profile — all fields required · AML/CTF Act 2006</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {riskSubmitted ? (
-                <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl">
-                  <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-green-900 text-sm">Risk Assessment Complete</p>
-                    <p className="text-xs text-green-700">Your risk profile has been recorded.</p>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">FX / Financial Experience *</Label>
-                      <Select value={riskExperience} onValueChange={setRiskExperience}>
-                        <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Select level" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="novice">New to FX / Remittance (0–2 yrs)</SelectItem>
-                          <SelectItem value="intermediate">Moderate experience (3–7 yrs)</SelectItem>
-                          <SelectItem value="experienced">Experienced (8+ years)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Annual Income (AUD) *</Label>
-                      <Select value={riskIncome} onValueChange={setRiskIncome}>
-                        <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Select range" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="under-50k">Under $50,000</SelectItem>
-                          <SelectItem value="50k-100k">$50,000 – $100,000</SelectItem>
-                          <SelectItem value="100k-250k">$100,000 – $250,000</SelectItem>
-                          <SelectItem value="250k-500k">$250,000 – $500,000</SelectItem>
-                          <SelectItem value="over-500k">Over $500,000</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Primary Source of Funds *</Label>
-                      <Select value={riskFunds} onValueChange={setRiskFunds}>
-                        <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Select source" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="employment">Employment / Salary</SelectItem>
-                          <SelectItem value="business">Business Income</SelectItem>
-                          <SelectItem value="savings">Personal Savings</SelectItem>
-                          <SelectItem value="inheritance">Inheritance / Gift</SelectItem>
-                          <SelectItem value="property">Property / Rental Income</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">How will you use AMAX Global?</Label>
-                      <Textarea
-                        value={riskGoals}
-                        onChange={(e) => setRiskGoals(e.target.value)}
-                        placeholder="e.g. sending money overseas, FX conversion for business…"
-                        className="min-h-[80px] text-sm"
-                      />
-                    </div>
-                  </div>
-                  <Button className="w-full h-10 bg-purple-600 hover:bg-purple-700" onClick={handleCompleteRiskAssessment}>
-                    Submit Risk Assessment
-                  </Button>
-                </>
-              )}
-            </CardContent>
-          </Card>
 
         </TabsContent>
 
