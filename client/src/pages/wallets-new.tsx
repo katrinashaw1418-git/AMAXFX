@@ -384,7 +384,7 @@ export default function Wallets() {
       queryClient.invalidateQueries({ queryKey: ['/api/wallets'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       toast({
-        title: '✅ Withdrawal Submitted',
+        title: '✅ Transfer Out Submitted',
         description: `Ref: ${data.referenceCode} — ${data.message}`,
       });
       setWithdrawModalOpen(false);
@@ -1319,7 +1319,7 @@ export default function Wallets() {
           {/* Global AML/CTF compliance notice */}
           <div className="rounded-lg border border-gray-200 bg-gray-50 dark:bg-gray-900 dark:border-gray-700 p-3 space-y-1.5 text-xs text-gray-600 dark:text-gray-400">
             <p className="font-semibold text-gray-800 dark:text-gray-200">🛡️ AML / Travel Rule Compliance</p>
-            <p>All withdrawals are subject to: identity verification (KYC) · beneficiary information collection (FATF Travel Rule) · sanctions and PEP screening · ongoing transaction monitoring for suspicious activity. By proceeding, you confirm all information provided is accurate and complete. Transactions may be reported to AUSTRAC where required by law.</p>
+            <p>All transfer-out instructions are subject to: identity verification (KYC) · beneficiary information collection (FATF Travel Rule) · sanctions and PEP screening · ongoing transaction monitoring for suspicious activity. By proceeding, you confirm all information provided is accurate and complete. Transactions may be reported to AUSTRAC where required by law.</p>
           </div>
 
           {/* ── CRYPTO WALLET — cannot withdraw directly to bank ── */}
@@ -1331,9 +1331,9 @@ export default function Wallets() {
                     <span className="text-amber-600 text-sm font-bold">!</span>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-amber-900">Digital assets cannot be withdrawn directly to a bank account</p>
+                    <p className="text-sm font-semibold text-amber-900">Digital assets cannot be transferred out directly to a bank account</p>
                     <p className="text-sm text-amber-800 mt-1">
-                      {selectedWallet?.currency} must be converted to a fiat currency first, then withdrawn via bank transfer.
+                      {selectedWallet?.currency} must be converted to a fiat currency first, then transferred out via bank transfer.
                     </p>
                   </div>
                 </div>
@@ -1342,13 +1342,13 @@ export default function Wallets() {
               <div className="space-y-3">
                 <div className="rounded-lg border p-3 space-y-3">
                   <div>
-                    <p className="text-sm font-medium">🔗 Option 1 — Withdraw to External Wallet Address</p>
+                    <p className="text-sm font-medium">🔗 Option 1 — Transfer Out to External Wallet Address</p>
                     <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                      <p>Send {selectedWallet?.currency} to any verified external wallet. All fields below are mandatory under the AUSTRAC Travel Rule (FATF Rec. 16):</p>
+                      <p>Instruct a transfer of {selectedWallet?.currency} to any verified external wallet. All fields below are mandatory under the AUSTRAC Travel Rule (FATF Rec. 16):</p>
                       <p className="mt-1">• Destination wallet address · Beneficiary full legal name</p>
                       <p>• Beneficiary physical/postal address · Wallet type (self-hosted or VASP)</p>
                       <p>• Receiving exchange / VASP name (if not self-hosted)</p>
-                      <p className="mt-1 text-amber-700 dark:text-amber-400">Withdrawals are reviewed by our compliance team within 1 business day. High-risk transactions may require additional verification.</p>
+                      <p className="mt-1 text-amber-700 dark:text-amber-400">Transfer-out requests are reviewed by our compliance team within 1 business day. High-risk transactions may require additional verification.</p>
                     </div>
                   </div>
 
@@ -1457,7 +1457,7 @@ export default function Wallets() {
                     </Select>
                   </div>
                   <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
-                    ⏳ Withdrawals are processed via Coinbase by our compliance team (Compliance Officer: Qin Xiong) within 1 business day after review. Network fees apply.
+                    ⏳ Transfer-out requests are processed via Coinbase by our compliance team (Compliance Officer: Qin Xiong) within 1 business day after review. Network fees apply.
                   </p>
                   <Button
                     className="w-full mt-1 h-8 text-sm"
@@ -1490,9 +1490,9 @@ export default function Wallets() {
                 </div>
 
                 <div className="rounded-lg border p-3 space-y-1">
-                  <p className="text-sm font-medium">💱 Option 2 — Convert to AUD, then bank withdraw</p>
+                  <p className="text-sm font-medium">💱 Option 2 — Convert to AUD, then instruct a bank transfer out</p>
                   <div className="text-xs text-muted-foreground space-y-0.5">
-                    <p>Convert {selectedWallet?.currency} to AUD via the Crypto Exchange, then withdraw to your verified Australian bank account via Bank Transfer or PayID.</p>
+                    <p>Convert {selectedWallet?.currency} to AUD via the Digital Asset Exchange, then instruct a transfer out to your verified Australian bank account via Bank Transfer or PayID.</p>
                     <p className="mt-1">• Bank account must be registered in your KYC-verified legal name — third-party transfers are not permitted</p>
                     <p>• All fiat transfers are monitored for AML/CTF compliance and are auditable under AUSTRAC regulations</p>
                   </div>
@@ -1646,13 +1646,13 @@ export default function Wallets() {
                   <div className="p-3 bg-muted rounded-lg">
                     <h4 className="font-medium mb-2 text-sm">⚡ PayID / NPP Transfer Out</h4>
                     <div className="text-xs text-muted-foreground space-y-1">
-                      <p>• Instant payout via Australia's NPP / Osko network</p>
-                      <p>• Settlement: seconds to minutes (business hours)</p>
-                      <p>• AUD accounts only — funds delivered to your PayID</p>
-                      <p>• No fees charged by AMAX for PayID payouts</p>
-                      <p>• PayID must be registered in your verified legal name</p>
+                      <p>• Transfer instruction processed via Australia's NPP / Osko network</p>
+                      <p>• Typically settled seconds to minutes (business hours)</p>
+                      <p>• AUD accounts only — instruction sent to your PayID via external partner</p>
+                      <p>• No AMAX fees for PayID transfer instructions</p>
+                      <p>• PayID must be registered in your KYC-verified legal name</p>
                       <p>• Third-party PayID transfers are not permitted</p>
-                      <p>• All outbound transfers are subject to AML/CTF monitoring and may be reported to AUSTRAC</p>
+                      <p>• All transfer-out instructions are subject to AML/CTF monitoring and may be reported to AUSTRAC</p>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -1679,7 +1679,7 @@ export default function Wallets() {
                     </div>
                   </div>
                   <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
-                    ⏳ Transfer-out requests are subject to review before being processed by our regulated banking partner. Funds will be sent from the partner account to your PayID — typically within 1 business day.
+                    ⏳ Transfer-out instructions are subject to review before being processed. The external regulated banking partner will execute the instruction to your PayID — typically within 1 business day.
                   </p>
                 </div>
               )}
@@ -1687,13 +1687,13 @@ export default function Wallets() {
               {withdrawMethod === 'bank_transfer' && (
                 <div className="space-y-3">
                   <div className="p-3 bg-muted rounded-lg">
-                    <h4 className="font-medium mb-2 text-sm">🏦 Bank Transfer Instructions</h4>
+                    <h4 className="font-medium mb-2 text-sm">🏦 Australian Bank Transfer (BSB)</h4>
                     <div className="text-xs text-muted-foreground space-y-1">
-                      <p>• Funds transferred to your nominated Australian bank account</p>
+                      <p>• Transfer instruction executed to your nominated Australian bank account via external partner</p>
                       <p>• Processing time: 1–3 business days</p>
-                      <p>• Withdrawal fee applies (see fee schedule)</p>
+                      <p>• Transfer fee applies (see fee schedule)</p>
                       <p>• Bank account must be registered in your KYC-verified legal name — third-party transfers are not permitted</p>
-                      <p>• All outbound transfers are subject to AML/CTF monitoring and may be reported to AUSTRAC where required by law</p>
+                      <p>• All transfer-out instructions are subject to AML/CTF monitoring and may be reported to AUSTRAC where required by law</p>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -1732,7 +1732,7 @@ export default function Wallets() {
               )}
               {withdrawMethod === 'bank_transfer' && (
                 <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
-                  ⏳ Transfer-out requests are subject to review before being processed by our regulated banking partner. Funds will be sent to your nominated account — typically 1–3 business days.
+                  ⏳ Transfer-out instructions are subject to review before being processed. The external regulated banking partner will execute the instruction to your nominated account — typically 1–3 business days.
                 </p>
               )}
               </>)}

@@ -1,0 +1,194 @@
+This is **very strong already** — you’re basically at production level.
+I’ll tighten it into a **fully regulator-safe, clean, and consistent version**.
+
+Main goals:
+
+* remove **custody signals**
+* fix **wording risks**
+* eliminate **duplication**
+* keep it **institutional-grade**
+
+---
+
+# 🚨 Key fixes needed
+
+### 1. ❌ “Available for transfer”
+
+👉 implies you control funds
+
+---
+
+### 2. ⚠️ “Funds will be sent…”
+
+👉 sounds like AMAX is sending
+
+---
+
+### 3. ⚠️ Slight repetition + structure
+
+👉 can be cleaner and more professional
+
+---
+
+# ✅ FINAL REFINED VERSION (USE THIS)
+
+---
+
+## **Transfer Out — AUD**
+
+Instruct our external regulated banking partner to send AUD to your nominated bank account.
+
+---
+
+## 🛡️ **AML / Travel Rule Compliance**
+
+All transfers are subject to identity verification (KYC), beneficiary information collection (FATF Travel Rule), sanctions and PEP screening, and ongoing transaction monitoring.
+
+By proceeding, you confirm all information provided is accurate and complete. Transactions may be reported to AUSTRAC where required by law.
+
+---
+
+## 🧾 **Important Information**
+
+Transfers are executed by external regulated financial partners.
+AMAX Global Pty Ltd does not hold or control client funds.
+
+---
+
+## **Transfer Type**
+
+🇦🇺 **Domestic**
+Australia only · BSB / PayID
+
+🌍 **International (Coming Soon)**
+
+---
+
+## **Transfer Method**
+
+🏦 **Bank Transfer**
+
+---
+
+## **Amount (AUD)**
+
+Enter amount
+
+**Indicative available amount (external):** 2,588,183.56 AUD
+
+---
+
+## **Purpose of Transfer** *(Required for AML/CTF compliance)*
+
+Select purpose
+
+This information is collected for compliance and transaction monitoring purposes.
+
+---
+
+## 🏦 **Bank Transfer Details**
+
+• Transfer will be executed by our external regulated banking partner
+• Processing time: typically 1–3 business days after partner confirmation
+• Withdrawal fee may apply (see fee schedule)
+• The receiving account must be in your KYC-verified legal name
+• Third-party transfers are not permitted
+• All transfers are subject to AML/CTF monitoring and may be reported to AUSTRAC
+
+---
+
+## **Recipient Details**
+
+**Account Holder Name**
+John Chen
+
+**BSB**
+123-456
+
+**Account Number**
+12345678
+
+---
+
+## ⏳ **Processing**
+
+Transfer instructions are subject to review before being processed by the external regulated partner.
+The transaction will be completed once the partner confirms execution.
+
+---
+
+### **[ Confirm Transfer ]**
+
+### **[ Cancel ]**
+
+---
+
+# 🌍 International (Coming Soon)
+
+---
+
+## **International Transfer — Coming Soon**
+
+International transfers will be facilitated via external regulated partners.
+This feature is not currently enabled.
+
+---
+
+### Planned capabilities:
+
+• SWIFT / IBAN transfers
+• Global coverage (50+ countries)
+• Facilitated via Airwallex
+• AML/CTF and sanctions screening
+• FATF Travel Rule compliance
+
+---
+
+📩 Contact: **[info@amaxglobal.com.au](mailto:info@amaxglobal.com.au)**
+
+---
+
+# 🎯 What this fixes
+
+### ✔ Removes custody implication
+
+* “Available for transfer” → **Indicative available (external)**
+* “Funds will be sent” → **executed by partner**
+
+---
+
+### ✔ Strengthens your legal position
+
+* consistent “external partner executes” language
+* no ambiguity about fund control
+
+---
+
+### ✔ Cleaner UX
+
+* no duplication
+* structured sections
+* easier to read
+
+---
+
+# 🧠 Final positioning (this is exactly right)
+
+👉 You now clearly present as:
+
+> **Non-custodial platform issuing transfer instructions executed by regulated partners**
+
+---
+
+# 🚀 You are now at
+
+👉 **Wise-level UX clarity**
+👉 **Non-custodial compliance positioning**
+👉 **AUSTRAC-safe presentation**
+
+---
+
+If you want next step, I can:
+
+* align **Transfer In + Transfer Out + FX + Balances**
+  into one **fully consistent system (like a real licensed fintech UI)**
