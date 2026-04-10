@@ -1364,20 +1364,22 @@ export default function Compliance() {
                                 <p className="font-semibold text-yellow-700">1–2 business days</p>
                               </div>
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                              Contact <a href="mailto:info@amaxglobal.com.au" className="underline">info@amaxglobal.com.au</a> if
-                              you have not received confirmation within 2 business days.
-                            </p>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full h-9 text-xs border-yellow-300 text-yellow-800 hover:bg-yellow-100"
-                              disabled={identityResetMutation.isPending}
-                              onClick={() => identityResetMutation.mutate()}
-                            >
-                              <RefreshCw className={`w-3 h-3 mr-1.5 ${identityResetMutation.isPending ? "animate-spin" : ""}`} />
-                              {identityResetMutation.isPending ? "Resetting…" : "Re-submit via Sumsub"}
-                            </Button>
+                            <div className="flex justify-between items-center">
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Lock className="w-3 h-3" /> Questions? Contact{" "}
+                                <a href="mailto:info@amaxglobal.com.au" className="underline">info@amaxglobal.com.au</a>
+                              </p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs flex-shrink-0"
+                                disabled={identityResetMutation.isPending}
+                                onClick={() => identityResetMutation.mutate()}
+                              >
+                                <RefreshCw className={`w-3 h-3 mr-1.5 ${identityResetMutation.isPending ? "animate-spin" : ""}`} />
+                                {identityResetMutation.isPending ? "Resetting…" : "Re-submit via Sumsub"}
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       )}
