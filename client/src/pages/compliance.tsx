@@ -507,20 +507,8 @@ export default function Compliance() {
 
 
   function handleIdVerifySubmit() {
-    if (!docExpiry) {
-      toast({ title: "Expiry Date Required", description: "Please enter your document's expiry date before starting verification.", variant: "destructive" });
-      return;
-    }
-    if (new Date(docExpiry) <= new Date()) {
-      toast({ title: "Document Expired", description: "Your document has expired. Please provide a valid, in-date government-issued ID.", variant: "destructive" });
-      return;
-    }
-    if (docType === "passport" && !docIssueCountry) {
-      toast({ title: "Issuing Country Required", description: "Please enter the country that issued your passport.", variant: "destructive" });
-      return;
-    }
     setVerifyMode("loading");
-    identityMutation.mutate({ documentType: docType, documentExpiry: docExpiry, issueCountry: docIssueCountry || undefined });
+    identityMutation.mutate({ documentType: docType });
   }
 
 
@@ -959,9 +947,9 @@ export default function Compliance() {
                 // ── Step 3 expanded identity verification card ──────────────
                 if (def.id === 3 && status === "in_progress") {
                   const docLabels = {
-                    passport:       { label: "Passport",       sub: "Any country",        hint: "Upload the photo page of your passport. Ensure all four corners are visible and text is legible." },
-                    driver_licence: { label: "Driver Licence", sub: "Australian only",    hint: "Upload both the front and back of your Australian driver licence." },
-                    national_id:    { label: "National ID",    sub: "Foreign nationals",  hint: "Upload both the front and back of your national identity card." },
+                    passport:       { label: "Passport",       sub: "Any country",        hint: "You will be guided to upload your passport securely within the verification session provided by our external KYC provider." },
+                    driver_licence: { label: "Driver Licence", sub: "Australian only",    hint: "You will be guided to upload your driver licence (both sides) securely within the verification session provided by our external KYC provider." },
+                    national_id:    { label: "National ID",    sub: "Foreign nationals",  hint: "You will be guided to upload your national identity card (both sides) securely within the verification session provided by our external KYC provider." },
                   };
                   const dl = docLabels[docType];
                   const needsBack = docType !== "passport";
@@ -1021,57 +1009,22 @@ export default function Compliance() {
                             <div className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">{dl.hint}</div>
                           </div>
 
-                          {/* Document details — expiry + issuing country */}
-                          <div className="bg-white border rounded-xl p-4 space-y-3">
-                            <h4 className="font-semibold text-sm">Document details</h4>
-                            <p className="text-xs text-muted-foreground">Required before submission — expired documents are rejected automatically.</p>
-                            <div className={`grid gap-3 ${docType === "passport" ? "grid-cols-2" : "grid-cols-1"}`}>
-                              <div>
-                                <Label className="text-xs">Document expiry date <span className="text-red-500">*</span></Label>
-                                <input
-                                  type="date"
-                                  value={docExpiry}
-                                  onChange={e => setDocExpiry(e.target.value)}
-                                  min={new Date().toISOString().split("T")[0]}
-                                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring mt-1"
-                                />
-                                {docExpiry && new Date(docExpiry) <= new Date() && (
-                                  <p className="text-xs text-red-600 mt-0.5 flex items-center gap-1">
-                                    <AlertTriangle className="w-3 h-3" /> Document has expired — you must use a current document
-                                  </p>
-                                )}
-                              </div>
-                              {docType === "passport" && (
-                                <div>
-                                  <Label className="text-xs">Country of issue <span className="text-red-500">*</span></Label>
-                                  <Input
-                                    placeholder="e.g. Australia, China, UK"
-                                    value={docIssueCountry}
-                                    onChange={e => setDocIssueCountry(e.target.value)}
-                                    className="h-9 text-sm mt-1"
-                                  />
-                                  <p className="text-xs text-muted-foreground mt-0.5">Jurisdiction risk scoring — AUSTRAC requirement</p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
                           {/* Sumsub info panel */}
                           <div className="bg-white border rounded-xl p-4 space-y-3">
                             <div className="flex items-start gap-3">
                               <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                               <div>
-                                <h4 className="font-semibold text-sm text-gray-900">Secure Biometric Verification via Sumsub</h4>
+                                <h4 className="font-semibold text-sm text-gray-900">Secure Identity Verification via Sumsub</h4>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  Clicking the button below launches a secure Sumsub session where you will:
+                                  Clicking the button below launches a secure session with our external KYC provider. You will be guided through:
                                 </p>
                                 <ul className="text-xs text-gray-600 mt-1.5 space-y-0.5 pl-2">
-                                  <li>• Take a photo of your {dl.label} (both sides if required)</li>
-                                  <li>• Complete a live biometric selfie check</li>
-                                  <li>• Receive an instant result — usually under 2 minutes</li>
+                                  <li>• Uploading your government-issued ID (guided securely within the session)</li>
+                                  <li>• Completing a live biometric selfie check</li>
+                                  <li>• Automated verification checks — typically under 2 minutes</li>
                                 </ul>
                                 <p className="text-xs text-muted-foreground mt-2">
-                                  Sumsub is AUSTRAC-compliant and operates under the Privacy Act 1988. Your biometric data is never stored by AMAX Global.
+                                  Biometric and identity data are processed by our external verification provider and are not stored by AMAX Global Pty Ltd. Sumsub supports AML/CTF-compliant identity verification processes in accordance with Australian regulatory requirements.
                                 </p>
                               </div>
                             </div>
@@ -1101,7 +1054,7 @@ export default function Compliance() {
                             )}
                           </Button>
                           <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-                            <Lock className="w-3 h-3" /> Encrypted · AUSTRAC-compliant · Privacy Act 1988
+                            <Lock className="w-3 h-3" /> Encrypted · AML/CTF-compliant · Privacy Act 1988
                           </p>
                         </div>
                       )}
@@ -1124,8 +1077,8 @@ export default function Compliance() {
                               <div>
                                 <p className="font-semibold text-blue-900 text-sm">Secure Sumsub Verification Session Active</p>
                                 <p className="text-xs text-blue-700 mt-0.5">
-                                  Complete your identity verification in the widget below. Your documents are processed by
-                                  Sumsub, our AUSTRAC-compliant identity verification provider. This typically takes 1–3 minutes.
+                                  Complete your identity verification in the widget below. Your documents and biometric data are processed by
+                                  Sumsub, our external identity verification provider, in accordance with AML/CTF obligations. This typically takes 1–3 minutes.
                                 </p>
                               </div>
                             </div>
@@ -1141,7 +1094,7 @@ export default function Compliance() {
                             style={{ minHeight: "600px" }}
                           />
                           <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-                            <Lock className="w-3 h-3" /> Your documents are encrypted in transit and stored securely by Sumsub in accordance with the Australian Privacy Act 1988 and AML/CTF Act 2006.
+                            <Lock className="w-3 h-3" /> Biometric and identity data are processed by Sumsub and are not stored by AMAX Global Pty Ltd — in accordance with the Privacy Act 1988 and AML/CTF Act 2006.
                           </p>
                         </div>
                       )}
@@ -1945,7 +1898,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                             <h3 className="font-semibold text-gray-900">Document upload &amp; ID verification</h3>
                             <Badge className="bg-green-100 text-green-800">Completed</Badge>
                           </div>
-                          <p className="text-xs text-gray-500 mt-0.5">Identity verified by Sumsub, our external AUSTRAC-compliant KYC provider</p>
+                          <p className="text-xs text-gray-500 mt-0.5">Identity verified via Sumsub, our external identity verification provider</p>
                         </div>
                       </div>
                       <div className="px-4 pb-5">
@@ -1976,7 +1929,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                             </div>
                           </div>
                           <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-                            <Lock className="w-3 h-3" /> Biometric data processed by Sumsub under Privacy Act 1988 &amp; AML/CTF Act 2006 — not stored by AMAX Global
+                            <Lock className="w-3 h-3" /> Biometric and identity data processed by Sumsub — not stored by AMAX Global Pty Ltd · Privacy Act 1988 · AML/CTF Act 2006
                           </p>
                         </div>
                       </div>
@@ -2162,7 +2115,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                   </h4>
                   <p className="text-sm mb-3 text-blue-700">
                     {nextStep.id === 2 && "Read and sign the AMAX Customer Agreement — covers terms, privacy, AML/CTF, sanctions, and risk disclosure. Scroll through all sections then type your legal name to sign."}
-                    {nextStep.id === 3 && "Complete biometric identity verification using your government-issued ID. This typically takes 1–3 minutes via Sumsub, our external AUSTRAC-compliant KYC provider."}
+                    {nextStep.id === 3 && "Complete identity verification using your government-issued ID. You will be guided through the process securely via Sumsub, our external verification provider. This typically takes 1–3 minutes."}
                     {nextStep.id === 4 && "Upload a utility bill, bank statement, or government letter dated within the last 3 months showing your full name and address."}
                   </p>
                   {nextStep.uploadId && (
@@ -2208,13 +2161,13 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
                   { title: "AUSTRAC — Digital Currency Exchange (DCE)", badge: "Registered", cls: "bg-green-100 text-green-800", text: "AMAX Global Pty Ltd is registered on the AUSTRAC Digital Currency Exchange Register. ABN 54 690 827 608. Registration is mandatory under the AML/CTF Act 2006 — it is a criminal offence to operate a DCE without registration." },
-                  { title: "AUSTRAC — Remittance Sector Register", badge: "Registered", cls: "bg-green-100 text-green-800", text: "AMAX Global Pty Ltd holds a separate Independent Remittance Dealer (IRD) registration on the AUSTRAC Remittance Sector Register. This covers all fiat-to-fiat cross-border transfers and international remittance services." },
-                  { title: "AUSTRAC — eWallet / Stored Value Enrolment", badge: "In Progress", cls: "bg-yellow-100 text-yellow-800", text: "As a stored-value eWallet provider (holding fiat balances on behalf of customers), AMAX is subject to AUSTRAC enrolment obligations effective 31 March 2026. AML/CTF program for eWallet designated services must be in place by 1 July 2026." },
-                  { title: "AUSTRAC — VASP Registration (Virtual Assets)", badge: "Pending — 1 Jul 2026", cls: "bg-orange-100 text-orange-800", text: "Virtual Asset Service Providers (VASPs) facilitating crypto transfers on behalf of customers must be registered with AUSTRAC and implement the FATF Travel Rule from 1 July 2026. Originator and beneficiary data must be collected for all virtual asset transfers. Self-hosted wallet transfers must be reported to AUSTRAC within 10 business days." },
-                  { title: "AUSTRAC — Compliance Officer Notification", badge: "In Progress", cls: "bg-yellow-100 text-yellow-800", text: "AML/CTF Compliance Officer: Qin Xiong. Newly regulated entities must notify AUSTRAC of their appointed AML/CTF compliance officer by 29 July 2026. The compliance officer is responsible for the ongoing AML/CTF program, AUSTRAC reporting, and training." },
+                  { title: "AUSTRAC — Remittance Sector Register", badge: "Partner Facilitated", cls: "bg-blue-100 text-blue-800", text: "AMAX facilitates transfer instructions via external regulated remittance and banking partners. Fiat-to-fiat cross-border transfer instructions are executed through these external regulated partners in accordance with AML/CTF obligations." },
+                  { title: "Non-Custodial Model", badge: "Active", cls: "bg-green-100 text-green-800", text: "AMAX Global Pty Ltd does not hold or store client funds or digital assets. Fiat balances are held with external regulated banking partners, and digital asset transactions are executed via Independent Reserve Pty Ltd, an external regulated exchange. AMAX operates as a non-custodial platform facilitating transaction instructions only." },
+                  { title: "FATF Travel Rule Compliance", badge: "Effective 1 Jul 2026", cls: "bg-orange-100 text-orange-800", text: "AMAX complies with FATF Travel Rule obligations for digital asset transactions, including the collection and transmission of originator and beneficiary information where required under AML/CTF regulations. Additional due diligence and reporting obligations may apply to certain digital asset transactions, including transfers involving self-hosted wallets." },
+                  { title: "AUSTRAC — Compliance Officer", badge: "Appointed", cls: "bg-green-100 text-green-800", text: "AMAX has appointed an AML/CTF Compliance Officer (Qin Xiong) responsible for oversight of AML/CTF obligations, reporting, internal controls, and staff training. The Compliance Officer oversees the ongoing AML/CTF program and ensures compliance with AUSTRAC reporting requirements." },
                   { title: "Australian Privacy Act 1988", badge: "Compliant", cls: "bg-green-100 text-green-800", text: "All personal information is collected, held, and used in accordance with the Australian Privacy Act 1988 and the Australian Privacy Principles (APPs). Customer data is retained for 7 years as required by the AML/CTF Act." },
                   { title: "AML/CTF Act 2006 (Australia)", badge: "Compliant", cls: "bg-green-100 text-green-800", text: "Full compliance with the Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (as amended by the AML/CTF Amendment Act 2024). Includes CDD, EDD, ongoing monitoring, SMR/TTR/IFTI reporting, and compulsory record-keeping for 7 years." },
-                  { title: "ASIC — Consumer Compliance / AFSL", badge: "In Progress", cls: "bg-yellow-100 text-yellow-800", text: "Engagement with ASIC requirements for financial services consumer protection under the Corporations Amendment (Digital Assets Framework) Bill 2025. AFSL assessment and licensing review underway ahead of full service launch. Disputes: AFCA · www.afca.org.au · 1800 931 678." },
+                  { title: "ASIC — Consumer Compliance / AFSL", badge: "In Progress", cls: "bg-yellow-100 text-yellow-800", text: "AMAX is assessing licensing requirements under the evolving Australian digital asset regulatory framework, including the Corporations Amendment (Digital Assets Framework) Bill 2025. Disputes: AFCA · www.afca.org.au · 1800 931 678." },
                 ].map((reg, i) => (
                   <div key={i} className="p-4 border rounded-xl">
                     <div className="flex items-center gap-2 mb-2">
@@ -2230,7 +2183,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                 <h4 className="font-semibold text-blue-900 mb-2">Regulatory Reminders</h4>
                 <ul className="text-sm text-blue-700 space-y-1">
                   <li>• All users must complete KYC/AML verification before transacting</li>
-                  <li>• Transactions ≥ AUD 10,000 are subject to enhanced due diligence</li>
+                  <li>• Transactions of AUD 10,000 or more may be subject to regulatory reporting and enhanced due diligence requirements</li>
                   <li>• Suspicious activity is reported to AUSTRAC as required by law</li>
                   <li>• Transaction records are retained for a minimum of 7 years</li>
                 </ul>

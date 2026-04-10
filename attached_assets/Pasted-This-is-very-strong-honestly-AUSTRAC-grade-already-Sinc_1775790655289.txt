@@ -1,0 +1,256 @@
+This is **very strong — honestly AUSTRAC-grade already**.
+Since you’re using **Sumsub**, most of the heavy lifting is handled correctly.
+
+👉 But you still need a few **important adjustments** to avoid:
+
+* duplication
+* overstatement of responsibility
+* regulatory inconsistencies
+
+---
+
+# 🚨 WHAT YOU MUST FIX (important)
+
+---
+
+## 1. ❌ You are duplicating verification (big issue)
+
+You currently have:
+
+```text
+Manual fields:
+- Document expiry
+- Country of issue
+```
+
+AND
+
+```text
+Sumsub biometric verification
+```
+
+👉 Problem:
+
+* Sumsub already collects & verifies ALL of this
+* you are **double-handling regulated data**
+
+---
+
+### ✅ FIX
+
+👉 Remove this section completely:
+
+```text
+Document expiry date
+Country of issue
+```
+
+---
+
+### 🧠 Replace with:
+
+```text
+Identity verification is completed securely via our external KYC provider. Document details and biometric verification are captured during the verification session.
+```
+
+---
+
+# 🚨 2. ❌ “Upload your passport” instructions (conflict)
+
+You wrote:
+
+```text
+Upload the photo page of your passport
+```
+
+👉 ❌ This conflicts with Sumsub flow
+
+---
+
+### ✅ FIX
+
+Replace with:
+
+```text
+You will be guided to upload your document and complete verification securely via our external KYC provider.
+```
+
+---
+
+# 🚨 3. ❌ “AUSTRAC-compliant” wording (too strong)
+
+You wrote:
+
+```text
+Sumsub is AUSTRAC-compliant
+```
+
+👉 ⚠️ Be careful:
+
+* AUSTRAC does NOT “certify” vendors
+* this wording can be misleading
+
+---
+
+### ✅ FIX
+
+Use:
+
+```text
+Sumsub supports AML/CTF-compliant identity verification processes in accordance with Australian regulatory requirements.
+```
+
+---
+
+# 🚨 4. ❌ “Your biometric data is never stored by AMAX”
+
+👉 This is good — but incomplete
+
+---
+
+### ✅ FIX (better legal wording)
+
+```text
+Biometric data is processed by our external verification provider and is not stored by AMAX Global Pty Ltd.
+```
+
+---
+
+# 🚨 5. ⚠️ Address verification duplication
+
+You currently:
+
+* ask for document upload manually
+* AND imply Sumsub handles verification
+
+---
+
+### 🧠 You must choose ONE model
+
+---
+
+## 🥇 BEST OPTION (recommended)
+
+👉 Let **Sumsub handle EVERYTHING**
+
+### ✅ Then change Step 4 to:
+
+```text
+Address verification is completed as part of the identity verification process via our external provider.
+```
+
+👉 Remove manual upload entirely
+
+---
+
+## 🥈 Alternative (if you must keep manual)
+
+👉 Then say:
+
+```text
+Address verification is collected by AMAX and reviewed in accordance with AML/CTF obligations.
+```
+
+👉 BUT:
+
+* this increases your compliance burden
+
+---
+
+# 🚨 6. ⚠️ “Jurisdiction risk scoring — AUSTRAC requirement”
+
+👉 This is too specific and not accurate wording
+
+---
+
+### ✅ FIX
+
+```text
+Country of issue is collected as part of AML/CTF risk assessment.
+```
+
+---
+
+# 🚨 7. ⚠️ Missing key disclosure (important)
+
+You should explicitly say:
+
+---
+
+### ✅ ADD THIS
+
+```text
+AMAX relies on external regulated service providers to perform identity verification. Verification outcomes are subject to provider checks and AML/CTF risk assessment.
+```
+
+---
+
+# ✅ FINAL CLEAN VERSION (SIMPLIFIED + CORRECT)
+
+---
+
+## Step 3 — Identity Verification
+
+```text
+Identity verification is completed securely via our external provider, Sumsub.
+
+You will be guided through:
+
+• Uploading your government-issued ID  
+• Completing a live biometric selfie check  
+• Automated verification checks  
+
+Verification is typically completed within 1–3 minutes.
+```
+
+---
+
+## 🔐 Data & Compliance
+
+```text
+Biometric and identity data are processed by our external verification provider and are not stored by AMAX Global Pty Ltd.
+
+Sumsub supports AML/CTF-compliant identity verification processes in accordance with Australian regulatory requirements.
+
+AMAX relies on external providers to perform identity verification and applies risk-based assessment in line with AML/CTF obligations.
+```
+
+---
+
+## Step 4 — Address Verification (if using Sumsub)
+
+```text
+Address verification is completed as part of the identity verification process via our external provider.
+```
+
+---
+
+# 🎯 FINAL VERDICT
+
+👉 Your current version is:
+
+* ✅ strong UX
+* ❌ slightly over-engineered
+* ❌ duplicating regulated steps
+
+---
+
+# 🚀 AFTER FIX
+
+You will have:
+
+* ✅ clean non-custodial model
+* ✅ clean KYC delegation model
+* ✅ reduced regulatory exposure
+* ✅ audit-ready compliance flow
+
+---
+
+# 🧠 ONE-LINE RULE
+
+👉 **If Sumsub does it — you don’t repeat it**
+
+---
+
+If you want next step, I can:
+👉 review your **Terms, Privacy Policy, and AML wording** to make sure they match this flow perfectly (very important for AUSTRAC).

@@ -1,0 +1,292 @@
+This is **very strong overall**, but there are **some critical misstatements and regulatory risks** you must fix before this is safe.
+
+I’ll go line-by-line and give you **exact corrections**.
+
+---
+
+# 🚨 🔴 CRITICAL ISSUES (must fix)
+
+---
+
+## 1. ❌ “eWallet / Stored Value — holding fiat balances”
+
+```text
+As a stored-value eWallet provider (holding fiat balances on behalf of customers)
+```
+
+👉 **This is WRONG for your model**
+
+You have clearly designed:
+
+> ❗ AMAX = non-custodial
+> ❗ funds held with external partners
+
+---
+
+### ⚠️ Problem
+
+This line says:
+
+* you **hold balances**
+* you are a **custodian**
+* you operate **stored value accounts**
+
+👉 This contradicts:
+
+* your Transfers page
+* your Balance page
+* your entire legal positioning
+
+---
+
+### ✅ FIX (VERY IMPORTANT)
+
+Replace with:
+
+```text
+AMAX does not hold or store client funds. Fiat balances are held with external regulated banking partners. AMAX operates as a non-custodial platform and facilitates transaction instructions only.
+```
+
+---
+
+## 2. ❌ “Remittance Dealer (IRD)” claim (verify!)
+
+```text
+AMAX holds a separate Independent Remittance Dealer (IRD) registration
+```
+
+👉 ⚠️ Only keep this if **100% true**
+
+---
+
+### ⚠️ Risk
+
+If not registered:
+
+* this is a **serious regulatory misrepresentation**
+* can trigger enforcement
+
+---
+
+### ✅ If NOT confirmed:
+
+Replace with:
+
+```text
+AMAX facilitates transfer instructions via external regulated remittance and banking partners.
+```
+
+---
+
+## 3. ❌ “VASP registration required 1 July 2026”
+
+👉 This is **not accurate in Australia**
+
+AUSTRAC currently uses:
+
+* **DCE registration** (already correct)
+* NOT a separate “VASP register” (yet)
+
+---
+
+### ❌ This line is risky:
+
+```text
+VASP registration (Virtual Assets)
+```
+
+---
+
+### ✅ FIX
+
+Replace with:
+
+```text
+FATF Travel Rule obligations (effective 1 July 2026)
+```
+
+---
+
+### Correct version:
+
+```text
+AMAX complies with FATF Travel Rule obligations for digital asset transfers, including collection and transmission of originator and beneficiary information where required.
+```
+
+---
+
+## 4. ❌ “Self-hosted wallet must be reported within 10 days”
+
+👉 ❌ This is NOT a blanket AUSTRAC rule
+
+---
+
+### ⚠️ Problem:
+
+* Overstating obligations
+* Incorrect legal statement
+
+---
+
+### ✅ FIX
+
+Replace with:
+
+```text
+Additional due diligence and reporting obligations may apply to certain digital asset transactions, including transfers involving self-hosted wallets.
+```
+
+---
+
+## 5. ⚠️ “Compliance Officer deadline 29 July 2026”
+
+👉 ⚠️ Be careful with **hard deadlines**
+
+---
+
+### ✅ Safer version:
+
+```text
+AMAX has appointed an AML/CTF Compliance Officer responsible for oversight of AML/CTF obligations, reporting, and internal controls.
+```
+
+---
+
+## 6. ⚠️ AFSL wording (too forward-looking)
+
+```text
+AFSL assessment and licensing review underway
+```
+
+👉 This is OK, but refine:
+
+---
+
+### ✅ FIX
+
+```text
+AMAX is assessing licensing requirements under the evolving Australian digital asset regulatory framework.
+```
+
+---
+
+# ✅ WHAT IS GOOD (KEEP)
+
+---
+
+### ✔ DCE registration section
+
+👉 Strong, accurate, professional
+
+---
+
+### ✔ AML/CTF Act compliance
+
+👉 Good coverage:
+
+* CDD
+* EDD
+* SMR / TTR / IFTI
+* record keeping
+
+---
+
+### ✔ Privacy Act
+
+👉 Correct
+
+---
+
+### ✔ Regulatory reminders
+
+👉 Good — but small tweak below
+
+---
+
+# ⚠️ FINAL TWEAK — Regulatory reminders
+
+---
+
+### Current:
+
+```text
+Transactions ≥ AUD 10,000 are subject to enhanced due diligence
+```
+
+👉 Slightly misleading
+
+---
+
+### ✅ FIX
+
+```text
+Transactions of AUD 10,000 or more may be subject to regulatory reporting and enhanced due diligence requirements.
+```
+
+---
+
+# ✅ FINAL CLEAN VERSION (KEY FIXED PARTS)
+
+---
+
+## Replace this section entirely:
+
+```text
+AUSTRAC — eWallet / Stored Value Enrolment
+```
+
+👉 With:
+
+```text
+Non-Custodial Model
+
+AMAX Global Pty Ltd does not hold or store client funds or digital assets.
+
+Fiat balances are held with external regulated banking partners, and digital asset transactions are executed via external regulated exchanges.
+
+AMAX operates as a non-custodial platform facilitating transaction instructions only.
+```
+
+---
+
+## Replace VASP section:
+
+```text
+FATF Travel Rule Compliance
+
+AMAX complies with FATF Travel Rule obligations for digital asset transactions, including the collection and transmission of originator and beneficiary information where required under AML/CTF regulations.
+```
+
+---
+
+# 🎯 FINAL VERDICT
+
+👉 You are **VERY close to regulator-grade**
+
+But right now:
+
+* ❌ one line makes you look custodial
+* ❌ one line may be legally inaccurate
+* ❌ one section overstates obligations
+
+---
+
+# 🚀 AFTER FIX
+
+You will have:
+
+* ✅ Fully consistent non-custodial positioning
+* ✅ Accurate AUSTRAC representation
+* ✅ Clean legal defensibility
+* ✅ Institutional-grade compliance page
+
+---
+
+# 🧠 ONE-LINE RULE
+
+👉 **Never say you hold funds — unless you are licensed to do so**
+
+---
+
+If you want next step, I can:
+👉 do a **final legal consistency sweep across your entire platform** (this is the last 5% before real-world readiness).
