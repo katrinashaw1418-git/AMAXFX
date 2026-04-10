@@ -363,7 +363,7 @@ export default function Wallets() {
       const data = await res.json();
       setCoinbaseCharge(data);
     } catch (err: any) {
-      toast({ title: 'Deposit Address Error', description: err.message, variant: 'destructive' });
+      toast({ title: 'Transfer Address Error', description: err.message, variant: 'destructive' });
     } finally {
       setCoinbaseLoading(false);
     }
@@ -1023,7 +1023,7 @@ export default function Wallets() {
                   <p className="font-medium text-blue-800">Planned capabilities:</p>
                   <p>• SWIFT / IBAN inbound wires from 50+ countries</p>
                   <p>• Facilitated via Airwallex (AUSTRAC registered payment provider)</p>
-                  <p>• Full AML/CTF screening on all cross-border deposits</p>
+                  <p>• Full AML/CTF screening on all cross-border transfers</p>
                   <p>• FATF Travel Rule compliance for applicable transactions</p>
                 </div>
                 <p className="text-xs text-blue-600 italic">
@@ -1098,7 +1098,7 @@ export default function Wallets() {
                   <>
                     <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800 p-3 text-xs text-blue-800 dark:text-blue-300 space-y-1">
                       <p className="font-semibold text-sm text-blue-900 dark:text-blue-100">🔗 Blockchain Transfer In via Coinbase Commerce</p>
-                      <p>Generate a secure, KYC-verified deposit address for your {selectedWallet?.currency} wallet. Custody is held by Coinbase — funds are credited automatically after blockchain confirmation.</p>
+                      <p>Generate a secure, KYC-verified transfer address for your {selectedWallet?.currency} wallet. Custody is held by Coinbase — funds are credited automatically after blockchain confirmation.</p>
                       <p className="text-xs text-blue-600 dark:text-blue-400">⚠️ Only send <strong>{selectedWallet?.currency}</strong> to this address. Sending unsupported assets will result in permanent loss.</p>
                     </div>
 
@@ -1108,13 +1108,13 @@ export default function Wallets() {
                         onClick={handleCoinbaseDeposit}
                         disabled={coinbaseLoading}
                       >
-                        {coinbaseLoading ? 'Generating address…' : `Generate ${selectedWallet?.currency} Deposit Address`}
+                        {coinbaseLoading ? 'Generating address…' : `Generate ${selectedWallet?.currency} Transfer Address`}
                       </Button>
                     ) : (
                       <div className="space-y-3">
                         {/* Primary address for selected currency */}
                         <div className="rounded-lg border bg-muted p-3 space-y-2">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Deposit Address ({coinbaseCharge.networkKey})</p>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Transfer Address ({coinbaseCharge.networkKey})</p>
                           {coinbaseCharge.address ? (
                             <>
                               <p className="text-xs font-mono break-all text-foreground select-all">{coinbaseCharge.address}</p>
@@ -1132,7 +1132,7 @@ export default function Wallets() {
                               <div className="flex justify-center pt-1">
                                 <img
                                   src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(coinbaseCharge.address)}`}
-                                  alt="Deposit address QR code"
+                                  alt="Transfer address QR code"
                                   className="rounded border"
                                   width={140}
                                   height={140}
@@ -1160,19 +1160,19 @@ export default function Wallets() {
                 ) : (
                   /* Coinbase Commerce API key not yet configured */
                   <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800 p-4 space-y-3">
-                    <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Crypto Deposit — {selectedWallet?.currency} Wallet Address</p>
+                    <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Crypto Transfer In — {selectedWallet?.currency} Wallet Address</p>
                     <p className="text-sm text-blue-800 dark:text-blue-300">
-                      A unique {selectedWallet?.currency} deposit address will be assigned to your account upon request. This address is linked to your verified identity and ensures compliance with AUSTRAC AML/CTF obligations and the FATF Travel Rule.
+                      A unique {selectedWallet?.currency} transfer address will be assigned to your account upon request. This address is linked to your verified identity and ensures compliance with AUSTRAC AML/CTF obligations and the FATF Travel Rule.
                     </p>
                     <div className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
-                      <p>• Your deposit address is unique to your account — do not share it</p>
+                      <p>• Your transfer address is unique to your account — do not share it</p>
                       <p>• Only send {selectedWallet?.currency} — other assets cannot be credited</p>
                       <p>• Funds are credited after network confirmation and AML screening</p>
-                      <p>• All deposits are subject to blockchain analytics review</p>
+                      <p>• All transfers are subject to blockchain analytics review</p>
                     </div>
                     <Button variant="outline" size="sm" className="w-full"
-                      onClick={() => window.location.href = `mailto:info@amaxglobal.com.au?subject=Crypto Deposit Address Request - ${selectedWallet?.currency}`}>
-                      Request my {selectedWallet?.currency} deposit address
+                      onClick={() => window.location.href = `mailto:info@amaxglobal.com.au?subject=Crypto Transfer Address Request - ${selectedWallet?.currency}`}>
+                      Request my {selectedWallet?.currency} transfer address
                     </Button>
                   </div>
                 )}
@@ -1206,7 +1206,7 @@ export default function Wallets() {
                 {depositMethod === 'payid' && (
                   <div className="space-y-3">
                     <div className="p-3 bg-muted rounded-lg">
-                      <h4 className="font-medium mb-2 text-sm">⚡ PayID / NPP Deposit</h4>
+                      <h4 className="font-medium mb-2 text-sm">⚡ PayID / NPP Transfer In</h4>
                       <div className="text-xs text-muted-foreground space-y-1">
                         <p>• Instant bank transfer via Australia's NPP / Osko network</p>
                         <p>• Available to all Australian bank account holders</p>
@@ -1276,7 +1276,7 @@ export default function Wallets() {
                       disabled={depositMutation.isPending || !depositMethod || !amount}
                       className="flex-1 h-8 text-sm"
                     >
-                      {depositMutation.isPending ? "Submitting..." : "Submit Deposit Request"}
+                      {depositMutation.isPending ? "Submitting..." : "Submit Transfer Request"}
                     </Button>
                   )}
                   <Button variant="outline" className="h-8 text-sm" onClick={() => {
