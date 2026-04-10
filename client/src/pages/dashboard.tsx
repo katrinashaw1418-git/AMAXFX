@@ -198,8 +198,8 @@ export default function Dashboard() {
               <Wallet className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="font-semibold text-gray-900">Currency Accounts</p>
-              <p className="text-xs text-gray-500">Balances &amp; transfers</p>
+              <p className="font-semibold text-gray-900">Transfer In / Transfer Out</p>
+              <p className="text-xs text-gray-500">Transfer instructions &amp; indicative balances</p>
             </div>
           </CardContent>
         </Card>

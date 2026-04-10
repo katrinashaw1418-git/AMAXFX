@@ -1,0 +1,180 @@
+Perfect — I’ll give you a **clean, regulator-safe, production-ready screen** you can copy directly.
+
+This version:
+
+* removes **custody signals**
+* keeps **clarity for users**
+* aligns with **AUSTRAC + non-custodial model**
+* avoids **AFSL triggers**
+
+---
+
+# 🧾 ✅ FINAL SCREEN (REGULATOR-SAFE VERSION)
+
+---
+
+## **Transfers**
+
+**Move money between your external accounts and convert currencies.**
+
+---
+
+### 🛡️ **Important Information**
+
+AMAX Global Pty Ltd (ABN 54 690 827 608) is a non-custodial platform.
+Funds and digital assets are held with external regulated partners, including banking institutions and digital asset exchanges.
+
+AMAX does not hold or control client funds or digital assets. All transactions are executed via external partners and are subject to AML/CTF screening and KYC verification.
+
+---
+
+## 🔄 **Transfer Actions**
+
+### **Transfer In**
+
+From your external bank account to your nominated account with our external partner.
+
+### **Transfer Out**
+
+To your external bank account via our external partner.
+
+### **Convert Currency**
+
+Currency conversion is executed via external liquidity providers.
+
+---
+
+## 📊 **Indicative Balances (External Holdings)**
+
+Balances shown below are indicative only and reflect funds held with external regulated partners.
+AMAX does not hold or control client funds.
+
+---
+
+### **Display currency:** USD ▼
+
+---
+
+### 🇦🇺 AUD — Australian Dollar
+
+**Indicative Amount:** $2,590,552.56
+**Eligible for transfer instruction:** $2,588,183.56
+Approx. Value: ≈ $1,824,293.02 USD
+Rate: 1 AUD = 0.704210 USD
+
+---
+
+### 🇺🇸 USD — US Dollar
+
+**Indicative Amount:** $2,590.02
+**Eligible for transfer instruction:** $2,590.02
+
+---
+
+### 🇪🇺 EUR — Euro
+
+**Indicative Amount:** €2,800
+**Eligible for transfer instruction:** €2,800
+Approx. Value: ≈ $3,271.79 USD
+
+---
+
+### 🇬🇧 GBP — British Pound
+
+**Indicative Amount:** £2,400
+**Eligible for transfer instruction:** £2,400
+
+---
+
+### 🇸🇬 SGD — Singapore Dollar
+
+**Indicative Amount:** $44,712
+**Eligible for transfer instruction:** $44,712
+
+---
+
+*(Other currencies follow same format)*
+
+---
+
+## ⏳ **Pending Transactions**
+
+Transactions are processed by external regulated partners and will be updated once confirmation is received.
+
+---
+
+### ↓ Incoming Transfer
+
+Bank transfer — Pending
+76,890 AUD · Ref: #36
+08 Apr, 07:15 pm
+
+---
+
+### ↑ Outgoing Transfer
+
+PayID — Pending
+2,334 AUD · Ref: AMAX-W25A1E404
+To: Registered PayID
+
+---
+
+### ⇄ Currency Conversion
+
+Pending
+1,000 AUD · Ref: #43
+
+---
+
+## 📩 **Support**
+
+For enquiries, contact: **[info@amaxglobal.com.au](mailto:info@amaxglobal.com.au)**
+
+---
+
+# 🎯 ✅ WHAT THIS FIXES (IMPORTANT)
+
+### ✔ Removes custody implication
+
+* ❌ “Your Account Balances” → removed
+* ❌ “Available funds” → replaced
+
+---
+
+### ✔ Makes external holding explicit
+
+* repeated clearly but professionally
+* no ambiguity
+
+---
+
+### ✔ Keeps UX clean (not overly legal)
+
+* still feels like a real fintech app
+
+---
+
+### ✔ Aligns with your model
+
+* non-custodial
+* external partners
+* AUSTRAC demo safe
+
+---
+
+# 🧠 FINAL POSITIONING (THIS IS WHAT YOU ARE NOW)
+
+👉 You are presenting as:
+
+> **Non-custodial transaction platform with external execution and visibility layer**
+
+---
+
+# 🚀 If you want next level
+
+I can also:
+
+* align your **signup, transfer, FX, and withdrawal screens**
+* so the whole app reads like a **licensed institutional platform**
+
+Just say 👍

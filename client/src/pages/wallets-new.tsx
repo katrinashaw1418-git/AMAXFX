@@ -13,7 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { CurrencyConfig, SupportedCurrencies, CurrencyRegions, type WalletBalance } from '@/lib/types';
-import { TrendingUp, TrendingDown, Plus, Minus, ArrowUpDown, Send, Repeat, Info, DollarSign, AlertCircle, Volume2, Settings, ExternalLink } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Minus, ArrowUpDown, Send, Repeat, Info, DollarSign, AlertCircle, Volume2, Settings, ExternalLink, Shield } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useFxRate } from '@/hooks/use-fx-rates';
 import { useWallets } from '@/hooks/use-portfolio';
@@ -685,8 +685,8 @@ export default function Wallets() {
     <div className="container mx-auto px-4 py-6 space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Currency Accounts</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Multi-Currency FX Accounts</p>
+          <h1 className="text-3xl font-bold">Transfer In / Transfer Out</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Move money between your external accounts and convert currencies.</p>
         </div>
         <div className="flex items-center gap-2">
           {isVoiceSupported && (
@@ -703,15 +703,34 @@ export default function Wallets() {
       </div>
 
       {/* Non-custodial disclosure */}
-      <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-        <Info className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-amber-800">
-          <span className="font-semibold">AMAX Global Pty Ltd (ABN 54 690 827 608) does not hold client funds.</span>{" "}
-          Balances shown reflect funds held with regulated partner banking institutions and, for crypto exchange
-          purposes, with Independent Reserve Pty Ltd (AUSTRAC DCE-100461150-001). AMAX acts as a payment
-          facilitator and Digital Currency Exchange (DCE) only. Account balances are available for instructed
-          transactions subject to AML/CTF screening and KYC verification.
+      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+        <div className="flex items-center gap-2">
+          <Shield className="w-4 h-4 text-blue-700 flex-shrink-0" />
+          <p className="text-xs font-semibold text-blue-900">Important Information</p>
+        </div>
+        <p className="text-xs text-blue-800">
+          AMAX Global Pty Ltd (ABN 54 690 827 608) is a <strong>non-custodial platform</strong>.
+          Funds and digital assets are held with external regulated partners, including banking institutions
+          and digital asset exchanges.
         </p>
+        <p className="text-xs text-blue-800">
+          AMAX does not hold or control client funds or digital assets. All transactions are executed via
+          external partners and are subject to AML/CTF screening and KYC verification.
+        </p>
+        <div className="pt-1 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-blue-700">
+          <div className="bg-white/60 rounded p-2 border border-blue-100">
+            <p className="font-semibold mb-0.5">Transfer In</p>
+            <p className="text-blue-600">From your external bank account to your nominated account with our external partner.</p>
+          </div>
+          <div className="bg-white/60 rounded p-2 border border-blue-100">
+            <p className="font-semibold mb-0.5">Transfer Out</p>
+            <p className="text-blue-600">To your external bank account via our external partner.</p>
+          </div>
+          <div className="bg-white/60 rounded p-2 border border-blue-100">
+            <p className="font-semibold mb-0.5">Convert Currency</p>
+            <p className="text-blue-600">Currency conversion executed via external liquidity providers.</p>
+          </div>
+        </div>
       </div>
 
       {/* Section 1: Your Balances */}
@@ -720,8 +739,8 @@ export default function Wallets() {
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <DollarSign className="w-5 h-5" />
-              Your Account Balances
-                <span className="text-xs font-normal text-muted-foreground ml-1">(held with regulated partners)</span>
+              Indicative Balances (External Holdings)
+                <span className="text-xs font-normal text-muted-foreground ml-1">held with regulated partners · not controlled by AMAX</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-normal text-muted-foreground">Show values in:</span>
@@ -753,7 +772,7 @@ export default function Wallets() {
                 <thead className="border-b">
                   <tr>
                     <th className="text-left p-4 font-medium">Currency</th>
-                    <th className="text-left p-4 font-medium">Balance</th>
+                    <th className="text-left p-4 font-medium">Indicative Amount</th>
                     <th className="text-left p-4 font-medium">Approx. Value ({displayCurrency})</th>
                     <th className="text-center p-4 font-medium">YTD vs {displayCurrency}</th>
                     <th className="text-right p-4 font-medium">Actions</th>
@@ -779,7 +798,7 @@ export default function Wallets() {
                             {wallet.config?.symbol}{wallet.balance ? parseFloat(wallet.balance).toLocaleString() : '0.00'}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            Available for transfer: {wallet.config?.symbol}{wallet.availableBalance ? parseFloat(wallet.availableBalance).toLocaleString() : '0.00'}
+                            Eligible for transfer instruction: {wallet.config?.symbol}{wallet.availableBalance ? parseFloat(wallet.availableBalance).toLocaleString() : '0.00'}
                           </div>
                         </div>
                       </td>
@@ -864,7 +883,7 @@ export default function Wallets() {
                     <div className="space-y-0.5 flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className={`font-semibold ${isDeposit ? 'text-green-700 dark:text-green-400' : isWithdrawal ? 'text-red-700 dark:text-red-400' : 'text-blue-700 dark:text-blue-400'}`}>
-                          {isDeposit ? '↓ Deposit' : isWithdrawal ? '↑ Withdrawal' : '⇄ Transfer'}
+                          {isDeposit ? '↓ Incoming Transfer' : isWithdrawal ? '↑ Outgoing Transfer' : '⇄ Currency Conversion'}
                         </span>
                         <span className="text-muted-foreground capitalize">{method.replace(/_/g,' ')}</span>
                         <span className="ml-auto text-amber-700 dark:text-amber-400 font-medium bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded text-[10px]">Pending</span>
@@ -885,7 +904,7 @@ export default function Wallets() {
                 );
               })}
             </div>
-            <p className="text-[10px] text-muted-foreground mt-2">Pending transactions are visible here until our regulated banking partner confirms receipt and the transaction is settled. Contact info@amaxglobal.com.au for queries.</p>
+            <p className="text-[10px] text-muted-foreground mt-2">Transactions are processed by external regulated partners and will be updated once confirmation is received. For enquiries, contact: <strong>info@amaxglobal.com.au</strong></p>
           </CardContent>
         </Card>
       )}
@@ -894,9 +913,9 @@ export default function Wallets() {
       <Dialog open={depositModalOpen} onOpenChange={(open) => { setDepositModalOpen(open); if (!open) { setDepositSubmitted(null); setAmount(''); setDepositMethod(''); } }}>
         <DialogContent className="sm:max-w-[450px] max-h-[80vh] overflow-y-auto p-4">
           <DialogHeader>
-            <DialogTitle>Deposit {selectedWallet?.currency}</DialogTitle>
+            <DialogTitle>Transfer In — {selectedWallet?.currency}</DialogTitle>
             <DialogDescription>
-              Add funds to your {selectedWallet?.currency} wallet using multiple payment methods
+              Instruct an incoming transfer to your nominated {selectedWallet?.currency} account with our external partner
             </DialogDescription>
           </DialogHeader>
 
@@ -1752,7 +1771,7 @@ export default function Wallets() {
             {/* Current Balance Display */}
             <div className="p-3 bg-gray-50 rounded-lg">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Available for Transfer</span>
+                <span className="text-sm text-gray-600">Eligible for transfer instruction</span>
                 <span className="font-medium">
                   {selectedWallet?.availableBalance} {selectedWallet?.currency}
                 </span>
@@ -1770,7 +1789,7 @@ export default function Wallets() {
                 className="h-8"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Available for transfer: {selectedWallet?.availableBalance} {selectedWallet?.currency}
+                Eligible for transfer instruction: {selectedWallet?.availableBalance} {selectedWallet?.currency}
               </p>
             </div>
             
