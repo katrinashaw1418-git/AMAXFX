@@ -544,11 +544,13 @@ export default function AdminCompliance() {
                       const netConverted = ex.exchangeRate && ex.amount
                         ? (parseFloat(ex.amount) * parseFloat(ex.exchangeRate) - parseFloat(ex.fee ?? "0")).toLocaleString(undefined, { maximumFractionDigits: 8 })
                         : "—";
-                      const label = ex.settlementStatus === "pending_delivery"
-                        ? "Awaiting IR on-chain delivery"
-                        : "Awaiting external partner settlement";
-                      const labelColor = ex.settlementStatus === "pending_delivery"
-                        ? "bg-blue-100 text-blue-700"
+                      const label = ex.settlementStatus === "pending_partner_execution"
+                        ? "Pending partner execution"
+                        : ex.settlementStatus === "partner_executed"
+                        ? "Completed (external partner)"
+                        : "Pending partner execution";
+                      const labelColor = ex.settlementStatus === "partner_executed"
+                        ? "bg-green-100 text-green-700"
                         : "bg-amber-100 text-amber-700";
                       return (
                         <div key={ex.id} className="p-4 flex items-center justify-between gap-4 flex-wrap">

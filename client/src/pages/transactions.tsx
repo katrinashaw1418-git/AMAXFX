@@ -65,6 +65,27 @@ function isCryptoExchangeByAssetType(assetType?: string) {
   return assetType === "crypto" || assetType === "cross";
 }
 
+// Map stored settlement status codes to compliant non-custodial display labels
+const formatSettlementStatus = (status: string | null | undefined): string => {
+  if (!status) return "—";
+  const map: Record<string, string> = {
+    internal_only:              "Completed (external partner)",
+    partner_executed:           "Completed (external partner)",
+    paid_out:                   "Completed (external partner)",
+    settled:                    "Completed (external partner)",
+    checkout_card:              "Completed (external partner)",
+    paypal:                     "Completed (external partner)",
+    awaiting_bank_confirmation: "Pending partner execution",
+    awaiting_payout:            "Pending partner execution",
+    awaiting_airwallex:         "Pending partner execution",
+    pending_delivery:           "Pending partner execution",
+    pending_partner_execution:  "Pending partner execution",
+    instruction_submitted:      "Instruction submitted",
+    failed:                     "Failed (partner declined)",
+  };
+  return map[status] ?? status.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+};
+
 // Parse JSON stored in transaction description fields into clean readable text
 const formatDescription = (description: string | null | undefined): string => {
   if (!description) return "—";
@@ -213,7 +234,7 @@ function TransactionDetailModal({ transaction, onClose }: { transaction: any; on
           {/* Settlement / compliance */}
           <div className="bg-gray-50 rounded-lg p-3 space-y-0">
             <Row label="Asset Type" value={transaction.assetType} />
-            <Row label="Settlement Status" value={transaction.settlementStatus?.replace(/_/g, " ")} />
+            <Row label="Settlement Status" value={formatSettlementStatus(transaction.settlementStatus)} />
             <Row label="Review Status" value={transaction.reviewStatus} />
             {transaction.reviewNotes && <Row label="Review Notes" value={transaction.reviewNotes} />}
             {transaction.blockchainTxHash && <Row label="Blockchain Tx" value={transaction.blockchainTxHash} />}

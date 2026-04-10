@@ -2589,7 +2589,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           exchangeRate: exchangeRate.toFixed(8),
           // All exchanges are pending until external partner confirms settlement.
           status: "pending",
-          settlementStatus: isFiatToCrypto ? "pending_delivery" : "awaiting_airwallex",
+          settlementStatus: "pending_partner_execution",
           description: isFiatToCrypto
             ? [
                 `${fromCurrency} → ${toCurrency} Exchange — Delivery via Independent Reserve`,
@@ -2706,7 +2706,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId, type: "deposit", fromCurrency: null, toCurrency: currency,
           amount: amount.toFixed(8), fee: "0.00000000", exchangeRate: null,
           status: isPendingChannel ? "pending" : "completed",
-          settlementStatus: isPendingChannel ? "awaiting_bank_confirmation" : "internal_only",
+          settlementStatus: isPendingChannel ? "awaiting_bank_confirmation" : "partner_executed",
           description: isPendingChannel
             ? JSON.stringify({
                 method,
@@ -3293,7 +3293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           toCurrency: currency === "USD" ? null : "USD",
           amount: deductionAmount.toFixed(8), fee: "0.00000000",
           exchangeRate: exchangeRateStr, status: "completed",
-          settlementStatus: "internal_only",
+          settlementStatus: "partner_executed",
           description: `Investment in ${product.name}${currency !== "USD" ? ` (converted from ${currency})` : ""}`,
           sourceExchange: null, blockchainTxHash: null,
           assetType: classifyAssetType(currency, "USD"),
@@ -3397,7 +3397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId, type: "exchange", fromCurrency, toCurrency,
           amount: amount.toFixed(8), fee: fee.toFixed(8),
           exchangeRate: exchangeRate.toFixed(8), status: "completed",
-          settlementStatus: "internal_only",
+          settlementStatus: "partner_executed",
           description: `Converted ${rawAmount} ${fromCurrency} to ${finalAmount.toFixed(8)} ${toCurrency}`,
           sourceExchange: null, blockchainTxHash: null,
           assetType: classifyAssetType(fromCurrency, toCurrency),
@@ -3507,7 +3507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(and(
           eq(transactions.userId, userId),
           eq(transactions.type, "transfer"),
-          eq(transactions.settlementStatus as any, "internal_only"),
+          eq(transactions.settlementStatus as any, "partner_executed"),
           eq(transactions.direction as any, "out"),
           sql`${transactions.createdAt} >= ${oneHourAgo}`,
         ));
@@ -3573,7 +3573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fee: "0.00000000",
           exchangeRate: "1.00000000",
           status: "completed",
-          settlementStatus: "internal_only",
+          settlementStatus: "partner_executed",
           description: `Internal transfer of ${rawAmount} ${currency} to ${recipient.email} — purpose: ${purpose}`,
           sourceExchange: null,
           blockchainTxHash: null,
@@ -3600,7 +3600,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fee: "0.00000000",
           exchangeRate: "1.00000000",
           status: "completed",
-          settlementStatus: "internal_only",
+          settlementStatus: "partner_executed",
           description: `Internal transfer received: ${rawAmount} ${currency} from ${sender.email} — purpose: ${purpose}`,
           sourceExchange: null,
           blockchainTxHash: null,
@@ -4959,7 +4959,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           balance: new Decimal(wallet.balance).plus(creditAmount).toFixed(8),
           availableBalance: new Decimal(wallet.availableBalance).plus(creditAmount).toFixed(8),
         }).where(eq(wallets.id, wallet.id));
-        await tx.update(transactions).set({ status: "completed", settlementStatus: "internal_only" })
+        await tx.update(transactions).set({ status: "completed", settlementStatus: "partner_executed" })
           .where(eq(transactions.id, txId));
       });
       res.json({ success: true, message: "Deposit completed and wallet credited" });
