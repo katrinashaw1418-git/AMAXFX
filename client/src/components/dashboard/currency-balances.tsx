@@ -149,7 +149,7 @@ export default function CurrencyBalances({ hideSummary = false }: { hideSummary?
           {/* Action buttons */}
           <div className="flex gap-2 pt-3 border-t">
             <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50" onClick={() => navigate('/wallets')}>
-              <Wallet className="w-3 h-3" /> Accounts
+              <Wallet className="w-3 h-3" /> Currency Accounts
             </Button>
             <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5 border-purple-200 text-purple-700 hover:bg-purple-50" onClick={() => navigate('/fx-exchange')}>
               <ArrowRightLeft className="w-3 h-3" /> Exchange

@@ -683,7 +683,7 @@ export default function Wallets() {
     <div className="container mx-auto px-4 py-6 space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Your Accounts</h1>
+          <h1 className="text-3xl font-bold">Currency Accounts</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Multi-Currency FX Accounts</p>
         </div>
         <div className="flex items-center gap-2">
