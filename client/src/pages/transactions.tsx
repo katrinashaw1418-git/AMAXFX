@@ -63,7 +63,11 @@ const formatTransactionAmount = (transaction: any) => {
 const formatTransactionFee = (transaction: any) => {
   const fee = parseFloat(transaction.fee);
   if (!fee || fee === 0) return "Free";
-  return `${fee.toFixed(2)} ${transaction.fromCurrency ?? transaction.toCurrency ?? ""}`;
+  // For exchange/crypto, the fee is deducted from the converted (target) amount
+  const feeCurrency = (transaction.type === "exchange" || transaction.type === "crypto_buy" || transaction.type === "crypto_sell")
+    ? (transaction.toCurrency ?? transaction.fromCurrency ?? "")
+    : (transaction.fromCurrency ?? transaction.toCurrency ?? "");
+  return `${fee.toFixed(2)} ${feeCurrency}`;
 };
 
 function downloadCsv(transactions: any[], filename: string) {
@@ -144,7 +148,7 @@ function TransactionDetailModal({ transaction, onClose }: { transaction: any; on
                   : `${amount.toLocaleString()} ${transaction.toCurrency ?? transaction.fromCurrency ?? ""}`
               }
             />
-            <Row label="Fee" value={fee === 0 ? "Free" : `${fee.toFixed(4)} ${transaction.fromCurrency ?? transaction.toCurrency ?? ""}`} />
+            <Row label="Fee" value={fee === 0 ? "Free" : `${fee.toFixed(4)} ${(transaction.type === "exchange" || transaction.type === "crypto_buy" || transaction.type === "crypto_sell") ? (transaction.toCurrency ?? transaction.fromCurrency ?? "") : (transaction.fromCurrency ?? transaction.toCurrency ?? "")}`} />
             {rate && (
               <Row label="Exchange Rate" value={`1 ${transaction.fromCurrency} = ${rate.toFixed(6)} ${transaction.toCurrency}`} />
             )}
@@ -245,7 +249,9 @@ function TransactionTable({ transactions, searchTerm, statusFilter }: {
               </TableCell>
               <TableCell>
                 <Badge className={getStatusColor(transaction.status)}>
-                  {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                  {transaction.status === "pending"
+                    ? "Pending – partner confirmation"
+                    : transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
                 </Badge>
               </TableCell>
               <TableCell>
@@ -280,7 +286,7 @@ export default function Transactions() {
       toast({ title: "Nothing to export", description: "No transactions in this tab.", variant: "destructive" });
       return;
     }
-    const label = activeTab === "fx" ? "FX" : "Wallet";
+    const label = activeTab === "fx" ? "FX-Digital-Asset" : "Transfer";
     downloadCsv(data, `amax-${label.toLowerCase()}-transactions-${new Date().toISOString().slice(0, 10)}.csv`);
     toast({ title: "Export ready", description: `${data.length} ${label} transaction(s) downloaded as CSV.` });
   }
@@ -321,7 +327,7 @@ export default function Transactions() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Transaction History</h1>
-          <p className="text-gray-600">FX exchange and wallet transaction records</p>
+          <p className="text-gray-600">FX Conversion, Digital Asset Exchange and transfer activity records</p>
         </div>
         <Button onClick={handleExport}>
           <Download className="w-4 h-4 mr-2" />
@@ -333,25 +339,25 @@ export default function Transactions() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardContent className="p-6">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">FX Exchange Transactions</h3>
+            <h3 className="text-sm font-medium text-gray-500 mb-2">FX &amp; Digital Asset Transactions</h3>
             <p className="text-2xl font-bold text-blue-600">{fxTransactions.length}</p>
-            <p className="text-sm text-gray-600 mt-1">Currency conversions &amp; crypto</p>
+            <p className="text-sm text-gray-600 mt-1">FX Conversions &amp; Digital Asset Exchange</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Wallet Transactions</h3>
+            <h3 className="text-sm font-medium text-gray-500 mb-2">Transfer Activity</h3>
             <p className="text-2xl font-bold text-purple-600">{walletTransactions.length}</p>
-            <p className="text-sm text-gray-600 mt-1">Transfer In, Transfer Out &amp; conversions</p>
+            <p className="text-sm text-gray-600 mt-1">Transfer In &amp; Transfer Out records</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Pending</h3>
+            <h3 className="text-sm font-medium text-gray-500 mb-2">Pending Partner Confirmation</h3>
             <p className="text-2xl font-bold text-yellow-600">
               {transactions?.filter((t: any) => t.status === "pending").length ?? 0}
             </p>
-            <p className="text-sm text-gray-600 mt-1">Awaiting processing</p>
+            <p className="text-sm text-gray-600 mt-1">Awaiting external partner confirmation</p>
           </CardContent>
         </Card>
       </div>
@@ -388,7 +394,7 @@ export default function Transactions() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="fx" className="flex items-center gap-2">
-            <ArrowRightLeft className="w-4 h-4" /> FX Exchange
+            <ArrowRightLeft className="w-4 h-4" /> FX &amp; Digital Asset
           </TabsTrigger>
           <TabsTrigger value="wallet" className="flex items-center gap-2">
             <Wallet className="w-4 h-4" /> Transfers
@@ -399,8 +405,8 @@ export default function Transactions() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>FX Exchange Transactions</CardTitle>
-                <p className="text-sm text-gray-500">Currency conversions and crypto exchange</p>
+                <CardTitle>FX Conversion &amp; Digital Asset Exchange</CardTitle>
+                <p className="text-sm text-gray-500">Arranged by AMAX, executed via external regulated partners</p>
               </div>
             </CardHeader>
             <CardContent>
@@ -413,8 +419,8 @@ export default function Transactions() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Transfer Transactions</CardTitle>
-                <p className="text-sm text-gray-500">Transfer In, Transfer Out, and currency conversions</p>
+                <CardTitle>Transfer Activity</CardTitle>
+                <p className="text-sm text-gray-500">Transfer In and Transfer Out instruction records</p>
               </div>
             </CardHeader>
             <CardContent>

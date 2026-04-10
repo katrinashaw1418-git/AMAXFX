@@ -1,0 +1,260 @@
+This is a **great screen structurally**, but there are **serious issues** you need to fix before this is safe (both **compliance + financial logic**).
+
+I’ll give you a **clear audit + exact fixes**.
+
+---
+
+# 🚨 🔴 CRITICAL ISSUES
+
+## 1. ❌ Mixing FX and Crypto (BIG problem)
+
+You labeled everything:
+
+```text
+FX Conversion
+```
+
+But you have:
+
+* USD → EUR ✅ (FX)
+* AUD → BTC ❌ (CRYPTO)
+* ETH → AUD ❌ (CRYPTO)
+
+👉 This is **incorrect classification**
+
+---
+
+### 🎯 Fix
+
+Split into:
+
+```text
+FX Conversion (Fiat ↔ Fiat)
+Digital Asset Exchange (Fiat ↔ Crypto / Crypto ↔ Fiat)
+```
+
+---
+
+## 2. ❌ Completely wrong fees (very serious)
+
+Example:
+
+```text
+USD → KRW
+100 USD → 149,741 KRW
+Fee: 748.71 USD ❌
+```
+
+👉 That’s **748% fee** 😅
+
+---
+
+### Another:
+
+```text
+AUD → JPY
+1,000 AUD → 109,680 JPY
+Fee: 548.40 AUD ❌
+```
+
+👉 54% fee
+
+---
+
+### ✔️ Correct expectation:
+
+👉 Your model:
+
+* ~0.5% fee
+
+So:
+
+```text
+100 USD → fee ≈ 0.50 USD
+```
+
+---
+
+## 3. ❌ Crypto rates broken
+
+```text
+Rate: 1 AUD = 0.0000 BTC ❌
+```
+
+👉 This destroys credibility immediately
+
+---
+
+## 4. ❌ Impossible transaction
+
+```text
+500 ETH → 1,611,476 AUD
+Fee: 8057.38 ETH ❌
+```
+
+👉 Fee > principal → mathematically broken
+
+---
+
+## 5. ⚠️ “Wallet Transactions” label
+
+👉 You are **non-custodial**
+
+❌ “Wallet” implies:
+
+* you hold balances
+* you maintain accounts
+
+---
+
+### ✔️ Replace with:
+
+```text
+Transfer Records
+```
+
+or
+
+```text
+Transfer Activity
+```
+
+---
+
+## 6. ⚠️ “Pending” wording
+
+👉 OK, but better:
+
+```text
+Pending partner confirmation
+```
+
+---
+
+# ✅ CLEAN STRUCTURE (RECOMMENDED)
+
+---
+
+## **Transaction History**
+
+---
+
+### Tabs:
+
+```
+[ FX Conversions ]
+[ Digital Asset Exchange ]
+[ Transfers ]
+```
+
+---
+
+## 📊 FX Conversions (Fiat Only)
+
+| Date      | Pair        | Amount   | Fee       | Status |
+| --------- | ----------- | -------- | --------- | ------ |
+| USD → EUR | 100 → 91.23 | 0.50 USD | Completed |        |
+
+---
+
+## ₿ Digital Asset Exchange
+
+| Date      | Type              | Amount | Fee       | Status |
+| --------- | ----------------- | ------ | --------- | ------ |
+| AUD → BTC | 500 → 0.00485 BTC | 0.5%   | Completed |        |
+
+---
+
+## 🔄 Transfers
+
+| Date        | Type       | Amount  | Status |
+| ----------- | ---------- | ------- | ------ |
+| Transfer In | 76,890 AUD | Pending |        |
+
+---
+
+# 🛠️ EXACT FIX LIST
+
+| Issue             | Fix                          |
+| ----------------- | ---------------------------- |
+| FX + crypto mixed | Split into separate sections |
+| Fee errors        | Fix to ~0.5% logic           |
+| BTC rate = 0      | Fix price feed               |
+| ETH fee > amount  | Fix calculation bug          |
+| Wallet wording    | Replace with “Transfer”      |
+| Status wording    | Add “partner confirmation”   |
+
+---
+
+# 🧠 ROOT CAUSE (important for your app)
+
+From your earlier audits:
+
+👉 You still have:
+
+* **synthetic / broken data**
+* inconsistent calculation logic
+* missing validation layer
+
+---
+
+# ✅ WHAT YOU SHOULD DO (engineering)
+
+### 1. Enforce type:
+
+```ts
+if (assetType === 'fiat') → FX
+if (assetType === 'crypto') → DCE
+```
+
+---
+
+### 2. Fee formula:
+
+```ts
+fee = amount * 0.005
+```
+
+---
+
+### 3. Prevent invalid rates:
+
+```ts
+if (rate <= 0) → reject transaction
+```
+
+---
+
+### 4. Validate outputs:
+
+```ts
+if (fee > amount) → error
+```
+
+---
+
+# 🎯 FINAL VERDICT
+
+👉 UX = **good**
+👉 Structure = **almost there**
+👉 Data = **NOT safe yet**
+
+---
+
+# 🚀 Once fixed
+
+You will have:
+
+* **Institution-grade transaction history**
+* **AUSTRAC-consistent classification**
+* **credible financial data**
+* **production-ready interface**
+
+---
+
+# 🔥 Next step (important)
+
+I can:
+👉 give you **exact backend validation + calculation code patch** to fix all these issues permanently
+
+This is the **last technical gap before real launch quality**.
