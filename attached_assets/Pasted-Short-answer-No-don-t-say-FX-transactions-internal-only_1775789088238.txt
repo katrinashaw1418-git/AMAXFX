@@ -1,0 +1,108 @@
+Short answer: **❌ No — don’t say “FX transactions internal only.”**
+
+That would **contradict everything you’ve built** and create regulatory confusion.
+
+---
+
+# 🚨 Why “internal only” is wrong
+
+If you say:
+
+```text
+FX transactions are internal only
+```
+
+👉 it implies:
+
+* AMAX is **matching trades internally**
+* AMAX may be **principal / market maker**
+* AMAX may be **holding balances**
+
+⚠️ That can trigger:
+
+* AFSL implications
+* custody / dealing perception
+* misleading representation
+
+---
+
+# 🧠 Your actual model (based on everything you built)
+
+You are:
+
+> **Instruction + routing layer**
+
+NOT:
+
+* FX dealer ❌
+* internal matching engine ❌
+* custodian ❌
+
+---
+
+# ✅ What you SHOULD say instead
+
+## 🥇 Best version (use this)
+
+```text
+Foreign exchange transactions are executed via external regulated liquidity providers. AMAX does not act as principal and does not hold client funds.
+```
+
+---
+
+## 🥈 Short UI version
+
+```text
+FX conversions are executed via external partners. AMAX does not hold client funds.
+```
+
+---
+
+## 🥇 If you want full institutional wording
+
+```text
+Foreign exchange transactions are arranged by AMAX and executed by external regulated liquidity providers. AMAX does not act as principal, does not provide dealing services, and does not hold client funds.
+```
+
+---
+
+# 🎯 Important distinction
+
+| Model         | What you say                     |
+| ------------- | -------------------------------- |
+| ❌ Internal FX | “internal only”                  |
+| ✅ Your model  | “executed via external partners” |
+
+---
+
+# 🧠 Why this matters (big picture)
+
+You want to clearly show:
+
+👉 You are like:
+
+* Wise
+* Airwallex
+
+BUT in a **non-custodial version**
+
+---
+
+# ✔️ Final answer
+
+👉 **Do NOT say “internal only”**
+
+👉 Say:
+
+**“FX transactions are executed via external regulated partners. AMAX does not hold client funds.”**
+
+---
+
+# 🧠 One-line rule
+
+👉 **If you don’t touch the money, don’t say you process it internally**
+
+---
+
+If you want, I can now:
+👉 align your FX wording across **conversion screen + disclosures + backend logic** so it’s 100% consistent.
