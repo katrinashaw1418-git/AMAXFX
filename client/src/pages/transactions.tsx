@@ -33,8 +33,17 @@ const getTypeColor = (type: string) => {
   }
 };
 
-const formatTypeLabel = (type: string) =>
-  type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, " ");
+const formatTypeLabel = (type: string) => {
+  switch (type) {
+    case "deposit":    return "Transfer In";
+    case "withdrawal": return "Transfer Out";
+    case "exchange":   return "FX Conversion";
+    case "transfer":   return "Currency Conversion";
+    case "crypto_buy":  return "Digital Asset Buy";
+    case "crypto_sell": return "Digital Asset Sell";
+    default: return type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, " ");
+  }
+};
 
 const formatTransactionAmount = (transaction: any) => {
   const amount = parseFloat(transaction.amount);
@@ -333,7 +342,7 @@ export default function Transactions() {
           <CardContent className="p-6">
             <h3 className="text-sm font-medium text-gray-500 mb-2">Wallet Transactions</h3>
             <p className="text-2xl font-bold text-purple-600">{walletTransactions.length}</p>
-            <p className="text-sm text-gray-600 mt-1">Deposits, withdrawals &amp; transfers</p>
+            <p className="text-sm text-gray-600 mt-1">Transfer In, Transfer Out &amp; conversions</p>
           </CardContent>
         </Card>
         <Card>
@@ -382,7 +391,7 @@ export default function Transactions() {
             <ArrowRightLeft className="w-4 h-4" /> FX Exchange
           </TabsTrigger>
           <TabsTrigger value="wallet" className="flex items-center gap-2">
-            <Wallet className="w-4 h-4" /> Wallet
+            <Wallet className="w-4 h-4" /> Transfers
           </TabsTrigger>
         </TabsList>
 
@@ -404,8 +413,8 @@ export default function Transactions() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Wallet Transactions</CardTitle>
-                <p className="text-sm text-gray-500">Deposits, withdrawals, and transfers</p>
+                <CardTitle>Transfer Transactions</CardTitle>
+                <p className="text-sm text-gray-500">Transfer In, Transfer Out, and currency conversions</p>
               </div>
             </CardHeader>
             <CardContent>

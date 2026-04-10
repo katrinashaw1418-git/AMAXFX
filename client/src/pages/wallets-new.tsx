@@ -331,7 +331,7 @@ export default function Wallets() {
         narrateSuccess("Deposit submitted, awaiting AMAX confirmation");
       } else {
         const msg = `${amount} ${selectedWallet?.currency} has been added to your wallet.`;
-        toast({ title: "✅ Deposit Successful", description: msg });
+        toast({ title: "✅ Transfer In Submitted", description: msg });
         narrateSuccess(msg);
         setDepositModalOpen(false);
         setAmount('');
@@ -342,7 +342,7 @@ export default function Wallets() {
       const errorMessage = error.message || "Please try again later.";
       narrateError(`Deposit failed: ${errorMessage}`);
       toast({
-        title: "Deposit Failed",
+        title: "Transfer In Failed",
         description: errorMessage,
         variant: "destructive",
       });
@@ -815,7 +815,7 @@ export default function Wallets() {
                           <Button 
                             variant="outline" 
                             size="icon"
-                            title="Deposit"
+                            title="Transfer In"
                             onClick={() => {
                               setSelectedWallet(wallet);
                               setDepositModalOpen(true);
@@ -924,7 +924,7 @@ export default function Wallets() {
               <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
                 <span className="text-xl">⏳</span>
                 <div>
-                  <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">Deposit Submitted — Awaiting Funds</p>
+                  <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">Transfer In Submitted — Awaiting Funds</p>
                   <p className="text-xs text-amber-700 dark:text-amber-400">Your balance will be credited once our regulated banking partner confirms receipt of your funds.</p>
                 </div>
               </div>
@@ -1012,7 +1012,7 @@ export default function Wallets() {
                 <div className="flex items-start gap-2.5">
                   <span className="text-blue-500 text-lg leading-none">🌐</span>
                   <div>
-                    <p className="font-semibold text-blue-800 text-sm">International Deposit — Coming Soon</p>
+                    <p className="font-semibold text-blue-800 text-sm">International Transfer In — Coming Soon</p>
                     <p className="text-xs text-blue-700 mt-1 leading-relaxed">
                       International transfers are facilitated via external regulated partners.
                       This feature is not yet enabled in the current environment.
@@ -1038,10 +1038,10 @@ export default function Wallets() {
             {/* ── Domestic / Crypto deposit method selector ── */}
             {(selectedWallet?.walletType !== 'fiat' || depositTransferType === 'domestic') && (
               <div>
-                <Label htmlFor="deposit-method-type">Deposit Method</Label>
+                <Label htmlFor="deposit-method-type">Transfer In Method</Label>
                 <Select value={depositMethod} onValueChange={setDepositMethod}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select deposit method" />
+                    <SelectValue placeholder="Select transfer method" />
                   </SelectTrigger>
                   <SelectContent>
                     {selectedWallet?.walletType === 'fiat' ? (
@@ -1097,7 +1097,7 @@ export default function Wallets() {
                 {coinbaseStatus?.configured ? (
                   <>
                     <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800 p-3 text-xs text-blue-800 dark:text-blue-300 space-y-1">
-                      <p className="font-semibold text-sm text-blue-900 dark:text-blue-100">🔗 Blockchain Deposit via Coinbase Commerce</p>
+                      <p className="font-semibold text-sm text-blue-900 dark:text-blue-100">🔗 Blockchain Transfer In via Coinbase Commerce</p>
                       <p>Generate a secure, KYC-verified deposit address for your {selectedWallet?.currency} wallet. Custody is held by Coinbase — funds are credited automatically after blockchain confirmation.</p>
                       <p className="text-xs text-blue-600 dark:text-blue-400">⚠️ Only send <strong>{selectedWallet?.currency}</strong> to this address. Sending unsupported assets will result in permanent loss.</p>
                     </div>
