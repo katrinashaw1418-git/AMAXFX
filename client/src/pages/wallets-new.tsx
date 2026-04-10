@@ -1244,7 +1244,7 @@ export default function Wallets() {
                       <div className="text-xs text-blue-800 dark:text-blue-200 space-y-1.5">
                         <p>1. Submit this request — a unique reference code will be generated.</p>
                         <p>2. You will receive partner-issued bank details (BSB + account number).</p>
-                        <p>3. Send funds to that external partner — <strong>not to AMAX</strong>.</p>
+                        <p>3. Send funds to that external partner.</p>
                         <p>4. The external partner confirms receipt.</p>
                         <p>5. Your transfer instruction is completed (typically 1–3 business days).</p>
                       </div>
