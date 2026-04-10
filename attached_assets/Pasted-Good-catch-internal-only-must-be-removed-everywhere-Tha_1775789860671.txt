@@ -1,0 +1,165 @@
+Good catch — **“internal only” must be removed everywhere** ❌
+That is **the single biggest compliance contradiction** in your entire system.
+
+---
+
+# 🚨 WHY “internal only” IS WRONG
+
+```text
+Settlement Status: internal only ❌
+```
+
+👉 This implies:
+
+* AMAX settles transactions internally
+* AMAX holds funds
+* AMAX controls execution
+
+⚠️ That directly conflicts with:
+
+* your **non-custodial model**
+* your **AUSTRAC positioning**
+* all your other screens
+
+---
+
+# ✅ WHAT YOU SHOULD USE INSTEAD
+
+You need **external execution language everywhere**
+
+---
+
+## 🥇 BEST (use this)
+
+```text
+Settlement Status: Executed via external regulated partner
+```
+
+---
+
+## 🥈 Short UI version
+
+```text
+Settlement Status: Partner executed
+```
+
+---
+
+## 🥇 If pending
+
+```text
+Settlement Status: Pending partner execution
+```
+
+---
+
+## 🥇 If completed (cleanest)
+
+```text
+Settlement Status: Completed (external partner)
+```
+
+---
+
+# 🎯 RECOMMENDED FINAL STATES
+
+Use these **4 standard statuses only**:
+
+---
+
+### ✅ 1. Submitted
+
+```text
+Settlement Status: Instruction submitted
+```
+
+---
+
+### ⏳ 2. Pending
+
+```text
+Settlement Status: Pending partner execution
+```
+
+---
+
+### ✅ 3. Completed
+
+```text
+Settlement Status: Completed (external partner)
+```
+
+---
+
+### ❌ 4. Failed
+
+```text
+Settlement Status: Failed (partner declined)
+```
+
+---
+
+# 🧠 IMPORTANT CONSISTENCY RULE
+
+👉 Your system must ALWAYS reflect:
+
+```text
+AMAX = instruction layer
+Partner = execution layer
+```
+
+---
+
+# ❌ NEVER USE AGAIN
+
+```text
+internal only
+processed internally
+settled internally
+```
+
+---
+
+# ✅ FINAL FIX (YOUR RECORD)
+
+Change this:
+
+```text
+Settlement Status: internal only
+```
+
+---
+
+👉 To:
+
+```text
+Settlement Status: Completed (external partner)
+```
+
+---
+
+# 🧠 ONE-LINE RULE
+
+👉 **If AMAX doesn’t touch funds, it must never sound like it does**
+
+---
+
+# 🚀 RESULT AFTER FIX
+
+Once you update this across all screens:
+
+* ✅ Fully consistent with Transfers
+* ✅ Fully consistent with FX
+* ✅ Fully consistent with Crypto
+* ✅ Clean AUSTRAC positioning
+
+---
+
+You’re now at the stage where:
+
+👉 **tiny wording = legal positioning**
+
+---
+
+If you want, I can:
+👉 give you a **global wording dictionary (one source of truth)** so your entire app never drifts out of compliance again.

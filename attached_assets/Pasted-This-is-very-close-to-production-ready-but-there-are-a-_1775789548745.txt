@@ -1,0 +1,273 @@
+This is **very close to production-ready**, but there are a few **critical fixes** needed — mainly **data cleanliness + compliance tone**. I’ll keep it sharp.
+
+---
+
+# ✅ WHAT YOU DID WELL
+
+### ✔ Structure
+
+* Separate **Transfer Activity** ✅
+* “Pending – partner confirmation” ✅
+* Deposit vs Withdrawal labels ✅
+
+👉 This is now **aligned with non-custodial model**
+
+---
+
+# 🚨 CRITICAL ISSUES (must fix)
+
+---
+
+## 1. ❌ JSON showing in UI (major issue)
+
+You have:
+
+```json
+{"method":"payid","referenceCode":"AMAX-W25A1E404","payid":"23333","accountName":"DFDS"}
+```
+
+and:
+
+```json
+{"method":"payid","currency":"AUD","referenceCode":"AMAX-8E9DFC84","label":"AUD PayID Deposit","payer":{...}}
+```
+
+👉 This is **not acceptable for production**
+
+---
+
+### ✅ FIX
+
+Convert to clean text:
+
+```text
+PayID Withdrawal
+To: 23333 (DFDS)
+Reference: AMAX-W25A1E404
+```
+
+```text
+PayID Deposit
+Reference: AMAX-8E9DFC84
+```
+
+---
+
+## 2. ❌ ETH Deposit (custody red flag)
+
+```text
+Transfer In
+ETH Deposit
++345,657 ETH ❌
+```
+
+👉 This breaks your **entire non-custodial model**
+
+You previously stated:
+
+* ❌ AMAX does NOT hold crypto
+* ❌ no crypto accounts
+
+---
+
+### ✅ FIX (IMPORTANT)
+
+Replace with:
+
+```text
+Digital Asset Exchange (via Independent Reserve)
+```
+
+OR remove entirely from **Transfer Activity**
+
+---
+
+### 🧠 Rule:
+
+| Type               | Allowed in Transfer |
+| ------------------ | ------------------- |
+| Fiat deposits      | ✅                   |
+| Fiat withdrawals   | ✅                   |
+| Crypto deposits    | ❌                   |
+| Crypto withdrawals | ❌                   |
+
+---
+
+## 3. ❌ Unrealistic / risky numbers
+
+```text
++999,995 AUD
++345,657 ETH
+```
+
+👉 Problems:
+
+* looks fake
+* triggers AML suspicion
+* inconsistent with rest
+
+---
+
+### ✅ FIX
+
+For demo:
+
+```text
++9,995 AUD
++5 ETH (if shown elsewhere)
+```
+
+---
+
+## 4. ⚠️ Withdrawal fee too high (UX issue)
+
+```text
+-100 AUD
+Fee: 35 AUD ❌
+```
+
+👉 35% fee — unrealistic
+
+---
+
+### ✅ FIX
+
+Use:
+
+```text
+Flat: $5 AUD
+or
+0.5% capped
+```
+
+---
+
+## 5. ⚠️ “Free” wording
+
+```text
+Free
+```
+
+👉 acceptable, but better:
+
+```text
+No AMAX fee
+```
+
+👉 avoids:
+
+* implying no cost at all (partner may charge)
+
+---
+
+## 6. ⚠️ Missing partner execution clarity (important)
+
+Add at top:
+
+```text
+Transfers are instructed via AMAX and executed by external regulated partners. AMAX does not hold or control client funds.
+```
+
+---
+
+# ✅ FINAL CLEAN VERSION (EXAMPLE ROWS)
+
+---
+
+### Deposit
+
+```text
+Transfer In
+AUD PayID Deposit
++76,890 AUD
+No AMAX fee
+Pending – partner confirmation
+```
+
+---
+
+### Withdrawal
+
+```text
+Transfer Out
+AUD Withdrawal (PayID)
+-2,334 AUD
+5.00 AUD
+Pending – partner confirmation
+```
+
+---
+
+### Bank Transfer
+
+```text
+Transfer In
+CNY Bank Transfer
++4,347 CNY
+No AMAX fee
+Pending – partner confirmation
+```
+
+---
+
+# 🧠 FINAL RULES (IMPORTANT)
+
+---
+
+## 1. NEVER show:
+
+* raw JSON ❌
+* crypto deposits ❌
+* internal account implication ❌
+
+---
+
+## 2. ALWAYS show:
+
+* method (PayID / Bank)
+* reference
+* partner execution status
+
+---
+
+## 3. Validation rules
+
+```ts
+if (type === 'crypto' && section === 'transfer') reject
+```
+
+```ts
+if (fee / amount > 0.05) flag
+```
+
+---
+
+# 🎯 FINAL VERDICT
+
+👉 UX: **very strong**
+👉 Compliance: **almost there**
+👉 Data hygiene: **needs fixing**
+
+---
+
+# 🚀 Once fixed
+
+You will have:
+
+* ✅ Clean institutional UI
+* ✅ Non-custodial consistency
+* ✅ AUSTRAC-safe presentation
+* ✅ Real production readiness
+
+---
+
+# 🔥 Final advice
+
+👉 Your biggest remaining risk is:
+
+> ❌ **data presentation breaking your compliance story**
+
+---
+
+If you want next step, I can:
+👉 give you a **final full system checklist (UI + backend + compliance wording)** so you can confidently say: *“this is ready for real-world review.”*

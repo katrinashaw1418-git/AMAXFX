@@ -10,7 +10,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useTransactions } from "@/hooks/use-portfolio";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Download, Eye, ArrowRightLeft, Wallet, X } from "lucide-react";
+import { Search, Download, Eye, ArrowRightLeft, Wallet, X, Info } from "lucide-react";
+
+const CRYPTO_CURRENCIES = ["BTC", "ETH", "USDT", "USDC", "LTC", "XRP", "SOL"];
+
+const isCryptoExchange = (t: any) =>
+  CRYPTO_CURRENCIES.includes(t.fromCurrency) || CRYPTO_CURRENCIES.includes(t.toCurrency);
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -21,27 +26,69 @@ const getStatusColor = (status: string) => {
   }
 };
 
-const getTypeColor = (type: string) => {
+const getTypeColor = (type: string, assetType?: string) => {
+  if (type === "exchange" && (assetType === "crypto" || assetType === "cross"))
+    return "bg-orange-100 text-orange-800";
   switch (type) {
     case "deposit":                  return "bg-green-100 text-green-800";
     case "withdrawal":               return "bg-red-100 text-red-800";
     case "exchange":                 return "bg-blue-100 text-blue-800";
     case "transfer":                 return "bg-purple-100 text-purple-800";
     case "crypto_buy":
-    case "crypto_sell":              return "bg-yellow-100 text-yellow-800";
+    case "crypto_sell":              return "bg-orange-100 text-orange-800";
     default:                         return "bg-gray-100 text-gray-800";
   }
 };
 
-const formatTypeLabel = (type: string) => {
+const formatTypeLabel = (type: string, assetType?: string) => {
   switch (type) {
-    case "deposit":    return "Transfer In";
-    case "withdrawal": return "Transfer Out";
-    case "exchange":   return "FX Conversion";
-    case "transfer":   return "Currency Conversion";
+    case "deposit":     return "Transfer In";
+    case "withdrawal":  return "Transfer Out";
+    case "exchange":    return (assetType === "crypto" || assetType === "cross") ? "Digital Asset Exchange" : "FX Conversion";
+    case "transfer":    return "Currency Conversion";
     case "crypto_buy":  return "Digital Asset Buy";
     case "crypto_sell": return "Digital Asset Sell";
     default: return type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, " ");
+  }
+};
+
+// Resolve label from full transaction object (preferred over formatTypeLabel)
+const getTransactionLabel = (t: any): string => {
+  if (t.type === "exchange") {
+    const crypto = t.assetType === "crypto" || t.assetType === "cross" || isCryptoExchange(t);
+    return crypto ? "Digital Asset Exchange" : "FX Conversion";
+  }
+  return formatTypeLabel(t.type, t.assetType);
+};
+
+function isCryptoExchangeByAssetType(assetType?: string) {
+  return assetType === "crypto" || assetType === "cross";
+}
+
+// Parse JSON stored in transaction description fields into clean readable text
+const formatDescription = (description: string | null | undefined): string => {
+  if (!description) return "—";
+  try {
+    const d = JSON.parse(description);
+    // Deposit: { method, currency, referenceCode, label, payer: {...} }
+    if (d.referenceCode && d.label) {
+      const method = d.method === "payid" ? "PayID" : d.method === "bank_transfer" ? "Bank Transfer" : "Transfer";
+      return `${d.label} — Ref: ${d.referenceCode}`;
+    }
+    // Withdrawal: { method, referenceCode, payid, accountName, bsb, accountNumber }
+    if (d.referenceCode) {
+      if (d.method === "payid" && (d.payid || d.accountName)) {
+        return `PayID Transfer Out — To: ${d.payid ?? ""}${d.accountName ? ` (${d.accountName})` : ""} — Ref: ${d.referenceCode}`;
+      }
+      if (d.method === "bank_transfer" || d.accountNumber || d.bsb) {
+        const dest = d.accountName ? `${d.accountName}` : d.bank ?? "Bank";
+        return `Bank Transfer Out — To: ${dest} — Ref: ${d.referenceCode}`;
+      }
+      return `Transfer Out — Ref: ${d.referenceCode}`;
+    }
+    return d.label ?? description;
+  } catch {
+    return description;
   }
 };
 
@@ -62,12 +109,19 @@ const formatTransactionAmount = (transaction: any) => {
 
 const formatTransactionFee = (transaction: any) => {
   const fee = parseFloat(transaction.fee);
-  if (!fee || fee === 0) return "Free";
+  if (!fee || fee === 0) return "No AMAX fee";
   // For exchange/crypto, the fee is deducted from the converted (target) amount
   const feeCurrency = (transaction.type === "exchange" || transaction.type === "crypto_buy" || transaction.type === "crypto_sell")
     ? (transaction.toCurrency ?? transaction.fromCurrency ?? "")
     : (transaction.fromCurrency ?? transaction.toCurrency ?? "");
-  return `${fee.toFixed(2)} ${feeCurrency}`;
+  const isCryptoFee = CRYPTO_CURRENCIES.includes(feeCurrency);
+  return `${isCryptoFee ? fee.toFixed(8) : fee.toFixed(2)} ${feeCurrency}`;
+};
+
+// How many decimal places to show for an exchange rate (more for crypto)
+const rateDecimals = (toCurrency?: string | null, fromCurrency?: string | null): number => {
+  if (CRYPTO_CURRENCIES.includes(toCurrency ?? "") || CRYPTO_CURRENCIES.includes(fromCurrency ?? "")) return 8;
+  return 4;
 };
 
 function downloadCsv(transactions: any[], filename: string) {
@@ -120,9 +174,9 @@ function TransactionDetailModal({ transaction, onClose }: { transaction: any; on
         <div className="space-y-4">
           {/* Type + Status badges */}
           <div className="flex gap-2 flex-wrap">
-            <Badge className={getTypeColor(transaction.type)}>{formatTypeLabel(transaction.type)}</Badge>
+            <Badge className={getTypeColor(transaction.type, transaction.assetType)}>{getTransactionLabel(transaction)}</Badge>
             <Badge className={getStatusColor(transaction.status)}>
-              {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+              {transaction.status === "pending" ? "Pending – partner confirmation" : transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
             </Badge>
             {transaction.riskFlag && (
               <Badge className="bg-red-100 text-red-800">Risk Flagged</Badge>
@@ -134,7 +188,7 @@ function TransactionDetailModal({ transaction, onClose }: { transaction: any; on
             <Row label="Transaction ID" value={`#${transaction.id}`} />
             <Row label="Date" value={new Date(transaction.createdAt).toLocaleDateString("en-AU", { day: "2-digit", month: "long", year: "numeric" })} />
             <Row label="Time" value={new Date(transaction.createdAt).toLocaleTimeString("en-AU")} />
-            <Row label="Description" value={transaction.description} />
+            <Row label="Description" value={formatDescription(transaction.description)} />
             <Row label="Direction" value={transaction.direction === "in" ? "↓ Incoming" : transaction.direction === "out" ? "↑ Outgoing" : transaction.direction} />
           </div>
 
@@ -144,13 +198,13 @@ function TransactionDetailModal({ transaction, onClose }: { transaction: any; on
               label="Amount"
               value={
                 transaction.type === "exchange" && rate
-                  ? `${amount.toLocaleString()} ${transaction.fromCurrency} → ${(amount * rate).toLocaleString(undefined, { maximumFractionDigits: 4 })} ${transaction.toCurrency}`
+                  ? `${amount.toLocaleString()} ${transaction.fromCurrency} → ${(amount * rate).toLocaleString(undefined, { maximumFractionDigits: rateDecimals(transaction.toCurrency, transaction.fromCurrency) })} ${transaction.toCurrency}`
                   : `${amount.toLocaleString()} ${transaction.toCurrency ?? transaction.fromCurrency ?? ""}`
               }
             />
-            <Row label="Fee" value={fee === 0 ? "Free" : `${fee.toFixed(4)} ${(transaction.type === "exchange" || transaction.type === "crypto_buy" || transaction.type === "crypto_sell") ? (transaction.toCurrency ?? transaction.fromCurrency ?? "") : (transaction.fromCurrency ?? transaction.toCurrency ?? "")}`} />
+            <Row label="Fee" value={formatTransactionFee(transaction)} />
             {rate && (
-              <Row label="Exchange Rate" value={`1 ${transaction.fromCurrency} = ${rate.toFixed(6)} ${transaction.toCurrency}`} />
+              <Row label="Exchange Rate" value={`1 ${transaction.fromCurrency} = ${rate.toFixed(rateDecimals(transaction.toCurrency, transaction.fromCurrency))} ${transaction.toCurrency}`} />
             )}
             {transaction.fromCurrency && <Row label="From Currency" value={transaction.fromCurrency} />}
             {transaction.toCurrency   && <Row label="To Currency"   value={transaction.toCurrency} />}
@@ -227,16 +281,16 @@ function TransactionTable({ transactions, searchTerm, statusFilter }: {
                 </div>
               </TableCell>
               <TableCell>
-                <Badge className={getTypeColor(transaction.type)}>
-                  {formatTypeLabel(transaction.type)}
+                <Badge className={getTypeColor(transaction.type, transaction.assetType)}>
+                  {getTransactionLabel(transaction)}
                 </Badge>
               </TableCell>
               <TableCell>
                 <div>
-                  <p className="font-medium">{transaction.description}</p>
+                  <p className="font-medium">{formatDescription(transaction.description)}</p>
                   {transaction.exchangeRate && (
                     <p className="text-sm text-gray-600">
-                      Rate: 1 {transaction.fromCurrency} = {parseFloat(transaction.exchangeRate).toFixed(4)} {transaction.toCurrency}
+                      Rate: 1 {transaction.fromCurrency} = {parseFloat(transaction.exchangeRate).toFixed(rateDecimals(transaction.toCurrency, transaction.fromCurrency))} {transaction.toCurrency}
                     </p>
                   )}
                 </div>
@@ -278,7 +332,10 @@ export default function Transactions() {
   const { data: transactions, isLoading, error } = useTransactions();
 
   const fxTransactions     = transactions?.filter((t: any) => FX_TYPES.includes(t.type))     ?? [];
-  const walletTransactions = transactions?.filter((t: any) => WALLET_TYPES.includes(t.type)) ?? [];
+  // Exclude crypto-asset deposits/withdrawals from Transfer Activity — non-custodial model: AMAX does not hold crypto
+  const walletTransactions = transactions?.filter((t: any) =>
+    WALLET_TYPES.includes(t.type) && t.assetType !== "crypto"
+  ) ?? [];
 
   function handleExport() {
     const data = activeTab === "fx" ? fxTransactions : walletTransactions;
@@ -423,7 +480,11 @@ export default function Transactions() {
                 <p className="text-sm text-gray-500">Transfer In and Transfer Out instruction records</p>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-blue-50 border border-blue-200 text-blue-800">
+                <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                <span>Transfers are instructed via AMAX and executed by external regulated partners. AMAX does not hold or control client funds at any stage.</span>
+              </div>
               <TransactionTable transactions={walletTransactions} searchTerm={searchTerm} statusFilter={statusFilter} />
             </CardContent>
           </Card>

@@ -1,0 +1,298 @@
+This is **much improved — structure, wording, and compliance positioning are now strong** 👍
+You’re very close to **production-grade**, but there are still **a few critical issues you must fix** before this is safe.
+
+---
+
+# ✅ WHAT YOU FIXED WELL (important)
+
+### ✔ Naming & structure
+
+* “FX & Digital Asset Transactions” ✅
+* “Transfer Activity” (no “wallet”) ✅
+* “Pending – partner confirmation” ✅
+
+👉 This is now **aligned with your non-custodial model**
+
+---
+
+### ✔ Positioning line
+
+```text
+Arranged by AMAX, executed via external regulated partners
+```
+
+✅ Perfect — keep this
+
+---
+
+# 🚨 REMAINING CRITICAL ISSUES
+
+---
+
+## 1. ❌ Crypto still mixed into “FX Conversion”
+
+Example:
+
+```text
+AUD to BTC Exchange
+BTC to AUD Exchange
+ETH to AUD Exchange
+```
+
+👉 Still labelled:
+
+```text
+FX Conversion ❌
+```
+
+---
+
+### ✅ FIX (VERY IMPORTANT)
+
+Change **Type column** to:
+
+```text
+FX Conversion        → Fiat ↔ Fiat
+Digital Asset Exchange → Fiat ↔ Crypto / Crypto ↔ Fiat
+```
+
+---
+
+### 🎯 Example:
+
+```text
+Digital Asset Exchange
+AUD → BTC
+```
+
+---
+
+## 2. ❌ BTC rate = 0.0000 (critical credibility issue)
+
+```text
+Rate: 1 AUD = 0.0000 BTC ❌
+```
+
+👉 This kills trust instantly
+
+---
+
+### ✅ FIX
+
+* minimum precision: **8 decimal places**
+
+```text
+1 AUD = 0.00000975 BTC
+```
+
+---
+
+## 3. ❌ ETH transaction still broken (major)
+
+```text
+500 ETH → 1,611,476 AUD
+Fee: 8057.38 AUD
+```
+
+👉 This is **actually OK mathematically**, BUT:
+
+⚠️ Problem:
+
+* 500 ETH is huge (~$1.6M)
+* looks unrealistic for normal users
+* inconsistent with rest of transactions
+
+---
+
+### ✅ Fix options
+
+#### Option A (best for demo)
+
+Reduce:
+
+```text
+5 ETH → 16,114 AUD
+Fee: ~80 AUD
+```
+
+#### Option B
+
+Keep but label:
+
+```text
+Large transaction — institutional
+```
+
+---
+
+## 4. ⚠️ Fee currency inconsistency (subtle but important)
+
+You now show:
+
+```text
+Fee: 0.46 EUR
+Fee: 7.27 AUD
+```
+
+👉 This is actually GOOD (you fixed it 👏)
+
+But:
+
+👉 Be consistent:
+
+### Rule:
+
+| Type        | Fee currency     |
+| ----------- | ---------------- |
+| FX          | receive currency |
+| Crypto buy  | crypto           |
+| Crypto sell | fiat             |
+
+---
+
+## 5. ❌ Duplicate transactions
+
+```text
+USD → KRW appears twice
+```
+
+👉 looks like:
+
+* retry bug
+* duplicate insert
+
+---
+
+### ✅ FIX
+
+Backend:
+
+```ts
+enforce idempotencyKey
+```
+
+---
+
+## 6. ⚠️ “0 BTC → 1.0315 AUD”
+
+```text
+0 BTC → 1.0315 AUD ❌
+```
+
+👉 Impossible
+
+---
+
+### ✅ FIX
+
+Add validation:
+
+```ts
+if (inputAmount <= 0) reject
+```
+
+---
+
+# ✅ FINAL CLEAN VERSION (HOW IT SHOULD LOOK)
+
+---
+
+### Type column:
+
+```text
+FX Conversion
+Digital Asset Exchange
+```
+
+---
+
+### Example rows:
+
+#### FX
+
+```text
+FX Conversion
+USD → EUR
+100 USD → 91.23 EUR
+Fee: 0.46 EUR
+```
+
+#### Crypto
+
+```text
+Digital Asset Exchange
+AUD → BTC
+500 AUD → 0.00485 BTC
+Fee: 0.000024 BTC
+```
+
+---
+
+# 🧠 FINAL SYSTEM RULES (IMPORTANT)
+
+---
+
+## 1. Classification
+
+```ts
+if (fromAsset === fiat && toAsset === fiat) → FX
+else → Digital Asset Exchange
+```
+
+---
+
+## 2. Fee validation
+
+```ts
+if (fee > amount * 0.01) → flag error
+```
+
+---
+
+## 3. Rate validation
+
+```ts
+if (rate <= 0) → reject
+```
+
+---
+
+## 4. Amount validation
+
+```ts
+if (amount <= 0) → reject
+```
+
+---
+
+# 🎯 FINAL VERDICT
+
+👉 UX: **very strong now**
+👉 Compliance wording: **excellent**
+👉 Data integrity: **still needs fixing**
+
+---
+
+# 🚀 Once you fix above
+
+You will have:
+
+* ✅ Institutional-grade transaction history
+* ✅ AUSTRAC-consistent structure
+* ✅ Clean separation (FX vs Crypto)
+* ✅ Real production readiness
+
+---
+
+# 🔥 Final advice (important)
+
+👉 You are **past UI stage now**
+
+Your biggest risk is:
+
+> ❌ **bad data = loss of credibility instantly**
+
+---
+
+If you want, I can:
+👉 give you **exact backend patch (code) to fix all calculation + validation issues permanently**

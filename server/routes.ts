@@ -2798,20 +2798,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Enforce risk-based daily transaction limit before processing
       await checkDailyLimit(userId, amount, currency);
 
-      // Currency-aware fiat wire fee table (flat fee per withdrawal, in native currency).
-      // These represent typical correspondent banking / SWIFT wire charges.
+      // Currency-aware flat transfer fee per withdrawal instruction (in native currency).
+      // Capped at 0.5% of typical transfer amounts — represents external partner pass-through cost.
       const WITHDRAWAL_FEES: Record<string, string> = {
-        USD: "25.00",
-        EUR: "20.00",
-        GBP: "18.00",
-        AUD: "35.00",
-        CAD: "30.00",
-        HKD: "200.00",
-        SGD: "30.00",
-        CNY: "150.00",
-        JPY: "2500.00",
-        CHF: "22.00",
-        NZD: "35.00",
+        AUD: "5.00",
+        USD: "5.00",
+        EUR: "5.00",
+        GBP: "4.00",
+        CAD: "6.00",
+        HKD: "40.00",
+        SGD: "7.00",
+        CNY: "35.00",
+        JPY: "800.00",
+        CHF: "5.00",
+        NZD: "6.00",
+        KRW: "6000.00",
       };
       const feeAmount = WITHDRAWAL_FEES[currency] ?? "25.00";
       const fee = new Decimal(feeAmount);
