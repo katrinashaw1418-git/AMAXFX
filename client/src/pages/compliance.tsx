@@ -85,7 +85,6 @@ export default function Compliance() {
   // ── Step 3: Customer Agreement ─────────────────────────────────────────────
   const [signatureName,  setSignatureName]  = useState("");
   const [sectionsRead,   setSectionsRead]   = useState<Set<number>>(new Set());
-  const [pepSelfDeclared, setPepSelfDeclared] = useState(false);
   const agreementScrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs        = useRef<(HTMLDivElement | null)[]>([]);
   const allSectionsRead    = sectionsRead.size >= 18;
@@ -1752,28 +1751,6 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                               }`}>
                                 By signing, I confirm I have read and agree to all 18 sections of this Agreement, including the declarations in Sections 12–18 regarding identity, source of funds, compliance awareness, sanctions status, PEP status, ongoing obligations, and accuracy of information.
                               </div>
-                              {/* PEP self-declaration — AML/CTF Rules 2025 mandatory capture */}
-                              <div className={`rounded-lg border p-3 space-y-2 transition-all ${
-                                allSectionsRead ? "border-amber-300 bg-amber-50" : "border-gray-200 bg-gray-50 opacity-50"
-                              }`}>
-                                <p className="text-xs font-semibold text-amber-900">Section 16 — Politically Exposed Person (PEP) Declaration</p>
-                                <label className="flex items-start gap-2.5 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    disabled={!allSectionsRead}
-                                    checked={pepSelfDeclared}
-                                    onChange={e => setPepSelfDeclared(e.target.checked)}
-                                    className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-amber-600 flex-shrink-0"
-                                  />
-                                  <span className="text-xs text-amber-800 leading-relaxed">
-                                    I confirm that I <strong>am</strong> a Politically Exposed Person (PEP), or an immediate family member or close associate of a PEP, as defined in Section 16 of this Agreement.
-                                  </span>
-                                </label>
-                                <p className="text-[10px] text-amber-700">
-                                  Leave unchecked if you are not a PEP. A ticked box triggers enhanced due diligence as required under the AML/CTF Rules 2025.
-                                </p>
-                              </div>
-
                               <div className="flex gap-2">
                                 {editStep2 && status === "completed" && (
                                   <Button
@@ -1787,7 +1764,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                                 <Button
                                   className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
                                   disabled={!allSectionsRead || !signatureName.trim() || agreementMutation.isPending}
-                                  onClick={() => agreementMutation.mutate({ signature: signatureName.trim(), pepDeclaration: pepSelfDeclared })}
+                                  onClick={() => agreementMutation.mutate({ signature: signatureName.trim(), pepDeclaration: false })}
                                 >
                                   {agreementMutation.isPending ? "Recording signature…" : editStep2 ? "Re-sign Agreement" : "Sign Agreement & Continue"}
                                 </Button>
