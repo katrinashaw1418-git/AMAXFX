@@ -91,9 +91,11 @@ export default function Crypto() {
   const [originatorWallet,        setOriginatorWallet]        = useState("");
   const [originatorWalletType,    setOriginatorWalletType]    = useState<"" | "custodial" | "self_hosted">("");
   const [originatorCustodianName, setOriginatorCustodianName] = useState("");
-  // Travel Rule — beneficiary/originator legal names (FATF R.16 mandatory elements)
-  const [beneficiaryName,  setBeneficiaryName]  = useState("");
-  const [originatorName,   setOriginatorName]   = useState("");
+  // Travel Rule — beneficiary/originator legal names + physical addresses (FATF R.16 mandatory elements)
+  const [beneficiaryName,    setBeneficiaryName]    = useState("");
+  const [beneficiaryAddress, setBeneficiaryAddress] = useState("");
+  const [originatorName,     setOriginatorName]     = useState("");
+  const [originatorAddress,  setOriginatorAddress]  = useState("");
 
   // SELL acknowledgements — 5 discrete checkboxes
   const [sellAck, setSellAck] = useState({
@@ -208,6 +210,10 @@ export default function Crypto() {
     }
     if (!beneficiaryName.trim()) {
       toast({ title: "Beneficiary Name Required", description: "Please enter the full legal name of the person who will receive the digital assets. This is required under the FATF Travel Rule.", variant: "destructive" });
+      return;
+    }
+    if (!beneficiaryAddress.trim()) {
+      toast({ title: "Beneficiary Address Required", description: "Please enter the physical address of the beneficiary. FATF Recommendation 16 requires a physical address, date of birth, or unique identification number.", variant: "destructive" });
       return;
     }
     if (rateIsStale) {
@@ -489,6 +495,25 @@ export default function Crypto() {
                         Under FATF Recommendation 16, AMAX must record the beneficiary's full legal name alongside
                         the destination wallet address. If you are sending to your own wallet, enter your full legal
                         name as it appears on your government-issued ID.
+                      </p>
+                    </div>
+
+                    {/* FATF R.16 — Beneficiary physical address (mandatory Travel Rule element) */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="beneficiary-address" className="text-xs text-blue-800 font-medium">
+                        Beneficiary Physical Address <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="beneficiary-address"
+                        value={beneficiaryAddress}
+                        onChange={e => setBeneficiaryAddress(e.target.value)}
+                        placeholder="Street address, city, state/province, country"
+                        className="text-sm h-9"
+                      />
+                      <p className="text-xs text-blue-700">
+                        FATF Recommendation 16 requires either a physical address, date of birth, or unique
+                        identification number for the beneficiary. Physical address is the preferred identifier
+                        for international transfers. Enter the address of the person receiving the digital assets.
                       </p>
                     </div>
                   </div>
@@ -790,6 +815,26 @@ export default function Crypto() {
                       </p>
                     </div>
 
+                    {/* FATF R.16 — Originator physical address (mandatory Travel Rule element) */}
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-1.5">
+                      <Label htmlFor="originator-address" className="text-xs font-semibold text-blue-800 flex items-center gap-1">
+                        <Shield className="w-3 h-3" /> Originator Physical Address <span className="text-red-500">*</span>
+                        <span className="font-normal text-blue-600 ml-1">(FATF Travel Rule)</span>
+                      </Label>
+                      <Input
+                        id="originator-address"
+                        value={originatorAddress}
+                        onChange={e => setOriginatorAddress(e.target.value)}
+                        placeholder="Street address, city, state/province, country"
+                        className="text-sm h-9"
+                      />
+                      <p className="text-xs text-blue-700">
+                        FATF Recommendation 16 requires a physical address, date of birth, or unique identification
+                        number to accompany the originator's name. Physical address is the preferred identifier for
+                        cross-border transfers. This information will be transmitted to Independent Reserve.
+                      </p>
+                    </div>
+
                     {/* Email field for written confirmation */}
                     <div className="space-y-1.5">
                       <Label htmlFor="sell-email" className="text-xs font-medium">
@@ -858,6 +903,10 @@ export default function Crypto() {
                           toast({ title: "Originator Name Required", description: "Your full legal name is required under the FATF Travel Rule. Please enter it above.", variant: "destructive" });
                           return;
                         }
+                        if (!originatorAddress.trim()) {
+                          toast({ title: "Originator Address Required", description: "Your physical address is required under FATF Recommendation 16. Please enter it above.", variant: "destructive" });
+                          return;
+                        }
                         if (!sellEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sellEmail)) {
                           toast({ title: "Valid Email Required", description: "A valid email address is required so we can send your written rate confirmation and deposit address.", variant: "destructive" });
                           return;
@@ -870,7 +919,7 @@ export default function Crypto() {
                           : "TBD";
                         const subject = encodeURIComponent(`AMAX Crypto SELL Enquiry — ${sellAmount} ${sellCurrency}`);
                         const body = encodeURIComponent(
-                          `Hello AMAX Compliance Team,\n\nI would like to sell the following digital assets via Independent Reserve:\n\nAsset: ${sellCurrency}\nAmount: ${sellAmount}\nIndicative AUD proceeds: ${estProceeds}\n\nFATF Travel Rule Information (FATF R.16):\nOriginator full legal name: ${originatorName.trim()}\nSending wallet address: ${originatorWallet}\nSending wallet type: ${walletTypeStr}\n\nPlease confirm the rate, verify my KYC, and instruct Independent Reserve to provide a one-time deposit address for my transaction.\n\nI understand this is an enquiry only. I will not send any crypto until I receive written confirmation from AMAX with Independent Reserve's deposit address.\n\nReply to: ${sellEmail}\n\nThank you.`
+                          `Hello AMAX Compliance Team,\n\nI would like to sell the following digital assets via Independent Reserve:\n\nAsset: ${sellCurrency}\nAmount: ${sellAmount}\nIndicative AUD proceeds: ${estProceeds}\n\nFATF Travel Rule Information (FATF R.16):\nOriginator full legal name: ${originatorName.trim()}\nOriginator physical address: ${originatorAddress.trim()}\nSending wallet address: ${originatorWallet}\nSending wallet type: ${walletTypeStr}\n\nPlease confirm the rate, verify my KYC, and instruct Independent Reserve to provide a one-time deposit address for my transaction.\n\nI understand this is an enquiry only. I will not send any crypto until I receive written confirmation from AMAX with Independent Reserve's deposit address.\n\nReply to: ${sellEmail}\n\nThank you.`
                         );
                         window.open(`mailto:info@amaxglobal.com.au?subject=${subject}&body=${body}`, "_self");
                       }}

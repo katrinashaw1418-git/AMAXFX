@@ -22,7 +22,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
   function handleLogout() {
     logout();
-    navigate("/");
+    navigate("/signout");
   }
 
   return (

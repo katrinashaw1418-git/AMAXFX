@@ -23,6 +23,7 @@ import NotFound from "@/pages/not-found";
 import AdminCompliance from "@/pages/admin-compliance";
 import Register from "@/pages/register";
 import VerifyEmail from "@/pages/verify-email";
+import Signout from "@/pages/signout";
 import { Loader2 } from "lucide-react";
 
 function ProtectedApp() {
@@ -79,6 +80,7 @@ function Router() {
       <Route path="/verify-email"   component={VerifyEmail}    />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword}  />
+      <Route path="/signout"        component={Signout}        />
       <Route component={ProtectedApp} />
     </Switch>
   );
