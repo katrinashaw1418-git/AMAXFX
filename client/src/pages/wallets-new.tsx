@@ -158,6 +158,7 @@ export default function Wallets() {
   const [depositMethod, setDepositMethod] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState('');
   const [withdrawTransferType, setWithdrawTransferType] = useState<'domestic' | 'international'>('domestic');
+  const [depositTransferType, setDepositTransferType] = useState<'domestic' | 'international'>('domestic');
   const [payerName, setPayerName] = useState('');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [payerAccountNumber, setPayerAccountNumber] = useState('');
@@ -952,27 +953,93 @@ export default function Wallets() {
             </div>
           ) : (
           <div className="space-y-3">
-            <div>
-              <Label htmlFor="deposit-method-type">Deposit Method</Label>
-              <Select value={depositMethod} onValueChange={setDepositMethod}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select deposit method" />
-                </SelectTrigger>
-                <SelectContent>
-                  {selectedWallet?.walletType === 'fiat' ? (
-                    <>
-                      <SelectItem value="card">💳 Credit/Debit Card</SelectItem>
-                      <SelectItem value="payid">🏦 PayID / NPP</SelectItem>
-                      <SelectItem value="bank_transfer">🏦 Bank Transfer</SelectItem>
-                    </>
-                  ) : (
-                    <>
-                      <SelectItem value="blockchain">🔗 Blockchain Transfer</SelectItem>
-                    </>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
+
+            {/* ── Transfer Type selector — fiat wallets only ── */}
+            {selectedWallet?.walletType === 'fiat' && (
+              <div>
+                <Label className="text-xs font-medium mb-1.5 block">Transfer Type</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setDepositTransferType('domestic'); setDepositMethod(''); }}
+                    className={`flex flex-col items-start px-3 py-2.5 rounded-lg border text-left transition-all ${
+                      depositTransferType === 'domestic'
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="text-sm font-semibold">🇦🇺 Domestic</span>
+                    <span className="text-xs text-gray-500 mt-0.5">Australia only · BSB / PayID</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setDepositTransferType('international'); setDepositMethod(''); }}
+                    className={`flex flex-col items-start px-3 py-2.5 rounded-lg border text-left transition-all ${
+                      depositTransferType === 'international'
+                        ? 'border-blue-400 bg-blue-50 text-blue-700'
+                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="text-sm font-semibold">🌍 International</span>
+                    <span className="text-xs mt-0.5 text-amber-600 font-medium">Coming Soon</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── International Coming Soon panel ── */}
+            {selectedWallet?.walletType === 'fiat' && depositTransferType === 'international' && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <span className="text-blue-500 text-lg leading-none">🌐</span>
+                  <div>
+                    <p className="font-semibold text-blue-800 text-sm">International Deposit — Coming Soon</p>
+                    <p className="text-xs text-blue-700 mt-1 leading-relaxed">
+                      International transfers are facilitated via external regulated partners.
+                      This feature is not yet enabled in the current environment.
+                    </p>
+                  </div>
+                </div>
+                <div className="border-t border-blue-200 pt-3 space-y-1.5 text-xs text-blue-700">
+                  <p className="font-medium text-blue-800">Planned capabilities:</p>
+                  <p>• SWIFT / IBAN inbound wires from 50+ countries</p>
+                  <p>• Facilitated via Airwallex (AUSTRAC registered payment provider)</p>
+                  <p>• Full AML/CTF screening on all cross-border deposits</p>
+                  <p>• FATF Travel Rule compliance for applicable transactions</p>
+                </div>
+                <p className="text-xs text-blue-600 italic">
+                  To register interest in international transfers, contact{" "}
+                  <a href="mailto:info@amaxglobal.com.au" className="underline font-medium">
+                    info@amaxglobal.com.au
+                  </a>
+                </p>
+              </div>
+            )}
+
+            {/* ── Domestic / Crypto deposit method selector ── */}
+            {(selectedWallet?.walletType !== 'fiat' || depositTransferType === 'domestic') && (
+              <div>
+                <Label htmlFor="deposit-method-type">Deposit Method</Label>
+                <Select value={depositMethod} onValueChange={setDepositMethod}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select deposit method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedWallet?.walletType === 'fiat' ? (
+                      <>
+                        <SelectItem value="card">💳 Credit/Debit Card</SelectItem>
+                        <SelectItem value="payid">⚡ PayID / NPP (instant)</SelectItem>
+                        <SelectItem value="bank_transfer">🏦 Australian Bank Transfer</SelectItem>
+                      </>
+                    ) : (
+                      <>
+                        <SelectItem value="blockchain">🔗 Blockchain Transfer</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {depositMethod && depositMethod !== 'blockchain' && (
               <div>
@@ -1149,19 +1216,19 @@ export default function Wallets() {
                 {depositMethod === 'bank_transfer' && (
                   <div className="space-y-3">
                     <div className="p-3 bg-muted rounded-lg">
-                      <h4 className="font-medium mb-2 text-sm">🏦 International Bank Transfer</h4>
+                      <h4 className="font-medium mb-2 text-sm">🏦 Australian Bank Transfer</h4>
                       <div className="text-xs text-muted-foreground space-y-1">
-                        <p>• SWIFT international transfers accepted</p>
+                        <p>• Direct credit from your Australian bank account (BSB + account number)</p>
                         <p>• Processing time: 1–3 business days</p>
                         <p>• Include your unique reference code in the transfer description</p>
                         <p>• Balance credited once our regulated partner confirms receipt</p>
                       </div>
                     </div>
                     <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
-                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">🏦 How International Bank Transfer Funding Works</p>
+                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">🏦 How Australian Bank Transfer Funding Works</p>
                       <div className="text-xs text-blue-800 dark:text-blue-200 space-y-1.5">
                         <p>1. Submit this request — a unique reference code will be generated.</p>
-                        <p>2. Our team will email you the bank details issued by our regulated banking partner (BSB, account number, SWIFT).</p>
+                        <p>2. Our team will email you the Australian bank details issued by our regulated banking partner (BSB and account number).</p>
                         <p>3. Send funds to those partner-issued details — <strong>not to AMAX</strong>. AMAX does not receive or hold your funds.</p>
                         <p>4. Your account will be credited once the regulated partner confirms receipt — typically 1–3 business days.</p>
                       </div>
