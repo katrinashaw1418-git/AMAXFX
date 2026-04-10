@@ -140,8 +140,8 @@ export default function Crypto() {
       toast({
         title: "Order Submitted",
         description: isCryptoBuy
-          ? `Your ${fromCurrency} has been debited. ${toCurrency} will be credited to your account once Independent Reserve confirms on-chain delivery — typically within 1 business day.`
-          : `Your ${fromCurrency} has been debited. ${toCurrency} will be credited to your account once our regulated partner confirms settlement — typically within 1 business day.`,
+          ? `Exchange instruction submitted. ${toCurrency} will be delivered by Independent Reserve to your nominated wallet once on-chain delivery is confirmed — typically within 1 business day.`
+          : `Exchange instruction submitted. ${toCurrency} proceeds will be transferred to your nominated account by our external regulated partner once settlement is confirmed — typically within 1 business day.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
@@ -369,7 +369,7 @@ export default function Crypto() {
                       </div>
                     </div>
                     <p className="text-xs text-gray-500 flex items-center gap-1">
-                      <Wallet className="w-3 h-3" /> Available: {fromBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} {fromCurrency}
+                      <Wallet className="w-3 h-3" /> Indicative available (external): {fromBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} {fromCurrency}
                     </p>
                   </div>
 
@@ -627,9 +627,9 @@ export default function Crypto() {
                   <div className="flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-900">
                     <Shield className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-600" />
                     <span>
-                      <strong>Your crypto goes directly to Independent Reserve (DCE-100461150-001) — not to AMAX.</strong>{" "}
+                      <strong>Your crypto goes directly to Independent Reserve (DCE-100461150-001).</strong>{" "}
                       AMAX never receives, holds, or controls your digital assets at any point.
-                      AUD proceeds are credited to your account (held with our regulated banking partner) within 1 business day of on-chain confirmation.
+                      AUD proceeds are transferred to your nominated account via our external regulated banking partner within 1 business day of on-chain confirmation.
                     </span>
                   </div>
 

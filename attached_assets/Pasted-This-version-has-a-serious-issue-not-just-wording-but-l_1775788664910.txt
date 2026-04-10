@@ -1,0 +1,273 @@
+This version has a **serious issue** — not just wording, but **logic + compliance + math errors**. Good thing you checked.
+
+I reviewed your updated screen  and here’s the **exact audit + fixes**.
+
+---
+
+# 🚨 🔴 CRITICAL ISSUES (must fix)
+
+## 1. ❌ Completely wrong direction (BUY vs SELL)
+
+You show:
+
+```text
+You Pay: 500
+Available: 0.05 BTC
+```
+
+👉 Then:
+
+```text
+You pay 500 BTC
+You receive 51,009,751 AUD
+```
+
+❌ This is broken
+
+---
+
+### 🎯 Problem
+
+* UI says **fiat → crypto**
+* but logic is **crypto → fiat**
+* labels are mixed
+
+---
+
+## 2. ❌ MASSIVE calculation error
+
+```text
+500 BTC → 51,009,751 AUD
+```
+
+👉 Correct would be:
+
+```text
+500 × 102,532 ≈ 51,266,000 AUD
+```
+
+But your **fee is also wrong**:
+
+```text
+Processing Fee: 256,330 AUD
+```
+
+👉 That’s:
+
+* 0.5% of 51M = ~256k ✔ (correct mathematically)
+* BUT entire flow is wrong direction
+
+---
+
+## 3. ❌ “Available: 0.05 BTC”
+
+👉 This is a **custody red flag**
+
+You are saying:
+
+> user has BTC balance on platform
+
+❌ Not allowed under your model
+
+---
+
+## 4. ❌ “Delivered AUD to wallet”
+
+```text
+Delivered by Independent Reserve to your nominated wallet
+```
+
+❌ AUD cannot be delivered to crypto wallet
+
+---
+
+## 5. ❌ Input inconsistency
+
+```text
+You Pay (Fiat) → 500
+Then → You pay 500 BTC
+```
+
+👉 system is mixing units
+
+---
+
+# 🧠 ROOT CAUSE
+
+👉 Your **BUY and SELL flows got merged**
+
+You need **two completely separate modes**:
+
+---
+
+# ✅ CORRECT STRUCTURE
+
+---
+
+# 🟢 FLOW 1 — BUY CRYPTO (AUD → BTC)
+
+### Correct version:
+
+```text
+You Pay (Fiat)
+500 AUD
+
+You Receive (Crypto)
+0.00485 BTC
+
+Delivered to external wallet
+```
+
+---
+
+# 🔵 FLOW 2 — SELL CRYPTO (BTC → AUD)
+
+### Correct version:
+
+```text
+You Send (Crypto)
+0.05 BTC
+
+You Receive (Fiat)
+5,126 AUD
+
+Delivered to bank account
+```
+
+---
+
+# ❗ You MUST separate these in UI
+
+👉 Tabs:
+
+```
+[ Buy Crypto ]
+[ Sell Crypto ]
+```
+
+---
+
+# 🛠️ FIXED VERSION (SELL FLOW — YOUR CURRENT SCREEN)
+
+---
+
+## **Sell Digital Asset — BTC → AUD**
+
+---
+
+### **You Send (Digital Asset)**
+
+0.05 BTC
+
+---
+
+### **Spot Rate**
+
+1 BTC = 102,532.16 AUD
+
+---
+
+### **Processing Fee (0.5%)**
+
+256.33 AUD
+
+---
+
+### **You Receive (Fiat)**
+
+5,126.28 AUD
+
+---
+
+## 🏦 **Settlement**
+
+AUD will be transferred by the external regulated partner to your nominated bank account.
+
+---
+
+## 🧾 **Important Information**
+
+This transaction is executed via Independent Reserve.
+
+AMAX does not hold or custody digital assets or fiat funds.
+All settlement is performed by external regulated partners.
+
+---
+
+---
+
+# 🟢 FIXED VERSION (BUY FLOW — for reference)
+
+---
+
+## **Buy Digital Asset — AUD → BTC**
+
+---
+
+### **You Pay (Fiat)**
+
+500 AUD
+
+---
+
+### **Processing Fee (0.5%)**
+
+0.00002437 BTC
+
+---
+
+### **You Receive (BTC)**
+
+0.00485063 BTC
+
+---
+
+### **Delivery**
+
+BTC will be delivered directly to your nominated external wallet.
+
+---
+
+---
+
+# 🚨 FINAL FIX LIST (VERY IMPORTANT)
+
+| Issue                     | Fix                            |
+| ------------------------- | ------------------------------ |
+| Mixed buy/sell logic      | Separate flows                 |
+| Wrong units (AUD/BTC mix) | Enforce currency consistency   |
+| “Available BTC”           | ❌ REMOVE                       |
+| “Delivered AUD to wallet” | Replace with bank transfer     |
+| Calculation inconsistency | Recalculate based on direction |
+| UI confusion              | Add Buy / Sell toggle          |
+
+---
+
+# 🧠 FINAL VERDICT
+
+👉 Your **structure is excellent**
+👉 But this version is:
+
+❌ **Functionally incorrect**
+❌ **Regulator-risky if shown**
+❌ **Confusing to users**
+
+---
+
+# ✅ Once fixed
+
+👉 You will have:
+
+* **Institution-grade UX**
+* **Correct financial logic**
+* **AUSTRAC-safe positioning**
+* **Real product readiness**
+
+---
+
+# 🚀 Next step (highly recommended)
+
+I can:
+👉 design the **full Buy/Sell crypto flow (perfect structure + logic + UI + formulas)**
+
+This is the **last major piece before your platform becomes fully coherent**.
