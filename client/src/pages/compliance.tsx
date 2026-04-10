@@ -637,66 +637,84 @@ export default function Compliance() {
                 </div>
               </div>
 
-              <div className="px-4 py-4 space-y-3">
+              <div className="px-4 pb-4">
+                <div className="bg-white border border-green-200 rounded-xl overflow-hidden">
 
-                {/* ── SECTION A: Identity Details — locked after Step 3 verified ── */}
-                <div className={`rounded-xl border p-3.5 ${idVerifyComplete ? "bg-gray-50 border-gray-200" : "bg-white border-green-200"}`}>
-                  <div className="flex items-center justify-between mb-2.5">
-                    <div className="flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-gray-500" />
-                      <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Identity Details</span>
+                  {/* ── SECTION A: Identity — locked after Step 3 verified ── */}
+                  <div className={`p-4 ${idVerifyComplete ? "bg-gray-50" : ""}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Identity</p>
+                      {idVerifyComplete ? (
+                        <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-200 px-2.5 py-0.5 rounded-full font-medium">
+                          <Lock className="w-3 h-3" /> Verified · Sumsub
+                        </span>
+                      ) : (
+                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setEditStep1(true)}>
+                          <PenLine className="w-3 h-3 mr-1" /> Edit
+                        </Button>
+                      )}
                     </div>
-                    {idVerifyComplete ? (
-                      <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full font-medium">
-                        <Lock className="w-3 h-3" /> Verified · Sumsub
-                      </span>
-                    ) : (
-                      <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={() => setEditStep1(true)}>
-                        <PenLine className="w-3 h-3 mr-1" /> Edit
-                      </Button>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+                      <div><p className="text-xs text-gray-400">Full Legal Name</p><p className="font-medium text-gray-800">{kycProfile.fullLegalName || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Date of Birth</p><p className="font-medium text-gray-800">{kycProfile.dateOfBirth ? new Date(kycProfile.dateOfBirth).toLocaleDateString("en-AU") : "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Nationality</p><p className="font-medium text-gray-800">{kycProfile.nationality || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Mobile Number</p><p className="font-medium text-gray-800">{kycProfile.phoneNumber || "—"}</p></div>
+                    </div>
+                    {idVerifyComplete && (
+                      <p className="text-xs text-gray-400 mt-3 flex items-start gap-1">
+                        <Lock className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                        Verified identity is locked. Contact{" "}
+                        <a href="mailto:compliance@amaxglobal.com.au" className="underline ml-0.5">compliance@amaxglobal.com.au</a>{" "}
+                        to request changes.
+                      </p>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-sm">
-                    <div><p className="text-xs text-gray-400">Full Legal Name</p><p className="font-medium text-gray-800">{kycProfile.fullLegalName || "—"}</p></div>
-                    <div><p className="text-xs text-gray-400">Date of Birth</p><p className="font-medium text-gray-800">{kycProfile.dateOfBirth ? new Date(kycProfile.dateOfBirth).toLocaleDateString("en-AU") : "—"}</p></div>
-                    <div><p className="text-xs text-gray-400">Nationality</p><p className="font-medium text-gray-800">{kycProfile.nationality || "—"}</p></div>
-                  </div>
-                  {idVerifyComplete ? (
-                    <p className="text-xs text-gray-400 mt-2.5 flex items-start gap-1">
-                      <Lock className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                      Verified identity cannot be edited. To request changes, contact{" "}
-                      <a href="mailto:compliance@amaxglobal.com.au" className="underline ml-0.5">compliance@amaxglobal.com.au</a>.
-                    </p>
-                  ) : (
-                    <p className="text-xs text-gray-400 mt-2.5">
-                      Identity details will be locked after your identity verification is completed.
-                    </p>
-                  )}
-                </div>
 
-                {/* ── SECTION B: Contact & Financial — always editable ── */}
-                <div className="bg-white border border-green-200 rounded-xl p-3.5">
-                  <div className="flex items-center justify-between mb-2.5">
-                    <div className="flex items-center gap-1.5">
-                      <PenLine className="w-3.5 h-3.5 text-gray-500" />
-                      <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Contact & Financial Profile</span>
+                  <div className="border-t border-gray-100" />
+
+                  {/* ── SECTION B: Residential Address — always editable ── */}
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Residential Address</p>
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setEditStep1(true)}>
+                        <PenLine className="w-3 h-3 mr-1" /> Edit
+                      </Button>
                     </div>
-                    <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={() => setEditStep1(true)}>
-                      <PenLine className="w-3 h-3 mr-1" /> Edit
-                    </Button>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+                      <div className="sm:col-span-2"><p className="text-xs text-gray-400">Street Address</p><p className="font-medium text-gray-800">{kycProfile.residentialAddress || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Suburb / City</p><p className="font-medium text-gray-800">{kycProfile.suburb || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">State / Region</p><p className="font-medium text-gray-800">{kycProfile.stateRegion || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Postcode</p><p className="font-medium text-gray-800">{kycProfile.postcode || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Country</p><p className="font-medium text-gray-800">{kycProfile.addressCountry || "—"}</p></div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-sm">
-                    <div><p className="text-xs text-gray-400">Mobile Number</p><p className="font-medium text-gray-800">{kycProfile.phoneNumber || "—"}</p></div>
-                    <div className="sm:col-span-2"><p className="text-xs text-gray-400">Residential Address</p><p className="font-medium text-gray-800">{[kycProfile.residentialAddress, kycProfile.suburb, kycProfile.stateRegion, kycProfile.postcode, kycProfile.addressCountry].filter(Boolean).join(", ") || "—"}</p></div>
-                    <div><p className="text-xs text-gray-400">Employment</p><p className="font-medium text-gray-800 capitalize">{kycProfile.employmentStatus?.replace(/_/g, " ") || "—"}</p></div>
-                    <div><p className="text-xs text-gray-400">Purpose of Account</p><p className="font-medium text-gray-800 capitalize">{kycProfile.purposeOfAccount?.replace(/_/g, " ") || "—"}</p></div>
-                    <div><p className="text-xs text-gray-400">Source of Funds</p><p className="font-medium text-gray-800 capitalize">{kycProfile.sourceOfFunds?.replace(/_/g, " ") || "—"}</p></div>
-                  </div>
-                </div>
 
-                <p className="text-xs text-muted-foreground flex items-center gap-1 pt-0.5">
-                  <Lock className="w-3 h-3" /> Stored encrypted · AML/CTF CDD record · Privacy Act 1988
-                </p>
+                  <div className="border-t border-gray-100" />
+
+                  {/* ── SECTION C: Financial Profile — always editable ── */}
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Financial Profile</p>
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setEditStep1(true)}>
+                        <PenLine className="w-3 h-3 mr-1" /> Edit
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+                      <div><p className="text-xs text-gray-400">Employment Status</p><p className="font-medium text-gray-800 capitalize">{kycProfile.employmentStatus?.replace(/_/g, " ") || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Occupation</p><p className="font-medium text-gray-800">{kycProfile.occupation || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Purpose of Account</p><p className="font-medium text-gray-800 capitalize">{kycProfile.purposeOfAccount?.replace(/_/g, " ") || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Source of Funds</p><p className="font-medium text-gray-800 capitalize">{kycProfile.sourceOfFunds?.replace(/_/g, " ") || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Tax Residency</p><p className="font-medium text-gray-800">{kycProfile.taxCountry || "—"}</p></div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-100 px-4 py-2.5 bg-gray-50">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Lock className="w-3 h-3" /> Stored encrypted · AML/CTF CDD record · Privacy Act 1988
+                    </p>
+                  </div>
+
+                </div>
               </div>
             </div>
           ) : (
