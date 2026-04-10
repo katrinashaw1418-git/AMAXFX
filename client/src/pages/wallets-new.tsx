@@ -157,6 +157,7 @@ export default function Wallets() {
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [depositMethod, setDepositMethod] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState('');
+  const [withdrawTransferType, setWithdrawTransferType] = useState<'domestic' | 'international'>('domestic');
   const [payerName, setPayerName] = useState('');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [payerAccountNumber, setPayerAccountNumber] = useState('');

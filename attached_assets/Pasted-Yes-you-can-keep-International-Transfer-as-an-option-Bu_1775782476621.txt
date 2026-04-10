@@ -1,0 +1,147 @@
+Yes — you **can keep “International Transfer” as an option** 👍
+But you must present it **very carefully** so it doesn’t look like you already offer it.
+
+Right now your goal is:
+
+👉 **Show capability without misrepresenting functionality**
+
+---
+
+# 🎯 Best approach (for your app)
+
+## ✅ Keep both options
+
+```text
+Transfer Type:
+• Domestic (Australia)
+• International
+```
+
+---
+
+# ⚠️ But control the International option
+
+## 🥇 Option A (BEST for AUSTRAC demo)
+
+👉 Keep it **visible but disabled**
+
+```text
+International Transfer (Coming Soon)
+```
+
+When clicked:
+
+```text
+International transfers will be supported in a future release 
+via our regulated payment partner (e.g. Airwallex).
+```
+
+---
+
+## 🥈 Option B (if you want interaction)
+
+Allow user to click → show info screen:
+
+```text
+International transfers are facilitated via external regulated partners. 
+This feature is not yet enabled in the current environment.
+```
+
+👉 Then:
+
+* no input fields
+* no submission
+
+---
+
+## ❌ What you must NOT do
+
+❌ Do NOT:
+
+* show SWIFT fields
+* allow submission
+* simulate sending overseas
+
+👉 That implies:
+
+* you already operate cross-border rails
+* regulatory risk
+
+---
+
+# 🧠 Why this approach works
+
+You are telling AUSTRAC:
+
+> “We have designed for international capability, but it is not yet enabled pending integration with regulated partners.”
+
+👉 This is:
+
+* honest
+* forward-looking
+* compliant
+
+---
+
+# 💡 Suggested wording (use this)
+
+### UI label:
+
+```text
+International Transfer (Coming Soon)
+```
+
+---
+
+### Info message:
+
+```text
+International transfers will be supported via external regulated payment partners. 
+This feature is not currently available in the simulation environment.
+```
+
+---
+
+# 🧱 Clean UX structure
+
+## Domestic
+
+* fully working
+* BSB + account
+
+---
+
+## International
+
+* visible
+* informative
+* non-functional
+
+---
+
+# 🚀 Strategic benefit
+
+This shows:
+
+* product roadmap ✅
+* technical awareness ✅
+* compliance awareness ✅
+
+WITHOUT:
+
+* over-claiming capability ❌
+
+---
+
+# ✔️ Final answer
+
+👉 Yes — keep International Transfer as an option
+👉 But make it:
+
+* **“Coming Soon” or disabled**
+* clearly **not active**
+* tied to **external partner**
+
+---
+
+If you want, I can design a **perfect dual-transfer UI (Wise-style)** that looks fully institutional but stays compliant for your current stage.
