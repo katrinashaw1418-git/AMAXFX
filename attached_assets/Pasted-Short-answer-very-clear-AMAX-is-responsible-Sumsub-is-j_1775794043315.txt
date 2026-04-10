@@ -1,0 +1,125 @@
+Short answer (very clear):
+
+👉 **AMAX is responsible.**
+👉 **Sumsub is just a tool/provider.**
+
+---
+
+# 🧠 How it actually works (AUSTRAC view)
+
+Under the **AUSTRAC AML/CTF rules:
+
+* The **reporting entity = AMAX Global Pty Ltd**
+* So **YOU must ensure KYC/CDD is done properly**
+
+👉 Even if you use **Sumsub**,
+**legal responsibility does NOT transfer**
+
+---
+
+# 📍 Address verification — who does what
+
+## 🏢 Sumsub (service provider)
+
+* Can:
+
+  * Verify proof of address (POA)
+  * OCR documents (utility bill, bank statement)
+  * Run checks (fraud, formatting, consistency)
+* Provides:
+
+  * **verification result + risk score**
+
+👉 Think: **“execution engine”**
+
+---
+
+## 🏦 AMAX (YOU)
+
+* Must:
+
+  * Decide **what level of verification is required**
+  * Ensure it meets **AUSTRAC CDD requirements**
+  * Keep records
+  * Handle exceptions / failures
+  * Own audit trail
+
+👉 Think: **“accountable party”**
+
+---
+
+# ⚠️ Critical (most people get this wrong)
+
+Even if Sumsub says:
+
+> ✅ “Address verified”
+
+👉 If AUSTRAC audits:
+
+* They will assess **AMAX**, not Sumsub
+* They will ask:
+
+  * Why this method?
+  * Is it risk-appropriate?
+  * Is it compliant with AML/CTF program?
+
+---
+
+# 💡 Practical setup (what you should do)
+
+## Option 1 — Standard (recommended)
+
+Use Sumsub for:
+
+* ID verification (passport/driver licence)
+* Address verification (POA)
+
+AND define internally:
+
+* Acceptable docs:
+
+  * Utility bill (<3 months)
+  * Bank statement
+* Risk tiers:
+
+  * Low → basic verification
+  * High → enhanced checks
+
+---
+
+## Option 2 — Hybrid (stronger)
+
+* Use Sumsub for verification
+* BUT:
+
+  * Add manual review for edge cases
+  * Store documents in your system
+
+---
+
+# 🧠 My recommendation (for AMAX)
+
+Given you are applying for **DCE / AUSTRAC**:
+
+👉 Do this:
+
+* Use **Sumsub for automation**
+* BUT document clearly:
+
+  * “AMAX performs KYC via Sumsub as outsourced service”
+  * “Final responsibility retained by AMAX”
+
+---
+
+# 🔥 One-line answer
+
+👉 **Sumsub performs the verification**
+👉 **AMAX is legally responsible for it**
+
+---
+
+If you want, I can:
+
+* Draft your **AML/CTF wording (AUSTRAC-ready)**
+* Define **CDD tiers (low / medium / high risk)**
+* Or review your current onboarding flow for compliance gaps
