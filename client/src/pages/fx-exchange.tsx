@@ -406,7 +406,7 @@ export default function FxExchange() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Settlement</span>
-                <span className="font-medium text-green-600">Typically same day</span>
+                <span className="font-medium text-green-600">Typically same day (subject to partner execution)</span>
               </div>
               <div className="flex justify-between border-t pt-3 text-base">
                 <span className="font-semibold text-gray-900">You receive</span>
@@ -421,10 +421,10 @@ export default function FxExchange() {
             </div>
             <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-amber-50 border border-amber-200 text-amber-800">
               <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-              <span>Funds remain held with our regulated banking partner throughout the conversion process. Your account will reflect the converted balance once the partner confirms execution. This exchange will show as <strong>pending</strong> until then.</span>
+              <span>The conversion instruction will be submitted to the external regulated partner for execution. The transaction status will update once the partner confirms execution. Funds remain held with the external regulated partner throughout the conversion process. AMAX Global Pty Ltd does not hold or control client funds.</span>
             </div>
             <p className="text-xs text-gray-500 text-center">
-              By confirming, you authorise AMAX Global Pty Ltd (ABN 54 690 827 608) to instruct our regulated banking partner to execute this foreign exchange conversion on your behalf.
+              By confirming, you authorise AMAX Global Pty Ltd (ABN 54 690 827 608) to instruct an external regulated banking partner to execute this foreign exchange conversion on your behalf.
             </p>
           </div>
           <DialogFooter className="gap-2">
