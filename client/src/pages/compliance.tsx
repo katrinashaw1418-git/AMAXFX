@@ -1368,6 +1368,16 @@ export default function Compliance() {
                               Contact <a href="mailto:info@amaxglobal.com.au" className="underline">info@amaxglobal.com.au</a> if
                               you have not received confirmation within 2 business days.
                             </p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full h-9 text-xs border-yellow-300 text-yellow-800 hover:bg-yellow-100"
+                              disabled={identityResetMutation.isPending}
+                              onClick={() => identityResetMutation.mutate()}
+                            >
+                              <RefreshCw className={`w-3 h-3 mr-1.5 ${identityResetMutation.isPending ? "animate-spin" : ""}`} />
+                              {identityResetMutation.isPending ? "Resetting…" : "Re-submit via Sumsub"}
+                            </Button>
                           </div>
                         </div>
                       )}
