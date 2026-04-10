@@ -2203,20 +2203,20 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                               <p className="font-semibold text-green-800">Approved</p>
                             </div>
                           </div>
-                          <div className="flex justify-between items-center pt-1 border-t border-green-100">
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Lock className="w-3 h-3" /> Biometric data processed by Sumsub — not stored by AMAX · Privacy Act 1988
-                            </p>
+                          <div className="pt-2 border-t border-green-100 space-y-2">
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-7 text-xs flex-shrink-0"
+                              className="w-full h-8 text-xs border-green-300 text-green-800 hover:bg-green-100"
                               onClick={() => identityResetMutation.mutate()}
                               disabled={identityResetMutation.isPending}
                             >
                               <RefreshCw className={`w-3 h-3 mr-1.5 ${identityResetMutation.isPending ? "animate-spin" : ""}`} />
-                              {identityResetMutation.isPending ? "Resetting…" : "Re-verify via Sumsub"}
+                              {identityResetMutation.isPending ? "Resetting…" : "Re-submit via Sumsub"}
                             </Button>
+                            <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
+                              <Lock className="w-3 h-3" /> Biometric data processed by Sumsub — not stored by AMAX · Privacy Act 1988
+                            </p>
                           </div>
                         </div>
                       </div>
