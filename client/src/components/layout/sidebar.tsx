@@ -95,7 +95,9 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
               {user ? `${user.firstName} ${user.lastName}` : "Guest"}
             </p>
             <p className="text-xs text-gray-500">
-              {user?.kycStatus === "verified" ? "Verified Client" : "Client"}
+              {user?.email === "demo@amaxglobal.com.au"
+                ? "Simulation Account"
+                : user?.kycStatus === "verified" ? "Verified Client" : "Client"}
             </p>
           </div>
           <ChevronRight className="w-4 h-4 text-gray-400" />
