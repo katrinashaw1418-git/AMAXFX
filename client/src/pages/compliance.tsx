@@ -139,7 +139,11 @@ export default function Compliance() {
   const profileMutation = useMutation({
     mutationFn: (payload: any) => apiRequest("PUT", "/api/kyc/profile", payload),
     onSuccess: () => {
-      toast({ title: "Personal Information Saved", description: "Your KYC profile has been updated. Please proceed to the next step." });
+      if (editStep1 && kycProfile?.kycProfileComplete) {
+        toast({ title: "Details Updated", description: "Your contact and financial profile has been saved successfully." });
+      } else {
+        toast({ title: "Personal Information Saved", description: "Your profile has been submitted. Please continue to the next step." });
+      }
       setEditStep1(false);
       refetchProfile();
       queryClient.invalidateQueries({ queryKey: ["/api/kyc/profile"] });
@@ -373,8 +377,13 @@ export default function Compliance() {
   }, [verifyMode, sumsubToken]);
 
   function handleProfileSubmit() {
-    if (!piiFullName || !piiDob || !piiNationality || !piiPhone) {
-      toast({ title: "Personal Details Required", description: "Please complete name, date of birth, nationality, and phone number.", variant: "destructive" });
+    // Identity fields only required when NOT already verified by Sumsub
+    if (!idVerifyComplete && (!piiFullName || !piiDob || !piiNationality)) {
+      toast({ title: "Identity Details Required", description: "Please complete your full legal name, date of birth, and nationality.", variant: "destructive" });
+      return;
+    }
+    if (!piiPhone) {
+      toast({ title: "Phone Required", description: "Please enter your mobile number.", variant: "destructive" });
       return;
     }
     if (!piiAddress || !piiSuburb || !piiPostcode) {
@@ -386,9 +395,12 @@ export default function Compliance() {
       return;
     }
     profileMutation.mutate({
-      fullLegalName: piiFullName,
-      dateOfBirth: piiDob,
-      nationality: piiNationality,
+      // Only send identity fields when not yet locked by verification
+      ...(!idVerifyComplete && {
+        fullLegalName: piiFullName,
+        dateOfBirth: piiDob,
+        nationality: piiNationality,
+      }),
       phoneNumber: piiPhone,
       // pepDeclaration will be captured during Customer Agreement signing (Step 3)
       pepDeclaration: false,
@@ -612,61 +624,79 @@ export default function Compliance() {
           {kycProfile?.kycProfileComplete && !editStep1 ? (
             <div className="border-2 border-green-200 bg-green-50 rounded-xl overflow-hidden">
               {/* Header row */}
-              <div className="flex items-center gap-4 px-4 pt-4 pb-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-600">
+              <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-green-100">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-600">
                   <CheckCircle className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs text-gray-400 font-medium">Step 1 of 4</span>
                     <h3 className="font-semibold text-gray-900">Personal Information</h3>
-                    <Badge className="bg-green-100 text-green-800">Completed</Badge>
+                    <Badge className="bg-green-100 text-green-800 text-xs">Completed</Badge>
                   </div>
-                  <p className="text-xs text-gray-500">Review your submitted details below. Click Edit to update.</p>
                 </div>
-                <Button size="sm" variant="outline" className="flex-shrink-0 h-8 text-xs" onClick={() => setEditStep1(true)}>
-                  <PenLine className="w-3 h-3 mr-1" /> Edit
-                </Button>
               </div>
-              {/* Data review grid */}
-              <div className="px-4 pb-4">
-                <div className="bg-white border border-green-200 rounded-xl p-4 space-y-4">
-                  {/* Identity */}
-                  <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Identity</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
-                      <div><p className="text-xs text-gray-400">Full Legal Name</p><p className="font-medium text-gray-800">{kycProfile.fullLegalName || "—"}</p></div>
-                      <div><p className="text-xs text-gray-400">Date of Birth</p><p className="font-medium text-gray-800">{kycProfile.dateOfBirth ? new Date(kycProfile.dateOfBirth).toLocaleDateString("en-AU") : "—"}</p></div>
-                      <div><p className="text-xs text-gray-400">Nationality</p><p className="font-medium text-gray-800">{kycProfile.nationality || "—"}</p></div>
-                      <div><p className="text-xs text-gray-400">Mobile Number</p><p className="font-medium text-gray-800">{kycProfile.phoneNumber || "—"}</p></div>
+
+              <div className="px-4 py-4 space-y-3">
+
+                {/* ── SECTION A: Identity Details — locked after Step 3 verified ── */}
+                <div className={`rounded-xl border p-3.5 ${idVerifyComplete ? "bg-gray-50 border-gray-200" : "bg-white border-green-200"}`}>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-gray-500" />
+                      <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Identity Details</span>
                     </div>
+                    {idVerifyComplete ? (
+                      <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full font-medium">
+                        <Lock className="w-3 h-3" /> Verified · Sumsub
+                      </span>
+                    ) : (
+                      <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={() => setEditStep1(true)}>
+                        <PenLine className="w-3 h-3 mr-1" /> Edit
+                      </Button>
+                    )}
                   </div>
-                  {/* Address */}
-                  <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Residential Address</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
-                      <div className="sm:col-span-2"><p className="text-xs text-gray-400">Street Address</p><p className="font-medium text-gray-800">{kycProfile.residentialAddress || "—"}</p></div>
-                      <div><p className="text-xs text-gray-400">Suburb</p><p className="font-medium text-gray-800">{kycProfile.suburb || "—"}</p></div>
-                      <div><p className="text-xs text-gray-400">State / Region</p><p className="font-medium text-gray-800">{kycProfile.stateRegion || "—"}</p></div>
-                      <div><p className="text-xs text-gray-400">Postcode</p><p className="font-medium text-gray-800">{kycProfile.postcode || "—"}</p></div>
-                      <div><p className="text-xs text-gray-400">Country</p><p className="font-medium text-gray-800">{kycProfile.addressCountry || "—"}</p></div>
-                    </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-sm">
+                    <div><p className="text-xs text-gray-400">Full Legal Name</p><p className="font-medium text-gray-800">{kycProfile.fullLegalName || "—"}</p></div>
+                    <div><p className="text-xs text-gray-400">Date of Birth</p><p className="font-medium text-gray-800">{kycProfile.dateOfBirth ? new Date(kycProfile.dateOfBirth).toLocaleDateString("en-AU") : "—"}</p></div>
+                    <div><p className="text-xs text-gray-400">Nationality</p><p className="font-medium text-gray-800">{kycProfile.nationality || "—"}</p></div>
                   </div>
-                  {/* Financial profile */}
-                  <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Financial Profile</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
-                      <div><p className="text-xs text-gray-400">Employment Status</p><p className="font-medium text-gray-800 capitalize">{kycProfile.employmentStatus?.replace(/_/g, " ") || "—"}</p></div>
-                      <div><p className="text-xs text-gray-400">Occupation</p><p className="font-medium text-gray-800">{kycProfile.occupation || "—"}</p></div>
-                      <div><p className="text-xs text-gray-400">Purpose of Account</p><p className="font-medium text-gray-800 capitalize">{kycProfile.purposeOfAccount?.replace(/_/g, " ") || "—"}</p></div>
-                      <div><p className="text-xs text-gray-400">Source of Funds</p><p className="font-medium text-gray-800 capitalize">{kycProfile.sourceOfFunds?.replace(/_/g, " ") || "—"}</p></div>
-                      <div><p className="text-xs text-gray-400">Tax Residency</p><p className="font-medium text-gray-800">{kycProfile.taxCountry || "—"}</p></div>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 pt-1">
-                    <Lock className="w-3 h-3" /> Stored encrypted · AUSTRAC CDD record · Privacy Act 1988
-                  </p>
+                  {idVerifyComplete ? (
+                    <p className="text-xs text-gray-400 mt-2.5 flex items-start gap-1">
+                      <Lock className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                      Verified identity cannot be edited. To request changes, contact{" "}
+                      <a href="mailto:compliance@amaxglobal.com.au" className="underline ml-0.5">compliance@amaxglobal.com.au</a>.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-400 mt-2.5">
+                      Identity details will be locked after your identity verification is completed.
+                    </p>
+                  )}
                 </div>
+
+                {/* ── SECTION B: Contact & Financial — always editable ── */}
+                <div className="bg-white border border-green-200 rounded-xl p-3.5">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <PenLine className="w-3.5 h-3.5 text-gray-500" />
+                      <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Contact & Financial Profile</span>
+                    </div>
+                    <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={() => setEditStep1(true)}>
+                      <PenLine className="w-3 h-3 mr-1" /> Edit
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-sm">
+                    <div><p className="text-xs text-gray-400">Mobile Number</p><p className="font-medium text-gray-800">{kycProfile.phoneNumber || "—"}</p></div>
+                    <div className="sm:col-span-2"><p className="text-xs text-gray-400">Residential Address</p><p className="font-medium text-gray-800">{[kycProfile.residentialAddress, kycProfile.suburb, kycProfile.stateRegion, kycProfile.postcode, kycProfile.addressCountry].filter(Boolean).join(", ") || "—"}</p></div>
+                    <div><p className="text-xs text-gray-400">Employment</p><p className="font-medium text-gray-800 capitalize">{kycProfile.employmentStatus?.replace(/_/g, " ") || "—"}</p></div>
+                    <div><p className="text-xs text-gray-400">Purpose of Account</p><p className="font-medium text-gray-800 capitalize">{kycProfile.purposeOfAccount?.replace(/_/g, " ") || "—"}</p></div>
+                    <div><p className="text-xs text-gray-400">Source of Funds</p><p className="font-medium text-gray-800 capitalize">{kycProfile.sourceOfFunds?.replace(/_/g, " ") || "—"}</p></div>
+                  </div>
+                </div>
+
+                <p className="text-xs text-muted-foreground flex items-center gap-1 pt-0.5">
+                  <Lock className="w-3 h-3" /> Stored encrypted · AML/CTF CDD record · Privacy Act 1988
+                </p>
               </div>
             </div>
           ) : (
@@ -699,58 +729,109 @@ export default function Compliance() {
 
               <div className="p-5 space-y-5">
 
-                {/* Section A — Identity */}
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                      <span className="text-blue-700 text-xs font-bold">A</span>
+                {/* Section A — Identity (locked after Step 3 identity verification) */}
+                {idVerifyComplete ? (
+                  <div className="rounded-xl bg-gray-50 border border-gray-200 p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Lock className="w-4 h-4 text-gray-500" />
+                      <h4 className="text-sm font-semibold text-gray-800">Identity Details</h4>
+                      <span className="ml-auto flex items-center gap-1 text-xs text-gray-500 bg-gray-200 px-2.5 py-0.5 rounded-full font-medium">
+                        <Lock className="w-3 h-3" /> Verified · Sumsub
+                      </span>
                     </div>
-                    <h4 className="text-sm font-semibold text-gray-800">Your Identity</h4>
-                    <span className="text-xs text-gray-400 ml-auto">Must match your ID exactly</span>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-sm mb-3">
+                      <div><p className="text-xs text-gray-400">Full Legal Name</p><p className="font-medium text-gray-700">{piiFullName || kycProfile?.fullLegalName || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Date of Birth</p><p className="font-medium text-gray-700">{piiDob || kycProfile?.dateOfBirth || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Nationality</p><p className="font-medium text-gray-700">{piiNationality || kycProfile?.nationality || "—"}</p></div>
+                    </div>
+                    <p className="text-xs text-gray-400 flex items-start gap-1">
+                      <Lock className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                      Identity information is locked after verification and cannot be edited. Contact{" "}
+                      <a href="mailto:compliance@amaxglobal.com.au" className="underline ml-0.5">compliance@amaxglobal.com.au</a>{" "}
+                      to request a change.
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1.5">
+                      Identity verification is performed by our external provider (Sumsub). Verified data is locked to ensure compliance with AML/CTF obligations.
+                    </p>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="pii-fullname" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                        Full Legal Name <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="pii-fullname"
-                        placeholder="As shown on your passport or driver licence"
-                        value={piiFullName}
-                        onChange={e => setPiiFullName(e.target.value)}
-                        className="h-10 text-sm"
-                      />
+                ) : (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <span className="text-blue-700 text-xs font-bold">A</span>
+                      </div>
+                      <h4 className="text-sm font-semibold text-gray-800">Your Identity</h4>
+                      <span className="text-xs text-gray-400 ml-auto">Must match your ID exactly</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="pii-fullname" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                          Full Legal Name <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="pii-fullname"
+                          placeholder="As shown on your passport or driver licence"
+                          value={piiFullName}
+                          onChange={e => setPiiFullName(e.target.value)}
+                          className="h-10 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="pii-dob" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                          Date of Birth <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="pii-dob"
+                          type="date"
+                          value={piiDob}
+                          onChange={e => setPiiDob(e.target.value)}
+                          className="h-10 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="pii-nationality" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                          Country of Nationality <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="pii-nationality"
+                          placeholder="e.g. Australia"
+                          value={piiNationality}
+                          onChange={e => setPiiNationality(e.target.value)}
+                          className="h-10 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="pii-phone" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                          Mobile Number <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="pii-phone"
+                          type="tel"
+                          placeholder="+61 400 000 000"
+                          value={piiPhone}
+                          onChange={e => setPiiPhone(e.target.value)}
+                          className="h-10 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Phone field — shown here only when identity is locked (phone was in Section A before) */}
+                {idVerifyComplete && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <span className="text-blue-700 text-xs font-bold">B</span>
+                      </div>
+                      <h4 className="text-sm font-semibold text-gray-800">Contact Details</h4>
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="pii-dob" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                        Date of Birth <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="pii-dob"
-                        type="date"
-                        value={piiDob}
-                        onChange={e => setPiiDob(e.target.value)}
-                        className="h-10 text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="pii-nationality" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                        Country of Nationality <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="pii-nationality"
-                        placeholder="e.g. Australia"
-                        value={piiNationality}
-                        onChange={e => setPiiNationality(e.target.value)}
-                        className="h-10 text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="pii-phone" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                      <Label htmlFor="pii-phone-locked" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
                         Mobile Number <span className="text-red-500">*</span>
                       </Label>
                       <Input
-                        id="pii-phone"
+                        id="pii-phone-locked"
                         type="tel"
                         placeholder="+61 400 000 000"
                         value={piiPhone}
@@ -759,11 +840,11 @@ export default function Compliance() {
                       />
                     </div>
                   </div>
-                </div>
+                )}
 
                 <div className="border-t border-gray-100" />
 
-                {/* Section B — Residential Address */}
+                {/* Section B/C — Residential Address */}
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">

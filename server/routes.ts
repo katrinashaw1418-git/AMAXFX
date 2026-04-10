@@ -4517,9 +4517,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { userId } = requireAuth(req);
       const schema = z.object({
-        fullLegalName: z.string().min(2, "Full legal name required"),
-        dateOfBirth: z.string().min(8, "Date of birth required"),
-        nationality: z.string().min(2, "Nationality required"),
+        fullLegalName: z.string().min(2, "Full legal name required").optional(),
+        dateOfBirth: z.string().min(8, "Date of birth required").optional(),
+        nationality: z.string().min(2, "Nationality required").optional(),
         phoneNumber: z.string().min(8, "Phone number required"),
         pepDeclaration: z.boolean(),
         sanctionsDeclaration: z.boolean(),
@@ -4536,6 +4536,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         taxCountry: z.string().optional(),
       });
       const data = schema.parse(req.body);
+
+      // Check if identity has already been verified — if so, lock Name/DOB/Nationality
+      const [existingUser] = await db
+        .select({ idVerificationComplete: users.idVerificationComplete, fullLegalName: users.fullLegalName, dateOfBirth: users.dateOfBirth, nationality: users.nationality })
+        .from(users).where(eq(users.id, userId));
+      const identityLocked = existingUser?.idVerificationComplete === true;
+      // Validate identity fields are present on initial submission (not locked)
+      if (!identityLocked && (!data.fullLegalName || !data.dateOfBirth || !data.nationality)) {
+        return res.status(400).json({ error: "Full legal name, date of birth and nationality are required" });
+      }
       // Note: sanctionsDeclaration and consentDeclaration are formally captured
       // during the Customer Agreement signing step (Step 3), not here.
       // Calculate internal risk score (not shown to user — gaming risk per AUSTRAC guidance)
@@ -4550,9 +4560,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       kycRefreshDue.setMonth(kycRefreshDue.getMonth() + refreshMonths);
 
       await db.update(users).set({
-        fullLegalName: data.fullLegalName,
-        dateOfBirth: data.dateOfBirth,
-        nationality: data.nationality,
+        // Identity fields: only update when not already verified (lock after Sumsub verification)
+        ...(identityLocked ? {
+          fullLegalName: existingUser.fullLegalName,
+          dateOfBirth: existingUser.dateOfBirth,
+          nationality: existingUser.nationality,
+        } : {
+          fullLegalName: data.fullLegalName ?? null,
+          dateOfBirth: data.dateOfBirth ?? null,
+          nationality: data.nationality ?? null,
+        }),
         phoneNumber: data.phoneNumber,
         pepDeclaration: data.pepDeclaration,
         sanctionsDeclaration: data.sanctionsDeclaration,

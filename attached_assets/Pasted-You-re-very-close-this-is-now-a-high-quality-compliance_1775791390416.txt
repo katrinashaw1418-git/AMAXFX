@@ -1,0 +1,249 @@
+You’re very close — this is now a **high-quality compliance UX**, but you need one key design principle:
+
+👉 **Separate “User Editable Data” from “Verified Data (locked)”**
+
+Right now everything looks editable → that weakens the credibility of verification.
+
+---
+
+# 🎯 CORE DESIGN MODEL (what you should implement)
+
+## 🧠 Split into 3 layers
+
+### 1. ✏️ User Input (editable)
+
+### 2. 🔒 Verified Data (locked)
+
+### 3. 🏢 Verification Source (Sumsub / external)
+
+---
+
+# ✅ HOW TO DESIGN IT (exact UI structure)
+
+---
+
+## 🔹 SECTION 1 — PERSONAL INFORMATION
+
+👉 Keep editable
+
+```text
+Full Legal Name        John Chen          ✏️ Edit
+Date of Birth          09/04/1988         ✏️ Edit
+Nationality            Australia          ✏️ Edit
+Mobile Number          0412345678         ✏️ Edit
+```
+
+---
+
+## 🔹 SECTION 2 — RESIDENTIAL ADDRESS
+
+👉 Editable BUT with verification state
+
+```text
+Residential Address
+
+LEVEL 2, KINGS COURT
+SYDNEY NSW 2216
+Australia
+
+Status: 🔴 Not Verified
+[Upload document]
+```
+
+---
+
+### AFTER verification:
+
+```text
+Status: 🟢 Verified via external provider
+🔒 This address has been verified and cannot be edited
+```
+
+---
+
+## 🔹 SECTION 3 — IDENTITY VERIFICATION (CRITICAL)
+
+👉 This should NEVER be editable
+
+---
+
+### BEFORE:
+
+```text
+Status: In Progress
+Provider: Sumsub
+
+[Start Verification]
+```
+
+---
+
+### AFTER:
+
+```text
+Status: 🟢 Verified
+Verified via: Sumsub (external provider)
+
+Verified Name: John Chen
+Verified DOB: 09/04/1988
+
+🔒 Verified information cannot be edited
+```
+
+---
+
+# 🚨 IMPORTANT RULE
+
+👉 Once verified:
+
+* ❌ Remove Edit button
+* ❌ Do NOT allow overwrite
+* ❌ Do NOT let user “change identity”
+
+---
+
+# 🧠 HOW TO HANDLE EDIT REQUESTS
+
+If user wants to change:
+
+👉 Show:
+
+```text
+To update verified information, please contact support or re-complete identity verification.
+```
+
+---
+
+# ✅ ADD THIS DISCLOSURE (important)
+
+Put this under Identity section:
+
+```text
+Identity verification is performed by our external provider (Sumsub). Verified data is locked to ensure compliance with AML/CTF obligations.
+```
+
+---
+
+# ✅ ADDRESS VERIFICATION — BEST PRACTICE
+
+---
+
+## BEFORE verification
+
+```text
+Status: Not Verified
+Upload required
+```
+
+---
+
+## AFTER verification
+
+```text
+Status: 🟢 Verified via document review
+
+Verified by:
+• External provider (where applicable)
+• AMAX compliance review
+
+🔒 Verified address cannot be edited
+```
+
+---
+
+# 🚨 KEY COMPLIANCE POSITIONING
+
+👉 You want this exact logic:
+
+| Data Type         | Editable       | Verified By           |
+| ----------------- | -------------- | --------------------- |
+| Name/DOB          | ❌ after KYC    | Sumsub                |
+| Address           | ❌ after verify | Sumsub or AMAX review |
+| Phone             | ✅              | User                  |
+| Financial profile | ✅              | User declaration      |
+
+---
+
+# 🎯 VISUAL DESIGN (VERY IMPORTANT)
+
+Use **badges + icons**
+
+---
+
+## Status examples
+
+* 🟢 Verified
+* 🟡 Pending
+* 🔴 Not verified
+* 🔒 Locked
+
+---
+
+## Example:
+
+```text
+Identity Status: 🟢 Verified (Sumsub)
+Address Status: 🟡 Pending verification
+```
+
+---
+
+# 🚀 FINAL STRUCTURE (CLEAN VERSION)
+
+---
+
+## 🧾 Identity & Compliance
+
+### Identity Verification
+
+* Status: 🟢 Verified
+* Provider: Sumsub
+* 🔒 Locked
+
+---
+
+### Residential Address
+
+* Status: 🟡 Pending / 🟢 Verified
+* Editable → until verified
+* Locked after verification
+
+---
+
+### Personal Information
+
+* Editable (non-regulated fields only)
+
+---
+
+# ⚠️ BIGGEST MISTAKE TO AVOID
+
+❌ Letting users edit verified data
+❌ Not showing who verified it
+❌ Mixing editable + verified in same UI
+
+---
+
+# 🧠 ONE-LINE RULE
+
+👉 **If it’s verified — it must be locked and attributed**
+
+---
+
+# 🔥 YOUR CURRENT STATE
+
+You are already:
+
+* ✅ using Sumsub correctly
+* ✅ separating steps
+* ❗ just missing UI logic
+
+---
+
+# 🚀 IF YOU WANT NEXT STEP
+
+I can:
+👉 design your **full KYC state machine (backend + UI + status transitions)**
+👉 or give you **exact React component structure + logic** to implement this cleanly
+
+You’re now at **production-grade compliance design level** — just need this final layer.

@@ -1,0 +1,143 @@
+Short answer: **✅ Yes — but be careful how you position it.**
+
+---
+
+# 🎯 The key distinction
+
+You can say AMAX **verifies address**, but NOT that you:
+
+* independently prove it from scratch
+* replace external verification providers
+
+---
+
+# 🧠 Your current setup (important)
+
+You are using:
+
+* Sumsub for KYC
+
+👉 That means:
+
+**Primary verification = external provider**
+**AMAX = reliance + review + record-keeping**
+
+---
+
+# ✅ What you CAN say (safe)
+
+## 🥇 Best wording
+
+```text
+Address verification is conducted using information provided by external verification providers and supporting documents, in accordance with AML/CTF obligations.
+```
+
+---
+
+## 🥈 Short version (UI)
+
+```text
+Address verification is completed using external verification providers and supporting documentation.
+```
+
+---
+
+# ⚠️ What you should NOT say
+
+```text
+AMAX verifies your address ❌
+```
+
+👉 implies:
+
+* you are the **verification authority**
+* you are performing **independent KYC checks**
+
+---
+
+```text
+Address verified by AMAX ❌
+```
+
+👉 too strong, regulator may question:
+
+* methodology
+* controls
+* liability
+
+---
+
+# 🧠 Best positioning (important)
+
+You want to present as:
+
+```text
+AMAX relies on external providers and performs compliance review
+```
+
+NOT:
+
+```text
+AMAX performs full verification itself
+```
+
+---
+
+# ✅ If you still want AMAX mentioned
+
+Use this:
+
+```text
+Address verification is conducted via external verification providers and reviewed by AMAX in accordance with AML/CTF obligations.
+```
+
+---
+
+# 🎯 When AMAX *can* verify directly
+
+You can say AMAX verifies **ONLY IF**:
+
+* you manually review documents
+* you have AML procedures in place
+* you log and retain evidence
+
+👉 Then wording:
+
+```text
+Address verification may be conducted using supporting documents reviewed in accordance with AML/CTF requirements.
+```
+
+---
+
+# 🚀 Best setup for your platform
+
+👉 Since you already use Sumsub:
+
+### ✔ Recommended model
+
+* Identity + address → **Sumsub**
+* AMAX → **review + rely + store outcome**
+
+👉 Cleanest
+👉 Lowest regulatory risk
+
+---
+
+# ✔️ Final answer
+
+👉 **Yes — but don’t say AMAX verifies directly**
+
+👉 Say:
+
+**“Address verification is conducted via external providers and reviewed in accordance with AML/CTF obligations.”**
+
+---
+
+# 🧠 One-line rule
+
+👉 **You can verify — but you should sound like you rely, not replace**
+
+---
+
+If you want, I can:
+👉 rewrite your entire **KYC + compliance wording into one consistent legal-grade version** (you’re very close).
