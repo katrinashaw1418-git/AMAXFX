@@ -986,6 +986,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
     }
+
+    // ── Seed KYC profile for demo user — all 4 steps completed ──────────────
+    {
+      const [demoKyc] = await db.select({ id: users.id, kycProfileComplete: users.kycProfileComplete })
+        .from(users).where(eq(users.email, "demo@amaxglobal.com.au"));
+      if (demoKyc && !demoKyc.kycProfileComplete) {
+        await db.update(users).set({
+          // Step 1 — personal info
+          fullLegalName:       "Ken Lancaster",
+          dateOfBirth:         "1978-05-22",
+          nationality:         "Australian",
+          phoneNumber:         "02 8320 1908",
+          pepDeclaration:      false,
+          sanctionsDeclaration: false,
+          consentDeclaration:  true,
+          kycProfileComplete:  true,
+          residentialAddress:  "25 High Street",
+          suburb:              "Rockdale",
+          stateRegion:         "NSW",
+          postcode:            "2216",
+          addressCountry:      "Australia",
+          occupation:          "Company Director",
+          employmentStatus:    "self_employed",
+          purposeOfAccount:    "business_payments",
+          sourceOfFunds:       "business",
+          taxCountry:          "Australia",
+          // Step 2 — customer agreement
+          agreementSigned:     true,
+          agreementSignedAt:   new Date("2025-09-15T09:32:00"),
+          agreementRef:        "AMXAGR-KL20250915",
+          agreementVersion:    "v2.0",
+          agreementSignature:  "Ken Lancaster",
+          // Step 3 — identity verification (Sumsub)
+          idDocumentType:      "passport",
+          idDocsSubmitted:     true,
+          idVerificationComplete: true,
+          // Step 4 — proof of address (Sumsub POA)
+          addressDocFilename:  "sumsub-submitted",
+          addressDocApproved:  true,
+          // Risk score
+          riskScore:  4,
+          riskLevel:  "low",
+          // Periodic CDD review — 2 years from agreement date (AUSTRAC ongoing CDD)
+          kycRefreshDue: new Date("2027-09-15"),
+        }).where(eq(users.email, "demo@amaxglobal.com.au"));
+      }
+    }
+
+    // ── Seed demo transactions — only if none exist for the demo user ─────────
+    {
+      const [demoUser] = await db.select({ id: users.id })
+        .from(users).where(eq(users.email, "demo@amaxglobal.com.au"));
+      if (demoUser) {
+        const existing = await db.select({ id: transactions.id })
+          .from(transactions).where(eq(transactions.userId, demoUser.id)).limit(1);
+        if (existing.length === 0) {
+          const uid = demoUser.id;
+          const txs = [
+            // Transfer In (fiat deposit)
+            { userId: uid, type: "deposit",    fromCurrency: null,  toCurrency: "AUD", amount: "50000.00", fee: "0.00",  exchangeRate: null, status: "completed", settlementStatus: "partner_executed",  description: "Transfer In — ANZ Bank BSB 012-003 Acc 987654321", assetType: "fiat",  direction: "in",       purposeOfTransfer: "business_payments", createdAt: new Date("2025-10-03T09:15:00") },
+            { userId: uid, type: "deposit",    fromCurrency: null,  toCurrency: "USD", amount: "30000.00", fee: "0.00",  exchangeRate: null, status: "completed", settlementStatus: "partner_executed",  description: "Transfer In — JP Morgan New York SWIFT CHASUS33", assetType: "fiat",  direction: "in",       purposeOfTransfer: "investment",        createdAt: new Date("2025-10-10T14:22:00") },
+            { userId: uid, type: "deposit",    fromCurrency: null,  toCurrency: "AUD", amount: "120000.00", fee: "0.00", exchangeRate: null, status: "completed", settlementStatus: "partner_executed",  description: "Transfer In — CBA NetBank BSB 062-000 Acc 11223344", assetType: "fiat", direction: "in",      purposeOfTransfer: "personal_transfers", createdAt: new Date("2025-11-05T10:00:00") },
+            // Transfer Out (fiat withdrawal)
+            { userId: uid, type: "withdrawal", fromCurrency: "AUD", toCurrency: null,  amount: "15000.00", fee: "5.00", exchangeRate: null, status: "completed", settlementStatus: "partner_executed",  description: "Transfer Out — Westpac BSB 033-001 Acc 445566778", assetType: "fiat",  direction: "out",      purposeOfTransfer: "business_payments", createdAt: new Date("2025-10-18T11:05:00") },
+            { userId: uid, type: "withdrawal", fromCurrency: "USD", toCurrency: null,  amount: "8500.00",  fee: "5.00", exchangeRate: null, status: "completed", settlementStatus: "partner_executed",  description: "Transfer Out — Bank of America SWIFT BOFAUS3N", assetType: "fiat",  direction: "out",       purposeOfTransfer: "investment",        createdAt: new Date("2025-11-12T16:30:00") },
+            // FX Conversion (fiat exchange)
+            { userId: uid, type: "exchange",   fromCurrency: "AUD", toCurrency: "USD", amount: "25000.00", fee: "62.50", exchangeRate: "0.64800000", status: "completed", settlementStatus: "partner_executed", description: "FX Conversion AUD → USD", assetType: "fiat", direction: "exchange", purposeOfTransfer: "investment", createdAt: new Date("2025-10-22T09:45:00") },
+            { userId: uid, type: "exchange",   fromCurrency: "AUD", toCurrency: "CNY", amount: "18000.00", fee: "45.00", exchangeRate: "4.62000000", status: "completed", settlementStatus: "partner_executed", description: "FX Conversion AUD → CNY", assetType: "fiat", direction: "exchange", purposeOfTransfer: "personal_transfers", createdAt: new Date("2025-11-01T13:20:00") },
+            { userId: uid, type: "exchange",   fromCurrency: "AUD", toCurrency: "GBP", amount: "10000.00", fee: "25.00", exchangeRate: "0.51200000", status: "completed", settlementStatus: "partner_executed", description: "FX Conversion AUD → GBP", assetType: "fiat", direction: "exchange", purposeOfTransfer: "business_payments", createdAt: new Date("2025-11-20T08:15:00") },
+            // Digital Asset Exchange (crypto buy/sell via Independent Reserve)
+            { userId: uid, type: "exchange",   fromCurrency: "AUD", toCurrency: "BTC", amount: "5000.00",  fee: "25.00", exchangeRate: "0.00001524", status: "completed", settlementStatus: "partner_executed", description: "Digital Asset Exchange AUD → BTC via Independent Reserve", assetType: "cross", direction: "exchange", beneficiaryName: "Independent Reserve Pty Ltd", purposeOfTransfer: "investment", createdAt: new Date("2025-10-28T10:00:00") },
+            { userId: uid, type: "exchange",   fromCurrency: "BTC", toCurrency: "AUD", amount: "0.02500000", fee: "0.00012500", exchangeRate: "65420.00000000", status: "completed", settlementStatus: "partner_executed", description: "Digital Asset Exchange BTC → AUD via Independent Reserve", assetType: "cross", direction: "exchange", beneficiaryName: "Independent Reserve Pty Ltd", purposeOfTransfer: "investment", createdAt: new Date("2025-11-15T14:55:00") },
+            { userId: uid, type: "exchange",   fromCurrency: "AUD", toCurrency: "ETH", amount: "8000.00",  fee: "40.00", exchangeRate: "0.00033500", status: "completed", settlementStatus: "partner_executed", description: "Digital Asset Exchange AUD → ETH via Independent Reserve", assetType: "cross", direction: "exchange", beneficiaryName: "Independent Reserve Pty Ltd", purposeOfTransfer: "investment", createdAt: new Date("2025-12-02T09:30:00") },
+          ];
+          for (const tx of txs) {
+            await db.insert(transactions as any).values(tx).onConflictDoNothing();
+          }
+        }
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -2615,11 +2695,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   : null,
               ].filter(Boolean).join(" ") || null
             : null,
-          riskFlag: false,
-          reviewStatus: "clear",
-          reviewNotes: null,
+          riskFlag: amount.gte(10000),
+          reviewStatus: amount.gte(10000) ? "flagged" : "clear",
+          reviewNotes: amount.gte(10000) ? "AUSTRAC TTR threshold — manual review required" : null,
         }).returning();
       });
+
+      // TTR auto-flag — AUSTRAC mandatory reporting for exchanges >= AUD $10,000 equivalent.
+      if (amount.gte(10000)) {
+        try {
+          await db.insert(complianceActions as any).values({
+            userId,
+            actionType: "ttr",
+            transactionId: txRecord?.id ?? null,
+            notes: `Auto-flagged: ${fromCurrency}→${toCurrency} exchange of ${amount.toFixed(2)} meets or exceeds AUD $10,000 AUSTRAC TTR threshold. Pending review by Compliance Officer.`,
+            performedBy: "system",
+          });
+        } catch (flagErr: any) {
+          console.error("[ttr-auto-flag-exchange] failed:", flagErr.message);
+        }
+      }
 
       await runAmlCheck(userId, txRecord?.id, amount, classifyAssetType(fromCurrency, toCurrency), "exchange");
 
