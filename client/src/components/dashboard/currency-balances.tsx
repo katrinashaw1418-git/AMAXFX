@@ -91,17 +91,13 @@ export default function CurrencyBalances({ hideSummary = false }: { hideSummary?
       {!hideSummary && (
         <Card className="bg-slate-800 text-white border-slate-700">
           <CardContent className="p-5">
-            <p className="text-slate-400 text-xs uppercase tracking-wide mb-1">Total Portfolio Value</p>
+            <p className="text-slate-400 text-xs uppercase tracking-wide mb-1">Total Fiat Balance</p>
             <p className="text-3xl font-bold">
-              {totalAud !== null
-                ? `A$${totalAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+              {fiatAud !== null
+                ? `A$${fiatAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
                 : "—"}
             </p>
-            <div className="flex gap-4 mt-3 text-xs text-slate-400">
-              <span>Fiat: <span className="text-slate-200 font-medium">{fiatAud !== null ? `A$${fiatAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}</span></span>
-              <span>Crypto: <span className="text-slate-200 font-medium">{cryptoAud !== null ? `A$${cryptoAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}</span></span>
-            </div>
-            <p className="text-xs text-slate-600 mt-2 italic">Digital assets subject to market volatility</p>
+            <p className="text-xs text-slate-600 mt-2 italic">Fiat balances held with regulated banking partners</p>
           </CardContent>
         </Card>
       )}

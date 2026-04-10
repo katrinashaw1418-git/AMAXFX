@@ -972,10 +972,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           { currency: "USDC", balance: "800.00",   walletType: "crypto" },
         ];
         for (const w of seedWallets) {
+          // Fiat: insert only — preserve balances from demo transactions
+          // Crypto: always reset — AMAX doesn't hold crypto so balances must not drift
+          const onConflict = w.walletType === "crypto"
+            ? `DO UPDATE SET balance = EXCLUDED.balance, available_balance = EXCLUDED.available_balance`
+            : `DO NOTHING`;
           await db.execute(sql.raw(
             `INSERT INTO wallets (user_id, currency, balance, available_balance, wallet_type)
              VALUES (${demoUser.id}, '${w.currency}', '${w.balance}', '${w.balance}', '${w.walletType}')
-             ON CONFLICT (user_id, currency) DO NOTHING`
+             ON CONFLICT (user_id, currency) ${onConflict}`
           ));
         }
       }
