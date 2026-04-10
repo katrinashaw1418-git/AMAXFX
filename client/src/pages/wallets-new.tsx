@@ -1214,7 +1214,7 @@ export default function Wallets() {
                       <div className="text-xs text-blue-800 dark:text-blue-200 space-y-1.5">
                         <p>1. Submit this request — a unique reference code will be generated.</p>
                         <p>2. You will receive PayID details issued by our regulated banking partner.</p>
-                        <p>3. Send funds to that partner-issued PayID — <strong>not to AMAX</strong>.</p>
+                        <p>3. Send funds to that partner-issued PayID.</p>
                         <p>4. The external partner confirms receipt.</p>
                         <p>5. Your transfer instruction is marked as completed.</p>
                       </div>
