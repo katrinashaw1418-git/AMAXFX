@@ -937,6 +937,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userTier: "premium",
         }).onConflictDoNothing();
       }
+
+      // Ensure demo user has wallets seeded (idempotent — skips existing ones)
+      const [demoUser] = await db.select({ id: users.id })
+        .from(users).where(eq(users.email, "demo@amaxglobal.com.au"));
+      if (demoUser) {
+        const seedWallets = [
+          { currency: "AUD", balance: "500000.00", walletType: "fiat" },
+          { currency: "USD", balance: "350000.00", walletType: "fiat" },
+          { currency: "CAD", balance: "125000.00", walletType: "fiat" },
+          { currency: "EUR", balance: "85000.00",  walletType: "fiat" },
+          { currency: "GBP", balance: "72000.00",  walletType: "fiat" },
+          { currency: "CNY", balance: "180000.00", walletType: "fiat" },
+          { currency: "HKD", balance: "95000.00",  walletType: "fiat" },
+          { currency: "JPY", balance: "380000.00", walletType: "fiat" },
+          { currency: "KRW", balance: "4800000.00",walletType: "fiat" },
+          { currency: "NZD", balance: "55000.00",  walletType: "fiat" },
+          { currency: "SGD", balance: "44000.00",  walletType: "fiat" },
+          { currency: "BTC", balance: "0.05",      walletType: "crypto" },
+          { currency: "ETH", balance: "2.50",      walletType: "crypto" },
+          { currency: "USDT", balance: "1500.00",  walletType: "crypto" },
+          { currency: "USDC", balance: "800.00",   walletType: "crypto" },
+        ];
+        for (const w of seedWallets) {
+          await db.execute(sql.raw(
+            `INSERT INTO wallets (user_id, currency, balance, available_balance, wallet_type)
+             VALUES (${demoUser.id}, '${w.currency}', '${w.balance}', '${w.balance}', '${w.walletType}')
+             ON CONFLICT (user_id, currency) DO NOTHING`
+          ));
+        }
+      }
     }
   }
 

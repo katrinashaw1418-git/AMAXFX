@@ -631,7 +631,6 @@ export default function Wallets() {
   const CRYPTO_CURRENCIES = ['BTC', 'ETH', 'USDT', 'USDC'];
 
   const walletsWithRegions = wallets
-    .filter((wallet: any) => parseFloat(wallet.balance || '0') > 0)
     .filter((wallet: any) => !CRYPTO_CURRENCIES.includes(wallet.currency)) // Fiat only — no crypto accounts
     .map((wallet: any) => ({
       ...wallet,
