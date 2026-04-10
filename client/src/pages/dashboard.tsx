@@ -246,24 +246,14 @@ export default function Dashboard() {
         <CardContent className="p-5">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-4 h-4 text-slate-400" />
-            <p className="text-slate-400 text-xs uppercase tracking-wide">Total Portfolio Value</p>
+            <p className="text-slate-400 text-xs uppercase tracking-wide">Total Fiat Balance</p>
           </div>
           <p className="text-4xl font-bold">
-            {totalAud !== null
-              ? `A$${totalAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+            {fiatAud !== null
+              ? `A$${fiatAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
               : "A$0"}
           </p>
-          <div className="flex gap-6 mt-4 pt-4 border-t border-slate-700">
-            <div className="flex justify-between text-sm gap-2">
-              <span className="text-slate-400">Fiat:</span>
-              <span className="text-white font-medium">{fiatAud !== null ? `A$${fiatAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "A$0"}</span>
-            </div>
-            <div className="flex justify-between text-sm gap-2">
-              <span className="text-slate-400">Digital Assets:</span>
-              <span className="text-white font-medium">{cryptoAud !== null ? `A$${cryptoAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "A$0"}</span>
-            </div>
-          </div>
-          <p className="text-xs text-slate-600 mt-3 italic">Digital assets subject to market volatility</p>
+          <p className="text-xs text-slate-500 mt-3">Fiat balances held with regulated banking partners</p>
         </CardContent>
       </Card>
 

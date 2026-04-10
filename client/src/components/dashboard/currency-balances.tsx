@@ -5,7 +5,7 @@ import { useWallets, usePortfolio } from "@/hooks/use-portfolio";
 import { useFxRates } from "@/hooks/use-fx-rates";
 import { CurrencyConfig } from "@/lib/types";
 import { useLocation } from "wouter";
-import { Coins, Landmark, Info, Wallet, ArrowRightLeft } from "lucide-react";
+import { Landmark, Info, Wallet, ArrowRightLeft } from "lucide-react";
 
 function CurrencyCircle({ currency, size = "md" }: { currency: string; size?: "sm" | "md" }) {
   const config = CurrencyConfig[currency as keyof typeof CurrencyConfig];
@@ -166,70 +166,14 @@ export default function CurrencyBalances({ hideSummary = false }: { hideSummary?
         </CardContent>
       </Card>
 
-      {/* ── Section 2: Digital Asset Balances (Crypto) ── */}
-      <Card className="border-amber-100">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Coins className="w-5 h-5 text-amber-500" />
-            <div>
-              <CardTitle className="text-base">Digital Asset Balances</CardTitle>
-              <p className="text-xs text-amber-500 font-normal mt-0.5">
-                Digital assets · DCE regulated (AUSTRAC)
-              </p>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          {cryptoWallets.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">No digital assets held.</p>
-          ) : (
-            <div className="space-y-2 mb-4">
-              {cryptoWallets.map((wallet: any) => {
-                const config = CurrencyConfig[wallet.currency as keyof typeof CurrencyConfig];
-                const balance = parseFloat(wallet.balance);
-                const audVal = fxRates ? toAud(wallet.currency, balance, fxRates) : null;
-                return (
-                  <div key={wallet.id} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <CurrencyCircle currency={wallet.currency} size="sm" />
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">{wallet.currency}</p>
-                        <p className="text-xs text-gray-400">{config?.name}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-gray-900 text-sm">
-                        {balance.toFixed(wallet.currency === "BTC" ? 6 : wallet.currency === "ETH" ? 4 : 2)} {wallet.currency}
-                      </p>
-                      {audVal !== null && (
-                        <p className="text-xs text-gray-400">≈ A${audVal.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          {/* Action buttons */}
-          <div className="flex gap-2 pt-3 border-t">
-            <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5 border-amber-200 text-amber-700 hover:bg-amber-50" onClick={() => navigate('/wallets')}>
-              <Wallet className="w-3 h-3" /> Accounts
-            </Button>
-            <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5 border-amber-300 text-amber-800 hover:bg-amber-50" onClick={() => navigate('/crypto')}>
-              <ArrowRightLeft className="w-3 h-3" /> Exchange
-            </Button>
-          </div>
-          <div className="flex gap-2 mt-1">
-            <p className="flex-1 text-center text-[10px] text-gray-400">Deposit &amp; withdraw</p>
-            <p className="flex-1 text-center text-[10px] text-gray-400">Internal transfer</p>
-          </div>
-          {/* Compliance note */}
-          <div className="flex items-start gap-2 mt-3 pt-3 border-t text-xs text-gray-500">
-            <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-400" />
-            <span>Digital asset values fluctuate with market conditions and are not guaranteed. AMAX holds DCE registration with AUSTRAC (ABN 54 690 827 608).</span>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Crypto Exchange note — AMAX is a DCE but does not hold digital assets */}
+      <div className="flex items-start gap-2 px-1 text-xs text-gray-500">
+        <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-400" />
+        <span>
+          Digital asset exchange (BTC, ETH, USDT, USDC) is available via the Crypto Exchange page.
+          AMAX does not hold digital assets — all crypto is settled through Independent Reserve Pty Ltd (AUSTRAC DCE-100461150-001).
+        </span>
+      </div>
     </div>
   );
 }

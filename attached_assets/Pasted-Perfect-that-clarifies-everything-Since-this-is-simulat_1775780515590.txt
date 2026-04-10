@@ -1,0 +1,126 @@
+Perfect — that clarifies everything 👍
+
+👉 Since this is **simulation for AUSTRAC only**, you **can show FX balances**, but you must make it **explicitly clear they are simulated**.
+
+---
+
+# ⚠️ Critical principle (don’t miss this)
+
+You are allowed to simulate, but you must **never create the impression of real money or custody**.
+
+👉 The key is **labelling + positioning**
+
+---
+
+# ✅ What you should do (best practice)
+
+## 1. Keep FX balances ✅ (but label clearly)
+
+Display like:
+
+```text
+Available Fiat Balance (Simulation)
+AUD: $25,000
+USD: $10,000
+```
+
+---
+
+## 2. Add a visible disclaimer (important)
+
+Place at top of Accounts page:
+
+```text
+This is a demonstration environment for AUSTRAC application purposes only. 
+All balances and transactions are simulated and do not represent real client funds.
+```
+
+👉 This protects you legally + shows transparency
+
+---
+
+## 3. DO NOT show crypto balances ❌
+
+Even in simulation:
+
+👉 Crypto balances imply:
+
+* custody
+* wallet holding
+
+👉 Avoid completely (you were right earlier)
+
+---
+
+## 4. Rename sections (very important polish)
+
+Instead of:
+
+* “Wallet”
+* “Account Balance”
+
+👉 Use:
+
+* **“Simulated Fiat Balance”**
+* **“Demo Account Overview”**
+* **“Platform Ledger (Simulation)”**
+
+---
+
+## 5. Transactions should also reflect simulation
+
+Example:
+
+```text
+Buy BTC (Simulated)
+Sell ETH (Simulated)
+FX Conversion (Simulated)
+```
+
+---
+
+# 🧠 Why this works for AUSTRAC
+
+You’re showing:
+
+* system capability ✅
+* flow of funds ✅
+* user experience ✅
+
+WITHOUT:
+
+* claiming custody ❌
+* misleading regulators ❌
+
+---
+
+# 💡 This actually strengthens your position
+
+You can say:
+
+> “The platform demonstrates transaction flows and user experience in a simulated environment. No client funds or digital assets are held.”
+
+👉 That is **clean and defensible**
+
+---
+
+# 🎯 Recommended final structure
+
+## Accounts page
+
+* Simulated Fiat Balance (AUD / USD)
+* Transaction History (Simulated)
+* No crypto balances
+* Clear disclaimer at top
+
+---
+
+# ✔️ Final answer
+
+👉 Yes — FX balances are fine
+👉 BUT must be clearly labelled **simulation**
+👉 Add disclaimer + rename sections
+
+---
+
+If you want, I can write you a **fully polished Accounts page (text + UI wording)** that looks institutional-grade and AUSTRAC-ready.
