@@ -918,14 +918,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Seed/sync demo user — always ensure Johnchen exists with correct password
     {
       const hashed = await hashPassword("Johnchen888");
-      // Try to find by email first (handles username case changes)
-      const [existingByEmail] = await db.select().from(users)
-        .where(eq(users.email, "demo@amaxglobal.com.au"));
-      if (existingByEmail) {
-        // Update username and password to current expected values
+      // Find by email OR username — handles old rows with legacy email
+      const { or } = await import("drizzle-orm");
+      const [existingDemo] = await db.select().from(users)
+        .where(or(
+          eq(users.email, "demo@amaxglobal.com.au"),
+          eq(users.username, "Johnchen")
+        ));
+      if (existingDemo) {
+        // Always sync email, username, password, kycStatus, userTier to canonical values
         await db.update(users)
-          .set({ username: "Johnchen", password: hashed, kycStatus: "verified", userTier: "premium" })
-          .where(eq(users.email, "demo@amaxglobal.com.au"));
+          .set({
+            username: "Johnchen",
+            email: "demo@amaxglobal.com.au",
+            password: hashed,
+            firstName: "John",
+            lastName: "Chen",
+            kycStatus: "verified",
+            userTier: "premium",
+          })
+          .where(eq(users.id, existingDemo.id));
       } else {
         await db.insert(users).values({
           username: "Johnchen",
