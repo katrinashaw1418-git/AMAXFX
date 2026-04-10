@@ -1426,6 +1426,69 @@ export default function Wallets() {
           ) : (
             /* ── FIAT WALLET — standard bank transfer ── */
             <div className="space-y-3">
+
+              {/* ── Transfer Type selector ── */}
+              <div>
+                <Label className="text-xs font-medium mb-1.5 block">Transfer Type</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setWithdrawTransferType('domestic')}
+                    className={`flex flex-col items-start px-3 py-2.5 rounded-lg border text-left transition-all ${
+                      withdrawTransferType === 'domestic'
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="text-sm font-semibold">🇦🇺 Domestic</span>
+                    <span className="text-xs text-gray-500 mt-0.5">Australia only · BSB / PayID</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWithdrawTransferType('international')}
+                    className={`flex flex-col items-start px-3 py-2.5 rounded-lg border text-left transition-all ${
+                      withdrawTransferType === 'international'
+                        ? 'border-blue-400 bg-blue-50 text-blue-700'
+                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="text-sm font-semibold">🌍 International</span>
+                    <span className="text-xs mt-0.5 text-amber-600 font-medium">Coming Soon</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* ── International: info panel only — no fields ── */}
+              {withdrawTransferType === 'international' && (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-3">
+                  <div className="flex items-start gap-2.5">
+                    <span className="text-blue-500 text-lg leading-none">🌐</span>
+                    <div>
+                      <p className="font-semibold text-blue-800 text-sm">International Transfer — Coming Soon</p>
+                      <p className="text-xs text-blue-700 mt-1 leading-relaxed">
+                        International transfers are facilitated via external regulated partners.
+                        This feature is not yet enabled in the current environment.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="border-t border-blue-200 pt-3 space-y-1.5 text-xs text-blue-700">
+                    <p className="font-medium text-blue-800">Planned capabilities:</p>
+                    <p>• SWIFT / IBAN wire transfers to 50+ countries</p>
+                    <p>• Facilitated via Airwallex (AUSTRAC registered payment provider)</p>
+                    <p>• Full AML/CTF screening on all cross-border transfers</p>
+                    <p>• FATF Travel Rule compliance for applicable transactions</p>
+                  </div>
+                  <p className="text-xs text-blue-600 italic">
+                    To register interest in international transfers, contact{" "}
+                    <a href="mailto:info@amaxglobal.com.au" className="underline font-medium">
+                      info@amaxglobal.com.au
+                    </a>
+                  </p>
+                </div>
+              )}
+
+              {/* ── Domestic: existing transfer form ── */}
+              {withdrawTransferType === 'domestic' && (<>
               <div>
                 <Label htmlFor="withdraw-method">Transfer Method</Label>
                 <Select value={withdrawMethod} onValueChange={setWithdrawMethod}>
@@ -1584,16 +1647,20 @@ export default function Wallets() {
                   ⏳ Transfer-out requests are subject to review before being processed by our regulated banking partner. Funds will be sent to your nominated account — typically 1–3 business days.
                 </p>
               )}
+              </>)}
+              {/* Domestic: Confirm + Cancel; International: Close only */}
               <div className="flex space-x-2 pt-2">
-                <Button
-                  onClick={handleWithdraw}
-                  disabled={withdrawMutation.isPending}
-                  className="flex-1 h-8 text-sm"
-                >
-                  {withdrawMutation.isPending ? "Processing..." : "Confirm Transfer"}
-                </Button>
-                <Button variant="outline" className="h-8 text-sm" onClick={() => setWithdrawModalOpen(false)}>
-                  Cancel
+                {withdrawTransferType === 'domestic' && (
+                  <Button
+                    onClick={handleWithdraw}
+                    disabled={withdrawMutation.isPending}
+                    className="flex-1 h-8 text-sm"
+                  >
+                    {withdrawMutation.isPending ? "Processing..." : "Confirm Transfer"}
+                  </Button>
+                )}
+                <Button variant="outline" className="h-8 text-sm flex-1" onClick={() => setWithdrawModalOpen(false)}>
+                  {withdrawTransferType === 'international' ? 'Close' : 'Cancel'}
                 </Button>
               </div>
               {/* Modal footer persistent disclosure (Item 1) */}
