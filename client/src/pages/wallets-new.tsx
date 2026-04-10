@@ -739,7 +739,7 @@ export default function Wallets() {
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <DollarSign className="w-5 h-5" />
-              Indicative Balances (External Holdings)
+              <span className="text-base font-semibold">Balances (External Holdings)</span>
                 <span className="text-xs font-normal text-muted-foreground ml-1">held with regulated partners · not controlled by AMAX</span>
             </div>
             <div className="flex items-center gap-2">
