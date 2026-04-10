@@ -194,21 +194,39 @@ export default function Compliance() {
     },
   });
 
-  // ── Identity verification reset (re-submission from under_review) ──────────
+  // ── Identity verification reset (re-verify from under_review OR completed) ──
   const identityResetMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/kyc/identity/reset", {}),
     onSuccess: () => {
       setIdDocsSubmitted(false);
+      setIdVerifyComplete(false);
       setEditStep3(false);
       setVerifyMode("idle");
       setDocExpiry("");
       setDocIssueCountry("");
       refetchProfile();
       queryClient.invalidateQueries({ queryKey: ["/api/kyc/profile"] });
-      toast({ title: "Re-submission Unlocked", description: "You can now re-submit your identity documents. Please use a clear, in-date government-issued ID." });
+      toast({ title: "Re-verification Unlocked", description: "You can now re-submit your identity documents via Sumsub. Please use a clear, in-date government-issued ID." });
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message ?? "Failed to reset identity status", variant: "destructive" });
+    },
+  });
+
+  // ── Address verification reset (re-verify from under_review OR completed) ───
+  const addressResetMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/kyc/address/reset", {}),
+    onSuccess: () => {
+      setAddressDocApproved(false);
+      setAddrDocsSubmitted(false);
+      setAddrVerifyMode("idle");
+      setStepFiles(prev => ({ ...prev, 4: "" }));
+      refetchProfile();
+      queryClient.invalidateQueries({ queryKey: ["/api/kyc/profile"] });
+      toast({ title: "Re-verification Unlocked", description: "You can now re-submit your proof of address via Sumsub." });
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message ?? "Failed to reset address status", variant: "destructive" });
     },
   });
 
@@ -1942,7 +1960,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                             <FileCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
                             <div className="flex-1 min-w-0">
                               <p className="text-xs text-gray-500">Submission Status</p>
-                              <p className="text-sm font-medium text-gray-800">{isSumsubSubmitted ? "Documents submitted to Sumsub" : "Document received by AMAX"}</p>
+                              <p className="text-sm font-medium text-gray-800">{isSumsubSubmitted ? "Documents submitted to Sumsub" : "Verification request submitted to Sumsub"}</p>
                             </div>
                           </div>
                           <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 flex items-start gap-2 text-xs text-blue-800">
@@ -1955,10 +1973,22 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                             </span>
                           </div>
                         </div>
-                        <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-                          <Lock className="w-3 h-3" /> Questions? Contact{" "}
-                          <a href="mailto:info@amaxglobal.com.au" className="underline">info@amaxglobal.com.au</a>
-                        </p>
+                        <div className="flex justify-between items-center">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Lock className="w-3 h-3" /> Questions? Contact{" "}
+                            <a href="mailto:info@amaxglobal.com.au" className="underline">info@amaxglobal.com.au</a>
+                          </p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs flex-shrink-0"
+                            onClick={() => addressResetMutation.mutate()}
+                            disabled={addressResetMutation.isPending}
+                          >
+                            <RefreshCw className={`w-3 h-3 mr-1.5 ${addressResetMutation.isPending ? "animate-spin" : ""}`} />
+                            {addressResetMutation.isPending ? "Resetting…" : "Re-submit via Sumsub"}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -2008,9 +2038,21 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                               <p className="font-semibold text-green-800">Approved</p>
                             </div>
                           </div>
-                          <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-                            <Lock className="w-3 h-3" /> Document data processed by Sumsub — not stored by AMAX Global Pty Ltd · Privacy Act 1988 · AML/CTF Act 2006
-                          </p>
+                          <div className="flex justify-between items-center pt-1 border-t border-green-100">
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Lock className="w-3 h-3" /> Processed by Sumsub — not stored by AMAX · Privacy Act 1988
+                            </p>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs flex-shrink-0"
+                              onClick={() => addressResetMutation.mutate()}
+                              disabled={addressResetMutation.isPending}
+                            >
+                              <RefreshCw className={`w-3 h-3 mr-1.5 ${addressResetMutation.isPending ? "animate-spin" : ""}`} />
+                              {addressResetMutation.isPending ? "Resetting…" : "Re-verify via Sumsub"}
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -2161,9 +2203,21 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                               <p className="font-semibold text-green-800">Approved</p>
                             </div>
                           </div>
-                          <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-                            <Lock className="w-3 h-3" /> Biometric and identity data processed by Sumsub — not stored by AMAX Global Pty Ltd · Privacy Act 1988 · AML/CTF Act 2006
-                          </p>
+                          <div className="flex justify-between items-center pt-1 border-t border-green-100">
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Lock className="w-3 h-3" /> Biometric data processed by Sumsub — not stored by AMAX · Privacy Act 1988
+                            </p>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs flex-shrink-0"
+                              onClick={() => identityResetMutation.mutate()}
+                              disabled={identityResetMutation.isPending}
+                            >
+                              <RefreshCw className={`w-3 h-3 mr-1.5 ${identityResetMutation.isPending ? "animate-spin" : ""}`} />
+                              {identityResetMutation.isPending ? "Resetting…" : "Re-verify via Sumsub"}
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -4941,18 +4941,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/kyc/identity/reset — allows user to re-submit identity docs while under_review
+  // POST /api/kyc/identity/reset — resets identity verification so user can re-submit via Sumsub
   app.post("/api/kyc/identity/reset", async (req: Request, res: any) => {
     try {
       const { userId } = requireAuth(req);
-      await db.update(users).set({ idDocsSubmitted: false }).where(eq(users.id, userId));
+      await db.update(users).set({
+        idDocsSubmitted: false,
+        idVerificationComplete: false,
+        kycStatus: "pending",
+      }).where(eq(users.id, userId));
       await db.insert(auditLogs as any).values({
-        userId, action: "id_docs_reset_for_resubmission", entityType: "user", entityId: String(userId),
-        metadata: { note: "User requested re-submission of identity documents" }, ipAddress: req.ip,
+        userId, action: "id_verification_reset", entityType: "user", entityId: String(userId),
+        metadata: { note: "User requested re-verification of identity documents via Sumsub" }, ipAddress: req.ip,
       });
       res.json({ success: true });
     } catch (err: any) {
-      res.status(500).json({ error: err.message ?? "Failed to reset identity docs status" });
+      res.status(500).json({ error: err.message ?? "Failed to reset identity verification status" });
+    }
+  });
+
+  // POST /api/kyc/address/reset — resets proof of address so user can re-submit via Sumsub
+  app.post("/api/kyc/address/reset", async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      await db.update(users).set({
+        addressDocApproved: false,
+        addressDocFilename: null,
+      }).where(eq(users.id, userId));
+      await db.insert(auditLogs as any).values({
+        userId, action: "address_verification_reset", entityType: "user", entityId: String(userId),
+        metadata: { note: "User requested re-submission of proof of address via Sumsub" }, ipAddress: req.ip,
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to reset address verification status" });
     }
   });
 
