@@ -1,0 +1,166 @@
+This is where things get **more sensitive than FX** — and you need to be stricter 👇
+
+---
+
+# 🪙 Digital assets (crypto) — rules for YOU
+
+## 🎯 Core principle
+
+👉 Showing crypto balances = **much stronger signal of custody**
+
+Compared to FX, regulators treat this more cautiously.
+
+---
+
+# ✅ When you CAN show digital asset balances
+
+## ✔️ Scenario 1 — External custodian + read-only access
+
+If:
+
+* assets held with licensed custodian
+* AMAX has **read-only API access**
+* AMAX **cannot withdraw / control assets**
+
+👉 Then you MAY show:
+
+```text
+BTC Balance: 0.52
+ETH Balance: 3.1
+```
+
+BUT you must disclose clearly:
+
+```text
+Digital assets are held with external custodians.
+AMAX does not custody client assets.
+```
+
+---
+
+# ⚠️ Even then — higher risk than FX
+
+Because crypto:
+
+* is bearer-like
+* easier to transfer
+* often linked to wallet control
+
+👉 Regulators scrutinise this more
+
+---
+
+# ❌ When you should NOT show crypto balances
+
+## 🚫 Your current situation
+
+* No real custodian
+* No API access
+* Simulation only
+
+👉 Then:
+
+❌ Do NOT show:
+
+```text
+BTC: 1.2
+Portfolio value: $50,000
+```
+
+Even if simulated — this is risky
+
+---
+
+# ⚠️ Why crypto is different from FX
+
+| Factor                 | FX       | Crypto      |
+| ---------------------- | -------- | ----------- |
+| Custody implication    | lower    | much higher |
+| Regulatory sensitivity | moderate | high        |
+| Wallet control risk    | low      | high        |
+
+---
+
+# ✅ What you SHOULD do instead
+
+## For your AUSTRAC demo:
+
+### ✔️ Show:
+
+```text
+Buy BTC (Simulated)
+Sell ETH (Simulated)
+FX → Crypto conversion flow
+```
+
+---
+
+### ❌ Do NOT show:
+
+* crypto balances
+* portfolio charts
+* holdings
+
+---
+
+# 💡 If you REALLY want to show something
+
+Use **non-balance language**:
+
+```text
+Digital Asset Transactions (Simulation Only)
+```
+
+or
+
+```text
+Executed Trades (Simulated)
+```
+
+---
+
+# 🧠 Best regulatory positioning
+
+You want to say:
+
+> “AMAX facilitates digital asset transactions but does not custody digital assets.”
+
+---
+
+# 🚨 Biggest mistake to avoid
+
+Even in simulation:
+
+👉 Showing crypto balances can imply:
+
+* wallet control
+* asset holding
+* custody
+
+👉 This is exactly what regulators look for
+
+---
+
+# 🎯 Clean structure for your app
+
+## Accounts page
+
+* ✅ Fiat balances (simulated)
+* ❌ Crypto balances
+
+## Crypto section
+
+* ✅ Trade history
+* ✅ conversion flows
+* ❌ holdings
+
+---
+
+# ✔️ Final answer
+
+👉 Digital asset balances = **only safe if external custodian + read-only access**
+👉 In your current setup = **DO NOT show**
+
+---
+
+If you want, I can redesign your **crypto section UI** so it still looks powerful but stays fully **non-custodial + AUSTRAC-safe**.
