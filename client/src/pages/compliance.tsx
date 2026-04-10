@@ -98,12 +98,14 @@ export default function Compliance() {
   const [editStep3, setEditStep3] = useState(false); // allow re-submitting identity docs from under_review
   const [idVerifyComplete,  setIdVerifyComplete]  = useState(false);
   const [idDocsSubmitted,   setIdDocsSubmitted]   = useState(false); // true when Sumsub SDK complete → "under_review"
-  const [addressDocApproved, setAddressDocApproved] = useState(false); // true when admin approves POA → "completed"
-  const [addrPoaFile,      setAddrPoaFile]      = useState<string | null>(null); // Step 3 proof of address
+  const [addressDocApproved, setAddressDocApproved] = useState(false); // true when Sumsub/admin approves POA → "completed"
   // Sumsub integration state
   type VerifyMode = "idle" | "loading" | "sumsub_sdk" | "manual_review" | "approved" | "declined";
-  const [verifyMode,   setVerifyMode]   = useState<VerifyMode>("idle");
-  const [sumsubToken,  setSumsubToken]  = useState<string>("");
+  const [verifyMode,          setVerifyMode]         = useState<VerifyMode>("idle");
+  const [sumsubToken,         setSumsubToken]         = useState<string>("");
+  const [addrVerifyMode,      setAddrVerifyMode]      = useState<VerifyMode>("idle");
+  const [addrSumsubToken,     setAddrSumsubToken]     = useState<string>("");
+  const [addrDocsSubmitted,   setAddrDocsSubmitted]   = useState(false); // true when Sumsub SDK signals docs uploaded
 
   const { data: kycProfile, refetch: refetchProfile } = useQuery<{
     kycProfileComplete: boolean;
@@ -210,6 +212,31 @@ export default function Compliance() {
     },
   });
 
+  // ── Address verification: start Sumsub POA session ────────────────────────
+  const addressStartMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/kyc/address/start", {}),
+    onSuccess: async (res: any) => {
+      const data = await res.json();
+      if (data.mode === "sumsub") {
+        setAddrSumsubToken(data.token);
+        setAddrVerifyMode("sumsub_sdk");
+      } else {
+        setAddrVerifyMode("manual_review");
+        setAddrDocsSubmitted(true);
+        setStepFiles(prev => ({ ...prev, [4]: "manual-pending" }));
+        refetchProfile();
+        toast({
+          title: "Address Verification Queued",
+          description: "Your address verification has been queued for review by our compliance team. You will be notified within 1–2 business days.",
+        });
+      }
+    },
+    onError: (err: any) => {
+      setAddrVerifyMode("idle");
+      toast({ title: "Verification Error", description: err.message ?? "Failed to start address verification. Please try again.", variant: "destructive" });
+    },
+  });
+
   // ── Agreement scroll tracking — marks sections as read on scroll ──────────
   function handleAgreementScroll() {
     const container = agreementScrollRef.current;
@@ -261,12 +288,100 @@ export default function Compliance() {
     }
   }, [kycProfile?.addressDocApproved]);
 
-  // ── Seed stepFiles[4] from DB addressDocFilename ──────────────────────────
+  // ── Seed addrDocsSubmitted + stepFiles[4] from DB addressDocFilename ───────
   useEffect(() => {
-    if (kycProfile?.addressDocFilename && !stepFiles[4]) {
-      setStepFiles(prev => ({ ...prev, 4: kycProfile.addressDocFilename! }));
+    const f = kycProfile?.addressDocFilename;
+    if (f) {
+      if (!stepFiles[4]) setStepFiles(prev => ({ ...prev, 4: f }));
+      if (f === "sumsub-submitted" || f === "manual-pending") setAddrDocsSubmitted(true);
     }
   }, [kycProfile?.addressDocFilename]);
+
+  // ── Poll /api/kyc/address/status while Sumsub POA SDK is active ───────────
+  const { data: addrStatusData } = useQuery<{ complete: boolean; submitted: boolean }>({
+    queryKey: ["/api/kyc/address/status"],
+    refetchInterval: addrVerifyMode === "sumsub_sdk" ? 5000 : false,
+    enabled: addrVerifyMode === "sumsub_sdk" || addrVerifyMode === "manual_review",
+  });
+
+  useEffect(() => {
+    if (addrStatusData?.complete && !addressDocApproved) {
+      setAddressDocApproved(true);
+      setAddrVerifyMode("approved");
+      toast({ title: "Address Verified", description: "Your proof of address has been successfully verified by Sumsub." });
+      refetchProfile();
+      queryClient.invalidateQueries({ queryKey: ["/api/kyc/profile"] });
+    }
+  }, [addrStatusData?.complete]);
+
+  // ── Launch Sumsub WebSDK for address (POA) ─────────────────────────────────
+  useEffect(() => {
+    if (addrVerifyMode !== "sumsub_sdk" || !addrSumsubToken) return;
+
+    const SUMSUB_SDK_URL  = "https://static.sumsub.com/idensic/static/sns-websdk-builder.js";
+    const CONTAINER_ID    = "sumsub-address-websdk-container";
+    const SCRIPT_ID       = "sumsub-address-websdk-script";
+
+    function launchAddressSdk() {
+      const sdk = (window as any).SumsubWebSdk;
+      if (!sdk) return;
+      sdk
+        .init(addrSumsubToken, async () => {
+          try {
+            const r = await fetch("/api/kyc/address/refresh-token", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+            });
+            const d = await r.json();
+            return d.token ?? "";
+          } catch { return ""; }
+        })
+        .withConf({ lang: "en", uiConf: { customCssStr: "" } })
+        .withOptions({ addViewportTag: false, adaptIframeHeight: true })
+        .on("onStepCompleted", () => {
+          fetch("/api/kyc/address/docs-submitted", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+          });
+          setAddrDocsSubmitted(true);
+          setStepFiles(prev => ({ ...prev, [4]: "sumsub-submitted" }));
+          toast({
+            title: "Documents Submitted",
+            description: "Your proof of address has been submitted to Sumsub for automated review. This typically takes a few minutes.",
+          });
+        })
+        .on("onApplicantSubmitted", () => {
+          fetch("/api/kyc/address/docs-submitted", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+          }).then(() => {
+            setAddrDocsSubmitted(true);
+            setStepFiles(prev => ({ ...prev, [4]: "sumsub-submitted" }));
+            refetchProfile();
+          });
+        })
+        .on("onError", (error: any) => {
+          console.error("[Sumsub POA] error:", error);
+        })
+        .build()
+        .launch(`#${CONTAINER_ID}`);
+    }
+
+    if (document.getElementById(SCRIPT_ID)) {
+      launchAddressSdk();
+      return;
+    }
+    const script    = document.createElement("script");
+    script.id       = SCRIPT_ID;
+    script.src      = SUMSUB_SDK_URL;
+    script.onload   = launchAddressSdk;
+    document.head.appendChild(script);
+
+    return () => { /* Keep script cached for reuse */ };
+  }, [addrVerifyMode, addrSumsubToken]);
 
   // ── Pre-populate PII form from DB on profile load (needed for edit mode) ──
   useEffect(() => {
@@ -1781,9 +1896,9 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                   );
                 }
 
-                // ── Step 4 under_review — doc uploaded, awaiting admin approval ──
+                // ── Step 4 under_review — submitted to Sumsub / manual review ──
                 if (def.id === 4 && status === "under_review") {
-                  const submittedFile = stepFiles[4] || kycProfile?.addressDocFilename;
+                  const isSumsubSubmitted = (stepFiles[4] === "sumsub-submitted") || (kycProfile?.addressDocFilename === "sumsub-submitted");
                   return (
                     <div key={def.id} className="border-2 border-amber-300 bg-amber-50 rounded-xl overflow-hidden">
                       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
@@ -1796,62 +1911,97 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                             <h3 className="font-semibold text-gray-900">Proof of Address</h3>
                             <Badge className="bg-amber-100 text-amber-800">Under Review</Badge>
                           </div>
-                          <p className="text-xs text-gray-500 mt-0.5">Your address document is being reviewed by the compliance team</p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {isSumsubSubmitted ? "Documents submitted to Sumsub — automated review in progress" : "Your address document is being reviewed by the compliance team"}
+                          </p>
                         </div>
                       </div>
                       <div className="px-4 pb-5 space-y-3">
                         <div className="bg-white border border-amber-200 rounded-xl p-4 space-y-3">
-                          {/* Status info */}
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                               <p className="text-gray-500">Review Status</p>
-                              <p className="font-semibold text-amber-800">Pending Compliance Review</p>
+                              <p className="font-semibold text-amber-800">{isSumsubSubmitted ? "Sumsub Automated Review" : "Pending Compliance Review"}</p>
                             </div>
                             <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                              <p className="text-gray-500">Expected Turnaround</p>
-                              <p className="font-semibold text-amber-800">1–2 business days</p>
+                              <p className="text-gray-500">{isSumsubSubmitted ? "Verification Provider" : "Expected Turnaround"}</p>
+                              <p className="font-semibold text-amber-800">{isSumsubSubmitted ? "Sumsub (external)" : "1–2 business days"}</p>
                             </div>
                           </div>
-                          {/* Document submitted */}
-                          {submittedFile && (
-                            <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-lg px-3 py-2.5">
-                              <FileCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs text-gray-500">Document Submitted</p>
-                                <p className="text-sm font-medium text-gray-800 truncate">{submittedFile}</p>
-                              </div>
+                          <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-lg px-3 py-2.5">
+                            <FileCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-gray-500">Submission Status</p>
+                              <p className="text-sm font-medium text-gray-800">{isSumsubSubmitted ? "Documents submitted to Sumsub" : "Document received by AMAX"}</p>
                             </div>
-                          )}
+                          </div>
                           <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 flex items-start gap-2 text-xs text-blue-800">
                             <Shield className="w-4 h-4 flex-shrink-0 mt-0.5 text-blue-600" />
                             <span>
-                              Your proof of address document is with our compliance team. If it is approved, this step will automatically move to Completed.
-                              If there is an issue, you will be contacted at your registered email. You may replace the document below if needed.
+                              {isSumsubSubmitted
+                                ? "Sumsub is performing automated OCR and consistency checks. AMAX Global retains full legal responsibility for the verification outcome. This page will update automatically when the result is available."
+                                : "Your proof of address is with our compliance team. This step will move to Completed once approved. If there is an issue, you will be contacted at your registered email."
+                              }
                             </span>
-                          </div>
-                          {/* Replace document upload */}
-                          <div>
-                            <p className="text-xs font-semibold text-gray-600 mb-1.5">Replace document (if required)</p>
-                            <label htmlFor="kyc-upload-4-review" className="cursor-pointer block">
-                              <div className="border-2 border-dashed border-amber-300 rounded-xl p-4 text-center hover:border-amber-500 hover:bg-amber-50 transition-all">
-                                <Upload className="w-6 h-6 text-amber-400 mx-auto mb-1" />
-                                <p className="text-xs font-medium text-amber-800">Click to upload a replacement document</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">PDF, JPG, or PNG — max 10 MB — dated within 3 months</p>
-                              </div>
-                              <input
-                                id="kyc-upload-4-review"
-                                type="file"
-                                accept=".pdf,.jpg,.jpeg,.png,.heic"
-                                className="hidden"
-                                onChange={(e) => handleKycUpload(4, "Proof of Address", e)}
-                              />
-                            </label>
                           </div>
                         </div>
                         <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
                           <Lock className="w-3 h-3" /> Questions? Contact{" "}
                           <a href="mailto:info@amaxglobal.com.au" className="underline">info@amaxglobal.com.au</a>
                         </p>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // ── Step 4 completed — address verified ─────────────────────
+                if (def.id === 4 && status === "completed") {
+                  return (
+                    <div key={def.id} className="border-2 border-green-200 bg-green-50 rounded-xl overflow-hidden">
+                      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-600">
+                          <CheckCircle className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-gray-400 font-medium">Step 4 of 4</span>
+                            <h3 className="font-semibold text-gray-900">Proof of Address</h3>
+                            <Badge className="bg-green-100 text-green-800">Verified</Badge>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">Address verified via Sumsub — AUSTRAC CDD requirement fulfilled</p>
+                        </div>
+                      </div>
+                      <div className="px-4 pb-5">
+                        <div className="bg-white border border-green-200 rounded-xl p-4 space-y-3">
+                          <div className="flex items-center gap-3">
+                            <CheckCircle className="w-7 h-7 text-green-600 flex-shrink-0" />
+                            <div>
+                              <p className="font-semibold text-green-900">Address Verified</p>
+                              <p className="text-xs text-green-700">Document checked — address confirmed, date within 3 months, name matched</p>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                              <p className="text-gray-500">Verification Provider</p>
+                              <p className="font-semibold text-green-800">Sumsub (external)</p>
+                            </div>
+                            <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                              <p className="text-gray-500">Compliance Standard</p>
+                              <p className="font-semibold text-green-800">AUSTRAC CDD</p>
+                            </div>
+                            <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                              <p className="text-gray-500">Accountable Party</p>
+                              <p className="font-semibold text-green-800">AMAX Global Pty Ltd</p>
+                            </div>
+                            <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                              <p className="text-gray-500">Verification Result</p>
+                              <p className="font-semibold text-green-800">Approved</p>
+                            </div>
+                          </div>
+                          <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
+                            <Lock className="w-3 h-3" /> Document data processed by Sumsub — not stored by AMAX Global Pty Ltd · Privacy Act 1988 · AML/CTF Act 2006
+                          </p>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1910,50 +2060,47 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                           </div>
                         </div>
 
-                        {/* Upload zone */}
+                        {/* Sumsub POA SDK launcher */}
                         <div className="bg-white border rounded-xl p-4 space-y-3">
-                          <h4 className="font-semibold text-sm">Upload your proof of address</h4>
-                          <p className="text-xs text-muted-foreground">JPG, PNG or PDF — max 10 MB. Ensure the full document is visible, including date and your name.</p>
-                          <label htmlFor="kyc-poa-upload" className="cursor-pointer block">
-                            <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${
-                              addrPoaFile ? "border-green-400 bg-green-50" : "border-gray-300 hover:border-blue-400"
-                            }`}>
-                              <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                              {addrPoaFile ? (
-                                <>
-                                  <p className="text-sm font-medium text-green-700">✓ {addrPoaFile}</p>
-                                  <p className="text-xs text-green-600">Tap to replace</p>
-                                </>
-                              ) : (
-                                <>
-                                  <p className="text-sm font-medium">Click to upload or drag &amp; drop</p>
-                                  <p className="text-xs text-muted-foreground">Utility bill, bank statement, or government letter</p>
-                                </>
-                              )}
+                          {addrVerifyMode === "idle" && (
+                            <>
+                              <h4 className="font-semibold text-sm">Verify your address with Sumsub</h4>
+                              <p className="text-xs text-muted-foreground">
+                                Our automated verification powered by Sumsub will guide you through uploading your proof of address document. The check typically completes within minutes.
+                              </p>
+                              <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2.5 flex items-start gap-2 text-xs text-indigo-800">
+                                <Shield className="w-4 h-4 flex-shrink-0 mt-0.5 text-indigo-600" />
+                                <span>Sumsub performs automated OCR and consistency checks. <strong>AMAX Global</strong> retains full legal responsibility for the verification outcome per AUSTRAC AML/CTF requirements.</span>
+                              </div>
+                              <Button
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                                disabled={addressStartMutation.isPending}
+                                onClick={() => {
+                                  setAddrVerifyMode("loading");
+                                  addressStartMutation.mutate();
+                                }}
+                              >
+                                {addressStartMutation.isPending ? "Starting verification…" : "Start Address Verification"}
+                              </Button>
+                            </>
+                          )}
+
+                          {addrVerifyMode === "loading" && (
+                            <div className="flex items-center justify-center gap-3 py-8">
+                              <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                              <span className="text-sm text-muted-foreground">Loading Sumsub verification…</span>
                             </div>
-                            <input
-                              id="kyc-poa-upload"
-                              type="file"
-                              accept=".pdf,.jpg,.jpeg,.png,.heic"
-                              className="hidden"
-                              onChange={e => {
-                                const f = e.target.files?.[0];
-                                if (f) {
-                                  setAddrPoaFile(f.name);
-                                  setStepFiles(prev => ({ ...prev, [4]: f.name }));
-                                  toast({
-                                    title: "Proof of Address Received",
-                                    description: `${f.name} submitted. Our compliance team will verify it within 1–2 business days.`,
-                                  });
-                                  e.target.value = "";
-                                }
-                              }}
-                            />
-                          </label>
+                          )}
+
+                          {/* Sumsub WebSDK mounts here */}
+                          <div
+                            id="sumsub-address-websdk-container"
+                            className={addrVerifyMode === "sumsub_sdk" ? "min-h-[500px]" : "hidden"}
+                          />
                         </div>
 
                         <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-                          <Lock className="w-3 h-3" /> Your documents are encrypted in transit and stored securely in accordance with the Australian Privacy Act 1988.
+                          <Lock className="w-3 h-3" /> Documents processed by Sumsub — not stored by AMAX Global · Privacy Act 1988 · AML/CTF Act 2006
                         </p>
                       </div>
                     </div>

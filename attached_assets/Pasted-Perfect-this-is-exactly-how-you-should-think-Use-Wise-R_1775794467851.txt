@@ -1,0 +1,273 @@
+Perfect — this is exactly how you should think:
+👉 **Use Wise + Revolut as UX benchmarks**
+👉 But build it **AUSTRAC-compliant for AMAX**
+
+I’ve analysed their real flows and translated them into a **production-ready design for you** 👇
+
+---
+
+# 🎯 What Wise + Revolut do RIGHT (you must copy)
+
+## 1. Progressive onboarding (not everything at once)
+
+* Start simple → add complexity later
+* Wise even allows KYC later (triggered when needed) ([Wise Platform][1])
+
+## 2. Clear verification gate
+
+* Users **cannot transact until verified**
+* “Verified / Not verified” is a system gate ([Wise Platform][2])
+
+## 3. Guided flow (step-by-step, not a long form)
+
+* Each step = one task
+* Very high completion rates
+
+---
+
+# 🧠 YOUR AMAX KYC FLOW (WISE + REVOLUT STYLE)
+
+This is your **exact UI + logic design**
+
+---
+
+# 🔷 SCREEN 1 — Account Setup (FAST ENTRY)
+
+👉 Copy Revolut style (very quick start)
+
+**Fields:**
+
+* Email
+* Mobile (OTP verification)
+
+👉 Goal:
+
+* Get user into system ASAP
+* Don’t block with KYC yet
+
+---
+
+# 🔷 SCREEN 2 — Basic Profile
+
+👉 Light data first (Wise approach)
+
+**Fields:**
+
+* Full name
+* DOB
+* Country
+* Residency
+
+👉 CTA:
+👉 “Continue to verification”
+
+---
+
+# 🔷 SCREEN 3 — KYC PROGRESS DASHBOARD (CRITICAL)
+
+This is where your current design is WRONG — fix it like this:
+
+---
+
+## ✅ Example UI:
+
+```
+Verify your account to unlock all features
+
+[✔] Personal Info
+[ ] Identity Verification
+[ ] Address Verification
+[ ] Compliance Check
+[ ] Approval
+
+Status: In Progress
+```
+
+---
+
+👉 This is exactly how **Revolut feels (clear + guided)**
+
+---
+
+# 🔷 SCREEN 4 — Identity Verification (CORE STEP)
+
+👉 Copy Wise hosted-style experience:
+
+![Image](https://images.openai.com/static-rsc-4/_sSO5LqiHIO9wMiGsZWEeOXtTSRg_RKQTj7dZ696EWJ_F1ndzJGrMKm5u_z1m7UDnnlUDkXlXMrBxOxtBwWwdTPZid8pEcCROuWOXh3jCb3c3I4E536tmTwmk5JFVPIXpGw1uWjE2vD-la69UJ8EKQk1ISCS7mjUz4Lk3En3Pnv-vIV6AXsDCh7PsBGGvz9b?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/Y_yXumxK90A2D4xj1XH2vpb4UtaRh3dEbgn_0H35T2avmMI71Vm90UFPXZOf26G0rfGtLQD-nvwCNlFMAVvPeq63glKeti0WTGw6UV2Bi-GpgxWM8KhHbx15g-I-88Z1w0gfV0uPI7uYmoB1Jq5lny-fs6HbB2d5JBxzY2W8A-YZJ0yuLDCBag5p4DWVgKUF?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/YERQJdRL8IgdfOHwuks9xSq9iYPeoX4kS053t3ekb4LPITEfuCu77nBkxLO-x752xQRLFR0Uv_kpixiu3AjAKSlr1Y7XrXOdA4ybxtcW69l5_SqC6C-RfKkyjCJuG5sGSYeRNColcq79nyKkiheqCub-uWO6R9F7ila0PuM8-Ggp646Dn8g3h2oAPx0gTnux?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/aO7Wo7INFxE0fM6WkzmTEZJr2w3BdOmIAQ_QlurURpighdriDbvEe-fCwkuamkK4F9j-r-j2D71kf6Ct2RjBZO0l-MVWAvNQe6AkOHM0qvQYbct5YeaXBINVlnpOtdJ17vBQhVlyf4wwqwUljLG5YnM5ky3sw_T6r24R-hpwSKxZvEW1dhxDSGtgIoOm9ATg?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/ajSAleIuR7XzJHAa4RfiyEYiaqkrQqSvBWwh4BH0hEHb98srKRb15m6hPE7XxNjLGGOtef4HMUpKSGUOgfPqLsSSKTxHAyBqAI1HtUSqljg-FnJTG_W3H_PSgriywisnrze2auGyYGmIAFXIiKWkUKpXsW7dSYPEdjoKj6bGpXa5j_7ijlDa5-1ck1SGXfUv?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/ZF0PKX7JQG6lla-mpHreV8dpnPa7TsQAQJHJJWHLQBRp4qee-ICm6BnlD-z2hCc6p4ABf-NjHe_xjyBPsTO9QRC9keW-caCU3S806oDaZzVP07AorplOIn_rdnL53YRHZlQSS29BuLK0emySNxJytsFu2btQqTl0XzyRE1T_JCK-yf0h8GegjMPkMZ0iyw7l?purpose=fullsize)
+
+**Flow:**
+
+1. Choose ID type
+2. Capture document
+3. Selfie / liveness
+
+👉 Backend:
+
+* Use **Sumsub**
+
+---
+
+# 🔷 SCREEN 5 — Address Verification
+
+👉 Simple + optional UX (don’t overwhelm)
+
+Options:
+
+* Upload utility bill
+* OR auto-check (if available)
+
+👉 Important:
+
+* Show examples (Wise does this well)
+
+---
+
+# 🔷 SCREEN 6 — Screening (HIDDEN UX)
+
+👉 User DOES NOT see complexity
+
+System runs:
+
+* Sanctions
+* PEP
+* Risk checks
+
+👉 Output only:
+
+* “We are reviewing your information”
+
+---
+
+# 🔷 SCREEN 7 — RESULT STATE (VERY IMPORTANT UX)
+
+👉 Copy Revolut exactly here:
+
+---
+
+## 🟢 Approved
+
+```
+You're verified ✅
+
+You can now:
+- Deposit funds
+- Trade
+- Withdraw
+```
+
+---
+
+## 🟡 Pending
+
+```
+Verification in progress (usually <5 minutes)
+```
+
+---
+
+## 🔴 Failed
+
+```
+We couldn’t verify your identity
+
+→ Retry
+→ Upload different document
+```
+
+---
+
+# 🔷 BACKEND LOGIC (YOU MUST HAVE)
+
+From Wise architecture:
+
+* Verification = **state machine**
+* Not just UI
+
+---
+
+## Example statuses:
+
+```json
+{
+  "kycStatus": "PENDING",
+  "identityStatus": "VERIFIED",
+  "addressStatus": "PENDING",
+  "riskLevel": "LOW",
+  "canTransact": false
+}
+```
+
+👉 VERY IMPORTANT:
+
+* `canTransact = false` until fully verified
+
+---
+
+# ⚠️ WHAT YOU MUST NOT DO (CURRENT ISSUE)
+
+❌ One long form
+❌ “KYC 50% complete” vague status
+❌ No clear verification steps
+❌ No gating logic
+
+👉 AUSTRAC will see this as **weak control framework**
+
+---
+
+# 🧠 FINAL DESIGN PRINCIPLES (COPY THESE)
+
+### From Wise:
+
+* KYC = **structured + triggered + state-based**
+
+### From Revolut:
+
+* UX = **simple + guided + visual progress**
+
+---
+
+# 🔥 YOUR FINAL AMAX FLOW (BEST VERSION)
+
+👉 This is what you should build:
+
+1. Fast signup (email/phone)
+2. Light personal info
+3. KYC dashboard (progress tracker)
+4. ID verification (Sumsub)
+5. Address verification
+6. Automated screening
+7. Approval state
+8. Unlock features
+
+---
+
+# 🚀 My direct recommendation
+
+👉 YES — redesign completely
+👉 Model it on:
+
+* Wise (structure + compliance)
+* Revolut (UX simplicity)
+
+---
+
+# If you want next step
+
+I can:
+
+* Design your **exact UI screens (Figma-level layout)**
+* Or map this into your **actual code structure (frontend + API)**
+* Or audit your current KYC flow against this and give **gap table + fixes**
+
+[1]: https://docs.wise.com/guides/product/kyc/wise-kyc/hosted-kyc?utm_source=chatgpt.com "Hosted KYC & KYB: Verification API and Custom Branded UI | Wise Platform"
+[2]: https://docs.wise.com/guides/product/kyc/wise-kyc/redirect-to-wise/user-onboarding?utm_source=chatgpt.com "User Onboarding | Wise Platform"

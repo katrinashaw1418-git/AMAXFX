@@ -4695,7 +4695,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ---------------------------------------------------------------------------
 
   const SUMSUB_API_URL = "https://api.sumsub.com";
-  const SUMSUB_LEVEL   = "basic-kyc-level"; // verification level configured in Sumsub dashboard
+  const SUMSUB_LEVEL     = process.env.SUMSUB_LEVEL     ?? "basic-kyc-level";    // identity verification level
+  const SUMSUB_POA_LEVEL = process.env.SUMSUB_POA_LEVEL ?? "basic-poa-level";    // proof-of-address level
 
   // Build HMAC-SHA256 signature required by every Sumsub API call
   function makeSumsubSig(secretKey: string, ts: number, method: string, path: string, body = ""): string {
@@ -4724,9 +4725,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
-  // Helper: generate a Sumsub SDK access token for a given externalUserId
-  async function getSumsubAccessToken(appToken: string, secretKey: string, externalUserId: string): Promise<string> {
-    const path    = `/resources/accessTokens?userId=${encodeURIComponent(externalUserId)}&levelName=${encodeURIComponent(SUMSUB_LEVEL)}`;
+  // Helper: generate a Sumsub SDK access token for a given externalUserId + level
+  async function getSumsubAccessToken(appToken: string, secretKey: string, externalUserId: string, levelName = SUMSUB_LEVEL): Promise<string> {
+    const path    = `/resources/accessTokens?userId=${encodeURIComponent(externalUserId)}&levelName=${encodeURIComponent(levelName)}`;
     const tokenRes = await sumsubFetch(appToken, secretKey, "POST", path, {});
     if (!tokenRes.ok) {
       const errText = await tokenRes.text();
@@ -4859,7 +4860,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/kyc/address/upload — save POA document filename (step 4 under_review)
+  // POST /api/kyc/address/upload — legacy manual upload (kept as fallback)
   app.post("/api/kyc/address/upload", async (req: Request, res: any) => {
     try {
       const { userId } = requireAuth(req);
@@ -4867,11 +4868,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await db.update(users).set({ addressDocFilename: filename }).where(eq(users.id, userId));
       await db.insert(auditLogs as any).values({
         userId, action: "address_doc_uploaded", entityType: "user", entityId: String(userId),
-        metadata: { filename, note: "Proof of Address document uploaded by user" }, ipAddress: req.ip,
+        metadata: { filename, note: "Proof of Address document uploaded by user (manual)" }, ipAddress: req.ip,
       });
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message ?? "Failed to record address document" });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // Address verification endpoints — Sumsub POA integration
+  // POST /api/kyc/address/start          — creates/gets Sumsub applicant at POA level, returns SDK token
+  // POST /api/kyc/address/refresh-token  — renews SDK token (called by Sumsub SDK)
+  // POST /api/kyc/address/docs-submitted — called by frontend when Sumsub SDK signals doc uploaded
+  // GET  /api/kyc/address/status         — frontend polls for DB-recorded approval result
+  // ---------------------------------------------------------------------------
+
+  // POST /api/kyc/address/start
+  app.post("/api/kyc/address/start", async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const appToken  = process.env.SUMSUB_APP_TOKEN;
+      const secretKey = process.env.SUMSUB_SECRET_KEY;
+
+      if (!appToken || !secretKey) {
+        // No Sumsub credentials — queue for manual review
+        await db.update(users).set({ addressDocFilename: "manual-pending" }).where(eq(users.id, userId));
+        await db.insert(complianceActions as any).values({
+          actionType: "address_verification_started",
+          userId,
+          performedBy: "system",
+          notes: `Manual review queued — SUMSUB credentials not configured. Customer: ${user.fullLegalName ?? user.username}.`,
+          outcome: "pending",
+        });
+        return res.json({ mode: "manual_review" });
+      }
+
+      const externalUserId = `amax-${userId}`;
+
+      // Get (or create) applicant — Sumsub is idempotent on externalUserId
+      const applicantPath = `/resources/applicants?levelName=${encodeURIComponent(SUMSUB_POA_LEVEL)}`;
+      const applicantBody = {
+        externalUserId,
+        info: {
+          firstName: user.firstName ?? "",
+          lastName:  user.lastName  ?? "",
+          country:   "AUS",
+        },
+      };
+      const applicantRes = await sumsubFetch(appToken, secretKey, "POST", applicantPath, applicantBody);
+      if (!applicantRes.ok) {
+        const errText = await applicantRes.text();
+        throw new Error(`Sumsub applicant error (${applicantRes.status}): ${errText}`);
+      }
+      const applicantData: any = await applicantRes.json();
+      const applicantId: string = applicantData.id ?? "";
+
+      const accessToken = await getSumsubAccessToken(appToken, secretKey, externalUserId, SUMSUB_POA_LEVEL);
+
+      await db.insert(auditLogs as any).values({
+        userId, action: "address_verification_started", entityType: "user", entityId: String(userId),
+        metadata: { applicantId, externalUserId, levelName: SUMSUB_POA_LEVEL, mode: "sumsub" }, ipAddress: req.ip,
+      });
+
+      res.json({ mode: "sumsub", token: accessToken, applicantId });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to start address verification" });
+    }
+  });
+
+  // POST /api/kyc/address/refresh-token — called by Sumsub WebSDK when token expires
+  app.post("/api/kyc/address/refresh-token", async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      const appToken  = process.env.SUMSUB_APP_TOKEN;
+      const secretKey = process.env.SUMSUB_SECRET_KEY;
+      if (!appToken || !secretKey) return res.status(503).json({ error: "Sumsub not configured" });
+      const accessToken = await getSumsubAccessToken(appToken, secretKey, `amax-${userId}`, SUMSUB_POA_LEVEL);
+      res.json({ token: accessToken });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to refresh address token" });
+    }
+  });
+
+  // POST /api/kyc/address/docs-submitted — called by frontend when Sumsub SDK signals doc uploaded
+  app.post("/api/kyc/address/docs-submitted", async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      await db.update(users).set({ addressDocFilename: "sumsub-submitted" }).where(eq(users.id, userId));
+      await db.insert(auditLogs as any).values({
+        userId, action: "address_docs_submitted_to_sumsub", entityType: "user", entityId: String(userId),
+        metadata: { note: "User completed Sumsub POA SDK — docs submitted for review" }, ipAddress: req.ip,
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to record address submission" });
+    }
+  });
+
+  // GET /api/kyc/address/status — frontend polls for DB-recorded POA result
+  app.get("/api/kyc/address/status", async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      const [user] = await db
+        .select({ addressDocApproved: users.addressDocApproved, addressDocFilename: users.addressDocFilename })
+        .from(users)
+        .where(eq(users.id, userId));
+      if (!user) return res.status(404).json({ error: "User not found" });
+      res.json({
+        complete:  user.addressDocApproved  ?? false,
+        submitted: user.addressDocFilename  === "sumsub-submitted",
+      });
+    } catch (err: any) {
+      res.status(401).json({ error: err.message ?? "Unauthorized" });
     }
   });
 
@@ -4906,25 +5018,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const reviewResult: any = body.reviewResult ?? {};
       const reviewAnswer: string = reviewResult.reviewAnswer ?? ""; // "GREEN" | "RED"
       const approved = reviewAnswer === "GREEN";
+      const levelName: string = body.levelName ?? "";
+
+      // Determine whether this is an identity or POA webhook by levelName
+      const isPoa = levelName === SUMSUB_POA_LEVEL;
 
       if (approved) {
-        await db.update(users).set({ idVerificationComplete: true }).where(eq(users.id, userId));
+        if (isPoa) {
+          await db.update(users).set({ addressDocApproved: true }).where(eq(users.id, userId));
+        } else {
+          await db.update(users).set({ idVerificationComplete: true }).where(eq(users.id, userId));
+        }
       }
 
       await db.insert(complianceActions as any).values({
-        actionType: "id_verification_result",
+        actionType: isPoa ? "address_verification_result" : "id_verification_result",
         userId,
         performedBy: "sumsub",
-        notes: `Sumsub decision: ${reviewAnswer}. Applicant ID: ${body.applicantId ?? "n/a"}. Reject labels: ${(reviewResult.rejectLabels ?? []).join(", ") || "none"}.`,
+        notes: `Sumsub decision: ${reviewAnswer}. Level: ${levelName || "identity"}. Applicant ID: ${body.applicantId ?? "n/a"}. Reject labels: ${(reviewResult.rejectLabels ?? []).join(", ") || "none"}.`,
         outcome: approved ? "completed" : "pending",
       });
       await db.insert(auditLogs as any).values({
         userId,
-        action: "id_verification_webhook_received",
+        action: isPoa ? "address_verification_webhook_received" : "id_verification_webhook_received",
         entityType: "user",
         entityId: String(userId),
         metadata: {
           reviewAnswer,
+          levelName,
           applicantId:  body.applicantId  ?? null,
           inspectionId: body.inspectionId ?? null,
           rejectLabels: reviewResult.rejectLabels ?? [],
