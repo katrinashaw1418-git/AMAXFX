@@ -4827,6 +4827,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/kyc/identity/reset — allows user to re-submit identity docs while under_review
+  app.post("/api/kyc/identity/reset", async (req: Request, res: any) => {
+    try {
+      const { userId } = requireAuth(req);
+      await db.update(users).set({ idDocsSubmitted: false }).where(eq(users.id, userId));
+      await db.insert(auditLogs as any).values({
+        userId, action: "id_docs_reset_for_resubmission", entityType: "user", entityId: String(userId),
+        metadata: { note: "User requested re-submission of identity documents" }, ipAddress: req.ip,
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to reset identity docs status" });
+    }
+  });
+
   // POST /api/kyc/address/upload — save POA document filename (step 4 under_review)
   app.post("/api/kyc/address/upload", async (req: Request, res: any) => {
     try {

@@ -96,6 +96,7 @@ export default function Compliance() {
   const [docIssueCountry,  setDocIssueCountry]  = useState("");           // issuing country (passport risk scoring)
   const [editStep1, setEditStep1] = useState(false); // allow re-editing step 1 after completion
   const [editStep2, setEditStep2] = useState(false); // allow re-editing step 2 after completion
+  const [editStep3, setEditStep3] = useState(false); // allow re-submitting identity docs from under_review
   const [idVerifyComplete,  setIdVerifyComplete]  = useState(false);
   const [idDocsSubmitted,   setIdDocsSubmitted]   = useState(false); // true when Sumsub SDK complete → "under_review"
   const [addressDocApproved, setAddressDocApproved] = useState(false); // true when admin approves POA → "completed"
@@ -185,6 +186,24 @@ export default function Compliance() {
     },
     onError: (err: any) => {
       toast({ title: "Signing Failed", description: err.message ?? "Failed to record your signature. Please try again.", variant: "destructive" });
+    },
+  });
+
+  // ── Identity verification reset (re-submission from under_review) ──────────
+  const identityResetMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/kyc/identity/reset", {}),
+    onSuccess: () => {
+      setIdDocsSubmitted(false);
+      setEditStep3(false);
+      setVerifyMode("idle");
+      setDocExpiry("");
+      setDocIssueCountry("");
+      refetchProfile();
+      queryClient.invalidateQueries({ queryKey: ["/api/kyc/profile"] });
+      toast({ title: "Re-submission Unlocked", description: "You can now re-submit your identity documents. Please use a clear, in-date government-issued ID." });
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message ?? "Failed to reset identity status", variant: "destructive" });
     },
   });
 
@@ -603,23 +622,64 @@ export default function Compliance() {
 
           {/* ── Step 1: Personal Information (mandatory first step) ── */}
           {kycProfile?.kycProfileComplete && !editStep1 ? (
-            <div className="flex items-start gap-4 p-4 border-2 border-green-200 bg-green-50 rounded-xl">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-600">
-                <CheckCircle className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="text-xs text-gray-400 font-medium">Step 1 of 4</span>
-                  <h3 className="font-semibold text-gray-900">Personal Information</h3>
-                  <Badge className="bg-green-100 text-green-800">Completed</Badge>
+            <div className="border-2 border-green-200 bg-green-50 rounded-xl overflow-hidden">
+              {/* Header row */}
+              <div className="flex items-center gap-4 px-4 pt-4 pb-3">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-600">
+                  <CheckCircle className="w-5 h-5 text-white" />
                 </div>
-                <p className="text-sm text-gray-600">
-                  {kycProfile.fullLegalName}{kycProfile.nationality ? ` · ${kycProfile.nationality}` : ""} · Profile saved.
-                </p>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                    <span className="text-xs text-gray-400 font-medium">Step 1 of 4</span>
+                    <h3 className="font-semibold text-gray-900">Personal Information</h3>
+                    <Badge className="bg-green-100 text-green-800">Completed</Badge>
+                  </div>
+                  <p className="text-xs text-gray-500">Review your submitted details below. Click Edit to update.</p>
+                </div>
+                <Button size="sm" variant="outline" className="flex-shrink-0 h-8 text-xs" onClick={() => setEditStep1(true)}>
+                  <PenLine className="w-3 h-3 mr-1" /> Edit
+                </Button>
               </div>
-              <Button size="sm" variant="outline" className="flex-shrink-0 h-8 text-xs" onClick={() => setEditStep1(true)}>
-                Edit
-              </Button>
+              {/* Data review grid */}
+              <div className="px-4 pb-4">
+                <div className="bg-white border border-green-200 rounded-xl p-4 space-y-4">
+                  {/* Identity */}
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Identity</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+                      <div><p className="text-xs text-gray-400">Full Legal Name</p><p className="font-medium text-gray-800">{kycProfile.fullLegalName || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Date of Birth</p><p className="font-medium text-gray-800">{kycProfile.dateOfBirth ? new Date(kycProfile.dateOfBirth).toLocaleDateString("en-AU") : "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Nationality</p><p className="font-medium text-gray-800">{kycProfile.nationality || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Mobile Number</p><p className="font-medium text-gray-800">{kycProfile.phoneNumber || "—"}</p></div>
+                    </div>
+                  </div>
+                  {/* Address */}
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Residential Address</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+                      <div className="sm:col-span-2"><p className="text-xs text-gray-400">Street Address</p><p className="font-medium text-gray-800">{kycProfile.residentialAddress || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Suburb</p><p className="font-medium text-gray-800">{kycProfile.suburb || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">State / Region</p><p className="font-medium text-gray-800">{kycProfile.stateRegion || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Postcode</p><p className="font-medium text-gray-800">{kycProfile.postcode || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Country</p><p className="font-medium text-gray-800">{kycProfile.addressCountry || "—"}</p></div>
+                    </div>
+                  </div>
+                  {/* Financial profile */}
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Financial Profile</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+                      <div><p className="text-xs text-gray-400">Employment Status</p><p className="font-medium text-gray-800 capitalize">{kycProfile.employmentStatus?.replace(/_/g, " ") || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Occupation</p><p className="font-medium text-gray-800">{kycProfile.occupation || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Purpose of Account</p><p className="font-medium text-gray-800 capitalize">{kycProfile.purposeOfAccount?.replace(/_/g, " ") || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Source of Funds</p><p className="font-medium text-gray-800 capitalize">{kycProfile.sourceOfFunds?.replace(/_/g, " ") || "—"}</p></div>
+                      <div><p className="text-xs text-gray-400">Tax Residency</p><p className="font-medium text-gray-800">{kycProfile.taxCountry || "—"}</p></div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 pt-1">
+                    <Lock className="w-3 h-3" /> Stored encrypted · AUSTRAC CDD record · Privacy Act 1988
+                  </p>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="rounded-2xl border-2 border-blue-300 bg-white overflow-hidden shadow-sm">
@@ -1185,6 +1245,82 @@ export default function Compliance() {
                   );
                 }
 
+                // ── Step 3 under_review — documents submitted, awaiting Sumsub result ──
+                if (def.id === 3 && status === "under_review" && !editStep3) {
+                  return (
+                    <div key={def.id} className="border-2 border-amber-300 bg-amber-50 rounded-xl overflow-hidden">
+                      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-amber-500">
+                          <Clock className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-gray-400 font-medium">Step 3 of 4</span>
+                            <h3 className="font-semibold text-gray-900">Identity Verification</h3>
+                            <Badge className="bg-amber-100 text-amber-800">Under Review</Badge>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">Your documents have been submitted to Sumsub for review</p>
+                        </div>
+                      </div>
+                      <div className="px-4 pb-5 space-y-3">
+                        <div className="bg-white border border-amber-200 rounded-xl p-4 space-y-3">
+                          {/* Status info grid */}
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                              <p className="text-gray-500">Review Status</p>
+                              <p className="font-semibold text-amber-800">Pending Sumsub Review</p>
+                            </div>
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                              <p className="text-gray-500">KYC Provider</p>
+                              <p className="font-semibold text-amber-800">Sumsub (external)</p>
+                            </div>
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                              <p className="text-gray-500">Expected Turnaround</p>
+                              <p className="font-semibold text-amber-800">1–2 business days</p>
+                            </div>
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                              <p className="text-gray-500">Document Type</p>
+                              <p className="font-semibold text-amber-800 capitalize">{docType.replace(/_/g, " ")}</p>
+                            </div>
+                          </div>
+                          {/* What was submitted */}
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 flex items-start gap-2 text-xs text-blue-800">
+                            <FileCheck className="w-4 h-4 flex-shrink-0 mt-0.5 text-blue-600" />
+                            <span>
+                              Your identity documents and biometric selfie have been submitted to Sumsub for automated verification.
+                              You will be notified at your registered email once a result is available.
+                              If you need to update or re-submit your documents (e.g. due to image quality), use the button below.
+                            </span>
+                          </div>
+                          {/* Re-submit option */}
+                          <div className="pt-1 space-y-1.5">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full h-9 text-xs border-amber-300 text-amber-800 hover:bg-amber-100"
+                              disabled={identityResetMutation.isPending}
+                              onClick={() => identityResetMutation.mutate()}
+                            >
+                              {identityResetMutation.isPending ? (
+                                <span className="flex items-center gap-2"><RefreshCw className="w-3 h-3 animate-spin" /> Resetting…</span>
+                              ) : (
+                                <span className="flex items-center gap-2"><RefreshCw className="w-3 h-3" /> Re-submit Verification Documents</span>
+                              )}
+                            </Button>
+                            <p className="text-xs text-center text-muted-foreground">
+                              Re-submitting will cancel the current review and restart the Sumsub verification process.
+                            </p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
+                          <Lock className="w-3 h-3" /> Questions? Contact{" "}
+                          <a href="mailto:info@amaxglobal.com.au" className="underline">info@amaxglobal.com.au</a>
+                        </p>
+                      </div>
+                    </div>
+                  );
+                }
+
                 // ── Step 2 expanded Customer Agreement card ─────────────────
                 if (def.id === 2 && (status === "in_progress" || (status === "completed" && editStep2))) {
                   const agreementSections = [
@@ -1611,6 +1747,82 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                             </div>
                           </>
                         )}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // ── Step 4 under_review — doc uploaded, awaiting admin approval ──
+                if (def.id === 4 && status === "under_review") {
+                  const submittedFile = stepFiles[4] || kycProfile?.addressDocFilename;
+                  return (
+                    <div key={def.id} className="border-2 border-amber-300 bg-amber-50 rounded-xl overflow-hidden">
+                      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-amber-500">
+                          <Clock className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-gray-400 font-medium">Step 4 of 4</span>
+                            <h3 className="font-semibold text-gray-900">Proof of Address</h3>
+                            <Badge className="bg-amber-100 text-amber-800">Under Review</Badge>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">Your address document is being reviewed by the compliance team</p>
+                        </div>
+                      </div>
+                      <div className="px-4 pb-5 space-y-3">
+                        <div className="bg-white border border-amber-200 rounded-xl p-4 space-y-3">
+                          {/* Status info */}
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                              <p className="text-gray-500">Review Status</p>
+                              <p className="font-semibold text-amber-800">Pending Compliance Review</p>
+                            </div>
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                              <p className="text-gray-500">Expected Turnaround</p>
+                              <p className="font-semibold text-amber-800">1–2 business days</p>
+                            </div>
+                          </div>
+                          {/* Document submitted */}
+                          {submittedFile && (
+                            <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-lg px-3 py-2.5">
+                              <FileCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-gray-500">Document Submitted</p>
+                                <p className="text-sm font-medium text-gray-800 truncate">{submittedFile}</p>
+                              </div>
+                            </div>
+                          )}
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 flex items-start gap-2 text-xs text-blue-800">
+                            <Shield className="w-4 h-4 flex-shrink-0 mt-0.5 text-blue-600" />
+                            <span>
+                              Your proof of address document is with our compliance team. If it is approved, this step will automatically move to Completed.
+                              If there is an issue, you will be contacted at your registered email. You may replace the document below if needed.
+                            </span>
+                          </div>
+                          {/* Replace document upload */}
+                          <div>
+                            <p className="text-xs font-semibold text-gray-600 mb-1.5">Replace document (if required)</p>
+                            <label htmlFor="kyc-upload-4-review" className="cursor-pointer block">
+                              <div className="border-2 border-dashed border-amber-300 rounded-xl p-4 text-center hover:border-amber-500 hover:bg-amber-50 transition-all">
+                                <Upload className="w-6 h-6 text-amber-400 mx-auto mb-1" />
+                                <p className="text-xs font-medium text-amber-800">Click to upload a replacement document</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">PDF, JPG, or PNG — max 10 MB — dated within 3 months</p>
+                              </div>
+                              <input
+                                id="kyc-upload-4-review"
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png,.heic"
+                                className="hidden"
+                                onChange={(e) => handleKycUpload(4, "Proof of Address", e)}
+                              />
+                            </label>
+                          </div>
+                        </div>
+                        <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
+                          <Lock className="w-3 h-3" /> Questions? Contact{" "}
+                          <a href="mailto:info@amaxglobal.com.au" className="underline">info@amaxglobal.com.au</a>
+                        </p>
                       </div>
                     </div>
                   );
