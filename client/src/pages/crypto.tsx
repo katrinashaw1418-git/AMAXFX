@@ -1174,11 +1174,11 @@ export default function Crypto() {
       {/* Advisor Box */}
       {showAdvisor && (
         <div className="fixed top-4 right-4 z-50 w-80">
-          <Card className="backdrop-blur-sm bg-white/95 border-amber-200 shadow-lg">
+          <Card className="backdrop-blur-sm bg-white/95 border-green-200 shadow-lg">
             <CardContent className="p-4">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
                     <Building2 className="w-4 h-4 text-white" />
                   </div>
                   <div>
