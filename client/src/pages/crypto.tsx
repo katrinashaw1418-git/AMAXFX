@@ -929,7 +929,7 @@ export default function Crypto() {
                       Submit Sell Enquiry →
                     </Button>
                     <p className="text-xs text-gray-500 text-center">
-                      Or call our compliance team: <strong>+61 2 1234 5678</strong>
+                      Or call our compliance team: <strong>02 8320 1908</strong>
                     </p>
                   </div>
 

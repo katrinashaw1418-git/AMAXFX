@@ -955,7 +955,7 @@ export default function Wallets() {
                   >
                     ✉ Email us to receive your account details
                   </a>
-                  <p className="text-xs text-blue-600 dark:text-blue-400 text-center">Or call: <strong>+61 2 1234 5678</strong></p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 text-center">Or call: <strong>02 8320 1908</strong></p>
                 </div>
               )}
 
