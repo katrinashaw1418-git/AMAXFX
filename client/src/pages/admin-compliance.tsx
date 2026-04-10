@@ -528,7 +528,7 @@ export default function AdminCompliance() {
                 </CardTitle>
                 <p className="text-xs text-muted-foreground">
                   Exchanges awaiting external confirmation. Fiat→crypto: confirm after Independent Reserve on-chain delivery.
-                  Fiat→fiat: confirm after Airwallex settlement. Completing credits the TO wallet; failing refunds the FROM wallet.
+                  Fiat→fiat: confirm after external regulated partner settlement. Completing credits the TO wallet; failing refunds the FROM wallet.
                 </p>
               </CardHeader>
               <CardContent className="p-0">
@@ -546,7 +546,7 @@ export default function AdminCompliance() {
                         : "—";
                       const label = ex.settlementStatus === "pending_delivery"
                         ? "Awaiting IR on-chain delivery"
-                        : "Awaiting Airwallex settlement";
+                        : "Awaiting external partner settlement";
                       const labelColor = ex.settlementStatus === "pending_delivery"
                         ? "bg-blue-100 text-blue-700"
                         : "bg-amber-100 text-amber-700";

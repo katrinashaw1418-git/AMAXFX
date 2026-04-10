@@ -1022,7 +1022,7 @@ export default function Wallets() {
                 <div className="border-t border-blue-200 pt-3 space-y-1.5 text-xs text-blue-700">
                   <p className="font-medium text-blue-800">Planned capabilities:</p>
                   <p>• SWIFT / IBAN inbound wires from 50+ countries</p>
-                  <p>• Facilitated via Airwallex (AUSTRAC registered payment provider)</p>
+                  <p>• Facilitated via external regulated payment partners</p>
                   <p>• Full AML/CTF screening on all cross-border transfers</p>
                   <p>• FATF Travel Rule compliance for applicable transactions</p>
                 </div>
@@ -1562,7 +1562,7 @@ export default function Wallets() {
                   <div className="border-t border-blue-200 pt-3 space-y-1.5 text-xs text-blue-700">
                     <p className="font-medium text-blue-800">Planned capabilities:</p>
                     <p>• SWIFT / IBAN wire transfers to 50+ countries</p>
-                    <p>• Facilitated via Airwallex (AUSTRAC registered payment provider)</p>
+                    <p>• Facilitated via external regulated payment partners</p>
                     <p>• Full AML/CTF screening on all cross-border transfers</p>
                     <p>• FATF Travel Rule compliance for applicable transactions</p>
                   </div>
