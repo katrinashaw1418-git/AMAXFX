@@ -1,13 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- White rounded square — matches landing page logo tile -->
+  <!-- White rounded square — matches the w-9 h-9 bg-white rounded-lg tile on the landing page -->
   <rect width="64" height="64" rx="12" fill="#ffffff"/>
   <rect width="64" height="64" rx="12" fill="none" stroke="#e2e8f0" stroke-width="2"/>
 
-  <!-- Coins icon: two stacked coin rings (stroke only, like lucide Coins) -->
-  <!-- Back coin -->
-  <circle cx="36" cy="26" r="12" fill="none" stroke="#0f172a" stroke-width="3.5"/>
-  <!-- Front coin (overlaps) -->
-  <circle cx="26" cy="38" r="12" fill="#ffffff" stroke="#0f172a" stroke-width="3.5"/>
-  <!-- Inner detail line on front coin -->
-  <circle cx="26" cy="38" r="6" fill="none" stroke="#0f172a" stroke-width="1.5" opacity="0.4"/>
+  <!-- Exact lucide-react Coins icon (v0.453.0) in a nested viewport so stroke-width is correct -->
+  <!-- Centred: 13px margin on each side gives 38x38 icon area inside 64x64 tile -->
+  <svg x="13" y="13" width="38" height="38" viewBox="0 0 24 24"
+       stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- back coin -->
+    <circle cx="8" cy="8" r="6"/>
+    <!-- front coin (visible arc only) -->
+    <path d="M18.09 10.37A6 6 0 1 1 10.34 18"/>
+    <!-- vertical bar detail on back coin -->
+    <path d="M7 6h1v4"/>
+    <!-- diagonal detail on front coin -->
+    <path d="m16.71 13.88.7.71-2.82 2.82"/>
+  </svg>
 </svg>
