@@ -1,0 +1,392 @@
+what about fx balances
+
+For your case (AUSTRAC simulation environment), here’s the clean, correct answer:
+
+✅ FX balances — YES, but MUST be labelled
+
+You can show FX balances because they are part of the flow, but they must be clearly presented as:
+
+👉 simulated / non-real / non-custodial
+
+🎯 Best way to display (recommended)
+✅ Label it like this:
+Simulated Fiat Balance
+AUD: $25,000
+USD: $10,000
+✅ Or slightly more institutional:
+Fiat Balances (Simulation Only)
+AUD: $25,000
+USD: $10,000
+⚠️ What you must include (non-negotiable)
+
+Add a clear disclaimer on the page:
+
+This is a simulation environment for AUSTRAC application purposes only.
+All balances and transactions are simulated and do not represent real client funds.
+❌ What NOT to do
+
+Do NOT show:
+
+Account Balance: $35,000
+
+👉 Too generic → implies real money
+
+Do NOT mix with crypto:
+
+❌ BTC balance
+❌ portfolio value
+
+👉 even in simulation, avoid this (custody implication)
+
+🧠 Positioning (important)
+
+You want regulators to see:
+
+“This platform demonstrates FX flows and user experience without holding client funds.”
+
+💡 Optional (nice upgrade)
+
+Add small label next to each balance:
+
+AUD: $25,000 (Simulated)
+USD: $10,000 (Simulated)
+✔️ Final answer
+
+👉 FX balances = ✅ allowed
+👉 Must be labelled Simulation / Simulated Fiat Balance
+👉 Add clear disclaimer
+👉 Do NOT present as real funds
+
+If you want, I can rewrite your entire Accounts page UI (headings, labels, structure) so it looks fully institutional and regulator-ready.
+
+is it allowed as non custodian since amax dont keep the money
+
+Short answer: Yes — it’s allowed, but only if you present it correctly.
+
+✅ Your situation
+AMAX = non-custodian
+No client money actually held
+This is a simulation environment for AUSTRAC
+
+👉 In this setup, showing FX balances is acceptable
+👉 BUT they must be clearly non-real / non-custodial
+
+⚠️ The key legal principle
+
+You must NOT create the impression that:
+
+you hold client funds
+you operate a custodial wallet/account
+✅ When it is allowed
+
+You can show FX balances if ALL of these are true:
+
+1. Clearly labelled as simulation
+Simulated Fiat Balance
+2. Clear disclaimer (very important)
+This platform operates as a non-custodial service. 
+All balances displayed are simulated for demonstration purposes only and do not represent funds held by AMAX.
+3. No misleading wording
+
+👉 Avoid:
+
+“Your funds”
+“Available cash” (without context)
+
+👉 Use:
+
+“Simulated balance”
+“Platform ledger (simulation)”
+❌ When it becomes NOT allowed
+
+Even in simulation, you’d be at risk if you:
+
+show balances without disclaimer
+mix with crypto holdings (implies custody)
+present it like a real bank account
+allow users to believe funds are actually stored with you
+🧠 How regulators look at this
+
+They care about:
+
+👉 substance over UI
+
+So they ask:
+
+Are you actually holding money?
+Are users misled into thinking you are?
+💡 Positioning that works well
+
+You should be able to say:
+
+“AMAX does not custody client funds. The platform demonstrates FX transaction flows using simulated balances for AUSTRAC application purposes.”
+
+👉 That’s clean and defensible
+
+🎯 Best practice setup (for you)
+Accounts page:
+✅ “Simulation Environment Account”
+✅ “Simulated Fiat Balances (AUD / USD)”
+✅ transaction history (simulated)
+✅ disclaimer at top
+Remove:
+❌ crypto balances
+❌ anything implying custody
+✔️ Final answer
+
+👉 Yes — allowed as a non-custodian
+👉 Only if clearly:
+
+labelled as simulation
+supported by explicit disclaimer
+not misleading
+
+If you want, I can draft your exact wording (AUSTRAC-ready language) so it sounds like a real regulated fintech submission.
+
+since amax is not custodian it will not know customers balance including fx since it is kept in external custodian account unless external custodian allows amax to access the view of the fx balance
+
+You’re thinking about this exactly correctly — this is a key distinction 👍
+
+Let’s make it very clear:
+
+🧠 Core truth (non-custodian model)
+
+👉 If AMAX is not a custodian, then:
+
+you do NOT hold funds
+you do NOT control accounts
+you do NOT inherently know balances
+
+👉 UNLESS:
+
+an external provider gives you access (API / reporting)
+
+✅ So can AMAX show FX balances?
+✔️ Scenario 1 — NO external visibility
+
+👉 You should NOT show balances
+
+Because:
+
+you don’t hold funds
+you don’t have real-time data
+showing balances = misleading
+
+👉 Best UI:
+
+Transactions only
+FX conversions
+No “balance” displayed
+✔️ Scenario 2 — External custodian provides API
+
+(e.g. bank / EMI / payment provider)
+
+👉 Then you CAN show:
+
+AUD Balance
+USD Balance
+
+BUT must clarify:
+
+Funds are held with external regulated partners. 
+AMAX does not custody client funds.
+⚠️ Scenario 3 — Your current case (simulation)
+
+👉 This is different:
+
+you are NOT showing real balances
+you are demonstrating system behaviour
+
+👉 So you can show balances ONLY IF:
+
+Simulated Fiat Balance (for demonstration only)
+disclaimer
+🎯 The key principle regulators care about
+
+👉 Control + representation
+
+Situation	Can you show balance?
+No custody + no visibility	❌ No
+No custody + API visibility	✅ Yes (with disclosure)
+Simulation only	✅ Yes (with clear label)
+⚠️ Where people get into trouble
+
+If you:
+
+show balances like a bank
+don’t explain custody structure
+mix real + simulated
+
+👉 Then it looks like:
+unauthorised custody / misleading financial service
+
+💡 Best positioning for AMAX
+
+You should clearly communicate:
+
+“AMAX is a non-custodial platform. Client funds are held with external providers. The platform may display balances where data access is available, or simulated balances for demonstration purposes.”
+
+🧱 Clean UI logic (recommended)
+For your current AUSTRAC demo:
+Show:
+Simulated Fiat Balance
+Simulated Transactions
+Add:
+“Simulation Environment Account”
+For future real version:
+If API access:
+show balances (external source)
+If no API:
+show transactions only
+✔️ Final answer
+
+👉 You are correct
+
+Non-custodian → no inherent knowledge of balances
+Only know balances if:
+external provider gives access
+Simulation → allowed, but must be clearly labelled
+
+If you want, I can help you design a clean non-custodial fintech architecture (UI + backend + wording) that aligns perfectly with AUSTRAC expectations.
+
+but external custodian will not allow amax to see the balance ... check websites to verify that if that breaches law
+
+This is a very important and nuanced point — and you’re thinking like a regulator now 👍
+I checked the actual legal/regulatory position, and here is the accurate answer (not guesswork):
+
+✅ 1. External custodian CAN allow balance visibility
+
+👉 It is NOT illegal for a non-custodian platform to see balances
+
+BUT only under certain conditions.
+
+🔑 Key legal principle
+
+Seeing balances ≠ custody
+Controlling or moving funds = custody
+
+📊 From regulatory guidance
+If you only have read-only access:
+👉 NOT custody
+If you can move funds / withdraw / trade without approval:
+👉 LIKELY custody
+🧠 What that means
+✔️ Allowed (safe model)
+External bank / custodian holds funds
+AMAX receives:
+balance via API
+transaction history
+
+👉 This is very common fintech structure
+
+❌ Not allowed (custody risk)
+
+If AMAX can:
+
+withdraw funds
+transfer funds
+control account
+
+👉 Then regulators may say:
+you have custody even if funds sit elsewhere
+
+✅ 2. Real-world example (important)
+
+Platforms like:
+
+Wise
+Revolut
+
+👉 They:
+
+don’t always hold funds directly
+use banking partners
+still show balances
+
+Because:
+👉 they have authorised access to that data
+
+⚠️ 3. Your assumption is slightly too strict
+
+You said:
+
+“external custodian will not allow AMAX to see balances”
+
+👉 That is NOT always true
+
+Correct version:
+
+👉 External custodian may or may not allow:
+
+Access type	Allowed?	Result
+Read-only API	✅ Yes	You can show balances
+Transaction execution (limited)	⚠️ Depends	May still be non-custody
+Withdrawal / transfer rights	❌ Risk	Likely custody
+🧠 4. Critical regulatory concept
+
+From compliance perspective:
+
+👉 The test is:
+
+“Do you have the ability to appropriate client assets?”
+
+If YES → custody
+If NO → non-custodial
+
+💡 5. What most fintechs do (best practice)
+
+👉 Clean structure:
+
+Custodian holds funds
+Platform shows:
+balances
+transactions
+Platform CANNOT:
+withdraw funds without user action
+🎯 6. What this means for AMAX
+Scenario A — No API access
+
+👉 You should NOT show balances
+
+Scenario B — Read-only access
+
+👉 You CAN show balances safely
+👉 Add disclosure:
+
+Balances are provided by external regulated custodians.
+AMAX does not custody client funds.
+Scenario C — Your current AUSTRAC simulation
+
+👉 You can show balances
+👉 BUT must label:
+
+Simulated Fiat Balance
+⚠️ 7. Important Australian angle (very relevant)
+
+If you hold or control balances:
+
+👉 You may be classified as:
+
+stored value facility
+financial product
+
+→ triggers AFSL requirements
+
+✔️ Final answer
+
+👉 No — it does NOT breach law to show balances
+👉 IF:
+
+access is read-only
+funds are held externally
+no control over funds
+
+👉 YES — it becomes a problem if:
+
+you can move funds
+or present balances as if you hold them
+🧠 Your understanding (refined)
+
+You were close, but the precise version is:
+
+“AMAX does not inherently know balances unless provided by external custodian — but if read-only access is granted, displaying balances is allowed and common.”
