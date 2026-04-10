@@ -915,36 +915,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await db.execute(sql.raw(`
       CREATE UNIQUE INDEX IF NOT EXISTS unique_wallet_user_currency ON wallets (user_id, currency);
     `));
-    // Seed/sync demo user — always ensure Johnchen exists with correct password
+    // Seed/sync demo user — always ensure KenLancaster exists with correct password
     {
-      const hashed = await hashPassword("Johnchen888");
-      // Find by email OR username — handles old rows with legacy email
+      const hashed = await hashPassword("Ken888");
+      // Find by email OR old/new username — handles legacy rows
       const { or } = await import("drizzle-orm");
       const [existingDemo] = await db.select().from(users)
         .where(or(
           eq(users.email, "demo@amaxglobal.com.au"),
+          eq(users.username, "KenLancaster"),
           eq(users.username, "Johnchen")
         ));
       if (existingDemo) {
         // Always sync email, username, password, kycStatus, userTier to canonical values
         await db.update(users)
           .set({
-            username: "Johnchen",
+            username: "KenLancaster",
             email: "demo@amaxglobal.com.au",
             password: hashed,
-            firstName: "John",
-            lastName: "Chen",
+            firstName: "Ken",
+            lastName: "Lancaster",
             kycStatus: "verified",
             userTier: "premium",
           })
           .where(eq(users.id, existingDemo.id));
       } else {
         await db.insert(users).values({
-          username: "Johnchen",
+          username: "KenLancaster",
           email: "demo@amaxglobal.com.au",
           password: hashed,
-          firstName: "John",
-          lastName: "Chen",
+          firstName: "Ken",
+          lastName: "Lancaster",
           kycStatus: "verified",
           userTier: "premium",
         }).onConflictDoNothing();

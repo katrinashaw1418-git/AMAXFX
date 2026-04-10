@@ -1666,7 +1666,7 @@ export default function Wallets() {
                       <Label htmlFor="withdraw-payid-name" className="text-xs">Account Holder Name</Label>
                       <Input
                         id="withdraw-payid-name"
-                        placeholder="John Chen"
+                        placeholder="Ken Lancaster"
                         className="h-8 text-sm"
                         value={withdrawPayIdName}
                         onChange={(e) => setWithdrawPayIdName(e.target.value)}
@@ -1696,7 +1696,7 @@ export default function Wallets() {
                       <Label htmlFor="withdraw-bank-name" className="text-xs">Bank Account Holder Name</Label>
                       <Input
                         id="withdraw-bank-name"
-                        placeholder="John Chen"
+                        placeholder="Ken Lancaster"
                         className="h-8 text-sm"
                         value={withdrawBankName}
                         onChange={(e) => setWithdrawBankName(e.target.value)}

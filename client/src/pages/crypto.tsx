@@ -1191,15 +1191,15 @@ export default function Crypto() {
                 </Button>
               </div>
               <p className="text-xs text-gray-700 mb-3">Questions about crypto exchange or sell enquiries? Our team can help.</p>
-              <div className="flex items-center space-x-2 text-amber-600 mb-3">
+              <div className="flex items-center space-x-2 text-green-600 mb-3">
                 <Phone className="w-3 h-3" />
-                <span className="font-medium text-xs">+61 2 1234 5678</span>
+                <span className="font-medium text-xs">02 8320 1908</span>
               </div>
               <div className="flex space-x-2">
-                <Button variant="outline" size="sm" onClick={() => window.open("tel:+61212345678", "_self")} className="flex-1 text-xs h-8">
+                <Button variant="outline" size="sm" onClick={() => window.open("tel:0283201908", "_self")} className="flex-1 text-xs h-8">
                   <Phone className="w-3 h-3 mr-1" /> Call
                 </Button>
-                <Button size="sm" onClick={() => window.open("mailto:info@amaxglobal.com.au", "_self")} className="flex-1 bg-amber-600 hover:bg-amber-700 text-xs h-8">
+                <Button size="sm" onClick={() => window.open("mailto:info@amaxglobal.com.au", "_self")} className="flex-1 bg-green-600 hover:bg-green-700 text-xs h-8">
                   <Mail className="w-3 h-3 mr-1" /> Email
                 </Button>
               </div>
