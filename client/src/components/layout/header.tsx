@@ -71,7 +71,6 @@ export default function Header({ onMenuClick }: HeaderProps) {
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuLabel>
                   <div className="font-medium">{user.firstName} {user.lastName}</div>
-                  <div className="text-xs text-muted-foreground font-normal">{user.email}</div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
