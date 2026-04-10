@@ -1749,7 +1749,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                               <div className={`rounded-lg border p-3 text-xs text-gray-600 leading-relaxed transition-all ${
                                 allSectionsRead ? "bg-indigo-50 border-indigo-200" : "bg-gray-50 border-gray-200 opacity-50"
                               }`}>
-                                By signing, I confirm I have read and agree to all 18 sections of this Agreement, including the declarations in Sections 12–18 regarding identity, source of funds, compliance awareness, sanctions status, PEP status, ongoing obligations, and accuracy of information.
+                                By signing, I confirm I have read and agree to all 18 sections of this Agreement, including the declarations in Sections 12–18 regarding identity, source of funds, compliance awareness, sanctions status, ongoing obligations, and accuracy of information.
                               </div>
                               <div className="flex gap-2">
                                 {editStep2 && status === "completed" && (
