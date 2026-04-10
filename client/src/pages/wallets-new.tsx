@@ -1075,11 +1075,6 @@ export default function Wallets() {
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder={!['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'HKD', 'SGD'].includes(selectedWallet?.currency) ? "Enter AUD amount" : "Enter amount"}
                 />
-                {selectedWallet && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Indicative balance (external): {selectedWallet.balance} {selectedWallet.currency}
-                  </p>
-                )}
                 {parseFloat(amount) >= 10000 && (
                   <div className="flex items-start gap-2 mt-2 p-2.5 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-800 dark:text-amber-300">
                     <span className="flex-shrink-0">⚖️</span>
@@ -1193,12 +1188,12 @@ export default function Wallets() {
                         <p>• Visa, Mastercard, American Express accepted</p>
                         <p>• Processed by Checkout.com — PCI DSS Level 1 certified</p>
                         <p>• Card details secured by Checkout.com — never stored by AMAX</p>
-                        <p>• Funds processed to external partner after payment confirmation</p>
+                        <p>• Payment is settled to an external regulated partner — AMAX does not receive funds</p>
                         <p>• You will be redirected to Checkout.com's secure payment page</p>
                       </div>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Enter the amount above, then click <strong>Pay Now</strong> to complete your payment securely on Checkout.com.
+                    <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
+                      ⏳ Once payment is confirmed by the external payment provider, the transfer instruction will be completed.
                     </p>
                   </div>
                 )}
