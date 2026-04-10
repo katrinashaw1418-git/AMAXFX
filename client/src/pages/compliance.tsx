@@ -1642,8 +1642,8 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                           ))}
                         </div>
 
-                        {agreementSigned ? (
-                          /* ── Already signed ── */
+                        {agreementSigned && !editStep2 ? (
+                          /* ── Already signed (only shown in non-edit completed view) ── */
                           <div className="bg-green-50 border border-green-200 rounded-xl p-5 space-y-3">
                             <div className="flex items-center gap-3">
                               <CheckCircle className="w-8 h-8 text-green-600 flex-shrink-0" />
@@ -2036,37 +2036,91 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                   );
                 }
 
-                // ── Step 2 completed — agreement review with Edit option ────
+                // ── Step 2 completed — agreement review with re-sign option ────
                 if (def.id === 2 && status === "completed" && !editStep2) {
                   return (
                     <div key={def.id} className="border-2 border-green-200 bg-green-50 rounded-xl overflow-hidden">
-                      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-600">
+                      {/* Header */}
+                      <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-green-100">
+                        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-600">
                           <CheckCircle className="w-5 h-5 text-white" />
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-xs text-gray-400 font-medium">Step 2 of 4</span>
                             <h3 className="font-semibold text-gray-900">Customer Agreement</h3>
-                            <Badge className="bg-green-100 text-green-800">Signed</Badge>
+                            <Badge className="bg-green-100 text-green-800 text-xs">Signed</Badge>
                           </div>
-                          <p className="text-xs text-gray-500 mt-0.5">AMAX Global Customer Agreement electronically signed — binding under the Electronic Transactions Act 1999 (Cth)</p>
+                          <p className="text-xs text-gray-500 mt-0.5">Electronic signature · Electronic Transactions Act 1999 (Cth)</p>
                         </div>
                         <Button size="sm" variant="outline" className="flex-shrink-0 h-8 text-xs" onClick={() => setEditStep2(true)}>
-                          Edit
+                          <PenLine className="w-3 h-3 mr-1" /> Review & Re-sign
                         </Button>
                       </div>
-                      <div className="px-4 pb-5">
-                        <div className="bg-white border border-green-200 rounded-xl p-4 space-y-3">
-                          <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                            <div><span className="text-gray-500 text-xs">Agreement Reference</span><p className="font-medium font-mono">{kycProfile?.agreementRef || "—"}</p></div>
-                            <div><span className="text-gray-500 text-xs">Version</span><p className="font-medium">{kycProfile?.agreementVersion || "—"}</p></div>
-                            <div><span className="text-gray-500 text-xs">Signed By</span><p className="font-medium">{kycProfile?.agreementSignature || kycProfile?.fullLegalName || "—"}</p></div>
-                            <div><span className="text-gray-500 text-xs">Signed At</span><p className="font-medium">{kycProfile?.agreementSignedAt ? new Date(kycProfile.agreementSignedAt).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" }) : "—"}</p></div>
+
+                      <div className="px-4 pb-4">
+                        <div className="bg-white border border-green-200 rounded-xl overflow-hidden">
+
+                          {/* Signing record */}
+                          <div className="p-4">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Signing Record</p>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 text-sm">
+                              <div><span className="text-xs text-gray-400">Ref</span><p className="font-medium font-mono text-xs">{kycProfile?.agreementRef || "—"}</p></div>
+                              <div><span className="text-xs text-gray-400">Version</span><p className="font-medium">{kycProfile?.agreementVersion || "—"}</p></div>
+                              <div><span className="text-xs text-gray-400">Signed By</span><p className="font-medium">{kycProfile?.agreementSignature || kycProfile?.fullLegalName || "—"}</p></div>
+                              <div><span className="text-xs text-gray-400">Signed At (AEST)</span><p className="font-medium">{kycProfile?.agreementSignedAt ? new Date(kycProfile.agreementSignedAt).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" }) : "—"}</p></div>
+                            </div>
                           </div>
-                          <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1 pt-1">
-                            <Lock className="w-3 h-3" /> Agreement record retained for 7 years under AML/CTF Act 2006 s.106
-                          </p>
+
+                          <div className="border-t border-gray-100" />
+
+                          {/* Agreement sections agreed to */}
+                          <div className="p-4">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Agreement Sections</p>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                              {["Overview & Parties","Use of Services","Privacy & Data","AML/CTF Obligations","Fees & Charges","Liability","Dispute Resolution","Sanctions Compliance","Service Suspension","Governing Law","PEP & EDD","Risk Disclosure","Travel Rule","Electronic Signing","Records Retention","Amendments"].map((s, i) => (
+                                <div key={i} className="flex items-center gap-1.5 text-xs text-gray-600">
+                                  <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                                  {i + 1}. {s}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="border-t border-gray-100" />
+
+                          {/* Key declarations */}
+                          <div className="p-4">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Declarations Made</p>
+                            <div className="space-y-2">
+                              <div className="flex items-start gap-2 text-xs text-gray-700">
+                                <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0 mt-0.5" />
+                                <span>Not a Politically Exposed Person (PEP) — or declared as PEP and subject to ECDD</span>
+                              </div>
+                              <div className="flex items-start gap-2 text-xs text-gray-700">
+                                <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0 mt-0.5" />
+                                <span>Not subject to sanctions under UN Security Council Resolutions, OFAC, DFAT or any other sanctions regime</span>
+                              </div>
+                              <div className="flex items-start gap-2 text-xs text-gray-700">
+                                <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0 mt-0.5" />
+                                <span>Consented to AML/CTF identity verification, transaction monitoring, and reporting obligations</span>
+                              </div>
+                              <div className="flex items-start gap-2 text-xs text-gray-700">
+                                <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0 mt-0.5" />
+                                <span>Funds are from lawful sources and not proceeds of crime</span>
+                              </div>
+                              <div className="flex items-start gap-2 text-xs text-gray-700">
+                                <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0 mt-0.5" />
+                                <span>Acknowledged Travel Rule obligations for digital currency transfers</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="border-t border-gray-100 px-4 py-2.5 bg-gray-50">
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Lock className="w-3 h-3" /> Agreement record retained for 7 years · AML/CTF Act 2006 s.106 · Customer may re-sign at any time via "Review & Re-sign"
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
