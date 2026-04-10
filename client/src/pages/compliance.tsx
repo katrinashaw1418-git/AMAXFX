@@ -1498,7 +1498,7 @@ export default function Compliance() {
                               {identityResetMutation.isPending ? (
                                 <span className="flex items-center gap-2"><RefreshCw className="w-3 h-3 animate-spin" /> Resetting…</span>
                               ) : (
-                                <span className="flex items-center gap-2"><RefreshCw className="w-3 h-3" /> Re-submit Verification Documents</span>
+                                <span className="flex items-center gap-2"><RefreshCw className="w-3 h-3" /> Re-submit via Sumsub</span>
                               )}
                             </Button>
                             <p className="text-xs text-center text-muted-foreground">
