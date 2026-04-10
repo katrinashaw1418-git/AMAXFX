@@ -1600,7 +1600,7 @@ export default function Wallets() {
                 />
                 {selectedWallet && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Available for transfer: {selectedWallet.availableBalance} {selectedWallet.currency}
+                    Indicative available amount (external): {selectedWallet.availableBalance} {selectedWallet.currency}
                   </p>
                 )}
                 {parseFloat(amount) >= 10000 && (
@@ -1679,7 +1679,7 @@ export default function Wallets() {
                     </div>
                   </div>
                   <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
-                    ⏳ Transfer-out instructions are subject to review before being processed. The external regulated banking partner will execute the instruction to your PayID — typically within 1 business day.
+                    ⏳ Transfer instructions are subject to review before being processed by the external regulated partner. The transaction will be completed once the partner confirms execution — typically within 1 business day.
                   </p>
                 </div>
               )}
@@ -1689,11 +1689,11 @@ export default function Wallets() {
                   <div className="p-3 bg-muted rounded-lg">
                     <h4 className="font-medium mb-2 text-sm">🏦 Australian Bank Transfer (BSB)</h4>
                     <div className="text-xs text-muted-foreground space-y-1">
-                      <p>• Transfer instruction executed to your nominated Australian bank account via external partner</p>
-                      <p>• Processing time: 1–3 business days</p>
-                      <p>• Transfer fee applies (see fee schedule)</p>
-                      <p>• Bank account must be registered in your KYC-verified legal name — third-party transfers are not permitted</p>
-                      <p>• All transfer-out instructions are subject to AML/CTF monitoring and may be reported to AUSTRAC where required by law</p>
+                      <p>• Transfer will be executed by our external regulated banking partner</p>
+                      <p>• Processing time: typically 1–3 business days after partner confirmation</p>
+                      <p>• Transfer fee may apply (see fee schedule)</p>
+                      <p>• The receiving account must be in your KYC-verified legal name — third-party transfers are not permitted</p>
+                      <p>• All transfers are subject to AML/CTF monitoring and may be reported to AUSTRAC</p>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -1732,7 +1732,7 @@ export default function Wallets() {
               )}
               {withdrawMethod === 'bank_transfer' && (
                 <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
-                  ⏳ Transfer-out instructions are subject to review before being processed. The external regulated banking partner will execute the instruction to your nominated account — typically 1–3 business days.
+                  ⏳ Transfer instructions are subject to review before being processed by the external regulated partner. The transaction will be completed once the partner confirms execution — typically 1–3 business days.
                 </p>
               )}
               </>)}
