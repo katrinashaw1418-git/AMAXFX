@@ -22,7 +22,7 @@ interface SidebarProps {
 
 const navigation = [
   { name: "Dashboard",   href: "/dashboard",   icon: Home            },
-  { name: "Accounts",    href: "/wallets",      icon: Wallet          },
+  { name: "Currency Accounts", href: "/wallets", icon: Wallet          },
   { name: "FX Exchange", href: "/fx-exchange",  icon: ArrowRightLeft  },
   { name: "Crypto",      href: "/crypto",       icon: Bitcoin         },
   { name: "Transactions",href: "/transactions", icon: History         },
