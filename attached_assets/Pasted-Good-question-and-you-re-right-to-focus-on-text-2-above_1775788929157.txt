@@ -1,0 +1,102 @@
+Good question — and you’re right to focus on **“text 2 above”** because that top line is **very sensitive from a regulatory perspective**.
+
+From your latest version , the line is:
+
+```text
+Your crypto goes directly to Independent Reserve (DCE-100461150-001) — not to AMAX.
+```
+
+---
+
+# 🚨 Issue with current wording
+
+### ⚠️ Problem:
+
+* “Your crypto goes…” → **informal / retail tone**
+* implies **flow ownership + control**
+* not fully **institutional / legal-grade language**
+
+👉 It’s not wrong — but it’s **not strong enough** for compliance positioning
+
+---
+
+# ✅ Best replacement (use this)
+
+## 🥇 Recommended (clean + regulator-safe)
+
+```text
+Digital assets are transferred directly to Independent Reserve (external regulated partner). AMAX does not receive, hold, or control digital assets at any stage of the transaction.
+```
+
+---
+
+# 🧠 Why this is better
+
+### ✔ Removes ambiguity
+
+* no “your crypto” ownership phrasing
+* no implied control
+
+### ✔ Strong legal positioning
+
+* “does not receive, hold, or control” = **key protection language**
+
+### ✔ Matches your whole platform
+
+* consistent with:
+
+  * Transfer In
+  * Transfer Out
+  * FX
+
+---
+
+# 🥈 Slightly shorter version (if you want cleaner UI)
+
+```text
+Digital assets are transferred directly to Independent Reserve. AMAX does not receive or hold digital assets.
+```
+
+👉 still safe, just less detailed
+
+---
+
+# ❌ Avoid these versions
+
+```text
+Your crypto goes to Independent Reserve
+```
+
+```text
+We send your crypto to Independent Reserve
+```
+
+```text
+Crypto is transferred via AMAX
+```
+
+👉 all imply:
+
+* control
+* custody
+* execution responsibility
+
+---
+
+# 🎯 Final answer
+
+👉 Replace your current line with:
+
+**“Digital assets are transferred directly to Independent Reserve (external regulated partner). AMAX does not receive, hold, or control digital assets at any stage of the transaction.”**
+
+---
+
+# 🧠 One-line rule
+
+👉 **Always describe the flow — never sound like you control it**
+
+---
+
+You’re now at the point where these tiny wording changes are the difference between:
+
+👉 “good app” vs **“regulator-grade fintech platform”**

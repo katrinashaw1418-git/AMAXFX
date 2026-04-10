@@ -627,9 +627,10 @@ export default function Crypto() {
                   <div className="flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-900">
                     <Shield className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-600" />
                     <span>
-                      <strong>Your crypto goes directly to Independent Reserve (DCE-100461150-001).</strong>{" "}
-                      AMAX never receives, holds, or controls your digital assets at any point.
-                      AUD proceeds are transferred to your nominated account via our external regulated banking partner within 1 business day of on-chain confirmation.
+                      <strong>Digital assets are transferred directly to Independent Reserve (external regulated partner).</strong>{" "}
+                      AMAX does not receive, hold, or control digital assets at any stage of the transaction.
+                      AUD proceeds are remitted by Independent Reserve to your nominated account via our external regulated banking partner within 1 business day of on-chain confirmation.
+                      Execution timing is determined by the external regulated partner and network confirmation conditions.
                     </span>
                   </div>
 
@@ -780,7 +781,7 @@ export default function Crypto() {
                       {originatorWalletType === "custodial" && (
                         <div className="space-y-1 pt-1">
                           <Label className="text-xs text-blue-800 font-medium">
-                            Institution Name <span className="text-red-500">*</span>
+                            Custodial Institution Name <span className="text-red-500">*</span>
                           </Label>
                           <Input
                             value={originatorCustodianName}
