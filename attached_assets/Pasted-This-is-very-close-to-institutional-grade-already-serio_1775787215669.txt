@@ -1,0 +1,211 @@
+This is **very close to institutional-grade already** — seriously good.
+I’ll refine it into a **clean, regulator-safe, production version** with:
+
+* no custody implication
+* no conflicting wording
+* tighter UX
+* consistent positioning
+
+---
+
+# 🚨 Key issues to fix (important)
+
+### 1. ❌ “Current balance”
+
+👉 Still risky wording
+
+### 2. ❌ Repetition / duplication
+
+👉 “Transfer In — AUD” repeated multiple times
+
+### 3. ⚠️ Slight inconsistency
+
+* “credited to your account” → sounds like AMAX account
+* needs to be **external partner referenced**
+
+---
+
+# ✅ FINAL CLEAN VERSION (USE THIS)
+
+---
+
+## **Transfer In — AUD**
+
+Instruct an incoming transfer to your nominated account with our external regulated partner.
+
+---
+
+## 🛡️ **Important Information**
+
+AMAX Global Pty Ltd does not receive, hold, or control client funds.
+All transfers are processed via external regulated banking partners and are subject to AML/CTF screening and KYC verification.
+
+---
+
+## **Transfer Type**
+
+🇦🇺 **Domestic**
+Australia only · BSB / PayID
+
+🌍 **International (Coming Soon)**
+
+---
+
+## **Transfer Method**
+
+### ⚡ PayID / NPP (Instant)
+
+---
+
+### **Amount (AUD)**
+
+Enter amount
+
+**Indicative balance (external):** 2,590,552.56 AUD
+
+---
+
+## ⚡ **PayID / NPP Transfer**
+
+• Instant transfer via Australia's NPP / Osko network
+• Available to Australian bank account holders
+• No transfer fees (from your bank)
+• Typically processed within 1–2 business hours after partner confirmation
+
+---
+
+## ⚡ **How it works**
+
+1. Submit this request — a unique reference code will be generated
+2. You will receive PayID details issued by our regulated banking partner
+3. Send funds to that partner-issued PayID (not to AMAX)
+4. The external partner confirms receipt
+5. Your transfer instruction is marked as completed
+
+---
+
+## ⏳ **Important**
+
+Funds are held with the external regulated banking partner at all times.
+AMAX does not receive or hold client funds.
+
+---
+
+### **[ Submit Transfer Request ]**
+
+---
+
+# 🏦 Alternative Method
+
+---
+
+## 🏦 **Australian Bank Transfer (BSB)**
+
+---
+
+### **Amount (AUD)**
+
+Enter amount
+
+**Indicative balance (external):** 2,590,552.56 AUD
+
+---
+
+## 🏦 **Bank Transfer Details**
+
+• Transfer via BSB + account number
+• Processing time: 1–3 business days
+• Include your reference code
+
+---
+
+## 🏦 **How it works**
+
+1. Submit request
+2. Receive partner-issued bank details (BSB + account)
+3. Send funds to external partner
+4. Partner confirms receipt
+5. Transfer instruction is completed
+
+---
+
+## ⏳ **Important**
+
+Funds are held with the external regulated banking partner at all times.
+AMAX does not receive or hold client funds.
+
+---
+
+### **[ Submit Transfer Request ]**
+
+---
+
+# 🌍 International (Coming Soon)
+
+---
+
+## **International Transfer In — Coming Soon**
+
+International transfers will be facilitated via external regulated partners.
+
+This feature is not yet enabled.
+
+---
+
+### Planned capabilities:
+
+• SWIFT / IBAN inbound transfers
+• Global coverage (50+ countries)
+• Facilitated via Airwallex
+• AML/CTF and sanctions screening
+• FATF Travel Rule compliance
+
+---
+
+📩 To register interest: **[info@amaxglobal.com.au](mailto:info@amaxglobal.com.au)**
+
+---
+
+# 🎯 What this fixes
+
+### ✔ Removes custody implication
+
+* “Current balance” → **Indicative balance (external)**
+* “credited to your account” → removed
+
+---
+
+### ✔ Strengthens compliance positioning
+
+* consistent “external partner” language
+* repeated but not excessive
+
+---
+
+### ✔ Cleaner UX
+
+* no duplication
+* structured sections
+* easier to scan
+
+---
+
+# 🧠 Final positioning (this is strong)
+
+👉 You now clearly present as:
+
+> **Non-custodial platform facilitating transfer instructions via regulated partners**
+
+---
+
+# 🚀 If you want next step
+
+I can now align:
+
+* **Transfer Out screen**
+* **FX conversion screen**
+* **Balances page**
+
+👉 into one **fully consistent institutional system (Wise/Revolut level but non-custodial)**
+
+You’re honestly very close to a **real production fintech UI** now.

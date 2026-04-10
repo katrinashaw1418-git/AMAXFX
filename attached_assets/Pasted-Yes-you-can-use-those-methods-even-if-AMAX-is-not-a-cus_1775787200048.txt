@@ -1,0 +1,156 @@
+Yes — **you can use those methods even if AMAX is not a custodian** ✅
+…but only if you structure them correctly.
+
+Right now you’re **90% correct** — I’ll make the final distinction so you stay compliant.
+
+---
+
+# 🎯 1. The rule (very important)
+
+👉 You can offer:
+
+* PayID / NPP
+* Bank transfer (BSB)
+* Card payments
+
+**ONLY IF:**
+
+> AMAX does NOT receive or hold the funds — the external partner does
+
+---
+
+# 🧠 2. Your current setup (PayID / Bank transfer)
+
+## ✅ This is CORRECT
+
+Because you are doing:
+
+```text
+User → sends money → external partner account
+AMAX → only instructs / displays
+```
+
+👉 This is:
+
+* non-custodial
+* compliant
+* similar to platform orchestration
+
+---
+
+# ⚠️ 3. The ONLY thing you must ensure
+
+## 🔴 Critical requirement
+
+👉 The bank details MUST be:
+
+* issued by **external regulated partner**
+* NOT in AMAX’s name
+* NOT controlled by AMAX
+
+---
+
+## ✅ Your wording already good:
+
+> “Send funds to partner-issued PayID — not to AMAX”
+
+👉 ✔️ perfect
+👉 keep this
+
+---
+
+# 💳 4. Card payments (this is the tricky one)
+
+You mentioned:
+
+> Checkout.com
+
+---
+
+## ⚠️ This depends on flow
+
+### 🟢 SAFE (allowed)
+
+If:
+
+* Checkout.com processes payment
+* funds go to **partner account**
+* AMAX never touches money
+
+👉 ✅ OK
+
+---
+
+### 🔴 RISKY (avoid)
+
+If:
+
+* Checkout.com settles into AMAX account
+* AMAX later transfers funds
+
+👉 ❌ This = custody behaviour
+👉 ❌ higher regulatory risk
+
+---
+
+# 🧠 5. Simple decision table
+
+| Method        | Allowed?   | Condition               |
+| ------------- | ---------- | ----------------------- |
+| PayID / NPP   | ✅ Yes      | partner-issued PayID    |
+| Bank transfer | ✅ Yes      | partner bank account    |
+| Card payments | ⚠️ Depends | must NOT settle to AMAX |
+
+---
+
+# 🎯 6. One wording fix (important)
+
+Change:
+
+❌ “Funds credited”
+
+---
+
+## ✅ To:
+
+```text
+Transfer instruction is completed once the external partner confirms receipt
+```
+
+👉 avoids custody implication
+
+---
+
+# 💡 7. Your positioning is now correct
+
+You are:
+
+> **Instruction + orchestration layer**
+
+NOT:
+
+* payment holder
+* wallet provider
+* remittance operator holding funds
+
+---
+
+# ✔️ Final answer
+
+👉 **YES — you can use PayID, bank transfer, and even card payments**
+
+👉 BUT ONLY IF:
+
+* funds go directly to external partner
+* AMAX never receives or holds money
+* wording clearly reflects this
+
+---
+
+# 🧠 One-line rule
+
+👉 **You can move money — just don’t touch it**
+
+---
+
+If you want, I can check your **Checkout.com flow specifically (very important)** to confirm whether it accidentally makes you custodial.

@@ -925,7 +925,7 @@ export default function Wallets() {
                 <span className="text-xl">⏳</span>
                 <div>
                   <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">Transfer In Submitted — Awaiting Funds</p>
-                  <p className="text-xs text-amber-700 dark:text-amber-400">Your balance will be credited once our regulated banking partner confirms receipt of your funds.</p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400">Your transfer instruction is completed once the external regulated banking partner confirms receipt of funds.</p>
                 </div>
               </div>
 
@@ -1077,7 +1077,7 @@ export default function Wallets() {
                 />
                 {selectedWallet && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Current balance: {selectedWallet.balance} {selectedWallet.currency}
+                    Indicative balance (external): {selectedWallet.balance} {selectedWallet.currency}
                   </p>
                 )}
                 {parseFloat(amount) >= 10000 && (
@@ -1193,7 +1193,7 @@ export default function Wallets() {
                         <p>• Visa, Mastercard, American Express accepted</p>
                         <p>• Processed by Checkout.com — PCI DSS Level 1 certified</p>
                         <p>• Card details secured by Checkout.com — never stored by AMAX</p>
-                        <p>• Funds credited after payment confirmation</p>
+                        <p>• Funds processed to external partner after payment confirmation</p>
                         <p>• You will be redirected to Checkout.com's secure payment page</p>
                       </div>
                     </div>
@@ -1208,26 +1208,27 @@ export default function Wallets() {
                     <div className="p-3 bg-muted rounded-lg">
                       <h4 className="font-medium mb-2 text-sm">⚡ PayID / NPP Transfer In</h4>
                       <div className="text-xs text-muted-foreground space-y-1">
-                        <p>• Instant bank transfer via Australia's NPP / Osko network</p>
-                        <p>• Available to all Australian bank account holders</p>
-                        <p>• No transfer fees — free from your banking app</p>
-                        <p>• Funds credited within 1–2 business hours of receipt</p>
+                        <p>• Instant transfer via Australia's NPP / Osko network</p>
+                        <p>• Available to Australian bank account holders</p>
+                        <p>• No transfer fees (from your bank)</p>
+                        <p>• Typically processed within 1–2 business hours after partner confirmation</p>
                       </div>
                     </div>
                     <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
-                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">⚡ How PayID / NPP Funding Works</p>
+                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">⚡ How it works</p>
                       <div className="text-xs text-blue-800 dark:text-blue-200 space-y-1.5">
                         <p>1. Submit this request — a unique reference code will be generated.</p>
-                        <p>2. Our team will email you the PayID details issued by our regulated banking partner.</p>
-                        <p>3. Send funds to that partner-issued PayID — <strong>not to AMAX</strong>. AMAX does not receive or hold your funds.</p>
-                        <p>4. Your account will be credited once the regulated partner confirms receipt.</p>
+                        <p>2. You will receive PayID details issued by our regulated banking partner.</p>
+                        <p>3. Send funds to that partner-issued PayID — <strong>not to AMAX</strong>.</p>
+                        <p>4. The external partner confirms receipt.</p>
+                        <p>5. Your transfer instruction is marked as completed.</p>
                       </div>
                       <p className="text-xs text-blue-600 dark:text-blue-400 pt-1 border-t border-blue-200 dark:border-blue-700">
-                        Funds are held at our regulated banking partner, not at AMAX Global Pty Ltd.
+                        Funds are held with the external regulated banking partner at all times. AMAX does not receive or hold client funds.
                       </p>
                     </div>
                     <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
-                      ⏳ Click Submit to record your request. You will receive your partner-issued account details by email before sending funds.
+                      ⏳ Click Submit to record your request. You will receive your partner-issued PayID details by email before sending funds.
                     </p>
                   </div>
                 )}
@@ -1235,24 +1236,25 @@ export default function Wallets() {
                 {depositMethod === 'bank_transfer' && (
                   <div className="space-y-3">
                     <div className="p-3 bg-muted rounded-lg">
-                      <h4 className="font-medium mb-2 text-sm">🏦 Australian Bank Transfer</h4>
+                      <h4 className="font-medium mb-2 text-sm">🏦 Australian Bank Transfer (BSB)</h4>
                       <div className="text-xs text-muted-foreground space-y-1">
-                        <p>• Direct credit from your Australian bank account (BSB + account number)</p>
+                        <p>• Transfer via BSB + account number from your Australian bank</p>
                         <p>• Processing time: 1–3 business days</p>
                         <p>• Include your unique reference code in the transfer description</p>
-                        <p>• Balance credited once our regulated partner confirms receipt</p>
+                        <p>• Instruction completed once partner confirms receipt</p>
                       </div>
                     </div>
                     <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
-                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">🏦 How Australian Bank Transfer Funding Works</p>
+                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">🏦 How it works</p>
                       <div className="text-xs text-blue-800 dark:text-blue-200 space-y-1.5">
                         <p>1. Submit this request — a unique reference code will be generated.</p>
-                        <p>2. Our team will email you the Australian bank details issued by our regulated banking partner (BSB and account number).</p>
-                        <p>3. Send funds to those partner-issued details — <strong>not to AMAX</strong>. AMAX does not receive or hold your funds.</p>
-                        <p>4. Your account will be credited once the regulated partner confirms receipt — typically 1–3 business days.</p>
+                        <p>2. You will receive partner-issued bank details (BSB + account number).</p>
+                        <p>3. Send funds to that external partner — <strong>not to AMAX</strong>.</p>
+                        <p>4. The external partner confirms receipt.</p>
+                        <p>5. Your transfer instruction is completed (typically 1–3 business days).</p>
                       </div>
                       <p className="text-xs text-blue-600 dark:text-blue-400 pt-1 border-t border-blue-200 dark:border-blue-700">
-                        Funds are held at our regulated banking partner, not at AMAX Global Pty Ltd.
+                        Funds are held with the external regulated banking partner at all times. AMAX does not receive or hold client funds.
                       </p>
                     </div>
                     <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded border border-amber-200 dark:border-amber-800">
