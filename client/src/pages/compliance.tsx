@@ -832,23 +832,33 @@ export default function Compliance() {
               </div>
             </div>
           ) : (
-            <div className="rounded-2xl border-2 border-blue-300 bg-white overflow-hidden shadow-sm">
+            <div className={`rounded-2xl border-2 bg-white overflow-hidden shadow-sm ${editStep1 && kycProfile?.kycProfileComplete ? "border-green-300" : "border-blue-300"}`}>
 
               {/* Card top bar */}
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4">
+              <div className={`px-5 py-4 ${editStep1 && kycProfile?.kycProfileComplete ? "bg-gradient-to-r from-green-600 to-green-700" : "bg-gradient-to-r from-blue-600 to-blue-700"}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4 text-white" />
+                      {editStep1 && kycProfile?.kycProfileComplete
+                        ? <CheckCircle className="w-4 h-4 text-white" />
+                        : <User className="w-4 h-4 text-white" />
+                      }
                     </div>
                     <div>
-                      <p className="text-white font-semibold text-sm">Step 1 of 4 — Personal Information</p>
-                      <p className="text-blue-200 text-xs mt-0.5">Takes about 3 minutes · Required by AUSTRAC</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-white font-semibold text-sm">Step 1 of 4 — Personal Information</p>
+                        {editStep1 && kycProfile?.kycProfileComplete && (
+                          <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full font-medium">Completed · Editing</span>
+                        )}
+                      </div>
+                      <p className={`text-xs mt-0.5 ${editStep1 && kycProfile?.kycProfileComplete ? "text-green-200" : "text-blue-200"}`}>
+                        {editStep1 && kycProfile?.kycProfileComplete ? "Update your information below then save" : "Takes about 3 minutes · Required by AUSTRAC"}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1">
-                    <Lock className="w-3 h-3 text-blue-200" />
-                    <span className="text-blue-200 text-xs font-medium">Encrypted</span>
+                    <Lock className="w-3 h-3 text-white/70" />
+                    <span className="text-white/70 text-xs font-medium">Encrypted</span>
                   </div>
                 </div>
                 {/* Mini step dots */}
