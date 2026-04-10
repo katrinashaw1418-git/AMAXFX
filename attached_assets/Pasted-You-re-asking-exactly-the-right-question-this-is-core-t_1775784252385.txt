@@ -1,0 +1,159 @@
+You’re asking exactly the right question — this is **core to your positioning**.
+
+👉 If AMAX is **not a custodian**, then:
+
+> **Exchange must be clearly shown as executed via external providers**
+
+---
+
+# 🎯 Correct positioning (very important)
+
+👉 You are NOT:
+
+* an exchange holding assets
+
+👉 You ARE:
+
+* a **facilitator / interface / execution platform**
+
+---
+
+# ✅ Best wording for your app
+
+## 🥇 Recommended (clean + compliant)
+
+```text
+Exchange transactions are executed via external regulated liquidity providers. 
+AMAX does not custody client funds or digital assets.
+```
+
+---
+
+## 🥇 Slightly stronger (institutional tone)
+
+```text
+All FX and digital asset exchange transactions are facilitated through external regulated partners. 
+AMAX acts as a non-custodial platform and does not hold client funds or digital assets.
+```
+
+---
+
+# 🧠 How to reflect this in your UI
+
+## Instead of:
+
+❌ “Exchange” (alone — too vague)
+
+---
+
+## Use:
+
+```text
+Exchange (via external provider)
+```
+
+or
+
+```text
+FX Conversion (via partner)
+```
+
+or
+
+```text
+Trade Execution (External Liquidity)
+```
+
+---
+
+# ⚠️ What you must avoid
+
+❌ “AMAX Exchange”
+❌ “Your crypto balance”
+❌ “Portfolio holdings”
+
+👉 These imply:
+
+* custody
+* internal order book
+* exchange operator
+
+---
+
+# 💡 What real platforms do
+
+Platforms like Wise:
+
+* don’t say “we hold FX”
+* they say:
+
+  * conversion
+  * transfer
+  * execution
+
+---
+
+# 🎯 Best UX structure for your app
+
+## Section name:
+
+```text
+Exchange (via External Provider)
+```
+
+---
+
+## Inside:
+
+* From: AUD
+* To: USD / BTC
+* Amount
+
+---
+
+## Underneath:
+
+```text
+Exchange rates and execution are provided by external liquidity partners. 
+AMAX does not custody client funds or digital assets.
+```
+
+---
+
+# 🚨 One subtle but important point
+
+👉 Even FX conversion must follow this logic
+
+If AMAX:
+
+* does not hold fiat
+* does not settle funds
+
+👉 Then FX is also **facilitated**, not executed internally
+
+---
+
+# ✔️ Final answer
+
+👉 Exchange should be positioned as:
+
+* **facilitated via external provider**
+* **non-custodial**
+* **no asset holding**
+
+---
+
+# 🧠 Clean one-line version (use this)
+
+👉 Best single sentence:
+
+```text
+All exchange transactions are executed via external regulated partners. AMAX does not custody client funds or digital assets.
+```
+
+---
+
+If you want, I can align:
+
+👉 your **Exchange + Transfer + Accounts wording into one consistent institutional standard**
+so everything reads like a real licensed fintech platform.

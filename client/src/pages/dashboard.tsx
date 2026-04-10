@@ -210,8 +210,8 @@ export default function Dashboard() {
               <ArrowRightLeft className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <p className="font-semibold text-gray-900">FX Exchange</p>
-              <p className="text-xs text-gray-500">Fiat currency conversion</p>
+              <p className="font-semibold text-gray-900">FX Conversion</p>
+              <p className="text-xs text-gray-500">Fiat currency conversion via external regulated partners</p>
             </div>
           </CardContent>
         </Card>
@@ -222,8 +222,8 @@ export default function Dashboard() {
               <Bitcoin className="w-5 h-5 text-amber-600" />
             </div>
             <div>
-              <p className="font-semibold text-gray-900">Crypto Exchange</p>
-              <p className="text-xs text-gray-500">Digital assets (DCE) conversion</p>
+              <p className="font-semibold text-gray-900">Digital Asset Exchange</p>
+              <p className="text-xs text-gray-500">Fiat ↔ digital assets via Independent Reserve</p>
             </div>
           </CardContent>
         </Card>

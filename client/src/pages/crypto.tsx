@@ -138,7 +138,7 @@ export default function Crypto() {
     onSuccess: (data) => {
       const isCryptoBuy = !["AUD","USD","EUR","GBP","SGD","HKD","JPY","NZD","CAD","CNY","KRW"].includes(toCurrency);
       toast({
-        title: "Exchange Submitted",
+        title: "Order Submitted",
         description: isCryptoBuy
           ? `Your ${fromCurrency} has been debited. ${toCurrency} will be credited to your account once Independent Reserve confirms on-chain delivery — typically within 1 business day.`
           : `Your ${fromCurrency} has been debited. ${toCurrency} will be credited to your account once our regulated partner confirms settlement — typically within 1 business day.`,
@@ -246,8 +246,8 @@ export default function Crypto() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Crypto Exchange</h1>
-          <p className="text-gray-500 text-sm mt-1">DCE-registered fiat ↔ digital asset exchange via Independent Reserve</p>
+          <h1 className="text-2xl font-bold text-gray-900">Digital Asset Exchange</h1>
+          <p className="text-gray-500 text-sm mt-1">Fiat ↔ digital asset exchange facilitated via Independent Reserve (external regulated partner)</p>
         </div>
         {!rateLoading && (
           <div className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg text-sm">
@@ -616,7 +616,7 @@ export default function Crypto() {
                       ? "Processing…"
                       : rateIsStale
                       ? "⚠ Rate Expired — Refreshing…"
-                      : "Review & Confirm Exchange"}
+                      : "Review & Confirm Order"}
                   </Button>
                 </TabsContent>
 
@@ -1084,16 +1084,16 @@ export default function Crypto() {
       <div className="flex items-start gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
         <Info className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-gray-500">
-          Digital currency exchange services provided by AMAX Global Pty Ltd (ABN 54 690 827 608), registered as a
-          Digital Currency Exchange (DCE) with AUSTRAC. Exchange and delivery is executed via Independent Reserve Pty Ltd
-          (ABN 46 164 681 443, AUSTRAC DCE-100461150-001, ISO 27001 certified), an Australian-domiciled institutional
-          exchange with 1:1 asset segregation and no rehypothecation. AMAX does not hold, control, or custody digital
-          assets at any point and does not maintain crypto accounts on behalf of users. Purchased digital assets are
-          delivered by Independent Reserve to your nominated external wallet address. All transactions are subject to
-          AML/CTF monitoring under the <em>Anti-Money Laundering and Counter-Terrorism Financing Act 2006</em> (Cth)
-          and FATF Travel Rule obligations (effective 1 July 2026). Digital assets are not legal tender, not backed
-          by government guarantee, and subject to significant price risk. Past performance is not indicative of
-          future results.
+          All digital asset exchange transactions are facilitated through external regulated partners. AMAX acts as a
+          non-custodial platform and does not hold client funds or digital assets. AMAX Global Pty Ltd (ABN 54 690 827 608)
+          is registered as a Digital Currency Exchange (DCE) with AUSTRAC. Execution and delivery is performed by
+          Independent Reserve Pty Ltd (ABN 46 164 681 443, AUSTRAC DCE-100461150-001, ISO 27001 certified), an
+          Australian-domiciled institutional exchange with 1:1 asset segregation and no rehypothecation. Purchased
+          digital assets are delivered by Independent Reserve directly to your nominated external wallet address. All
+          transactions are subject to AML/CTF monitoring under the <em>Anti-Money Laundering and Counter-Terrorism
+          Financing Act 2006</em> (Cth) and FATF Travel Rule obligations (effective 1 July 2026). Digital assets are
+          not legal tender, not backed by government guarantee, and subject to significant price risk. Past performance
+          is not indicative of future results.
         </p>
       </div>
 
@@ -1103,7 +1103,7 @@ export default function Crypto() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-amber-600" />
-              Confirm Exchange
+              Confirm Order
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -1164,7 +1164,7 @@ export default function Crypto() {
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowConfirm(false)} className="flex-1">Cancel</Button>
             <Button onClick={handleConfirm} disabled={exchangeMutation.isPending} className="flex-1 bg-amber-600 hover:bg-amber-700">
-              {exchangeMutation.isPending ? "Processing…" : "Confirm Exchange"}
+              {exchangeMutation.isPending ? "Processing…" : "Confirm Order"}
             </Button>
           </DialogFooter>
         </DialogContent>
