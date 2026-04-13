@@ -2128,7 +2128,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                         <div className="bg-white border rounded-xl p-4 space-y-3">
                           {addrVerifyMode === "idle" && (
                             <>
-                              <h4 className="font-semibold text-sm flex items-center gap-1.5"><Shield className="w-4 h-4 text-indigo-600 flex-shrink-0" /> Secure Address Verification via Sumsub</h4>
+                              <h4 className="font-semibold text-sm flex items-center gap-1.5"><Shield className="w-5 h-5 text-indigo-600 flex-shrink-0" /> Secure Address Verification via Sumsub</h4>
                               <p className="text-xs text-muted-foreground">
                                 Clicking the button below launches a secure session with our external KYC provider. You will be guided through:
                               </p>
