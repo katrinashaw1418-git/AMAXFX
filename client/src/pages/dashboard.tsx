@@ -292,13 +292,13 @@ export default function Dashboard() {
               </p>
               <div className="flex items-center space-x-2 text-purple-600 mb-3">
                 <Phone className="w-3 h-3" />
-                <span className="font-medium text-xs">02 8320 1908</span>
+                <span className="font-medium text-xs">+61 2 8320 1908</span>
               </div>
               <div className="flex space-x-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.open("tel:0283201908", "_self")}
+                  onClick={() => window.open("tel:+61283201908", "_self")}
                   className="flex-1 text-xs h-8"
                 >
                   <Phone className="w-3 h-3 mr-1" />
