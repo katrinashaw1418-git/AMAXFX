@@ -379,7 +379,7 @@ export default function Landing() {
             <div className="space-y-6">
               {[
                 { Icon: Mail,   title: "Email",             href: "mailto:info@amaxglobal.com.au", label: "info@amaxglobal.com.au" },
-                { Icon: MapPin, title: "Registered Office", href: null,                      label: "Level 2, Kings Court, 8-12 King Street, Rockdale, Sydney NSW 2216" },
+                { Icon: MapPin, title: "Office", href: null,                      label: "Level 2, Kings Court, 8-12 King Street, Rockdale, Sydney NSW 2216" },
               ].map(({ Icon, title, href, label }) => (
                 <div key={title} className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={ICON_BG}>
