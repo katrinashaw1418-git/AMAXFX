@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -99,6 +100,7 @@ const CARD_STYLE = { background: "#0e1f33", border: "1px solid #1a3450" };
 export default function Landing() {
   const [contactForm, setContactForm] = useState({ name: "", email: "", message: "" });
   const [contactSent, setContactSent] = useState(false);
+  const { data: user } = useQuery<any>({ queryKey: ["/api/user"], retry: false });
 
   function handleContactSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -134,16 +136,26 @@ export default function Landing() {
             </nav>
 
             <div className="flex items-center gap-2">
-              <Link href="/login">
-                <Button variant="outline" className="text-sm px-4 text-white hover:text-white hover:bg-white/10" style={{ borderColor: "#1d3a55", background: "transparent" }}>
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/register">
-                <Button className={`${GREY_BTN} text-sm px-4`}>
-                  Sign Up <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
-              </Link>
+              {user ? (
+                <Link href="/dashboard">
+                  <Button variant="outline" className="text-sm px-4 text-white hover:text-white hover:bg-white/10" style={{ borderColor: "#1d3a55", background: "transparent" }}>
+                    Return to Home
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/login">
+                    <Button variant="outline" className="text-sm px-4 text-white hover:text-white hover:bg-white/10" style={{ borderColor: "#1d3a55", background: "transparent" }}>
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/register">
+                    <Button className={`${GREY_BTN} text-sm px-4`}>
+                      Sign Up <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </header>
@@ -173,10 +185,21 @@ export default function Landing() {
           </a>
         </div>
         <p className="mt-6 text-sm text-white/60">
-          Already have an account?{" "}
-          <Link href="/login" className="text-white underline underline-offset-2 hover:text-white/80 transition-colors">
-            Sign In
-          </Link>
+          {user ? (
+            <>
+              Signed in —{" "}
+              <Link href="/dashboard" className="text-white underline underline-offset-2 hover:text-white/80 transition-colors">
+                Return to Home
+              </Link>
+            </>
+          ) : (
+            <>
+              Already have an account?{" "}
+              <Link href="/login" className="text-white underline underline-offset-2 hover:text-white/80 transition-colors">
+                Sign In
+              </Link>
+            </>
+          )}
         </p>
 
         {/* Trust badges */}
@@ -471,14 +494,22 @@ export default function Landing() {
             Join AMAX and experience compliant, fast, and transparent FX exchange, multi-currency accounts, crypto trading, and remittance — all in one platform.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/register">
-              <Button size="lg" className={`${GREY_BTN} px-10`}>Sign Up Now</Button>
-            </Link>
-            <Link href="/login">
-              <Button size="lg" variant="outline" className="px-10 text-white hover:text-white hover:bg-white/10" style={{ borderColor: "#1d3a55", background: "transparent" }}>
-                Sign In
-              </Button>
-            </Link>
+            {user ? (
+              <Link href="/dashboard">
+                <Button size="lg" className={`${GREY_BTN} px-10`}>Return to Home</Button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/register">
+                  <Button size="lg" className={`${GREY_BTN} px-10`}>Sign Up Now</Button>
+                </Link>
+                <Link href="/login">
+                  <Button size="lg" variant="outline" className="px-10 text-white hover:text-white hover:bg-white/10" style={{ borderColor: "#1d3a55", background: "transparent" }}>
+                    Sign In
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </section>
