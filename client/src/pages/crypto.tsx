@@ -287,6 +287,34 @@ export default function Crypto() {
         </div>
       </div>
 
+      {/* How it works — Sell vs Buy flow */}
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg space-y-1.5">
+          <p className="text-xs font-semibold text-red-800 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
+            Selling Crypto — Crypto → AUD
+          </p>
+          <p className="text-xs text-red-700">
+            Digital assets are transferred directly to Independent Reserve, our regulated exchange partner.
+            AMAX does not receive, hold, or control your digital assets at any stage. Once your transaction
+            is confirmed on-chain, Independent Reserve remits AUD proceeds to your nominated bank account
+            via our regulated banking partner within 1 business day. Execution timing depends on
+            Independent Reserve and network confirmation conditions.
+          </p>
+        </div>
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg space-y-1.5">
+          <p className="text-xs font-semibold text-green-800 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+            Buying Crypto — AUD → Crypto
+          </p>
+          <p className="text-xs text-green-700">
+            AMAX routes your exchange through Independent Reserve and delivers digital assets directly to
+            your nominated external wallet. AMAX never holds crypto on your behalf — no AMAX crypto
+            account is created or maintained for you.
+          </p>
+        </div>
+      </div>
+
       {/* YTD Chart */}
       <YtdRateChart
         fromCurrency={fromCurrency}
