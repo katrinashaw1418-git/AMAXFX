@@ -375,9 +375,13 @@ export default function Crypto() {
                   <div className="flex items-start gap-2.5 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
                     <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                     <span>
-                      <strong>Exchange &amp; Deliver Only:</strong> AMAX routes your exchange through
-                      Independent Reserve and delivers digital assets to your nominated external wallet.
-                      AMAX never holds crypto — no AMAX crypto account is maintained on your behalf.
+                      <strong>Buying Digital Assets — AUD → Crypto:</strong> AMAX routes the customer's
+                      exchange instruction through Independent Reserve Pty Ltd, an AUSTRAC-registered
+                      digital currency exchange providing execution and custodial infrastructure, who
+                      executes the transaction and delivers digital assets directly to the customer's
+                      nominated external wallet. AMAX does not operate digital asset accounts or custodial
+                      wallets on behalf of customers. No AMAX crypto account is created or maintained at
+                      any stage.
                     </span>
                   </div>
 
@@ -600,11 +604,12 @@ export default function Crypto() {
                     <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                     <span>
                       This exchange is arranged by AMAX Global Pty Ltd (ABN 54 690 827 608) under its AUSTRAC DCE
-                      registration and executed via Independent Reserve Pty Ltd (DCE-100461150-001). AMAX does not hold,
-                      store, or custody digital assets. Purchased {toCurrency} is delivered by Independent Reserve to
-                      your specified external wallet address. AMAX does not maintain crypto accounts on your behalf.
-                      Digital assets are not legal tender, are subject to significant price volatility, and exchanges
-                      are irreversible once confirmed.
+                      registration and executed via Independent Reserve Pty Ltd (ABN 46 164 681 443,
+                      DCE-100461150-001). AMAX does not hold, custody, or exercise control over digital assets at any
+                      stage. Purchased {toCurrency} is delivered by Independent Reserve directly to the customer's
+                      nominated external wallet address. AMAX does not operate digital asset accounts or custodial
+                      wallets on behalf of customers. Digital assets are not legal tender, are subject to significant
+                      price volatility, and exchanges are irreversible once confirmed.
                     </span>
                   </div>
 
@@ -658,10 +663,15 @@ export default function Crypto() {
                   <div className="flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-900">
                     <Shield className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-600" />
                     <span>
-                      <strong>Digital assets are transferred directly to Independent Reserve (external regulated partner).</strong>{" "}
-                      AMAX does not receive, hold, or control digital assets at any stage of the transaction.
-                      AUD proceeds are remitted by Independent Reserve to your nominated account via our external regulated banking partner within 1 business day of on-chain confirmation.
-                      Execution timing is determined by the external regulated partner and network confirmation conditions.
+                      <strong>Selling Digital Assets — Crypto → AUD:</strong> Digital asset transactions
+                      are executed via Independent Reserve Pty Ltd, an AUSTRAC-registered digital currency
+                      exchange providing execution and custodial infrastructure. AMAX does not hold,
+                      custody, or exercise control over digital assets at any stage. Digital assets are
+                      transferred directly from the customer's nominated wallet to Independent Reserve for
+                      execution and settlement. Following on-chain confirmation, AUD proceeds are remitted
+                      by Independent Reserve via regulated third-party banking partners to the customer's
+                      nominated bank account. Settlement timing is subject to network conditions and
+                      third-party processing timeframes.
                     </span>
                   </div>
 
