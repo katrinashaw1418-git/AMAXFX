@@ -1102,7 +1102,7 @@ export default function Compliance() {
                           <SelectItem value="business_payments">Business payments</SelectItem>
                           <SelectItem value="investment">Investment / Portfolio management</SelectItem>
                           <SelectItem value="fx_conversion">FX conversion</SelectItem>
-                          <SelectItem value="savings">Savings / eWallet management</SelectItem>
+                          <SelectItem value="savings">Savings / Multi-Currency Account management</SelectItem>
                           <SelectItem value="crypto">Cryptocurrency exchange</SelectItem>
                           <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
@@ -1532,7 +1532,7 @@ export default function Compliance() {
                   const agreementSections = [
                     {
                       title: "1. Overview",
-                      content: `This Customer Agreement ("Agreement") governs your use of AMAX Global's services, including eWallet, foreign exchange, remittance, and digital currency exchange ("Services"). AMAX Global Pty Ltd ("AMAX") is a registered remittance dealer and digital currency exchange provider regulated under the Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth) and enrolled with AUSTRAC.
+                      content: `This Customer Agreement ("Agreement") governs your use of AMAX Global's services, including Multi-Currency Account, foreign exchange, remittance, and digital currency exchange ("Services"). AMAX Global Pty Ltd ("AMAX") is a registered remittance dealer and digital currency exchange provider regulated under the Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth) and enrolled with AUSTRAC.
 
 By creating an account, you agree to this Agreement and any related policies. You must be at least 18 years old and legally capable of entering into binding contracts under Australian law. If you do not agree to this Agreement, you must not use our Services.
 
@@ -1616,9 +1616,9 @@ AMAX independently screens all accounts and transactions against applicable sanc
 • Technology Risk — blockchain networks may experience congestion, forks, protocol changes, or outages.
 • Liquidity Risk — limited market liquidity may prevent timely execution of transactions or result in prices significantly different from quoted prices.
 • Regulatory Risk — changes in Australian or international laws may impact the value, legality, or availability of digital currencies.
-• Custody Risk — digital currencies held with AMAX are not held in a segregated custody arrangement.
+• Custody Risk — digital asset transactions are executed via regulated third-party infrastructure; AMAX does not hold or custody digital assets on your behalf.
 
-Important: Digital currencies are not legal tender in Australia, are not government-backed, and are not covered by the Financial Claims Scheme. AUD balances in your AMAX eWallet are also not protected by the Financial Claims Scheme, as AMAX is not an Authorised Deposit-taking Institution (ADI).`,
+Important: Digital currencies are not legal tender in Australia, are not government-backed, and are not covered by the Financial Claims Scheme. AUD balances recorded in your AMAX Multi-Currency Account are also not protected by the Financial Claims Scheme, as AMAX is not an Authorised Deposit-taking Institution (ADI).`,
                     },
                     {
                       title: "7. Account Terms",
