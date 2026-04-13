@@ -1979,7 +1979,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                             <Shield className="w-4 h-4 flex-shrink-0 mt-0.5 text-blue-600" />
                             <span>
                               {isSumsubSubmitted
-                                ? "Sumsub is performing automated OCR and consistency checks. AMAX Global retains full legal responsibility for the verification outcome. This page will update automatically when the result is available."
+                                ? "Your address document is under review with Sumsub. This page will update automatically when the result is available. You will also be notified at your registered email."
                                 : "Your proof of address is with our compliance team. This step will move to Completed once approved. If there is an issue, you will be contacted at your registered email."
                               }
                             </span>
@@ -2128,14 +2128,24 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                         <div className="bg-white border rounded-xl p-4 space-y-3">
                           {addrVerifyMode === "idle" && (
                             <>
-                              <h4 className="font-semibold text-sm">Verify your address with Sumsub</h4>
+                              <h4 className="font-semibold text-sm">Secure Address Verification via Sumsub</h4>
                               <p className="text-xs text-muted-foreground">
-                                Our automated verification powered by Sumsub will guide you through uploading your proof of address document. The check typically completes within minutes.
+                                Clicking the button below launches a secure session with our external KYC provider. You will be guided through:
                               </p>
-                              <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2.5 flex items-start gap-2 text-xs text-indigo-800">
-                                <Shield className="w-4 h-4 flex-shrink-0 mt-0.5 text-indigo-600" />
-                                <span>Sumsub performs automated OCR and consistency checks. <strong>AMAX Global</strong> retains full legal responsibility for the verification outcome per AUSTRAC AML/CTF requirements.</span>
-                              </div>
+                              <ul className="text-xs text-gray-700 space-y-1.5 pl-1">
+                                <li className="flex items-start gap-2">
+                                  <span className="text-indigo-500 mt-0.5">•</span>
+                                  <span>Uploading your proof of address document (utility bill, bank statement, or lease agreement — guided securely within the session)</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <span className="text-indigo-500 mt-0.5">•</span>
+                                  <span>Automated document verification checks — typically completed within minutes</span>
+                                </li>
+                              </ul>
+                              <p className="text-xs text-muted-foreground flex items-start gap-1">
+                                <Lock className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                                <span>Address document data is processed by our external verification provider and is not stored by AMAX Global Pty Ltd. Sumsub supports AML/CTF-compliant address verification processes in accordance with Australian regulatory requirements.</span>
+                              </p>
                               <Button
                                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
                                 disabled={addressStartMutation.isPending}
@@ -2144,7 +2154,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                                   addressStartMutation.mutate();
                                 }}
                               >
-                                {addressStartMutation.isPending ? "Starting verification…" : "Start Address Verification"}
+                                {addressStartMutation.isPending ? "Starting verification…" : "Start Address Verification with Sumsub"}
                               </Button>
                             </>
                           )}
