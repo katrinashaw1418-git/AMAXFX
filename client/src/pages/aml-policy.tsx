@@ -62,7 +62,7 @@ export default function AmlPolicy() {
             <List items={[
               "Digital Currency Exchange (DCE) — buying, selling, and exchanging crypto-assets including Bitcoin (BTC), Ethereum (ETH), and stablecoins",
               "Remittance services — international and domestic funds transfers",
-              "eWallet and foreign exchange (FX) services",
+              "Multi-Currency Account and foreign exchange (FX) services",
             ]} />
             <p>These services make AMAX a <strong>reporting entity</strong> under the Act. AMAX is enrolled with the Australian Transaction Reports and Analysis Centre (AUSTRAC) and complies with all applicable AML/CTF obligations.</p>
             <div className="mt-4 space-y-2">
@@ -70,6 +70,7 @@ export default function AmlPolicy() {
               <p>AMAX maintains internal ledger accounts that record each customer's balance entitlements across multiple currencies and digital assets. <strong>AMAX does not hold customer funds directly.</strong> Fiat currency balances are maintained with regulated Australian banking partners in omnibus accounts; AMAX's internal ledger records each customer's proportional entitlement within those accounts.</p>
               <p>Digital asset transactions are executed exclusively via <strong>Independent Reserve Pty Ltd</strong> (ABN 46 164 681 443, AUSTRAC DCE-100461150-001), a licensed and AUSTRAC-registered digital currency exchange that acts as settlement custodian. AMAX issues and redeems customer ledger entitlements upon receipt of, or transfer of, corresponding funds to and from these regulated partner institutions.</p>
               <p>AMAX does not exercise discretionary control over customer funds beyond executing customer-directed transaction instructions. This structure is consistent with a non-bank payment platform operating under an omnibus/partner-held custody model, and does not constitute the acceptance of deposits within the meaning of the <em>Banking Act 1959</em> (Cth).</p>
+              <p>AMAX does not operate as an authorised deposit-taking institution (ADI) and does not provide deposit products within the meaning of the <em>Banking Act 1959</em> (Cth). Customer ledger entitlements are not guaranteed by the Financial Claims Scheme (FCS).</p>
             </div>
           </Section>
 

@@ -706,16 +706,14 @@ export default function Wallets() {
       <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
         <div className="flex items-center gap-2">
           <Shield className="w-4 h-4 text-blue-700 flex-shrink-0" />
-          <p className="text-xs font-semibold text-blue-900">Important Information</p>
+          <p className="text-xs font-semibold text-blue-900">Account Structure — Partner-Held Ledger</p>
         </div>
         <p className="text-xs text-blue-800">
-          AMAX Global Pty Ltd (ABN 54 690 827 608) is a <strong>non-custodial platform</strong>.
-          Funds and digital assets are held with external regulated partners, including banking institutions
-          and digital asset exchanges.
+          Balances displayed represent your <strong>beneficial entitlement</strong> recorded in AMAX's internal ledger.
+          Funds are held with regulated third-party financial institutions and are not held by AMAX Global Pty Ltd (ABN 54 690 827 608).
         </p>
         <p className="text-xs text-blue-800">
-          AMAX does not hold or control client funds or digital assets. All transactions are executed via
-          external partners and are subject to AML/CTF screening and KYC verification.
+          Withdrawals are processed from funds held with partner institutions. All transactions are subject to AML/CTF screening and KYC verification under the <em>Anti-Money Laundering and Counter-Terrorism Financing Act 2006</em> (Cth).
         </p>
         <div className="pt-1 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-blue-700">
           <div className="bg-white/60 rounded p-2 border border-blue-100">

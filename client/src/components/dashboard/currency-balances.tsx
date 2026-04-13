@@ -97,7 +97,7 @@ export default function CurrencyBalances({ hideSummary = false }: { hideSummary?
                 ? `A$${fiatAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
                 : "—"}
             </p>
-            <p className="text-xs text-slate-600 mt-2 italic">Fiat balances held with regulated banking partners</p>
+            <p className="text-xs text-slate-400 mt-2">Balances represent your beneficial entitlement recorded in AMAX's internal ledger. Funds are held with regulated third-party financial institutions and are not held by AMAX Global Pty Ltd.</p>
           </CardContent>
         </Card>
       )}

@@ -1,0 +1,232 @@
+Your recommendation is **directionally correct — and importantly, regulator-aligned**. I agree with your core decision:
+
+> ✅ **Update the docs, not the app**
+
+That’s the right move **strategically, commercially, and from an AUSTRAC lens**.
+
+Now let me refine your **app-side plan** so it’s not just “good” — but **audit-proof**.
+
+---
+
+# ✅ FINAL RECOMMENDED APP STRATEGY (AUSTRAC-SAFE)
+
+You’re solving one thing:
+
+> ❗ *Perception risk* (what the regulator thinks your app is doing)
+
+Not functionality.
+
+---
+
+# 🔴 KEY PRINCIPLE
+
+You don’t need to change the product.
+
+👉 You need to change **how the product is interpreted**
+
+---
+
+# ✅ WHAT YOU PROPOSED — REFINED (WITH MY ADJUSTMENTS)
+
+## 1. Rename “eWallet” → **YES (but choose carefully)**
+
+Your instinct is right, but wording matters a lot.
+
+### ❌ Avoid:
+
+* Wallet
+* eWallet
+* Stored balance
+
+### ✅ Best options:
+
+* **Account** (cleanest, widely accepted)
+* **Multi-Currency Account** (best balance)
+* **Client Account**
+* **Ledger Account** (accurate but slightly technical)
+
+👉 **My recommendation:**
+
+> ✅ **“Multi-Currency Account”**
+
+Why:
+
+* Used by Wise and Airwallex
+* Commercially clean
+* Regulator-friendly
+* Not overly technical
+
+---
+
+## 2. Ledger Disclosure — ✅ DO THIS (but stronger wording)
+
+Your version is good, but not strong enough.
+
+### 🔥 Upgrade to:
+
+> **“Balances represent your beneficial entitlement recorded in AMAX’s internal ledger. Funds are held with regulated third-party financial institutions and are not held by AMAX Global Pty Ltd.”**
+
+Why:
+
+* Introduces **“beneficial entitlement”** (legal clarity)
+* Removes ambiguity about custody
+* Aligns with omnibus model language
+
+---
+
+## 3. Dashboard Disclosure — ✅ MUST MATCH EXACTLY
+
+Consistency is critical.
+
+👉 Regulators look for:
+
+* Same wording everywhere
+* No contradictions
+
+### Rule:
+
+> Use **IDENTICAL sentence** across:
+
+* Dashboard
+* Account page
+* AML page
+* Terms
+
+---
+
+## 4. AML Policy Page — ✅ GOOD (but add one line)
+
+You said it’s already updated — good.
+
+Add one more line to make it bulletproof:
+
+> “AMAX does not operate as an authorised deposit-taking institution and does not provide deposit products.”
+
+This protects you from **Banking Act interpretation creep**.
+
+---
+
+## 5. Terms of Service — ✅ REQUIRED (DON’T SKIP)
+
+This is actually **more important than the UI**.
+
+### Add section:
+
+**“Custody and Safeguarding of Funds”**
+
+Include:
+
+* omnibus structure
+* third-party holding
+* no direct custody by AMAX
+* ledger-based entitlement
+* withdrawal rights
+
+👉 This is what regulators rely on legally — not UI text.
+
+---
+
+# ⚠️ WHAT YOU MISSED (IMPORTANT ADDITIONS)
+
+## 6. Withdrawal Screen Disclosure (HIGH VALUE)
+
+This is where regulators really look.
+
+Add:
+
+> “Withdrawals are processed from funds held with partner institutions.”
+
+---
+
+## 7. Avoid “Available Cash” Misrepresentation
+
+From your earlier audit:
+
+> ❗ Available Cash = fiat − crypto (incorrect logic)
+
+This is not just a bug — it’s a **regulatory misstatement risk**
+
+### Fix:
+
+* Show **actual fiat balance**
+* Or label clearly:
+
+  * “Fiat Balance”
+  * “Crypto Balance”
+
+---
+
+## 8. Language Consistency Audit (CRITICAL)
+
+You must remove ALL instances of:
+
+* “wallet”
+* “stored funds”
+* “your funds are held by us”
+* “balance held with AMAX”
+
+👉 One wrong sentence = compliance contradiction
+
+---
+
+# 📊 FINAL PRIORITY ORDER (WHAT TO DO FIRST)
+
+### 🔥 Phase 1 — Immediate (do now)
+
+1. Add ledger disclosure (wallet + dashboard)
+2. Fix terminology inconsistency
+3. Fix “Available Cash” logic
+
+---
+
+### ⚡ Phase 2 — Same day
+
+4. Update Terms of Service
+5. Add AML page clarification line
+
+---
+
+### 🧠 Phase 3 — Clean positioning
+
+6. Rename “eWallet” → “Multi-Currency Account”
+
+---
+
+# 🎯 FINAL VERDICT
+
+Your thinking is **correct at a senior level**:
+
+* You preserved product value ✅
+* You aligned with industry model ✅
+* You identified doc issue correctly ✅
+
+### My only upgrade:
+
+👉 Make the **language legally precise + consistent everywhere**
+
+---
+
+# 💡 One blunt truth (important)
+
+AUSTRAC won’t reject you because you have a wallet.
+
+They will question you if:
+
+* your **UI says one thing**
+* your **AML doc says another**
+* your **Terms say nothing**
+
+👉 That triangle must match.
+
+---
+
+# ✅ If you want next step
+
+I can:
+
+* 🔧 Give you **exact UI text replacements (copy-paste ready)**
+* 📄 Rewrite your **Terms of Service section**
+* 🧾 Redline your **AML doc §2 Business Profile**
+
+Just say:
+👉 “give me exact text patches”
