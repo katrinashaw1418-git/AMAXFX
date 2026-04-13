@@ -915,14 +915,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await db.execute(sql.raw(`
       CREATE UNIQUE INDEX IF NOT EXISTS unique_wallet_user_currency ON wallets (user_id, currency);
     `));
-    // Seed/sync demo user — always ensure KenLancaster exists with correct password
+    // Seed/sync demo user — always ensure GeorgeLancaster exists with correct password
     {
-      const hashed = await hashPassword("Ken888");
+      const hashed = await hashPassword("George888");
       // Find by email OR old/new username — handles legacy rows
       const { or } = await import("drizzle-orm");
       const [existingDemo] = await db.select().from(users)
         .where(or(
           eq(users.email, "demo@amaxglobal.com.au"),
+          eq(users.username, "GeorgeLancaster"),
           eq(users.username, "KenLancaster"),
           eq(users.username, "Johnchen")
         ));
@@ -930,10 +931,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Always sync email, username, password, kycStatus, userTier to canonical values
         await db.update(users)
           .set({
-            username: "KenLancaster",
+            username: "GeorgeLancaster",
             email: "demo@amaxglobal.com.au",
             password: hashed,
-            firstName: "Ken",
+            firstName: "George",
             lastName: "Lancaster",
             kycStatus: "verified",
             userTier: "premium",
@@ -941,10 +942,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .where(eq(users.id, existingDemo.id));
       } else {
         await db.insert(users).values({
-          username: "KenLancaster",
+          username: "GeorgeLancaster",
           email: "demo@amaxglobal.com.au",
           password: hashed,
-          firstName: "Ken",
+          firstName: "George",
           lastName: "Lancaster",
           kycStatus: "verified",
           userTier: "premium",
@@ -994,7 +995,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (demoKyc && !demoKyc.kycProfileComplete) {
         await db.update(users).set({
           // Step 1 — personal info
-          fullLegalName:       "Ken Lancaster",
+          fullLegalName:       "George Lancaster",
           dateOfBirth:         "1978-05-22",
           nationality:         "Australian",
           phoneNumber:         "02 8320 1908",
@@ -1015,9 +1016,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Step 2 — customer agreement
           agreementSigned:     true,
           agreementSignedAt:   new Date("2025-09-15T09:32:00"),
-          agreementRef:        "AMXAGR-KL20250915",
+          agreementRef:        "AMXAGR-GL20250915",
           agreementVersion:    "v2.0",
-          agreementSignature:  "Ken Lancaster",
+          agreementSignature:  "George Lancaster",
           // Step 3 — identity verification (Sumsub)
           idDocumentType:      "passport",
           idDocsSubmitted:     true,
