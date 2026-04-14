@@ -1,4 +1,5 @@
 import { useLocation } from "wouter";
+import amaxLogo from "@assets/Amax_logo_on_navy_background_1776126258818.png";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -7,7 +8,6 @@ import {
   Wallet,
   History,
   Shield,
-  Coins,
   User,
   ChevronRight,
   ArrowRightLeft,
@@ -42,15 +42,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
     <div className="flex flex-col h-full">
       {/* Logo Section */}
       <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <Coins className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">AMAX</h1>
-            <p className="text-xs text-gray-500">FX & Digital Payments</p>
-          </div>
-        </div>
+        <img src={amaxLogo} alt="AMAX Global" className="h-10 w-auto rounded-md" />
       </div>
 
       {/* Navigation Menu */}
