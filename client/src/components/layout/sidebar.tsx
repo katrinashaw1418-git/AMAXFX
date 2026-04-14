@@ -41,8 +41,8 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   return (
     <div className="flex flex-col h-full">
       {/* Logo Section */}
-      <div className="p-6 border-b border-gray-200">
-        <img src={amaxLogo} alt="AMAX Global" className="h-10 w-auto rounded-md" />
+      <div className="px-6 py-5 bg-primary border-b border-primary/80 flex items-center">
+        <img src={amaxLogo} alt="AMAX Global" className="h-9 w-auto rounded-md" />
       </div>
 
       {/* Navigation Menu */}

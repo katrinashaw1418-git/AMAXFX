@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import amaxLogo from "@assets/Amax_logo_on_navy_background_1776126258818.png";
 import { Menu, Bell, Globe, LogOut, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/auth";
@@ -38,9 +37,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <div className="flex items-center gap-3">
-            <img src={amaxLogo} alt="AMAX Global" className="h-10 w-auto rounded-md" />
-            <p className="text-sm text-gray-500 hidden sm:block">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">AMAX Global</h2>
+            <p className="text-sm text-gray-500">
               {user ? `Welcome back, ${user.firstName || user.username}` : "AMAX Global Pty Ltd — Financial Services"}
             </p>
           </div>
