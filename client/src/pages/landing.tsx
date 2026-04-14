@@ -118,7 +118,7 @@ export default function Landing() {
 
         <header style={{ background: "rgba(7,17,31,0.97)", borderBottom: "1px solid #152e4a" }} className="backdrop-blur">
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-            <img src={amaxLogo} alt="AMAX Global" className="h-20 w-auto rounded-md" />
+            <img src={amaxLogo} alt="AMAX Global" className="h-28 w-auto rounded-md" />
 
             <nav className="hidden md:flex items-center gap-7 text-sm">
               <a href="#services"     className="text-white hover:text-white/70 transition-colors">Services</a>
