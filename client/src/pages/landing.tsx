@@ -112,11 +112,11 @@ export default function Landing() {
 
       {/* ── Pre-launch banner + Nav (sticky together) ── */}
       <div className="sticky top-0 z-50">
-        <div className="text-white/80 text-sm text-center py-2 px-6" style={{ background: "#0a1928", borderBottom: "1px solid #152e4a" }}>
+        <div className="text-white/80 text-sm text-center py-2 px-6" style={{ background: "#07111f", borderBottom: "1px solid #152e4a" }}>
           Platform in development — services launching following completion of AUSTRAC registration and operational readiness.
         </div>
 
-        <header style={{ background: "#07111f", borderBottom: "1px solid #152e4a" }} className="backdrop-blur">
+        <header style={{ background: "#07111f", borderBottom: "1px solid #152e4a" }}>
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
             <img src={amaxLogo} alt="AMAX Global" className="h-28 w-auto" />
 
