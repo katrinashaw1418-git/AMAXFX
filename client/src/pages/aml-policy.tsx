@@ -240,6 +240,7 @@ export default function AmlPolicy() {
               <p><strong>AMAX GLOBAL Pty Ltd</strong></p>
               <p>AML/CTF Compliance Officer: Qin Xiong</p>
               <p>Level 2, 8–12 King Street, Rockdale NSW 2216</p>
+              <p>Phone: <a href="tel:+61283201908" className="text-white underline hover:text-white/70">+61 2 8320 1908</a></p>
               <p>Email: <a href="mailto:info@amaxglobal.com.au" className="text-white underline hover:text-white/70">info@amaxglobal.com.au</a></p>
             </div>
           </Section>
