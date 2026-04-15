@@ -1,5 +1,5 @@
 import { useState } from "react";
-import amaxLogo from "@assets/amax-logo-black.png";
+import amaxLogo from "@assets/amax-logo-transparent.png";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -116,7 +116,7 @@ export default function Landing() {
           Platform in development — services launching following completion of AUSTRAC registration and operational readiness.
         </div>
 
-        <header style={{ background: "#000000", borderBottom: "1px solid #222222" }} className="backdrop-blur">
+        <header style={{ background: "#07111f", borderBottom: "1px solid #152e4a" }} className="backdrop-blur">
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
             <img src={amaxLogo} alt="AMAX Global" className="h-28 w-auto" />
 
