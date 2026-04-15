@@ -43,12 +43,12 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
       <div className="px-6 py-4 bg-primary border-b border-primary/80 flex items-center space-x-3">
         <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
           <svg width="22" height="22" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* Back coin — circle with 4-pointed star */}
-            <circle cx="9.5" cy="9.5" r="7.5" stroke="hsl(207,90%,54%)" strokeWidth="2"/>
-            <path d="M9.5 5.2 L10.9 8.1 L14 9.5 L10.9 10.9 L9.5 13.8 L8.1 10.9 L5 9.5 L8.1 8.1 Z" fill="hsl(207,90%,54%)"/>
-            {/* Front coin — arc with lightning bolt, white fill masks back coin */}
-            <circle cx="16.5" cy="16.5" r="7.5" stroke="hsl(207,90%,54%)" strokeWidth="2" fill="white"/>
-            <path d="M18 12.5 L14.5 17 L17.5 17 L15 21.5 L19.5 16 L16.5 16 Z" fill="hsl(207,90%,54%)"/>
+            {/* Back coin — full circle with 4-pointed sparkle star */}
+            <circle cx="9" cy="9" r="7.5" stroke="hsl(207,90%,54%)" strokeWidth="2"/>
+            <path d="M9,4.5 L10.3,7.7 L13.5,9 L10.3,10.3 L9,13.5 L7.7,10.3 L4.5,9 L7.7,7.7 Z" fill="hsl(207,90%,54%)"/>
+            {/* Front coin — open arc (right/bottom portion only) with lightning bolt */}
+            <path d="M9.5,16.5 A7.5,7.5 0 1 1 16.5,9.5" stroke="hsl(207,90%,54%)" strokeWidth="2" strokeLinecap="round"/>
+            <path d="M18,13 L15,18 L17.5,18 L15,22.5 L20,17 L17.5,17 Z" fill="hsl(207,90%,54%)"/>
           </svg>
         </div>
         <div>
