@@ -116,7 +116,7 @@ export default function Landing() {
           Platform in development — services launching following completion of AUSTRAC registration and operational readiness.
         </div>
 
-        <header style={{ background: "rgba(7,17,31,0.97)", borderBottom: "1px solid #152e4a" }} className="backdrop-blur">
+        <header style={{ background: "#000000", borderBottom: "1px solid #222222" }} className="backdrop-blur">
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
             <img src={amaxLogo} alt="AMAX Global" className="h-28 w-auto" />
 
