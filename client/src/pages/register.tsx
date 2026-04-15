@@ -6,11 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  Loader2, Shield, Eye, EyeOff, Mail, CheckCircle2,
+  Loader2, Shield, Coins, Eye, EyeOff, Mail, CheckCircle2,
   ArrowRight, ArrowLeft, Smartphone, ChevronRight, X,
   TrendingUp, Bitcoin, Check,
 } from "lucide-react";
-import amaxIcon from "@assets/amax-icon-dark.png";
 import { SiGoogle, SiApple } from "react-icons/si";
 
 type Step = "method" | "email-form" | "verify" | "profile";
@@ -119,7 +118,7 @@ export default function Register() {
         {/* Logo */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <img src={amaxIcon} alt="AMAX Global" className="h-10 w-auto rounded-lg" />
+            <Coins className="w-9 h-9 text-primary" />
             <span className="text-2xl font-bold text-white tracking-tight">AMAX Global</span>
           </div>
           <StepDots step={step} />

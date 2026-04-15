@@ -1,5 +1,4 @@
 import { useState } from "react";
-import amaxIcon from "@assets/amax-icon-dark.png";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -119,7 +118,7 @@ export default function Landing() {
         <header>
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img src={amaxIcon} alt="AMAX Global" className="h-10 w-auto rounded-lg" />
+              <Coins className="w-9 h-9 text-primary" />
               <span className="text-2xl font-bold text-white tracking-tight">AMAX Global</span>
             </div>
 
