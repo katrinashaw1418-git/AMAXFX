@@ -1,5 +1,5 @@
 import { useState } from "react";
-import amaxLogo from "@assets/Amax_logo_on_navy_background_1776126258818.png";
+import amaxLogo from "@assets/3c8c85ce-03be-4cb4-b79b-87dc422125c5_1776242034356.png";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -118,7 +118,7 @@ export default function Landing() {
 
         <header style={{ background: "rgba(7,17,31,0.97)", borderBottom: "1px solid #152e4a" }} className="backdrop-blur">
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-            <img src={amaxLogo} alt="AMAX Global" className="h-28 w-auto rounded-md" />
+            <img src={amaxLogo} alt="AMAX Global" className="h-28 w-auto" />
 
             <nav className="hidden md:flex items-center gap-7 text-sm">
               <a href="#services"     className="text-white hover:text-white/70 transition-colors">Services</a>
