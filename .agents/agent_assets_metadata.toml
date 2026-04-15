@@ -6,3 +6,9 @@ id = "18vrXlLZKuYWD5g_orMrv"
 uri = "file://attached_assets/amax-logo-black.png"
 type = "image"
 title = "AMAX Logo — Black Background"
+
+[[outputs]]
+id = "vm1rPUBXn6Fe_N6aLffjq"
+uri = "file://attached_assets/amax-icon-blue.png"
+type = "image"
+title = "AMAX Icon — Blue Version"
