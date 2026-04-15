@@ -117,17 +117,19 @@ export default function Landing() {
 
         <header>
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-            <img src="/amax-logo.png" alt="AMAX Global" className="h-11 w-auto" />
+            <div className="flex-1">
+              <img src="/amax-logo.png" alt="AMAX Global" className="h-11 w-auto" />
+            </div>
 
-            <nav className="hidden md:flex items-center gap-7 text-sm">
-              <a href="#services"     className="text-white hover:text-white/70 transition-colors">Services</a>
-              <a href="#how-it-works" className="text-white hover:text-white/70 transition-colors">How It Works</a>
-              <a href="#compliance"   className="text-white hover:text-white/70 transition-colors">Compliance</a>
-              <a href="#about"        className="text-white hover:text-white/70 transition-colors">About</a>
-              <a href="#contact"      className="text-white hover:text-white/70 transition-colors">Contact</a>
+            <nav className="hidden md:flex items-center gap-5 text-sm flex-1 justify-center">
+              <a href="#services"     className="text-white hover:text-white/70 transition-colors whitespace-nowrap">Services</a>
+              <a href="#how-it-works" className="text-white hover:text-white/70 transition-colors whitespace-nowrap">How It Works</a>
+              <a href="#compliance"   className="text-white hover:text-white/70 transition-colors whitespace-nowrap">Compliance</a>
+              <a href="#about"        className="text-white hover:text-white/70 transition-colors whitespace-nowrap">About</a>
+              <a href="#contact"      className="text-white hover:text-white/70 transition-colors whitespace-nowrap">Contact</a>
             </nav>
 
-            <div className="flex items-center gap-2">
+            <div className="flex-1 flex items-center justify-end gap-2">
               <Link href="/login">
                 <Button variant="outline" className="text-sm px-4 text-white hover:text-white hover:bg-white/10" style={{ borderColor: "#1d3a55", background: "transparent" }}>
                   Sign In
