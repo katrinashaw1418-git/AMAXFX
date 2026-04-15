@@ -1,5 +1,5 @@
 import { useState } from "react";
-import amaxLogo from "@assets/amax-logo-transparent.png";
+import amaxIcon from "@assets/amax-icon-blue.png";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -118,7 +118,10 @@ export default function Landing() {
 
         <header>
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-            <img src={amaxLogo} alt="AMAX Global" className="h-28 w-auto" />
+            <div className="flex items-center gap-3">
+              <img src={amaxIcon} alt="AMAX Global" className="h-10 w-auto rounded-lg" />
+              <span className="text-2xl font-bold text-white tracking-tight">AMAX Global</span>
+            </div>
 
             <nav className="hidden md:flex items-center gap-7 text-sm">
               <a href="#services"     className="text-white hover:text-white/70 transition-colors">Services</a>
