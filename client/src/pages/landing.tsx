@@ -117,10 +117,7 @@ export default function Landing() {
 
         <header>
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img src="/amax-icon.png" alt="AMAX" className="h-9 w-9" />
-              <span className="text-2xl font-bold text-white tracking-tight">AMAX Global</span>
-            </div>
+            <img src="/amax-logo.png" alt="AMAX Global" className="h-11 w-auto" />
 
             <nav className="hidden md:flex items-center gap-7 text-sm">
               <a href="#services"     className="text-white hover:text-white/70 transition-colors">Services</a>
