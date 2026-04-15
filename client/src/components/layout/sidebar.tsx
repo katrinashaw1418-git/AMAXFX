@@ -1,5 +1,4 @@
 import { useLocation } from "wouter";
-import amaxLogo from "@assets/ChatGPT_Image_Apr_15,_2026,_06_20_29_PM_1776242302907.png";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -41,8 +40,21 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   return (
     <div className="flex flex-col h-full">
       {/* Logo Section */}
-      <div className="flex items-center justify-center px-4 py-3" style={{ background: "#000000", borderBottom: "1px solid #222222" }}>
-        <img src={amaxLogo} alt="AMAX Global" className="h-14 w-auto" />
+      <div className="px-6 py-4 bg-primary border-b border-primary/80 flex items-center space-x-3">
+        <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg width="22" height="22" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Back coin — circle with 4-pointed star */}
+            <circle cx="9.5" cy="9.5" r="7.5" stroke="hsl(207,90%,54%)" strokeWidth="2"/>
+            <path d="M9.5 5.2 L10.9 8.1 L14 9.5 L10.9 10.9 L9.5 13.8 L8.1 10.9 L5 9.5 L8.1 8.1 Z" fill="hsl(207,90%,54%)"/>
+            {/* Front coin — arc with lightning bolt, white fill masks back coin */}
+            <circle cx="16.5" cy="16.5" r="7.5" stroke="hsl(207,90%,54%)" strokeWidth="2" fill="white"/>
+            <path d="M18 12.5 L14.5 17 L17.5 17 L15 21.5 L19.5 16 L16.5 16 Z" fill="hsl(207,90%,54%)"/>
+          </svg>
+        </div>
+        <div>
+          <h1 className="text-xl font-bold text-white">AMAX</h1>
+          <p className="text-xs text-white/70">FX &amp; Digital Payments</p>
+        </div>
       </div>
 
       {/* Navigation Menu */}
