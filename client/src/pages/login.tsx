@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Shield } from "lucide-react";
-import amaxIcon from "@assets/amax-icon-blue.png";
+import amaxIcon from "@assets/amax-icon-dark.png";
 
 export default function Login() {
   const { login, isAuthenticated } = useAuth();

@@ -10,7 +10,7 @@ import {
   ArrowRight, ArrowLeft, Smartphone, ChevronRight, X,
   TrendingUp, Bitcoin, Check,
 } from "lucide-react";
-import amaxIcon from "@assets/amax-icon-blue.png";
+import amaxIcon from "@assets/amax-icon-dark.png";
 import { SiGoogle, SiApple } from "react-icons/si";
 
 type Step = "method" | "email-form" | "verify" | "profile";

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import amaxIcon from "@assets/amax-icon-blue.png";
+import amaxIcon from "@assets/amax-icon-dark.png";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
