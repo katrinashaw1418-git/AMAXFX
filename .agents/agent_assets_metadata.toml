@@ -1,3 +1,8 @@
 uploads = []
 generated = []
-outputs = []
+
+[[outputs]]
+id = "18vrXlLZKuYWD5g_orMrv"
+uri = "file://attached_assets/amax-logo-black.png"
+type = "image"
+title = "AMAX Logo — Black Background"
