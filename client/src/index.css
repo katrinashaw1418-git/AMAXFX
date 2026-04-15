@@ -62,15 +62,16 @@
     font-family: 'Inter', system-ui, sans-serif;
   }
 
-  body:has(.landing-page) {
-    background: #07111f !important;
-  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+.bg-landing {
+  background-color: #07111f !important;
 }
 
 /* Custom scrollbar */

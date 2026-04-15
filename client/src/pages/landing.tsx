@@ -108,10 +108,10 @@ export default function Landing() {
   }
 
   return (
-    <div className="landing-page min-h-screen text-white" style={{ background: "#07111f" }}>
+    <div className="landing-page bg-landing min-h-screen text-white">
 
       {/* ── Pre-launch banner + Nav (sticky together) ── */}
-      <div className="sticky top-0 z-50" style={{ background: "#07111f", borderBottom: "1px solid #152e4a" }}>
+      <div className="sticky top-0 z-50 bg-landing">
         <div className="text-white/60 text-sm text-center py-2 px-6">
           Platform in development — services launching following completion of AUSTRAC registration and operational readiness.
         </div>
