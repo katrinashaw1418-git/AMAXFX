@@ -1,5 +1,4 @@
 import { useLocation } from "wouter";
-import amaxIconImg from "@assets/amax-icon-blue.png";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -41,16 +40,13 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   return (
     <div className="flex flex-col h-full">
       {/* Logo Section */}
-      <div className="px-6 py-4 bg-primary border-b border-primary/80 flex items-center space-x-3">
+      <div className="px-6 py-4 bg-primary border-b border-primary/80 flex flex-col gap-0.5">
         <img
-          src={amaxIconImg}
-          alt="AMAX icon"
-          className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+          src="/amax-logo.png"
+          alt="AMAX Global"
+          className="h-8 w-auto"
         />
-        <div>
-          <h1 className="text-xl font-bold text-white">AMAX</h1>
-          <p className="text-xs text-white/70">FX &amp; Digital Payments</p>
-        </div>
+        <p className="text-xs text-white/70">FX &amp; Digital Payments</p>
       </div>
 
       {/* Navigation Menu */}

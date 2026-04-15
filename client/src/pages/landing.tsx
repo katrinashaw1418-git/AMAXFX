@@ -14,7 +14,6 @@ import {
   Shield,
   CheckCircle2,
   ChevronRight,
-  Coins,
   Lock,
   FileCheck,
   Users,
@@ -484,11 +483,8 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-7 h-7 bg-white rounded flex items-center justify-center">
-                  <Coins className="w-4 h-4 text-slate-900" />
-                </div>
-                <span className="font-bold text-white text-lg">AMAX</span>
+              <div className="mb-3">
+                <img src="/amax-logo.png" alt="AMAX Global" className="h-9 w-auto" />
               </div>
               <p className="text-sm text-white leading-relaxed">
                 Australia-based regulated platform for FX exchange, multi-currency accounts, cryptocurrency trading, and cross-border remittance.

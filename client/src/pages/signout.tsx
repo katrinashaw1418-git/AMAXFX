@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Shield, CheckCircle, LogIn, Home, Lock } from "lucide-react";
+import { CheckCircle, LogIn, Home, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Signout() {
@@ -9,9 +9,8 @@ export default function Signout() {
 
         {/* Branding */}
         <div className="space-y-1">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Shield className="w-8 h-8 text-amber-500" />
-            <span className="text-2xl font-bold text-white tracking-tight">AMAX Global</span>
+          <div className="flex items-center justify-center mb-2">
+            <img src="/amax-logo.png" alt="AMAX Global" className="h-10 w-auto" />
           </div>
           <p className="text-slate-400 text-sm">AUSTRAC Registered DCE · ABN 54 690 827 608</p>
         </div>
