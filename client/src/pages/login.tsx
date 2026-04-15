@@ -42,7 +42,7 @@ export default function Login() {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Coins className="w-9 h-9 text-primary" />
+            <img src="/amax-icon.png" alt="AMAX" className="h-9 w-9" />
             <span className="text-2xl font-bold text-white tracking-tight">AMAX Global</span>
           </div>
           <h1 className="text-3xl font-bold text-white">Welcome back</h1>

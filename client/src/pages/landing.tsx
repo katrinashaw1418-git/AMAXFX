@@ -118,7 +118,7 @@ export default function Landing() {
         <header>
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Coins className="w-9 h-9 text-primary" />
+              <img src="/amax-icon.png" alt="AMAX" className="h-9 w-9" />
               <span className="text-2xl font-bold text-white tracking-tight">AMAX Global</span>
             </div>
 
