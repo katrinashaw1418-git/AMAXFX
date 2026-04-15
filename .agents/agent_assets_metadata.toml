@@ -12,3 +12,9 @@ id = "vm1rPUBXn6Fe_N6aLffjq"
 uri = "file://attached_assets/amax-icon-blue.png"
 type = "image"
 title = "AMAX Icon — Blue Version"
+
+[[outputs]]
+id = "ZEpl9dm8n4jRQCAesBhoo"
+uri = "file://attached_assets/amax-logo-blue-full.png"
+type = "image"
+title = "AMAX Full Logo — Blue Version"
