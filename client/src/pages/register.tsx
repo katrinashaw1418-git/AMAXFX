@@ -10,7 +10,7 @@ import {
   ArrowRight, ArrowLeft, Smartphone, ChevronRight, X,
   TrendingUp, Bitcoin, Check,
 } from "lucide-react";
-import amaxLogo from "@assets/amax-logo-transparent.png";
+import amaxIcon from "@assets/amax-icon-blue.png";
 import { SiGoogle, SiApple } from "react-icons/si";
 
 type Step = "method" | "email-form" | "verify" | "profile";
@@ -118,8 +118,9 @@ export default function Register() {
 
         {/* Logo */}
         <div className="text-center mb-6">
-          <div className="flex items-center justify-center mb-4">
-            <img src={amaxLogo} alt="AMAX Global" className="h-16 w-auto" />
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <img src={amaxIcon} alt="AMAX Global" className="h-10 w-auto rounded-lg" />
+            <span className="text-2xl font-bold text-white tracking-tight">AMAX Global</span>
           </div>
           <StepDots step={step} />
         </div>
