@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import amaxIconImg from "@assets/amax-icon-tight.png";
+import amaxIconImg from "@assets/amax-icon-blue.png";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
