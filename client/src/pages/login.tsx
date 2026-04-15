@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Shield, Coins } from "lucide-react";
+import { Loader2, Shield, Coins, ArrowLeft } from "lucide-react";
 
 export default function Login() {
   const { login, isAuthenticated } = useAuth();
@@ -40,6 +40,10 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white text-sm transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back to home
+        </Link>
+
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center mb-4">
             <img src="/amax-logo.png" alt="AMAX Global" className="h-11 w-auto" />
