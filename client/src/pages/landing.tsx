@@ -1,5 +1,5 @@
 import { useState } from "react";
-import amaxLogo from "@assets/ChatGPT_Image_Apr_15,_2026,_06_20_29_PM_1776242302907.png";
+import amaxLogo from "@assets/amax-logo-black.png";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
