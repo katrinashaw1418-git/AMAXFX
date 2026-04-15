@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Shield } from "lucide-react";
+import amaxLogo from "@assets/amax-logo-transparent.png";
 
 export default function Login() {
   const { login, isAuthenticated } = useAuth();
@@ -41,11 +42,8 @@ export default function Login() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center">
-              <Shield className="w-5 h-5 text-slate-900" />
-            </div>
-            <span className="text-2xl font-bold text-white">AMAX</span>
+          <div className="flex items-center justify-center mb-4">
+            <img src={amaxLogo} alt="AMAX Global" className="h-16 w-auto" />
           </div>
           <h1 className="text-3xl font-bold text-white">Welcome back</h1>
           <p className="text-slate-400">Sign in to your wealth management platform</p>
