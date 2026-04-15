@@ -10,7 +10,7 @@ export default function Signout() {
         {/* Branding */}
         <div className="space-y-1">
           <div className="flex items-center justify-center gap-3 mb-2">
-            <img src="/amax-icon-white.png" alt="AMAX GLOBAL" className="h-10 w-auto" />
+            <img src="/amax-coin-icon.png" alt="AMAX GLOBAL" className="h-10 w-auto" />
             <span className="font-bold text-white text-2xl tracking-widest">AMAX GLOBAL</span>
           </div>
           <p className="text-slate-400 text-sm">AUSTRAC Registered DCE · ABN 54 690 827 608</p>
