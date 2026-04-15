@@ -47,7 +47,7 @@ export default function AmlPolicy() {
         <div>
           <h1 className="text-4xl font-bold mb-2">AML/CTF Policy</h1>
           <p className="text-sm text-white/60">Anti-Money Laundering &amp; Counter-Terrorism Financing Policy Statement</p>
-          <p className="text-sm text-white/60">AMAX Global Pty Ltd &nbsp;|&nbsp; ABN 54 690 827 608 &nbsp;|&nbsp; Version 2.0 &nbsp;|&nbsp; Last updated: {UPDATED}</p>
+          <p className="text-sm text-white/60">AMAX GLOBAL Pty Ltd &nbsp;|&nbsp; ABN 54 690 827 608 &nbsp;|&nbsp; Version 2.0 &nbsp;|&nbsp; Last updated: {UPDATED}</p>
         </div>
 
         {/* Disclaimer */}
@@ -58,7 +58,7 @@ export default function AmlPolicy() {
         <div className="space-y-10">
 
           <Section id="s1" title="1. About AMAX">
-            <p>AMAX Global Pty Ltd (ACN 690 827 608, ABN 54 690 827 608) is an Australian financial technology company headquartered at Level 2, 8–12 King Street, Rockdale NSW 2216. AMAX provides the following designated services under the Act:</p>
+            <p>AMAX GLOBAL Pty Ltd (ACN 690 827 608, ABN 54 690 827 608) is an Australian financial technology company headquartered at Level 2, 8–12 King Street, Rockdale NSW 2216. AMAX provides the following designated services under the Act:</p>
             <List items={[
               "Digital Currency Exchange (DCE) — buying, selling, and exchanging crypto-assets including Bitcoin (BTC), Ethereum (ETH), and stablecoins",
               "Remittance services — international and domestic funds transfers",
@@ -237,7 +237,7 @@ export default function AmlPolicy() {
           <Section id="s14" title="14. Contact">
             <p>For AML/CTF enquiries, compliance matters, or to report a concern, please contact:</p>
             <div className="rounded-lg p-4" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
-              <p><strong>AMAX Global Pty Ltd</strong></p>
+              <p><strong>AMAX GLOBAL Pty Ltd</strong></p>
               <p>AML/CTF Compliance Officer: Qin Xiong</p>
               <p>Level 2, 8–12 King Street, Rockdale NSW 2216</p>
               <p>Email: <a href="mailto:info@amaxglobal.com.au" className="text-white underline hover:text-white/70">info@amaxglobal.com.au</a></p>
@@ -249,7 +249,7 @@ export default function AmlPolicy() {
 
       <footer className="py-6 mt-16" style={{ borderTop: "1px solid #152e4a" }}>
         <div className="max-w-4xl mx-auto px-6 text-center text-xs text-white/70">
-          © {new Date().getFullYear()} AMAX Global Pty Ltd. ABN 54 690 827 608. AUSTRAC Enrolled Reporting Entity.
+          © {new Date().getFullYear()} AMAX GLOBAL Pty Ltd. ABN 54 690 827 608. AUSTRAC Enrolled Reporting Entity.
           This policy is reviewed periodically in line with regulatory requirements.
         </div>
       </footer>

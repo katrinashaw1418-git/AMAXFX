@@ -253,7 +253,7 @@ export default function Dashboard() {
               ? `A$${fiatAud.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
               : "A$0"}
           </p>
-          <p className="text-xs text-slate-500 mt-3">Balances represent your beneficial entitlement recorded in AMAX's internal ledger — funds are held with regulated third-party financial institutions, not by AMAX Global Pty Ltd.</p>
+          <p className="text-xs text-slate-500 mt-3">Balances represent your beneficial entitlement recorded in AMAX's internal ledger — funds are held with regulated third-party financial institutions, not by AMAX GLOBAL Pty Ltd.</p>
         </CardContent>
       </Card>
 

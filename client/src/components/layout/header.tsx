@@ -38,9 +38,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <Menu className="w-5 h-5" />
           </Button>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">AMAX Global</h2>
+            <h2 className="text-2xl font-bold text-gray-900">AMAX GLOBAL</h2>
             <p className="text-sm text-gray-500">
-              {user ? `Welcome back, ${user.firstName || user.username}` : "AMAX Global Pty Ltd — Financial Services"}
+              {user ? `Welcome back, ${user.firstName || user.username}` : "AMAX GLOBAL Pty Ltd — Financial Services"}
             </p>
           </div>
         </div>

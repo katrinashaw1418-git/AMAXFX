@@ -710,7 +710,7 @@ export default function Wallets() {
         </div>
         <p className="text-xs text-blue-800">
           Balances displayed represent your <strong>beneficial entitlement</strong> recorded in AMAX's internal ledger.
-          Funds are held with regulated third-party financial institutions and are not held by AMAX Global Pty Ltd (ABN 54 690 827 608).
+          Funds are held with regulated third-party financial institutions and are not held by AMAX GLOBAL Pty Ltd (ABN 54 690 827 608).
         </p>
         <p className="text-xs text-blue-800">
           Withdrawals are processed from funds held with partner institutions. All transactions are subject to AML/CTF screening and KYC verification under the <em>Anti-Money Laundering and Counter-Terrorism Financing Act 2006</em> (Cth).

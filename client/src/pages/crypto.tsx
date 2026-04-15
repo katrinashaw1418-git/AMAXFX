@@ -273,7 +273,7 @@ export default function Crypto() {
         <div className="text-sm text-amber-800 space-y-1">
           <p>
             <span className="font-semibold">AUSTRAC DCE Registration — Exchange &amp; Delivery Only:</span>{" "}
-            AMAX Global Pty Ltd (ABN 54 690 827 608) is registered as a Digital Currency Exchange (DCE) with AUSTRAC.
+            AMAX GLOBAL Pty Ltd (ABN 54 690 827 608) is registered as a Digital Currency Exchange (DCE) with AUSTRAC.
             AMAX does not hold, store, or custody digital assets on your behalf and does not maintain crypto accounts
             for users.
           </p>
@@ -572,7 +572,7 @@ export default function Crypto() {
                   <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-amber-50 border border-amber-200 text-amber-800">
                     <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                     <span>
-                      This exchange is arranged by AMAX Global Pty Ltd (ABN 54 690 827 608) under its AUSTRAC DCE
+                      This exchange is arranged by AMAX GLOBAL Pty Ltd (ABN 54 690 827 608) under its AUSTRAC DCE
                       registration and executed via Independent Reserve Pty Ltd (ABN 46 164 681 443,
                       DCE-100461150-001). AMAX does not hold, custody, or exercise control over digital assets at any
                       stage. Purchased {toCurrency} is delivered by Independent Reserve directly to the customer's
@@ -993,7 +993,7 @@ export default function Crypto() {
                     {showDisclosure && (
                       <div className="p-4 text-xs text-gray-600 space-y-3 leading-relaxed border-t bg-white">
                         <p>
-                          This sell transaction is arranged by AMAX Global Pty Ltd (ABN 54 690 827 608), registered as a
+                          This sell transaction is arranged by AMAX GLOBAL Pty Ltd (ABN 54 690 827 608), registered as a
                           Digital Currency Exchange (DCE) with AUSTRAC. The exchange is executed by Independent Reserve
                           Pty Ltd (AUSTRAC DCE-100461150-001), which acts as the independent exchange and settlement
                           counterparty.
@@ -1002,7 +1002,7 @@ export default function Crypto() {
                           AMAX does not hold, receive, control, or custody your digital assets at any point in this
                           process. Your crypto is sent directly to Independent Reserve. AUD proceeds are remitted by
                           Independent Reserve to our regulated banking partner and credited to your account. AMAX acts
-                          as program manager only — funds are held by the regulated partner, not by AMAX Global Pty Ltd.
+                          as program manager only — funds are held by the regulated partner, not by AMAX GLOBAL Pty Ltd.
                         </p>
                         <p>
                           This transaction is subject to AML/CTF monitoring under the{" "}
@@ -1096,7 +1096,7 @@ export default function Crypto() {
         <Info className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-gray-500">
           All digital asset exchange transactions are facilitated through external regulated partners. AMAX acts as a
-          non-custodial platform and does not hold client funds or digital assets. AMAX Global Pty Ltd (ABN 54 690 827 608)
+          non-custodial platform and does not hold client funds or digital assets. AMAX GLOBAL Pty Ltd (ABN 54 690 827 608)
           is registered as a Digital Currency Exchange (DCE) with AUSTRAC. Execution and delivery is performed by
           Independent Reserve Pty Ltd (ABN 46 164 681 443, AUSTRAC DCE-100461150-001, ISO 27001 certified), an
           Australian-domiciled institutional exchange with 1:1 asset segregation and no rehypothecation. Purchased
@@ -1164,7 +1164,7 @@ export default function Crypto() {
             <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-amber-50 border border-amber-200 text-amber-800">
               <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
               <span>
-                Delivery to incorrect addresses cannot be reversed. By confirming, you authorise AMAX Global
+                Delivery to incorrect addresses cannot be reversed. By confirming, you authorise AMAX GLOBAL
                 Pty Ltd (ABN 54 690 827 608) to route this exchange through Independent Reserve Pty Ltd
                 (DCE-100461150-001) and deliver {toCurrency} to the specified wallet. AMAX does not custody
                 digital assets. This transaction is subject to AML/CTF monitoring and Travel Rule reporting

@@ -670,7 +670,7 @@ export default function Compliance() {
         <div>
           <h1 className="text-2xl font-bold">Compliance Centre</h1>
           <p className="text-gray-600 text-sm">
-            AMAX Global Pty Ltd (ABN 54 690 827 608) — regulatory verification and document management
+            AMAX GLOBAL Pty Ltd (ABN 54 690 827 608) — regulatory verification and document management
           </p>
         </div>
         {kycPct === 100 ? (
@@ -1265,7 +1265,7 @@ export default function Compliance() {
                                   <li>• Automated verification checks — typically under 2 minutes</li>
                                 </ul>
                                 <p className="text-xs text-muted-foreground mt-2">
-                                  Biometric and identity data are processed by our external verification provider and are not stored by AMAX Global Pty Ltd. Sumsub supports AML/CTF-compliant identity verification processes in accordance with Australian regulatory requirements.
+                                  Biometric and identity data are processed by our external verification provider and are not stored by AMAX GLOBAL Pty Ltd. Sumsub supports AML/CTF-compliant identity verification processes in accordance with Australian regulatory requirements.
                                 </p>
                               </div>
                             </div>
@@ -1335,7 +1335,7 @@ export default function Compliance() {
                             style={{ minHeight: "600px" }}
                           />
                           <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-                            <Lock className="w-3 h-3" /> Biometric and identity data are processed by Sumsub and are not stored by AMAX Global Pty Ltd — in accordance with the Privacy Act 1988 and AML/CTF Act 2006.
+                            <Lock className="w-3 h-3" /> Biometric and identity data are processed by Sumsub and are not stored by AMAX GLOBAL Pty Ltd — in accordance with the Privacy Act 1988 and AML/CTF Act 2006.
                           </p>
                         </div>
                       )}
@@ -1532,11 +1532,11 @@ export default function Compliance() {
                   const agreementSections = [
                     {
                       title: "1. Overview",
-                      content: `This Customer Agreement ("Agreement") governs your use of AMAX Global's services, including Multi-Currency Account, foreign exchange, remittance, and digital currency exchange ("Services"). AMAX Global Pty Ltd ("AMAX") is a registered remittance dealer and digital currency exchange provider regulated under the Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth) and enrolled with AUSTRAC.
+                      content: `This Customer Agreement ("Agreement") governs your use of AMAX GLOBAL's services, including Multi-Currency Account, foreign exchange, remittance, and digital currency exchange ("Services"). AMAX GLOBAL Pty Ltd ("AMAX") is a registered remittance dealer and digital currency exchange provider regulated under the Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth) and enrolled with AUSTRAC.
 
 By creating an account, you agree to this Agreement and any related policies. You must be at least 18 years old and legally capable of entering into binding contracts under Australian law. If you do not agree to this Agreement, you must not use our Services.
 
-This Agreement sets out your rights and responsibilities, as well as AMAX Global's obligations under Australian law and international financial standards.`,
+This Agreement sets out your rights and responsibilities, as well as AMAX GLOBAL's obligations under Australian law and international financial standards.`,
                     },
                     {
                       title: "2. Use of Services",
@@ -1560,7 +1560,7 @@ This Agreement is governed by the laws of New South Wales and the Commonwealth o
                     },
                     {
                       title: "3. Privacy",
-                      content: `AMAX Global collects and uses personal information in accordance with the Privacy Act 1988 (Cth) and the Australian Privacy Principles (APPs).
+                      content: `AMAX GLOBAL collects and uses personal information in accordance with the Privacy Act 1988 (Cth) and the Australian Privacy Principles (APPs).
 
 Purpose of Collection:
 • Identity verification and KYC/AML compliance
@@ -1580,7 +1580,7 @@ International Data Transfers: AMAX may transfer your personal data to service pr
                     },
                     {
                       title: "4. Compliance and AML/CTF",
-                      content: `AMAX Global is a reporting entity under the Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth) enrolled with AUSTRAC. We provide designated services including remittance and digital currency exchange.
+                      content: `AMAX GLOBAL is a reporting entity under the Anti-Money Laundering and Counter-Terrorism Financing Act 2006 (Cth) enrolled with AUSTRAC. We provide designated services including remittance and digital currency exchange.
 
 AMAX Obligations:
 • Maintain an AML/CTF Program covering Part A (risk-based controls) and Part B (customer due diligence)
@@ -1598,7 +1598,7 @@ Customer Obligations:
                     },
                     {
                       title: "5. Sanctions Compliance",
-                      content: `AMAX Global complies with Australian sanctions laws administered by the Department of Foreign Affairs and Trade (DFAT), UN Security Council sanctions as implemented in Australia, and other applicable international sanctions regimes.
+                      content: `AMAX GLOBAL complies with Australian sanctions laws administered by the Department of Foreign Affairs and Trade (DFAT), UN Security Council sanctions as implemented in Australia, and other applicable international sanctions regimes.
 
 You declare that:
 • You are not listed on the DFAT Consolidated List, the UN Security Council Consolidated List, or any other applicable sanctions list
@@ -1682,7 +1682,7 @@ You must not:
 • Use the platform for any unlawful purpose or in a manner that infringes the intellectual property rights of AMAX or any third party
 • Use automated tools, bots, or scripts to access or interact with the platform without AMAX's prior written consent
 
-All intellectual property rights in the AMAX platform, including software, trademarks, and content, remain the property of AMAX Global Pty Ltd or its licensors. This licence terminates automatically upon closure of your account.`,
+All intellectual property rights in the AMAX platform, including software, trademarks, and content, remain the property of AMAX GLOBAL Pty Ltd or its licensors. This licence terminates automatically upon closure of your account.`,
                     },
                     {
                       title: "12. Identity and Use Declaration",
@@ -1831,7 +1831,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-semibold truncate">{kycProfile?.fullLegalName ?? "Verified Customer"}</p>
-                                  <p className="text-[10px] text-gray-400">Identity verified · AMAX Global Customer Agreement v2.0</p>
+                                  <p className="text-[10px] text-gray-400">Identity verified · AMAX GLOBAL Customer Agreement v2.0</p>
                                 </div>
                                 <div className="text-[10px] text-gray-400 flex-shrink-0">
                                   {new Date().toLocaleDateString("en-AU")}
@@ -1840,7 +1840,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
 
                               {/* Agreement header */}
                               <div className="px-5 pt-4 pb-3 border-b">
-                                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">AMAX Global Pty Ltd — ABN 54 690 827 608</p>
+                                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">AMAX GLOBAL Pty Ltd — ABN 54 690 827 608</p>
                                 <h3 className="text-base font-bold text-gray-900 mt-1">Customer Agreement</h3>
                                 <p className="text-xs text-gray-500 mt-0.5">Version 2.0 · Effective April 2026 · Level 2, 8–12 King Street, Rockdale NSW 2216</p>
                               </div>
@@ -1877,7 +1877,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                               {/* Sticky summary */}
                               <div className="bg-indigo-700 px-4 py-3">
                                 <p className="text-xs text-indigo-100 leading-relaxed">
-                                  By proceeding, you confirm that your information is accurate and complete, that you are not a sanctioned person or acting on behalf of one, and that you understand AMAX Global's monitoring and compliance obligations under Australian law.
+                                  By proceeding, you confirm that your information is accurate and complete, that you are not a sanctioned person or acting on behalf of one, and that you understand AMAX GLOBAL's monitoring and compliance obligations under Australian law.
                                 </p>
                               </div>
 
@@ -1925,7 +1925,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                                 </Button>
                               </div>
                               <p className="text-[10px] text-center text-muted-foreground">
-                                Electronic signature valid under the Electronic Transactions Act 1999 (Cth) · AMAX Global records your IP address and timestamp
+                                Electronic signature valid under the Electronic Transactions Act 1999 (Cth) · AMAX GLOBAL records your IP address and timestamp
                               </p>
                               </div>{/* /p-4 inner wrapper */}
                             </div>
@@ -2043,7 +2043,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                             </div>
                             <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                               <p className="text-gray-500">Accountable Party</p>
-                              <p className="font-semibold text-green-800">AMAX Global Pty Ltd</p>
+                              <p className="font-semibold text-green-800">AMAX GLOBAL Pty Ltd</p>
                             </div>
                             <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                               <p className="text-gray-500">Verification Result</p>
@@ -2144,7 +2144,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                               </ul>
                               <p className="text-xs text-muted-foreground flex items-start gap-1">
                                 <Lock className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                                <span>Address document data is processed by our external verification provider and is not stored by AMAX Global Pty Ltd. Sumsub supports AML/CTF-compliant address verification processes in accordance with Australian regulatory requirements.</span>
+                                <span>Address document data is processed by our external verification provider and is not stored by AMAX GLOBAL Pty Ltd. Sumsub supports AML/CTF-compliant address verification processes in accordance with Australian regulatory requirements.</span>
                               </p>
                               <Button
                                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
@@ -2174,7 +2174,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                         </div>
 
                         <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-                          <Lock className="w-3 h-3" /> Documents processed by Sumsub — not stored by AMAX Global · Privacy Act 1988 · AML/CTF Act 2006
+                          <Lock className="w-3 h-3" /> Documents processed by Sumsub — not stored by AMAX GLOBAL · Privacy Act 1988 · AML/CTF Act 2006
                         </p>
                       </div>
                     </div>
@@ -2351,7 +2351,7 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
                             <h3 className="font-semibold text-gray-900">Proof of Address</h3>
                             <Badge className="bg-green-100 text-green-800">Approved</Badge>
                           </div>
-                          <p className="text-xs text-gray-500 mt-0.5">Address document reviewed and approved by the AMAX Global compliance team</p>
+                          <p className="text-xs text-gray-500 mt-0.5">Address document reviewed and approved by the AMAX GLOBAL compliance team</p>
                         </div>
                       </div>
                       <div className="px-4 pb-5">
@@ -2523,9 +2523,9 @@ I will cooperate fully with AMAX's compliance requirements and will not take any
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
-                  { title: "AUSTRAC — Digital Currency Exchange (DCE)", badge: "Registered", cls: "bg-green-100 text-green-800", text: "AMAX Global Pty Ltd is registered on the AUSTRAC Digital Currency Exchange Register. ABN 54 690 827 608. Registration is mandatory under the AML/CTF Act 2006 — it is a criminal offence to operate a DCE without registration." },
+                  { title: "AUSTRAC — Digital Currency Exchange (DCE)", badge: "Registered", cls: "bg-green-100 text-green-800", text: "AMAX GLOBAL Pty Ltd is registered on the AUSTRAC Digital Currency Exchange Register. ABN 54 690 827 608. Registration is mandatory under the AML/CTF Act 2006 — it is a criminal offence to operate a DCE without registration." },
                   { title: "AUSTRAC — Remittance Sector Register", badge: "Partner Facilitated", cls: "bg-blue-100 text-blue-800", text: "AMAX facilitates transfer instructions via external regulated remittance and banking partners. Fiat-to-fiat cross-border transfer instructions are executed through these external regulated partners in accordance with AML/CTF obligations." },
-                  { title: "Non-Custodial Model", badge: "Active", cls: "bg-green-100 text-green-800", text: "AMAX Global Pty Ltd does not hold or store client funds or digital assets. Fiat balances are held with external regulated banking partners, and digital asset transactions are executed via Independent Reserve Pty Ltd, an external regulated exchange. AMAX operates as a non-custodial platform facilitating transaction instructions only." },
+                  { title: "Non-Custodial Model", badge: "Active", cls: "bg-green-100 text-green-800", text: "AMAX GLOBAL Pty Ltd does not hold or store client funds or digital assets. Fiat balances are held with external regulated banking partners, and digital asset transactions are executed via Independent Reserve Pty Ltd, an external regulated exchange. AMAX operates as a non-custodial platform facilitating transaction instructions only." },
                   { title: "FATF Travel Rule Compliance", badge: "Effective 1 Jul 2026", cls: "bg-orange-100 text-orange-800", text: "AMAX complies with FATF Travel Rule obligations for digital asset transactions, including the collection and transmission of originator and beneficiary information where required under AML/CTF regulations. Additional due diligence and reporting obligations may apply to certain digital asset transactions, including transfers involving self-hosted wallets." },
                   { title: "AUSTRAC — Compliance Officer", badge: "Appointed", cls: "bg-green-100 text-green-800", text: "AMAX has appointed an AML/CTF Compliance Officer (Qin Xiong) responsible for oversight of AML/CTF obligations, reporting, internal controls, and staff training. The Compliance Officer oversees the ongoing AML/CTF program and ensures compliance with AUSTRAC reporting requirements." },
                   { title: "Australian Privacy Act 1988", badge: "Compliant", cls: "bg-green-100 text-green-800", text: "All personal information is collected, held, and used in accordance with the Australian Privacy Act 1988 and the Australian Privacy Principles (APPs). Customer data is retained for 7 years as required by the AML/CTF Act." },

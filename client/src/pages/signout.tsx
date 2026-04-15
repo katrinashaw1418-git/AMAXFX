@@ -10,7 +10,7 @@ export default function Signout() {
         {/* Branding */}
         <div className="space-y-1">
           <div className="flex items-center justify-center mb-2">
-            <img src="/amax-logo.png" alt="AMAX Global" className="h-10 w-auto" />
+            <img src="/amax-logo.png" alt="AMAX GLOBAL" className="h-10 w-auto" />
           </div>
           <p className="text-slate-400 text-sm">AUSTRAC Registered DCE · ABN 54 690 827 608</p>
         </div>
@@ -57,7 +57,7 @@ export default function Signout() {
         {/* Footer */}
         <div className="space-y-1">
           <p className="text-slate-500 text-xs">
-            AMAX Global Pty Ltd · Level 2, 8–12 King Street, Rockdale NSW 2216
+            AMAX GLOBAL Pty Ltd · Level 2, 8–12 King Street, Rockdale NSW 2216
           </p>
           <p className="text-slate-600 text-xs">
             <a href="mailto:info@amaxglobal.com.au" className="hover:text-slate-400 transition-colors">

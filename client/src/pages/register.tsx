@@ -118,7 +118,7 @@ export default function Register() {
         {/* Logo */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center mb-4">
-            <img src="/amax-logo.png" alt="AMAX Global" className="h-11 w-auto" />
+            <img src="/amax-logo.png" alt="AMAX GLOBAL" className="h-11 w-auto" />
           </div>
           <StepDots step={step} />
         </div>
@@ -306,7 +306,7 @@ export default function Register() {
             <div className="bg-slate-700/40 border border-slate-600/50 rounded-xl p-4 text-left space-y-3">
               {[
                 { label: "From",    val: "info@amaxglobal.com.au" },
-                { label: "Subject", val: "Confirm your AMAX Global account" },
+                { label: "Subject", val: "Confirm your AMAX GLOBAL account" },
                 { label: "Expires", val: "24 hours" },
               ].map(({ label, val }) => (
                 <div key={label} className="flex items-center gap-3">
