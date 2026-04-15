@@ -115,10 +115,6 @@ export default function Register() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
 
-        <Link href="/" className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white text-sm transition-colors mb-6">
-          <ArrowLeft className="w-4 h-4" /> Back to home
-        </Link>
-
         {/* Logo */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center mb-4">
@@ -411,7 +407,13 @@ export default function Register() {
           </div>
         )}
 
-        <div className="flex items-center gap-2 text-slate-500 text-xs justify-center mt-6">
+        <div className="text-center mt-6">
+          <Link href="/" className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white text-sm transition-colors">
+            <ArrowLeft className="w-4 h-4" /> Back to home
+          </Link>
+        </div>
+
+        <div className="flex items-center gap-2 text-slate-500 text-xs justify-center mt-4">
           <Shield className="w-3.5 h-3.5" />
           <span>256-bit encrypted · AUSTRAC registered · ABN 54 690 827 608</span>
         </div>
