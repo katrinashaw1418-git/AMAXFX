@@ -938,6 +938,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             lastName: "Lancaster",
             kycStatus: "verified",
             userTier: "premium",
+            emailVerified: true,
           })
           .where(eq(users.id, existingDemo.id));
       } else {
@@ -949,6 +950,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName: "Lancaster",
           kycStatus: "verified",
           userTier: "premium",
+          emailVerified: true,
         }).onConflictDoNothing();
       }
 
@@ -1089,6 +1091,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await writeAuditLog(user.id, "login_failed", "user", String(user.id), { username }, req.ip || null);
         return res.status(401).json({ error: "Invalid credentials" });
       }
+      // Block login until email is verified
+      if (!user.emailVerified) {
+        return res.status(403).json({
+          code: "email_not_verified",
+          error: "Please verify your email address before signing in.",
+          email: user.email,
+        });
+      }
       const token = signToken({ userId: user.id, username: user.username, email: user.email });
       await writeAuditLog(user.id, "login", "user", String(user.id), { username }, req.ip || null);
       res.json({ token, user: { id: user.id, username: user.username, email: user.email, firstName: user.firstName, lastName: user.lastName, kycStatus: user.kycStatus, userTier: user.userTier } });
@@ -1135,18 +1145,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       // Create a default AUD wallet
       await storage.createWallet({ userId: newUser.id, currency: "AUD", balance: "0.00", availableBalance: "0.00", walletType: "fiat" });
-      // Generate email verification token
+      // Generate email verification token + 6-digit OTP
       const verifyToken = randomBytes(32).toString("hex");
+      const emailOtp = Math.floor(100000 + Math.random() * 900000).toString();
       const verifyExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
       await db.update(users).set({
         emailVerificationToken: verifyToken,
         emailVerificationTokenExpiry: verifyExpiry,
+        emailOtp,
         emailVerified: false,
       }).where(eq(users.id, newUser.id));
 
-      // Send verification email (no-op if GMAIL not configured)
+      // Send verification email with OTP (no-op if GMAIL not configured)
       const baseUrl = `${req.protocol}://${req.get("host")}`;
-      await sendVerificationEmail(newUser.email, newUser.firstName, verifyToken, baseUrl).catch(() => {});
+      await sendVerificationEmail(newUser.email, newUser.firstName, verifyToken, emailOtp, baseUrl).catch(() => {});
 
       await writeAuditLog(newUser.id, "register", "user", String(newUser.id), { email, username }, req.ip || null);
       const token = signToken({ userId: newUser.id, username: newUser.username, email: newUser.email });
@@ -1154,6 +1166,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         token,
         user: { id: newUser.id, username: newUser.username, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName, kycStatus: newUser.kycStatus, userTier: newUser.userTier },
         emailSent: emailConfigured,
+        // Return OTP in dev/demo mode when email not configured so users can still verify
+        ...(!emailConfigured ? { devOtp: emailOtp } : {}),
       });
     } catch (error: any) {
       console.error("[register] error:", error?.message, error?.code, error?.detail);
@@ -1162,24 +1176,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Resend verification email
+  // Resend verification email (authenticated)
   app.post("/api/auth/resend-verification", async (req, res) => {
     try {
       const auth = requireAuth(req);
       const [user] = await db.select().from(users).where(eq(users.id, auth.userId));
       if (!user) return res.status(404).json({ error: "User not found" });
       if (user.emailVerified) return res.json({ message: "Email already verified" });
-      if (!emailConfigured) return res.status(503).json({ error: "Email service not configured. Please contact support@amaxglobal.com.au" });
 
       const verifyToken = randomBytes(32).toString("hex");
+      const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
       const verifyExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
-      await db.update(users).set({ emailVerificationToken: verifyToken, emailVerificationTokenExpiry: verifyExpiry }).where(eq(users.id, user.id));
+      await db.update(users).set({ emailVerificationToken: verifyToken, emailVerificationTokenExpiry: verifyExpiry, emailOtp: newOtp }).where(eq(users.id, user.id));
 
       const baseUrl = `${req.protocol}://${req.get("host")}`;
-      await sendVerificationEmail(user.email, user.firstName, verifyToken, baseUrl);
-      res.json({ message: "Verification email sent" });
+      await sendVerificationEmail(user.email, user.firstName, verifyToken, newOtp, baseUrl);
+      res.json({ message: "Verification email sent", emailSent: emailConfigured });
     } catch (err: any) {
       res.status(500).json({ error: "Failed to resend verification email" });
+    }
+  });
+
+  // Resend OTP — public endpoint (for login page resend, no auth required)
+  app.post("/api/auth/resend-otp", async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) return res.status(400).json({ error: "Email is required." });
+      const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase().trim()));
+      // Always return 200 to prevent email enumeration
+      if (!user || user.emailVerified) return res.json({ message: "If an account exists, a new code has been sent.", emailSent: false });
+
+      const verifyToken = randomBytes(32).toString("hex");
+      const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      const verifyExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      await db.update(users).set({ emailVerificationToken: verifyToken, emailVerificationTokenExpiry: verifyExpiry, emailOtp: newOtp }).where(eq(users.id, user.id));
+
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      await sendVerificationEmail(user.email, user.firstName, verifyToken, newOtp, baseUrl).catch(() => {});
+      res.json({ message: "Verification code sent.", emailSent: emailConfigured });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to send verification code." });
+    }
+  });
+
+  // Verify OTP — public endpoint (called from register step or login unverified screen)
+  app.post("/api/auth/verify-otp", async (req, res) => {
+    try {
+      const { email, otp } = req.body;
+      if (!email || !otp) return res.status(400).json({ error: "Email and verification code are required." });
+      const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase().trim()));
+      if (!user) return res.status(400).json({ error: "Invalid verification code." });
+      if (user.emailVerified) {
+        // Already verified — issue token so they can log in
+        const token = signToken({ userId: user.id, username: user.username, email: user.email });
+        return res.json({ token, user: { id: user.id, username: user.username, email: user.email, firstName: user.firstName, lastName: user.lastName, kycStatus: user.kycStatus, userTier: user.userTier } });
+      }
+      // Check OTP match
+      const trimmed = otp.trim();
+      const validOtp = user.emailOtp && trimmed === user.emailOtp;
+      if (!validOtp) return res.status(400).json({ error: "Invalid verification code. Please check and try again." });
+      // Check expiry
+      if (user.emailVerificationTokenExpiry && new Date() > user.emailVerificationTokenExpiry) {
+        return res.status(400).json({ error: "Verification code has expired. Please request a new one." });
+      }
+      await db.update(users).set({
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationTokenExpiry: null,
+        emailOtp: null,
+      }).where(eq(users.id, user.id));
+      await writeAuditLog(user.id, "email_verified", "user", String(user.id), { email }, req.ip || null);
+      const token = signToken({ userId: user.id, username: user.username, email: user.email });
+      res.json({ token, user: { id: user.id, username: user.username, email: user.email, firstName: user.firstName, lastName: user.lastName, kycStatus: user.kycStatus, userTier: user.userTier } });
+    } catch (err) {
+      res.status(500).json({ error: "Verification failed. Please try again." });
     }
   });
 

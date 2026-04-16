@@ -57,6 +57,7 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").default(false),
   emailVerificationToken: text("email_verification_token"),
   emailVerificationTokenExpiry: timestamp("email_verification_token_expiry"),
+  emailOtp: text("email_otp"),
 });
 
 export const portfolios = pgTable("portfolios", {

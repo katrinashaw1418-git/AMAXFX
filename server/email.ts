@@ -17,21 +17,23 @@ export async function sendVerificationEmail(
   to: string,
   firstName: string,
   token: string,
+  otp: string,
   baseUrl: string
 ): Promise<{ sent: boolean; preview?: string }> {
   const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
 
   if (!emailConfigured) {
+    console.log(`[email] OTP for ${to}: ${otp}`);
     console.log(`[email] Verification URL (not sent — GMAIL not configured): ${verifyUrl}`);
     return { sent: false, preview: verifyUrl };
   }
 
   const transport = createTransport()!;
   await transport.sendMail({
-    from: '"AMAX Global" <info@amaxglobal.com.au>',
+    from: '"AMAX GLOBAL" <info@amaxglobal.com.au>',
     replyTo: "info@amaxglobal.com.au",
     to,
-    subject: "Confirm your AMAX Global account",
+    subject: "Your AMAX GLOBAL verification code",
     html: `
 <!DOCTYPE html>
 <html lang="en">
@@ -42,30 +44,36 @@ export async function sendVerificationEmail(
       <table width="520" cellpadding="0" cellspacing="0" style="background:#1e293b;border-radius:16px;border:1px solid #334155;overflow:hidden">
         <tr><td style="padding:32px 40px 0;text-align:center">
           <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:8px">
-            <div style="width:36px;height:36px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center">
-              <span style="font-size:20px">🪙</span>
-            </div>
-            <span style="font-size:22px;font-weight:700;color:#fff">AMAX Global</span>
+            <span style="font-size:22px;font-weight:700;color:#fff;letter-spacing:2px">AMAX GLOBAL</span>
           </div>
         </td></tr>
         <tr><td style="padding:24px 40px">
           <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0 0 12px">Verify your email address</h1>
           <p style="color:#94a3b8;font-size:15px;line-height:1.6;margin:0 0 24px">
-            Hi ${firstName}, welcome to AMAX Global. Click the button below to confirm your email address and activate your account.
+            Hi ${firstName}, welcome to AMAX GLOBAL. Use the 6-digit code below to verify your email address and activate your account.
           </p>
+
+          <!-- OTP Code Box -->
+          <div style="background:#0f172a;border:2px solid #3b82f6;border-radius:14px;padding:28px 20px;text-align:center;margin:0 0 28px">
+            <p style="color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:2px;margin:0 0 12px">Your verification code</p>
+            <div style="font-size:42px;font-weight:800;letter-spacing:12px;color:#fff;font-family:'Courier New',monospace">${otp}</div>
+            <p style="color:#64748b;font-size:12px;margin:12px 0 0">This code expires in 24 hours</p>
+          </div>
+
+          <p style="color:#94a3b8;font-size:13px;margin:0 0 16px;text-align:center">— or click the button below —</p>
+
           <div style="text-align:center;margin:0 0 28px">
-            <a href="${verifyUrl}" style="display:inline-block;background:#fff;color:#0f172a;text-decoration:none;font-weight:700;font-size:15px;padding:14px 32px;border-radius:10px">
+            <a href="${verifyUrl}" style="display:inline-block;background:#3b82f6;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 32px;border-radius:10px">
               Verify my email →
             </a>
           </div>
-          <p style="color:#64748b;font-size:13px;margin:0 0 8px">Or copy this link into your browser:</p>
-          <p style="color:#94a3b8;font-size:12px;word-break:break-all;background:#0f172a;padding:10px 14px;border-radius:8px;margin:0 0 24px">${verifyUrl}</p>
-          <p style="color:#64748b;font-size:12px;margin:0">This link expires in 24 hours. If you didn't create an account, you can safely ignore this email.</p>
+
+          <p style="color:#64748b;font-size:12px;margin:0">If you didn't create an account, you can safely ignore this email.</p>
         </td></tr>
         <tr><td style="padding:20px 40px;border-top:1px solid #334155;text-align:center">
           <p style="color:#475569;font-size:11px;margin:0">
-            AMAX Global Pty Ltd &nbsp;·&nbsp; ABN 54 690 827 608 &nbsp;·&nbsp; AUSTRAC Registered<br>
-            Level 2, 8-12 King Street, Rockdale NSW 2216
+            AMAX GLOBAL Pty Ltd &nbsp;·&nbsp; ABN 54 690 827 608 &nbsp;·&nbsp; AUSTRAC Registered<br>
+            Level 2, 8-12 King Street, Rockdale NSW 2216 &nbsp;·&nbsp; +61 2 8320 1908
           </p>
         </td></tr>
       </table>
@@ -73,7 +81,7 @@ export async function sendVerificationEmail(
   </table>
 </body>
 </html>`,
-    text: `Hi ${firstName},\n\nVerify your AMAX Global account by visiting:\n${verifyUrl}\n\nThis link expires in 24 hours.\n\nAMAX Global Pty Ltd`,
+    text: `Hi ${firstName},\n\nYour AMAX GLOBAL verification code is: ${otp}\n\nOr verify via link:\n${verifyUrl}\n\nThis code expires in 24 hours.\n\nAMAX GLOBAL Pty Ltd`,
   });
 
   return { sent: true };
@@ -94,10 +102,10 @@ export async function sendPasswordResetEmail(
 
   const transport = createTransport()!;
   await transport.sendMail({
-    from: '"AMAX Global" <info@amaxglobal.com.au>',
+    from: '"AMAX GLOBAL" <info@amaxglobal.com.au>',
     replyTo: "info@amaxglobal.com.au",
     to,
-    subject: "Reset your AMAX Global password",
+    subject: "Reset your AMAX GLOBAL password",
     html: `
 <!DOCTYPE html>
 <html lang="en">
@@ -111,7 +119,7 @@ export async function sendPasswordResetEmail(
             Hi ${firstName}, click the button below to reset your password. This link expires in 1 hour.
           </p>
           <div style="text-align:center;margin:0 0 24px">
-            <a href="${resetUrl}" style="display:inline-block;background:#fff;color:#0f172a;text-decoration:none;font-weight:700;font-size:15px;padding:14px 32px;border-radius:10px">
+            <a href="${resetUrl}" style="display:inline-block;background:#3b82f6;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 32px;border-radius:10px">
               Reset password →
             </a>
           </div>
@@ -122,7 +130,7 @@ export async function sendPasswordResetEmail(
   </table>
 </body>
 </html>`,
-    text: `Hi ${firstName},\n\nReset your AMAX Global password:\n${resetUrl}\n\nThis link expires in 1 hour.\n\nAMAX Global Pty Ltd`,
+    text: `Hi ${firstName},\n\nReset your AMAX GLOBAL password:\n${resetUrl}\n\nThis link expires in 1 hour.\n\nAMAX GLOBAL Pty Ltd`,
   });
 
   return { sent: true };

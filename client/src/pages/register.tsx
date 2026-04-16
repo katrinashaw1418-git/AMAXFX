@@ -59,7 +59,7 @@ function StepDots({ step }: { step: Step }) {
 }
 
 export default function Register() {
-  const { register } = useAuth();
+  useAuth();
   const [, navigate] = useLocation();
 
   const [step, setStep] = useState<Step>("method");
@@ -74,6 +74,84 @@ export default function Register() {
   const [showPw, setShowPw]       = useState(false);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [devOtp, setDevOtp] = useState<string | null>(null);
+
+  function handleOtpChange(idx: number, val: string) {
+    if (!/^[0-9]?$/.test(val)) return;
+    const next = [...otpDigits];
+    next[idx] = val;
+    setOtpDigits(next);
+    setError(null);
+    if (val && idx < 5) {
+      (document.getElementById(`otp-reg-${idx + 1}`) as HTMLInputElement)?.focus();
+    }
+  }
+
+  function handleOtpKeyDown(idx: number, e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Backspace" && !otpDigits[idx] && idx > 0) {
+      (document.getElementById(`otp-reg-${idx - 1}`) as HTMLInputElement)?.focus();
+    }
+    if (e.key === "ArrowLeft" && idx > 0) {
+      (document.getElementById(`otp-reg-${idx - 1}`) as HTMLInputElement)?.focus();
+    }
+    if (e.key === "ArrowRight" && idx < 5) {
+      (document.getElementById(`otp-reg-${idx + 1}`) as HTMLInputElement)?.focus();
+    }
+  }
+
+  function handleOtpPaste(e: React.ClipboardEvent) {
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pasted.length === 6) {
+      e.preventDefault();
+      setOtpDigits(pasted.split(""));
+      (document.getElementById(`otp-reg-5`) as HTMLInputElement)?.focus();
+    }
+  }
+
+  async function handleVerifyOtp() {
+    const code = otpDigits.join("");
+    if (code.length < 6) { setError("Please enter all 6 digits."); return; }
+    setIsVerifying(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), otp: code }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Verification failed");
+      // Store new token (email now verified)
+      localStorage.setItem("amax_jwt", data.token);
+      setStep("profile");
+    } catch (err: any) {
+      setError(err.message || "Invalid code. Please try again.");
+    } finally {
+      setIsVerifying(false);
+    }
+  }
+
+  async function handleResend() {
+    setResendLoading(true);
+    setResendSent(false);
+    setError(null);
+    try {
+      await fetch("/api/auth/resend-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      setOtpDigits(["", "", "", "", "", ""]);
+      setResendSent(true);
+      setTimeout(() => setResendSent(false), 10000);
+    } finally {
+      setResendLoading(false);
+    }
+  }
 
   function toggleService(v: string) {
     setSelected(prev => {
@@ -90,7 +168,15 @@ export default function Register() {
     if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) { setError("Password must be at least 8 characters and include at least one letter and one number."); return; }
     setIsLoading(true);
     try {
-      await register(firstName.trim(), lastName.trim(), email.trim(), password);
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim(), password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Registration failed");
+      localStorage.setItem("amax_jwt", data.token);
+      if (data.devOtp) setDevOtp(data.devOtp);
       setStep("verify");
     } catch (err: any) {
       setError(err.message || "Registration failed. Please try again.");
@@ -299,49 +385,57 @@ export default function Register() {
               </div>
               <h2 className="text-xl font-bold text-white">Check your inbox</h2>
               <p className="text-sm text-slate-400 max-w-xs">
-                We've sent a verification link to{" "}
-                <span className="text-white font-medium">{email}</span>. Click the link to confirm your email address.
+                We've sent a 6-digit verification code to{" "}
+                <span className="text-white font-medium">{email}</span>. Enter it below to activate your account.
               </p>
             </div>
 
-            <div className="bg-slate-700/40 border border-slate-600/50 rounded-xl p-4 text-left space-y-3">
-              {[
-                { label: "From",    val: "info@amaxglobal.com.au" },
-                { label: "Subject", val: "Confirm your AMAX GLOBAL account" },
-                { label: "Expires", val: "24 hours" },
-              ].map(({ label, val }) => (
-                <div key={label} className="flex items-center gap-3">
-                  <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
-                  <span className="text-xs text-slate-400 w-14 font-medium">{label}:</span>
-                  <span className="text-xs text-slate-300">{val}</span>
-                </div>
+            {/* 6-digit OTP boxes */}
+            <div className="flex justify-center gap-2" onPaste={handleOtpPaste}>
+              {otpDigits.map((d, i) => (
+                <input
+                  key={i}
+                  id={`otp-reg-${i}`}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={d}
+                  onChange={e => handleOtpChange(i, e.target.value)}
+                  onKeyDown={e => handleOtpKeyDown(i, e)}
+                  autoFocus={i === 0}
+                  className="w-11 h-14 text-center text-2xl font-bold bg-slate-700 border border-slate-500 rounded-xl text-white focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30 transition-all"
+                />
               ))}
             </div>
 
-            <div className="space-y-3">
-              <Button
-                className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold"
-                onClick={() => { setError(null); setStep("profile"); }}
-              >
-                I've verified my email <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full text-slate-400 hover:text-white hover:bg-slate-700"
-                onClick={() => setStep("profile")}
-              >
-                Skip for now — I'll verify later
-              </Button>
-            </div>
+            {/* Dev mode: show OTP when email not configured */}
+            {devOtp && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-sm">
+                <p className="text-amber-400 font-semibold text-xs uppercase tracking-wider mb-1">Demo mode — email not sent</p>
+                <p className="text-white font-mono text-2xl tracking-widest font-bold">{devOtp}</p>
+                <p className="text-amber-300/70 text-xs mt-1">Configure GMAIL_USER & GMAIL_APP_PASSWORD to send real emails.</p>
+              </div>
+            )}
 
-            {error && <p className="text-xs text-amber-400">{error}</p>}
+            {error && <p className="text-sm text-red-400">{error}</p>}
+            {resendSent && <p className="text-sm text-green-400">New code sent — check your inbox.</p>}
+
+            <Button
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold"
+              onClick={handleVerifyOtp}
+              disabled={isVerifying || otpDigits.join("").length < 6}
+            >
+              {isVerifying ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Verifying…</> : <>Verify my account <ArrowRight className="w-4 h-4 ml-1" /></>}
+            </Button>
+
             <p className="text-xs text-slate-500">
-              Didn't get it? Check your spam folder or{" "}
+              Didn't receive a code? Check your spam folder or{" "}
               <button
-                className="text-slate-300 underline hover:text-white"
-                onClick={() => setError("Resend available once email sending is configured.")}
+                className="text-slate-300 underline hover:text-white disabled:opacity-50"
+                disabled={resendLoading}
+                onClick={handleResend}
               >
-                resend the email
+                {resendLoading ? "Sending…" : "resend the code"}
               </button>
             </p>
           </div>
