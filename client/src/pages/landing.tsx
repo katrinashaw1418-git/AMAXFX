@@ -120,7 +120,7 @@ export default function Landing() {
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex-1 flex items-center gap-2">
               <img src="/amax-logo-new.png" alt="AMAX GLOBAL" className="h-20 w-auto" />
-              <span className="font-bold text-white text-base tracking-wider leading-tight">AMAX<br/>GLOBAL</span>
+              <span className="font-bold text-white text-2xl tracking-widest leading-tight">AMAX<br/>GLOBAL</span>
             </div>
             <nav className="hidden md:flex items-center gap-5 text-sm flex-1 justify-center">
               <a href="#services"     className="text-white/80 hover:text-white transition-colors whitespace-nowrap">Services</a>
@@ -457,7 +457,7 @@ export default function Landing() {
             <div>
               <div className="mb-3 flex items-center gap-2">
                 <img src="/amax-logo-new.png" alt="AMAX GLOBAL" className="h-16 w-auto" />
-                <span className="font-bold text-white text-base tracking-wider leading-tight">AMAX<br/>GLOBAL</span>
+                <span className="font-bold text-white text-xl tracking-widest leading-tight">AMAX<br/>GLOBAL</span>
               </div>
               <p className="text-sm text-white/60 leading-relaxed">
                 Australia-based regulated platform for FX exchange, multi-currency accounts, cryptocurrency trading, and cross-border remittance.
