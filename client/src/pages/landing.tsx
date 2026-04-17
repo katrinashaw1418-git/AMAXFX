@@ -162,7 +162,7 @@ export default function Landing() {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/register">
-            <Button size="lg" className={`${GREY_BTN} px-8`}>Get Started</Button>
+            <Button size="lg" className="bg-white hover:bg-white/90 text-[#071f42] font-semibold px-8">Get Started</Button>
           </Link>
           <a href="#how-it-works">
             <Button size="lg" variant="outline" className="px-8 text-white hover:text-white hover:bg-white/10" style={{ borderColor: "#4a90d9", background: "transparent" }}>
