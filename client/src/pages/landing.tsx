@@ -118,9 +118,9 @@ export default function Landing() {
         </div>
         <header>
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div className="flex-1 flex items-center gap-3">
-              <img src="/amax-logo-new.png" alt="AMAX GLOBAL" className="h-10 w-auto" />
-              <span className="font-bold text-white text-xl tracking-widest">AMAX GLOBAL</span>
+            <div className="flex-1 flex items-center gap-2">
+              <img src="/amax-logo-new.png" alt="AMAX GLOBAL" className="h-20 w-auto" />
+              <span className="font-bold text-white text-base tracking-wider leading-tight">AMAX<br/>GLOBAL</span>
             </div>
             <nav className="hidden md:flex items-center gap-5 text-sm flex-1 justify-center">
               <a href="#services"     className="text-white/80 hover:text-white transition-colors whitespace-nowrap">Services</a>
@@ -451,13 +451,13 @@ export default function Landing() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="py-12" style={{ background: "#0a1530", borderTop: "1px solid #1e3f73" }}>
+      <footer className="py-12" style={{ background: "#0d1b3e", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             <div>
-              <div className="mb-3 flex items-center gap-3">
-                <img src="/amax-logo-new.png" alt="AMAX GLOBAL" className="h-9 w-auto" />
-                <span className="font-bold text-white text-lg tracking-widest">AMAX GLOBAL</span>
+              <div className="mb-3 flex items-center gap-2">
+                <img src="/amax-logo-new.png" alt="AMAX GLOBAL" className="h-16 w-auto" />
+                <span className="font-bold text-white text-base tracking-wider leading-tight">AMAX<br/>GLOBAL</span>
               </div>
               <p className="text-sm text-white/60 leading-relaxed">
                 Australia-based regulated platform for FX exchange, multi-currency accounts, cryptocurrency trading, and cross-border remittance.
@@ -481,7 +481,7 @@ export default function Landing() {
               </ul>
             </div>
           </div>
-          <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-white/40" style={{ borderTop: "1px solid #1e3f73" }}>
+          <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-white/40" style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }}>
             <p>© {new Date().getFullYear()} AMAX. All rights reserved. AUSTRAC Registered Digital Currency Exchange. ABN 54 690 827 608</p>
             <p>Regulated in Australia. Platform launching following regulatory registration.</p>
           </div>
