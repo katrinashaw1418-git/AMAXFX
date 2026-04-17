@@ -46,6 +46,17 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Run safe additive migrations before anything else.
+  // These use IF NOT EXISTS so they are idempotent and safe to run on every boot.
+  try {
+    const { db: migrationDb } = await import("./db");
+    const { sql: sqlTag } = await import("drizzle-orm");
+    await migrationDb.execute(sqlTag`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_otp text`);
+    await migrationDb.execute(sqlTag`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified boolean NOT NULL DEFAULT false`);
+  } catch (e: any) {
+    console.error("[startup-migration] failed:", e?.message);
+  }
+
   const server = await registerRoutes(app);
 
   // Cron-based ledger reconciliation — runs every 24 hours for all users.
