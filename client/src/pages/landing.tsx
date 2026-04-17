@@ -80,7 +80,7 @@ const keyFeatures = [
   { icon: Zap,       label: "Instant Settlements",  description: "Near real-time FX and account transfers",    color: "text-purple-400", bg: "rgba(192,132,252,0.12)" },
   { icon: BarChart3, label: "Competitive Rates",     description: "Tight spreads on 20+ currency pairs",       color: "text-green-400",  bg: "rgba(74,222,128,0.12)" },
   { icon: Globe2,    label: "Global Coverage",       description: "Send and receive in 40+ countries",          color: "text-blue-400",   bg: "rgba(96,165,250,0.12)" },
-  { icon: Lock,      label: "Bank-Grade Security",   description: "256-bit TLS, 2FA, and session audit logs",   color: "text-white",      bg: "#111111" },
+  { icon: Lock,      label: "Bank-Grade Security",   description: "256-bit TLS, 2FA, and session audit logs",   color: "text-white",      bg: "rgba(10,30,80,0.9)" },
   { icon: FileCheck, label: "Regulatory Compliant",  description: "AUSTRAC registered & fully audited",         color: "text-green-400",  bg: "rgba(74,222,128,0.12)" },
   { icon: Users,     label: "Dedicated Support",     description: "Human support for all compliance queries",   color: "text-purple-400", bg: "rgba(192,132,252,0.12)" },
 ];
@@ -89,12 +89,13 @@ const targetCustomers = [
   { icon: UserCheck, title: "Retail Users",            description: "Individuals sending money overseas, managing multi-currency savings, or holding digital assets with full regulatory protection.",    color: "text-purple-400", bg: "rgba(192,132,252,0.12)" },
   { icon: Briefcase, title: "SMEs & Businesses",       description: "Small and medium enterprises paying international suppliers, managing foreign currency exposure, or receiving cross-border payments.", color: "text-green-400",  bg: "rgba(74,222,128,0.12)" },
   { icon: Globe2,    title: "International Transfers", description: "Migrant workers, expats, and families sending remittances across AUD and major Asian, European, and North American corridors.",       color: "text-blue-400",   bg: "rgba(96,165,250,0.12)" },
-  { icon: Building2, title: "Institutional Clients",   description: "Corporate treasury teams and financial intermediaries requiring compliant FX execution, reporting, and audit-ready transaction records.", color: "text-white",    bg: "#111111" },
+  { icon: Building2, title: "Institutional Clients",   description: "Corporate treasury teams and financial intermediaries requiring compliant FX execution, reporting, and audit-ready transaction records.", color: "text-white",    bg: "rgba(10,30,80,0.9)" },
 ];
 
-const GREY_BTN = "bg-gray-600 hover:bg-gray-500 text-white font-semibold";
-const ICON_BG  = { background: "rgba(255,255,255,0.08)" };
-const CARD_STYLE = { background: "#0e1f33", border: "1px solid #1a3450" };
+const GREY_BTN = "bg-[#209af3] hover:bg-[#1a87d8] text-white font-semibold";
+const BLUE_BTN = GREY_BTN;
+const ICON_BG  = { background: "rgba(32,154,243,0.15)" };
+const CARD_STYLE = { background: "#0d2f5e", border: "1px solid #1a4a8c" };
 
 export default function Landing() {
   const [contactForm, setContactForm] = useState({ name: "", email: "", message: "" });
@@ -118,7 +119,7 @@ export default function Landing() {
         <header>
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex-1 flex items-center gap-3">
-              <img src="/amax-coin-icon.png" alt="AMAX GLOBAL" className="h-10 w-auto" />
+              <img src="/amax-icon-blue.png" alt="AMAX GLOBAL" className="h-10 w-auto" />
               <span className="font-bold text-white text-xl tracking-widest">AMAX GLOBAL</span>
             </div>
 
@@ -132,7 +133,7 @@ export default function Landing() {
 
             <div className="flex-1 flex items-center justify-end gap-2">
               <Link href="/login">
-                <Button variant="outline" className="text-sm px-4 text-white hover:text-white hover:bg-white/10" style={{ borderColor: "#1d3a55", background: "transparent" }}>
+                <Button variant="outline" className="text-sm px-4 text-white hover:text-white hover:bg-white/10" style={{ borderColor: "#4a90d9", background: "transparent" }}>
                   Sign In
                 </Button>
               </Link>
@@ -164,7 +165,7 @@ export default function Landing() {
             <Button size="lg" className={`${GREY_BTN} px-8`}>Get Started</Button>
           </Link>
           <a href="#how-it-works">
-            <Button size="lg" variant="outline" className="px-8 text-white hover:text-white hover:bg-white/10" style={{ borderColor: "#1d3a55", background: "transparent" }}>
+            <Button size="lg" variant="outline" className="px-8 text-white hover:text-white hover:bg-white/10" style={{ borderColor: "#4a90d9", background: "transparent" }}>
               How It Works
             </Button>
           </a>
@@ -193,7 +194,7 @@ export default function Landing() {
       </section>
 
       {/* ── Services ── */}
-      <section id="services" className="py-20" style={{ background: "#0a1928" }}>
+      <section id="services" className="py-20" style={{ background: "#0a2a58" }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold mb-4">Our Services</h2>
@@ -229,7 +230,7 @@ export default function Landing() {
       </section>
 
       {/* ── How It Works ── */}
-      <section id="how-it-works" className="py-20" style={{ background: "#07111f" }}>
+      <section id="how-it-works" className="py-20" style={{ background: "#082247" }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold mb-4">How It Works</h2>
@@ -239,10 +240,10 @@ export default function Landing() {
             {steps.map((step, index) => (
               <div key={step.step} className="relative text-center">
                 {index < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-8 left-1/2 w-full h-px" style={{ background: "#152e4a" }} />
+                  <div className="hidden md:block absolute top-8 left-1/2 w-full h-px" style={{ background: "#1a4a8c" }} />
                 )}
-                {/* White circle with white number */}
-                <div className="relative z-10 inline-flex items-center justify-center w-16 h-16 rounded-full border-2 border-white text-white text-xl font-bold mb-5" style={{ background: "#0e1f33" }}>
+                {/* Blue circle — sidebar accent */}
+                <div className="relative z-10 inline-flex items-center justify-center w-16 h-16 rounded-full text-white text-xl font-bold mb-5" style={{ background: "#209af3" }}>
                   {step.step}
                 </div>
                 <h3 className="font-semibold text-white mb-2">{step.title}</h3>
@@ -254,7 +255,7 @@ export default function Landing() {
       </section>
 
       {/* ── Key Features ── */}
-      <section className="py-20" style={{ background: "#0a1928" }}>
+      <section className="py-20" style={{ background: "#0a2a58" }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold mb-4">Key Features</h2>
@@ -280,7 +281,7 @@ export default function Landing() {
       </section>
 
       {/* ── Compliance ── */}
-      <section id="compliance" className="py-20" style={{ background: "#07111f" }}>
+      <section id="compliance" className="py-20" style={{ background: "#082247" }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div>
@@ -318,7 +319,7 @@ export default function Landing() {
       </section>
 
       {/* ── Who We Serve ── */}
-      <section className="py-20" style={{ background: "#0a1928" }}>
+      <section className="py-20" style={{ background: "#0a2a58" }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold mb-4">Who We Serve</h2>
@@ -346,7 +347,7 @@ export default function Landing() {
       </section>
 
       {/* ── About ── */}
-      <section id="about" className="py-20" style={{ background: "#07111f" }}>
+      <section id="about" className="py-20" style={{ background: "#082247" }}>
         <div className="max-w-4xl mx-auto px-6 text-center">
           <Badge className="bg-white/10 text-white border border-white/20 mb-4">About AMAX</Badge>
           <h2 className="text-3xl font-bold mb-6">Australia-Based. Compliance-First.</h2>
@@ -363,7 +364,7 @@ export default function Landing() {
       </section>
 
       {/* ── Contact ── */}
-      <section id="contact" className="py-20" style={{ background: "#0a1928" }}>
+      <section id="contact" className="py-20" style={{ background: "#0a2a58" }}>
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold mb-4">Contact Us</h2>
@@ -417,7 +418,7 @@ export default function Landing() {
                         id="contact-name"
                         placeholder="Your full name"
                         className="text-white placeholder:text-white/40 border-0 focus-visible:ring-white/30"
-                        style={{ background: "#071526", border: "1px solid #1d3a55" }}
+                        style={{ background: "#061a40", border: "1px solid #1a4a8c" }}
                         value={contactForm.name}
                         onChange={(e) => setContactForm((f) => ({ ...f, name: e.target.value }))}
                         required
@@ -430,7 +431,7 @@ export default function Landing() {
                         type="email"
                         placeholder="you@example.com"
                         className="text-white placeholder:text-white/40 border-0 focus-visible:ring-white/30"
-                        style={{ background: "#071526", border: "1px solid #1d3a55" }}
+                        style={{ background: "#061a40", border: "1px solid #1a4a8c" }}
                         value={contactForm.email}
                         onChange={(e) => setContactForm((f) => ({ ...f, email: e.target.value }))}
                         required
@@ -443,7 +444,7 @@ export default function Landing() {
                         placeholder="How can we help you?"
                         rows={4}
                         className="text-white placeholder:text-white/40 border-0 focus-visible:ring-white/30 resize-none"
-                        style={{ background: "#071526", border: "1px solid #1d3a55" }}
+                        style={{ background: "#061a40", border: "1px solid #1a4a8c" }}
                         value={contactForm.message}
                         onChange={(e) => setContactForm((f) => ({ ...f, message: e.target.value }))}
                         required
@@ -462,7 +463,7 @@ export default function Landing() {
       </section>
 
       {/* ── CTA — black background ── */}
-      <section style={{ background: "#050a10" }} className="py-16">
+      <section style={{ background: "#051834" }} className="py-16">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Ready to Get Started?</h2>
           <p className="text-white mb-8">
@@ -473,7 +474,7 @@ export default function Landing() {
               <Button size="lg" className={`${GREY_BTN} px-10`}>Sign Up Now</Button>
             </Link>
             <Link href="/login">
-              <Button size="lg" variant="outline" className="px-10 text-white hover:text-white hover:bg-white/10" style={{ borderColor: "#1d3a55", background: "transparent" }}>
+              <Button size="lg" variant="outline" className="px-10 text-white hover:text-white hover:bg-white/10" style={{ borderColor: "#4a90d9", background: "transparent" }}>
                 Sign In
               </Button>
             </Link>
@@ -482,12 +483,12 @@ export default function Landing() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="py-12" style={{ background: "#07111f", borderTop: "1px solid #152e4a" }}>
+      <footer className="py-12" style={{ background: "#082247", borderTop: "1px solid #1a4a8c" }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             <div>
               <div className="mb-3 flex items-center gap-3">
-                <img src="/amax-coin-icon.png" alt="AMAX GLOBAL" className="h-9 w-auto" />
+                <img src="/amax-icon-blue.png" alt="AMAX GLOBAL" className="h-9 w-auto" />
                 <span className="font-bold text-white text-lg tracking-widest">AMAX GLOBAL</span>
               </div>
               <p className="text-sm text-white leading-relaxed">
@@ -515,7 +516,7 @@ export default function Landing() {
             </div>
           </div>
 
-          <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-white/70" style={{ borderTop: "1px solid #152e4a" }}>
+          <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-white/70" style={{ borderTop: "1px solid #1a4a8c" }}>
             <p>© {new Date().getFullYear()} AMAX. All rights reserved. AUSTRAC Registered Digital Currency Exchange. ABN 54 690 827 608</p>
             <p>Regulated in Australia. Platform launching following regulatory registration.</p>
           </div>
