@@ -32,7 +32,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden mr-2 text-white hover:bg-white/10"
+            className="lg:hidden mr-3 text-[#002366] hover:bg-white/90 rounded-lg"
+            style={{ background: "rgba(255,255,255,0.85)" }}
             onClick={onMenuClick}
           >
             <Menu className="w-5 h-5" />
