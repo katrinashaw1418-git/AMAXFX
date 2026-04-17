@@ -138,7 +138,7 @@ export default function Landing() {
                 </Button>
               </Link>
               <Link href="/register">
-                <Button className={`${GREY_BTN} text-sm px-4`}>
+                <Button className="bg-white hover:bg-white/90 text-[#071f42] font-semibold text-sm px-4">
                   Sign Up <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </Link>
@@ -462,8 +462,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── CTA — black background ── */}
-      <section style={{ background: "#051834" }} className="py-16">
+      {/* ── CTA ── */}
+      <section style={{ background: "#0a2a58" }} className="py-16">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Ready to Get Started?</h2>
           <p className="text-white mb-8">
@@ -471,7 +471,7 @@ export default function Landing() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/register">
-              <Button size="lg" className={`${GREY_BTN} px-10`}>Sign Up Now</Button>
+              <Button size="lg" className="bg-white hover:bg-white/90 text-[#071f42] font-semibold px-10">Sign Up Now</Button>
             </Link>
             <Link href="/login">
               <Button size="lg" variant="outline" className="px-10 text-white hover:text-white hover:bg-white/10" style={{ borderColor: "#4a90d9", background: "transparent" }}>
