@@ -456,8 +456,8 @@ export default function Landing() {
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             <div>
               <div className="mb-3 flex items-center gap-2">
-                <img src="/amax-logo-new.png" alt="AMAX GLOBAL" className="h-16 w-auto" />
-                <span className="font-bold text-white text-xl tracking-widest leading-tight">AMAX<br/>GLOBAL</span>
+                <img src="/amax-logo-new.png" alt="AMAX GLOBAL" className="h-9 w-auto" />
+                <span className="font-bold text-white text-lg tracking-widest whitespace-nowrap">AMAX GLOBAL</span>
               </div>
               <p className="text-sm text-white/60 leading-relaxed">
                 Australia-based regulated platform for FX exchange, multi-currency accounts, cryptocurrency trading, and cross-border remittance.
