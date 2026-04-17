@@ -17,6 +17,7 @@ interface AuthContextValue {
   login: (username: string, password: string) => Promise<void>;
   register: (firstName: string, lastName: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -94,6 +95,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(newUser);
   }
 
+  async function refreshUser(): Promise<void> {
+    const storedToken = getStoredToken();
+    if (!storedToken) return;
+    const r = await fetch("/api/auth/me", {
+      headers: { Authorization: `Bearer ${storedToken}` },
+    });
+    if (!r.ok) return;
+    const data: AuthUser = await r.json();
+    setUser(data);
+    setToken(storedToken);
+  }
+
   function logout(): void {
     const storedToken = getStoredToken();
     if (storedToken) {
@@ -108,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, refreshUser, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );

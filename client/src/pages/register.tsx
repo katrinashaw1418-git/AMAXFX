@@ -59,7 +59,7 @@ function StepDots({ step }: { step: Step }) {
 }
 
 export default function Register() {
-  useAuth();
+  const { refreshUser } = useAuth();
   const [, navigate] = useLocation();
 
   const [step, setStep] = useState<Step>("method");
@@ -125,8 +125,9 @@ export default function Register() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Verification failed");
-      // Store new token (email now verified)
+      // Store new token (email now verified) and sync auth context
       localStorage.setItem("amax_jwt", data.token);
+      await refreshUser();
       setStep("profile");
     } catch (err: any) {
       setError(err.message || "Invalid code. Please try again.");
