@@ -26,20 +26,20 @@ export default function Header({ onMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+    <header className="px-6 py-4 shadow-md" style={{ background: "#002366", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
       <div className="flex items-center justify-between">
         <div className="flex items-center">
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden mr-2"
+            className="lg:hidden mr-2 text-white hover:bg-white/10"
             onClick={onMenuClick}
           >
             <Menu className="w-5 h-5" />
           </Button>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">AMAX GLOBAL</h2>
-            <p className="text-sm text-gray-500">
+            <h2 className="text-2xl font-bold text-white">AMAX GLOBAL</h2>
+            <p className="text-sm text-white/60">
               {user ? `Welcome back, ${user.firstName || user.username}` : "AMAX GLOBAL Pty Ltd — Financial Services"}
             </p>
           </div>
@@ -47,7 +47,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
         <div className="flex items-center space-x-4">
           <div className="relative">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
               <Bell className="w-5 h-5" />
               <Badge
                 variant="destructive"
@@ -57,14 +57,14 @@ export default function Header({ onMenuClick }: HeaderProps) {
               </Badge>
             </Button>
           </div>
-          <div className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
-            <Globe className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-gray-700">Global</span>
+          <div className="flex items-center space-x-2 px-3 py-2 rounded-lg" style={{ background: "rgba(255,255,255,0.1)" }}>
+            <Globe className="w-4 h-4 text-white/70" />
+            <span className="text-sm font-medium text-white/80">Global</span>
           </div>
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
+                <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-white/10">
                   <User className="w-5 h-5" />
                 </Button>
               </DropdownMenuTrigger>
