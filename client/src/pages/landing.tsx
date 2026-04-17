@@ -28,7 +28,7 @@ import {
   UserCheck,
 } from "lucide-react";
 
-const NAVY = "#1e3a6e";
+const NAVY = "#002366";
 
 const services = [
   {
@@ -93,10 +93,10 @@ const targetCustomers = [
   { icon: Building2, title: "Institutional Clients",   description: "Corporate treasury teams and financial intermediaries requiring compliant FX execution, reporting, and audit-ready transaction records.", iconBg: "bg-slate-100", iconColor: "text-slate-700" },
 ];
 
-const NAVY_BTN  = "bg-[#1e3a6e] hover:bg-[#162d55] text-white font-semibold";
-const WHITE_BTN = "bg-white hover:bg-white/90 text-[#1e3a6e] font-semibold";
+const NAVY_BTN  = "bg-[#002366] hover:bg-[#012a6e] text-white font-semibold";
+const WHITE_BTN = "bg-white hover:bg-white/90 text-[#002366] font-semibold";
 const LIGHT_CARD = { background: "#ffffff", border: "1px solid #d1ddf0", borderRadius: "12px" };
-const DARK_CARD  = { background: "#162d55", border: "1px solid #1e3f73" };
+const DARK_CARD  = { background: "#012a6e", border: "1px solid #1e3f73" };
 
 export default function Landing() {
   const [contactForm, setContactForm] = useState({ name: "", email: "", message: "" });
@@ -242,7 +242,7 @@ export default function Landing() {
                 {index < steps.length - 1 && (
                   <div className="hidden md:block absolute top-8 left-1/2 w-full h-px" style={{ background: "rgba(255,255,255,0.15)" }} />
                 )}
-                <div className="relative z-10 inline-flex items-center justify-center w-16 h-16 rounded-full text-[#1e3a6e] text-xl font-bold mb-5 bg-white">
+                <div className="relative z-10 inline-flex items-center justify-center w-16 h-16 rounded-full text-[#002366] text-xl font-bold mb-5 bg-white">
                   {step.step}
                 </div>
                 <h3 className="font-semibold text-white mb-2">{step.title}</h3>
@@ -451,7 +451,7 @@ export default function Landing() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="py-12" style={{ background: "#1e3a6e", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+      <footer className="py-12" style={{ background: "#002366", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             <div>
