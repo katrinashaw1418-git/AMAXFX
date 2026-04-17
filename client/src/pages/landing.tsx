@@ -119,7 +119,7 @@ export default function Landing() {
         <header>
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex-1 flex items-center gap-3">
-              <img src="/amax-icon-blue.png" alt="AMAX GLOBAL" className="h-10 w-auto" />
+              <img src="/amax-logo-new.png" alt="AMAX GLOBAL" className="h-10 w-auto" />
               <span className="font-bold text-white text-xl tracking-widest">AMAX GLOBAL</span>
             </div>
 
@@ -488,7 +488,7 @@ export default function Landing() {
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             <div>
               <div className="mb-3 flex items-center gap-3">
-                <img src="/amax-icon-blue.png" alt="AMAX GLOBAL" className="h-9 w-auto" />
+                <img src="/amax-logo-new.png" alt="AMAX GLOBAL" className="h-9 w-auto" />
                 <span className="font-bold text-white text-lg tracking-widest">AMAX GLOBAL</span>
               </div>
               <p className="text-sm text-white leading-relaxed">
