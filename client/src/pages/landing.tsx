@@ -122,8 +122,8 @@ export default function Landing() {
         <header>
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex-1 flex items-center gap-3">
-              <img src="/amax-logo-new.png" alt="AMAX GLOBAL" className="h-10 w-auto" />
-              <span className="font-bold text-[#071f42] text-xl tracking-widest">AMAX GLOBAL</span>
+              <img src="/amax-logo-blue.jpg" alt="AMAX GLOBAL" className="h-10 w-auto rounded-xl" />
+              <span className="font-bold text-[#209af3] text-xl tracking-widest">AMAX GLOBAL</span>
             </div>
 
             <nav className="hidden md:flex items-center gap-5 text-sm flex-1 justify-center">
@@ -482,40 +482,40 @@ export default function Landing() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="py-12" style={{ background: "#071f42", borderTop: "1px solid #1a4a8c" }}>
+      <footer className="py-12" style={{ background: "#ffffff", borderTop: "1px solid #bdd7f0" }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             <div>
               <div className="mb-3 flex items-center gap-3">
-                <img src="/amax-logo-new.png" alt="AMAX GLOBAL" className="h-9 w-auto" />
-                <span className="font-bold text-white text-lg tracking-widest">AMAX GLOBAL</span>
+                <img src="/amax-logo-blue.jpg" alt="AMAX GLOBAL" className="h-9 w-auto rounded-xl" />
+                <span className="font-bold text-[#209af3] text-lg tracking-widest">AMAX GLOBAL</span>
               </div>
-              <p className="text-sm text-white/70 leading-relaxed">
+              <p className="text-sm text-[#334e6e] leading-relaxed">
                 Australia-based regulated platform for FX exchange, multi-currency accounts, cryptocurrency trading, and cross-border remittance.
               </p>
-              <p className="text-sm text-white/70 leading-relaxed">ABN 54 690 827 608</p>
+              <p className="text-sm text-[#334e6e] leading-relaxed">ABN 54 690 827 608</p>
             </div>
 
             <div>
-              <p className="font-semibold text-white mb-3 text-sm">Platform</p>
+              <p className="font-semibold text-[#071f42] mb-3 text-sm">Platform</p>
               <ul className="space-y-2 text-sm">
                 {[["#services","Services"],["#how-it-works","How It Works"],["#compliance","Compliance"],["#about","About"],["#contact","Contact"]].map(([href, label]) => (
-                  <li key={label}><a href={href} className="text-white/70 hover:text-white transition-colors">{label}</a></li>
+                  <li key={label}><a href={href} className="text-[#334e6e] hover:text-[#209af3] transition-colors">{label}</a></li>
                 ))}
               </ul>
             </div>
 
             <div>
-              <p className="font-semibold text-white mb-3 text-sm">Legal</p>
-              <ul className="space-y-2 text-sm text-white/70">
-                <li><Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-                <li><Link href="/terms"           className="hover:text-white transition-colors">Terms &amp; Conditions</Link></li>
-                <li><Link href="/aml-policy"      className="hover:text-white transition-colors">AML/CTF Policy</Link></li>
+              <p className="font-semibold text-[#071f42] mb-3 text-sm">Legal</p>
+              <ul className="space-y-2 text-sm text-[#334e6e]">
+                <li><Link href="/privacy-policy" className="hover:text-[#209af3] transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/terms"           className="hover:text-[#209af3] transition-colors">Terms &amp; Conditions</Link></li>
+                <li><Link href="/aml-policy"      className="hover:text-[#209af3] transition-colors">AML/CTF Policy</Link></li>
               </ul>
             </div>
           </div>
 
-          <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-white/50" style={{ borderTop: "1px solid #1a4a8c" }}>
+          <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-[#334e6e]" style={{ borderTop: "1px solid #bdd7f0" }}>
             <p>© {new Date().getFullYear()} AMAX. All rights reserved. AUSTRAC Registered Digital Currency Exchange. ABN 54 690 827 608</p>
             <p>Regulated in Australia. Platform launching following regulatory registration.</p>
           </div>
