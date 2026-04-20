@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Loader2, Shield, Mail, CheckCircle2,
   ArrowRight, ArrowLeft, ChevronRight, X,
-  TrendingUp, Bitcoin, Check, Wallet, LineChart,
+  TrendingUp, Bitcoin, Check,
 } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { SiGoogle } from "react-icons/si";
@@ -25,22 +25,10 @@ const SERVICES = [
     description: "Send and receive international payments at live exchange rates with full AUD settlement.",
   },
   {
-    value: "multi-currency",
-    icon: Wallet,
-    title: "Multi-Currency Account",
-    description: "Hold and manage supported currencies in a single account with instant conversions.",
-  },
-  {
     value: "digital-asset-fx",
     icon: Bitcoin,
     title: "Digital Assets",
     description: "Exchange and transfer Bitcoin, Ethereum and supported stablecoins.",
-  },
-  {
-    value: "investment",
-    icon: LineChart,
-    title: "Investment Services",
-    description: "Access selected investment opportunities curated for AMAX clients.",
   },
 ];
 
