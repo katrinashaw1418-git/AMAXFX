@@ -204,10 +204,10 @@ export default function Login() {
 
         {/* ── PASSWORDLESS REQUEST-CODE SCREEN ── */}
         {passwordlessMode && !unverifiedEmail ? (
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-white border-slate-200 shadow-xl">
             <CardHeader>
-              <CardTitle className="text-white">Sign in with email code</CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardTitle className="text-slate-900">Sign in with email code</CardTitle>
+              <CardDescription className="text-slate-600">
                 Enter your email and we'll send you a 6-digit sign-in code.
               </CardDescription>
             </CardHeader>
@@ -224,7 +224,7 @@ export default function Login() {
                     placeholder="you@example.com"
                     required
                     autoComplete="email"
-                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 focus:border-white/50"
+                    className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-[#002366]"
                   />
                 </div>
                 <Button type="submit" disabled={requestingCode} className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold">
@@ -243,18 +243,18 @@ export default function Login() {
             </CardContent>
           </Card>
         ) : unverifiedEmail ? (
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-6 text-center">
+          <div className="bg-white border border-slate-200 shadow-xl rounded-2xl p-6 space-y-6 text-center">
             <div className="flex flex-col items-center gap-3">
-              <div className="w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center">
-                <Mail className="w-8 h-8 text-blue-400" />
+              <div className="w-16 h-16 rounded-full bg-[#002366]/10 border border-[#002366]/20 flex items-center justify-center">
+                <Mail className="w-8 h-8 text-[#002366]" />
               </div>
-              <h2 className="text-xl font-bold text-white">
+              <h2 className="text-xl font-bold text-slate-900">
                 {passwordlessMode ? "Enter your sign-in code" : "Verify your email"}
               </h2>
-              <p className="text-sm text-slate-400 max-w-xs">
+              <p className="text-sm text-slate-600 max-w-xs">
                 {passwordlessMode
-                  ? <>We sent a 6-digit sign-in code to <span className="text-white font-medium">{unverifiedEmail}</span>.</>
-                  : <>Your account is not yet verified. Enter the 6-digit code sent to <span className="text-white font-medium">{unverifiedEmail}</span>.</>}
+                  ? <>We sent a 6-digit sign-in code to <span className="text-slate-900 font-medium">{unverifiedEmail}</span>.</>
+                  : <>Your account is not yet verified. Enter the 6-digit code sent to <span className="text-slate-900 font-medium">{unverifiedEmail}</span>.</>}
               </p>
             </div>
 
@@ -270,20 +270,20 @@ export default function Login() {
                   onChange={e => handleOtpChange(i, e.target.value)}
                   onKeyDown={e => handleOtpKeyDown(i, e)}
                   autoFocus={i === 0}
-                  className="w-11 h-14 text-center text-2xl font-bold bg-slate-700 border border-slate-500 rounded-xl text-white focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30 transition-all"
+                  className="w-11 h-14 text-center text-2xl font-bold bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-[#002366] focus:outline-none focus:ring-2 focus:ring-[#002366]/30 transition-all"
                 />
               ))}
             </div>
 
-            {otpError && <p className="text-sm text-red-400">{otpError}</p>}
+            {otpError && <p className="text-sm text-red-600">{otpError}</p>}
             {resendSent && (
-              <p className="text-sm text-green-400 flex items-center justify-center gap-1.5">
+              <p className="text-sm text-green-600 flex items-center justify-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4" /> New code sent — check your inbox.
               </p>
             )}
 
             <Button
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold"
+              className="w-full bg-[#002366] hover:bg-[#012a6e] text-white font-semibold"
               onClick={handleVerifyOtp}
               disabled={isVerifyingOtp || otpDigits.join("").length < 6}
             >
@@ -295,7 +295,7 @@ export default function Login() {
             <p className="text-xs text-slate-500">
               Didn't receive a code? Check your spam folder or{" "}
               <button
-                className="text-slate-300 underline hover:text-white"
+                className="text-[#002366] underline hover:text-[#012a6e]"
                 disabled={resendLoading}
                 onClick={handleResend}
               >
@@ -304,7 +304,7 @@ export default function Login() {
             </p>
 
             <button
-              className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              className="text-xs text-slate-500 hover:text-slate-700 transition-colors"
               onClick={() => setUnverifiedEmail(null)}
             >
               ← Back to sign in
@@ -312,10 +312,10 @@ export default function Login() {
           </div>
         ) : (
           /* ── SIGN IN FORM ── */
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-white border-slate-200 shadow-xl">
             <CardHeader>
-              <CardTitle className="text-white">Sign In</CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardTitle className="text-slate-900">Sign In</CardTitle>
+              <CardDescription className="text-slate-600">
                 Enter your credentials to access your portfolio
               </CardDescription>
             </CardHeader>
@@ -328,7 +328,7 @@ export default function Login() {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="username" className="text-slate-300">Username</Label>
+                  <Label htmlFor="username" className="text-slate-700">Username</Label>
                   <Input
                     id="username"
                     type="text"
@@ -337,12 +337,12 @@ export default function Login() {
                     placeholder="Enter your username"
                     required
                     autoComplete="username"
-                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 focus:border-white/50"
+                    className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-[#002366]"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-slate-300">Password</Label>
+                  <Label htmlFor="password" className="text-slate-700">Password</Label>
                   <Input
                     id="password"
                     type="password"
@@ -351,14 +351,14 @@ export default function Login() {
                     placeholder="Enter your password"
                     required
                     autoComplete="current-password"
-                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 focus:border-white/50"
+                    className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-[#002366]"
                   />
                 </div>
 
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-gray-600 hover:bg-gray-500 text-white font-semibold"
+                  className="w-full bg-[#002366] hover:bg-[#012a6e] text-white font-semibold"
                 >
                   {isLoading ? (
                     <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Signing in...</>
@@ -371,15 +371,15 @@ export default function Login() {
                   <>
                     <div className="relative my-2">
                       <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-slate-700" />
+                        <div className="w-full border-t border-slate-200" />
                       </div>
                       <div className="relative flex justify-center text-xs">
-                        <span className="bg-slate-800 px-2 text-slate-500">or</span>
+                        <span className="bg-white px-2 text-slate-500">or</span>
                       </div>
                     </div>
-                    <div className="w-full flex justify-center [color-scheme:dark]">
+                    <div className="w-full flex justify-center">
                       {isGoogleLoading ? (
-                        <div className="flex items-center justify-center text-sm text-slate-300 py-3">
+                        <div className="flex items-center justify-center text-sm text-slate-600 py-3">
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />Signing in with Google...
                         </div>
                       ) : (
@@ -392,7 +392,7 @@ export default function Login() {
                             }
                           }}
                           onError={() => setError("Google sign-in was cancelled or failed.")}
-                          theme="filled_black"
+                          theme="outline"
                           size="large"
                           text="signin_with"
                           shape="rectangular"
@@ -406,18 +406,18 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => { setError(null); setEmailForCode(""); setPasswordlessMode(true); }}
-                  className="w-full text-sm text-slate-300 hover:text-white underline underline-offset-2 transition-colors"
+                  className="w-full text-sm text-[#002366] hover:text-[#012a6e] underline underline-offset-2 transition-colors"
                 >
                   Sign in with email code instead
                 </button>
 
                 <div className="text-center space-y-2">
-                  <Link href="/forgot-password" className="text-sm text-white hover:text-white/70 transition-colors block">
+                  <Link href="/forgot-password" className="text-sm text-[#002366] hover:text-[#012a6e] transition-colors block font-medium">
                     Forgot your password?
                   </Link>
-                  <p className="text-sm text-slate-400">
+                  <p className="text-sm text-slate-600">
                     Don't have an account?{" "}
-                    <Link href="/register" className="text-white underline underline-offset-2 hover:text-white/80">
+                    <Link href="/register" className="text-[#002366] underline underline-offset-2 hover:text-[#012a6e] font-medium">
                       Create one
                     </Link>
                   </p>

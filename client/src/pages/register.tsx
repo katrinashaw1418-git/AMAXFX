@@ -283,20 +283,20 @@ export default function Register() {
 
         {/* ── METHOD SELECTION ─────────────────────────────────────────────── */}
         {step === "method" && (
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-4">
+          <div className="bg-white border border-slate-200 shadow-xl rounded-2xl p-6 space-y-4">
             <div className="mb-1">
-              <h2 className="text-xl font-bold text-white">Create your account</h2>
-              <p className="text-sm text-slate-400 mt-1.5 leading-relaxed">
+              <h2 className="text-xl font-bold text-slate-900">Create your account</h2>
+              <p className="text-sm text-slate-600 mt-1.5 leading-relaxed">
                 Secure access to FX, multi-currency accounts, digital assets, and investment services.
               </p>
-              <p className="text-sm text-slate-400 mt-3">
+              <p className="text-sm text-slate-600 mt-3">
                 Already have an account?{" "}
-                <Link href="/login" className="text-white underline underline-offset-2">Sign in</Link>
+                <Link href="/login" className="text-[#002366] font-medium underline underline-offset-2 hover:text-[#012a6e]">Sign in</Link>
               </p>
             </div>
 
             {socialNotice && (
-              <Alert className="bg-amber-500/10 border-amber-500/30 text-amber-300">
+              <Alert className="bg-amber-50 border-amber-200 text-amber-800">
                 <AlertDescription className="flex items-start justify-between gap-2">
                   <span className="text-sm">{socialNotices[socialNotice]}</span>
                   <button onClick={() => setSocialNotice(null)} className="shrink-0 mt-0.5">
@@ -309,21 +309,21 @@ export default function Register() {
             {/* Email — primary */}
             <button
               onClick={() => { setSocialNotice(null); setStep("details"); }}
-              className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-white text-slate-900 hover:bg-slate-100 transition-all font-semibold group"
+              className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-[#002366] text-white hover:bg-[#012a6e] transition-all font-semibold group"
             >
-              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
-                <Mail className="w-5 h-5 text-slate-700" />
+              <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
+                <Mail className="w-5 h-5 text-white" />
               </div>
               <div className="text-left flex-1">
                 <div className="text-sm font-semibold">Continue with Email</div>
-                <div className="text-xs text-slate-500 font-normal">Sign up with your email address</div>
+                <div className="text-xs text-white/70 font-normal">Sign up with your email address</div>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+              <ChevronRight className="w-4 h-4 text-white/70 group-hover:translate-x-0.5 transition-transform" />
             </button>
 
             {/* Google */}
             {GOOGLE_ENABLED ? (
-              <div className="w-full flex justify-center [color-scheme:dark]">
+              <div className="w-full flex justify-center">
                 <GoogleLogin
                   onSuccess={(credentialResponse) => {
                     if (credentialResponse.credential) {
@@ -333,7 +333,7 @@ export default function Register() {
                     }
                   }}
                   onError={() => setError("Google sign-in was cancelled or failed.")}
-                  theme="filled_black"
+                  theme="outline"
                   size="large"
                   text="continue_with"
                   shape="rectangular"
@@ -343,16 +343,16 @@ export default function Register() {
             ) : (
               <button
                 onClick={() => setSocialNotice("google")}
-                className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-slate-700/60 border border-slate-600 text-white hover:bg-slate-700 transition-all group"
+                className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 transition-all group"
               >
-                <div className="w-9 h-9 rounded-lg bg-slate-600 flex items-center justify-center flex-shrink-0">
-                  <SiGoogle className="w-5 h-5 text-white" />
+                <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0">
+                  <SiGoogle className="w-5 h-5 text-slate-700" />
                 </div>
                 <div className="text-left flex-1">
                   <div className="text-sm font-semibold">Continue with Google</div>
-                  <div className="text-xs text-slate-400 font-normal">Use your Google account</div>
+                  <div className="text-xs text-slate-500 font-normal">Use your Google account</div>
                 </div>
-                <span className="text-[10px] bg-slate-600 text-slate-300 px-2 py-0.5 rounded-full font-medium shrink-0">
+                <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-medium shrink-0">
                   Coming soon
                 </span>
               </button>
@@ -360,9 +360,9 @@ export default function Register() {
 
             <p className="text-xs text-slate-500 text-center leading-relaxed pt-2">
               By creating an account, you agree to our{" "}
-              <Link href="/terms" className="underline text-slate-400 hover:text-slate-200">Terms</Link>
+              <Link href="/terms" className="underline text-slate-600 hover:text-slate-800">Terms</Link>
               {" "}and{" "}
-              <Link href="/privacy-policy" className="underline text-slate-400 hover:text-slate-200">Privacy Policy</Link>.
+              <Link href="/privacy-policy" className="underline text-slate-600 hover:text-slate-800">Privacy Policy</Link>.
               Identity verification is required to activate regulated services.
             </p>
           </div>
@@ -370,17 +370,17 @@ export default function Register() {
 
         {/* ── DETAILS ──────────────────────────────────────────────────────── */}
         {step === "details" && (
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-5">
+          <div className="bg-white border border-slate-200 shadow-xl rounded-2xl p-6 space-y-5">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => { setError(null); setStep("method"); }}
-                className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-300 hover:text-white transition-all"
+                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-all"
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
               <div>
-                <h2 className="text-xl font-bold text-white">Enter your details</h2>
-                <p className="text-xs text-slate-400">We'll email you a verification code next.</p>
+                <h2 className="text-xl font-bold text-slate-900">Enter your details</h2>
+                <p className="text-xs text-slate-600">We'll email you a verification code next.</p>
               </div>
             </div>
 
@@ -389,48 +389,48 @@ export default function Register() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="firstName" className="text-slate-300 text-sm">First name</Label>
+                  <Label htmlFor="firstName" className="text-slate-700 text-sm">First name</Label>
                   <Input id="firstName" value={firstName} onChange={e => setFirstName(e.target.value)}
                     placeholder="Jane" required autoComplete="given-name"
-                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50" />
+                    className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-[#002366]" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="lastName" className="text-slate-300 text-sm">Last name</Label>
+                  <Label htmlFor="lastName" className="text-slate-700 text-sm">Last name</Label>
                   <Input id="lastName" value={lastName} onChange={e => setLastName(e.target.value)}
                     placeholder="Smith" required autoComplete="family-name"
-                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50" />
+                    className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-[#002366]" />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-slate-300 text-sm">Email address</Label>
+                <Label htmlFor="email" className="text-slate-700 text-sm">Email address</Label>
                 <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)}
                   placeholder="jane@example.com" required autoComplete="email"
-                  className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50" />
+                  className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-[#002366]" />
                 <p className="text-xs text-slate-500">Your verification code will be sent to this email address.</p>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="mobile" className="text-slate-300 text-sm">Mobile number</Label>
+                <Label htmlFor="mobile" className="text-slate-700 text-sm">Mobile number</Label>
                 <div className="flex gap-2">
                   <Select value={mobileDial} onValueChange={setMobileDial}>
                     <SelectTrigger
-                      className="w-[130px] bg-slate-700 border-slate-600 text-white focus:border-white/50"
+                      className="w-[130px] bg-white border-slate-300 text-slate-900 focus:border-[#002366]"
                       aria-label="Country code"
                     >
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-700 text-white max-h-72">
+                    <SelectContent className="bg-white border-slate-200 text-slate-900 max-h-72">
                       {COUNTRY_CODES.map(c => (
                         <SelectItem
                           key={`${c.code}-${c.dial}`}
                           value={c.dial}
-                          className="text-white focus:bg-slate-700 focus:text-white"
+                          className="text-slate-900 focus:bg-slate-100 focus:text-slate-900"
                         >
                           <span className="inline-flex items-center gap-2">
                             <span className="text-base leading-none">{c.flag}</span>
                             <span className="font-mono text-sm">{c.dial}</span>
-                            <span className="text-xs text-slate-400">{c.name}</span>
+                            <span className="text-xs text-slate-500">{c.name}</span>
                           </span>
                         </SelectItem>
                       ))}
@@ -438,12 +438,12 @@ export default function Register() {
                   </Select>
                   <Input id="mobile" type="tel" value={mobile} onChange={e => setMobile(e.target.value)}
                     placeholder="412 345 678" required autoComplete="tel-national"
-                    className="flex-1 bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50" />
+                    className="flex-1 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-[#002366]" />
                 </div>
                 <p className="text-xs text-slate-500">Used for account contact and compliance records.</p>
               </div>
 
-              <Button type="submit" disabled={isLoading} className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold">
+              <Button type="submit" disabled={isLoading} className="w-full bg-[#002366] hover:bg-[#012a6e] text-white font-semibold">
                 {isLoading
                   ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending code…</>
                   : <>Send verification code <ArrowRight className="w-4 h-4 ml-1" /></>}
@@ -454,15 +454,15 @@ export default function Register() {
 
         {/* ── EMAIL VERIFICATION ───────────────────────────────────────────── */}
         {step === "verify" && (
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-6 text-center">
+          <div className="bg-white border border-slate-200 shadow-xl rounded-2xl p-6 space-y-6 text-center">
             <div className="flex flex-col items-center gap-3">
-              <div className="w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center">
-                <Mail className="w-8 h-8 text-blue-400" />
+              <div className="w-16 h-16 rounded-full bg-[#002366]/10 border border-[#002366]/20 flex items-center justify-center">
+                <Mail className="w-8 h-8 text-[#002366]" />
               </div>
-              <h2 className="text-xl font-bold text-white">Verify your email</h2>
-              <p className="text-sm text-slate-400 max-w-xs">
+              <h2 className="text-xl font-bold text-slate-900">Verify your email</h2>
+              <p className="text-sm text-slate-600 max-w-xs">
                 We sent a 6-digit verification code to{" "}
-                <span className="text-white font-medium">{email}</span>.
+                <span className="text-slate-900 font-medium">{email}</span>.
               </p>
               <p className="text-xs text-slate-500">Please enter the code below to continue.</p>
             </div>
@@ -479,24 +479,24 @@ export default function Register() {
                   onChange={e => handleOtpChange(i, e.target.value)}
                   onKeyDown={e => handleOtpKeyDown(i, e)}
                   autoFocus={i === 0}
-                  className="w-11 h-14 text-center text-2xl font-bold bg-slate-700 border border-slate-500 rounded-xl text-white focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30 transition-all"
+                  className="w-11 h-14 text-center text-2xl font-bold bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-[#002366] focus:outline-none focus:ring-2 focus:ring-[#002366]/30 transition-all"
                 />
               ))}
             </div>
 
             {devOtp && (
-              <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-sm">
-                <p className="text-amber-400 font-semibold text-xs uppercase tracking-wider mb-1">Demo mode — email not sent</p>
-                <p className="text-white font-mono text-2xl tracking-widest font-bold">{devOtp}</p>
-                <p className="text-amber-300/70 text-xs mt-1">Configure GMAIL_USER & GMAIL_APP_PASSWORD to send real emails.</p>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm">
+                <p className="text-amber-700 font-semibold text-xs uppercase tracking-wider mb-1">Demo mode — email not sent</p>
+                <p className="text-slate-900 font-mono text-2xl tracking-widest font-bold">{devOtp}</p>
+                <p className="text-amber-700/80 text-xs mt-1">Configure GMAIL_USER & GMAIL_APP_PASSWORD to send real emails.</p>
               </div>
             )}
 
-            {error && <p className="text-sm text-red-400">{error}</p>}
-            {resendSent && <p className="text-sm text-green-400">New code sent — check your inbox.</p>}
+            {error && <p className="text-sm text-red-600">{error}</p>}
+            {resendSent && <p className="text-sm text-green-600">New code sent — check your inbox.</p>}
 
             <Button
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold"
+              className="w-full bg-[#002366] hover:bg-[#012a6e] text-white font-semibold"
               onClick={handleVerifyOtp}
               disabled={isVerifying || otpDigits.join("").length < 6}
             >
@@ -505,15 +505,15 @@ export default function Register() {
 
             <div className="flex items-center justify-center gap-4 text-xs text-slate-500">
               <button
-                className="text-slate-300 underline hover:text-white disabled:opacity-50"
+                className="text-[#002366] underline hover:text-[#012a6e] disabled:opacity-50"
                 disabled={resendLoading}
                 onClick={handleResend}
               >
                 {resendLoading ? "Sending…" : "Resend code"}
               </button>
-              <span className="text-slate-600">·</span>
+              <span className="text-slate-400">·</span>
               <button
-                className="text-slate-300 underline hover:text-white"
+                className="text-[#002366] underline hover:text-[#012a6e]"
                 onClick={() => { setError(null); setOtpDigits(["", "", "", "", "", ""]); setStep("details"); }}
               >
                 Change email
@@ -524,10 +524,10 @@ export default function Register() {
 
         {/* ── SERVICE SELECTION ────────────────────────────────────────────── */}
         {step === "services" && (
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-5">
+          <div className="bg-white border border-slate-200 shadow-xl rounded-2xl p-6 space-y-5">
             <div>
-              <h2 className="text-xl font-bold text-white">Select your services</h2>
-              <p className="text-xs text-slate-400 mt-1">
+              <h2 className="text-xl font-bold text-slate-900">Select your services</h2>
+              <p className="text-xs text-slate-600 mt-1">
                 This helps us tailor your account setup and meet regulatory requirements.
               </p>
             </div>
@@ -545,32 +545,32 @@ export default function Register() {
                       onClick={() => toggleService(value)}
                       className={`w-full text-left flex items-start gap-4 p-4 rounded-xl border-2 transition-all ${
                         active
-                          ? "border-white bg-white/10"
-                          : "border-slate-600 bg-slate-700/40 hover:border-slate-500"
+                          ? "border-[#002366] bg-[#002366]/5"
+                          : "border-slate-200 bg-slate-50 hover:border-slate-300"
                       }`}
                     >
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-                        active ? "bg-white text-slate-900" : "bg-slate-600 text-slate-300"
+                        active ? "bg-[#002366] text-white" : "bg-slate-200 text-slate-600"
                       }`}>
                         <Icon className="w-5 h-5" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className={`text-sm font-semibold mb-1 ${active ? "text-white" : "text-slate-200"}`}>
+                        <div className={`text-sm font-semibold mb-1 ${active ? "text-[#002366]" : "text-slate-900"}`}>
                           {title}
                         </div>
-                        <div className="text-xs text-slate-400 leading-relaxed">{description}</div>
+                        <div className="text-xs text-slate-600 leading-relaxed">{description}</div>
                       </div>
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
-                        active ? "border-white bg-white" : "border-slate-500"
+                        active ? "border-[#002366] bg-[#002366]" : "border-slate-300"
                       }`}>
-                        {active && <Check className="w-3 h-3 text-slate-900" />}
+                        {active && <Check className="w-3 h-3 text-white" />}
                       </div>
                     </button>
                   );
                 })}
               </div>
 
-              <Button type="submit" className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold mt-2">
+              <Button type="submit" className="w-full bg-[#002366] hover:bg-[#012a6e] text-white font-semibold mt-2">
                 Continue <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </form>
@@ -578,12 +578,12 @@ export default function Register() {
         )}
 
         <div className="text-center mt-6">
-          <Link href="/" className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white text-sm transition-colors">
+          <Link href="/" className="inline-flex items-center gap-1.5 text-white/70 hover:text-white text-sm transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back to home
           </Link>
         </div>
 
-        <div className="flex items-center gap-2 text-slate-500 text-xs justify-center mt-4">
+        <div className="flex items-center gap-2 text-white/60 text-xs justify-center mt-4">
           <Shield className="w-3.5 h-3.5" />
           <span>256-bit encryption · AUSTRAC-registered · ABN 54 690 827 608</span>
         </div>
