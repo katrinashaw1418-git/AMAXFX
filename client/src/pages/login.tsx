@@ -27,9 +27,14 @@ export default function Login() {
       const res = await fetch("/api/auth/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ credential }),
+        body: JSON.stringify({ credential, mode: "login" }),
       });
       const data = await res.json();
+      if (res.status === 404 && data?.code === "NO_ACCOUNT") {
+        setError("No account found for this Google email. Please sign up first.");
+        setTimeout(() => navigate("/register"), 1800);
+        return;
+      }
       if (!res.ok) throw new Error(data.error || "Google sign-in failed");
       localStorage.setItem("amax_jwt", data.token);
       await refreshUser();

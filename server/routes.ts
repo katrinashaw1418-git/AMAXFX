@@ -1310,10 +1310,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!process.env.GOOGLE_CLIENT_ID) {
         return res.status(503).json({ error: "Google sign-in is not configured on this server." });
       }
-      const { credential } = req.body || {};
+      const { credential, mode } = req.body || {};
       if (!credential || typeof credential !== "string") {
         return res.status(400).json({ error: "Missing Google credential" });
       }
+      const authMode: "login" | "register" = mode === "register" ? "register" : "login";
 
       // Verify the ID token's signature, issuer, audience, and expiry against Google's public keys.
       const { OAuth2Client } = await import("google-auth-library");
@@ -1353,6 +1354,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let createdNew = false;
 
       if (!user) {
+        // Login mode: do NOT auto-create accounts. Force user through the registration flow first.
+        if (authMode === "login") {
+          return res.status(404).json({
+            error: "No account found for this Google email. Please sign up first.",
+            code: "NO_ACCOUNT",
+          });
+        }
         // Derive a unique username from email (same pattern as /register)
         const base = normalisedEmail.split("@")[0].replace(/[^a-z0-9_]/g, "_") || "user";
         let username = base;
