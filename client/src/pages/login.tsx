@@ -46,13 +46,19 @@ export default function Login() {
     }
   }
 
-  // Email verification state (shown when login blocked due to unverified email)
+  // Email verification / passwordless sign-in state.
+  // `unverifiedEmail` is set in two scenarios:
+  //   1. Password login was blocked because the email is not yet verified, OR
+  //   2. The user chose "Email me a sign-in code" (passwordless login).
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendSent, setResendSent] = useState(false);
+  const [passwordlessMode, setPasswordlessMode] = useState(false);
+  const [emailForCode, setEmailForCode] = useState("");
+  const [requestingCode, setRequestingCode] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -137,17 +143,50 @@ export default function Login() {
     if (!unverifiedEmail) return;
     setResendLoading(true);
     setResendSent(false);
+    setOtpError(null);
     try {
-      await fetch("/api/auth/resend-otp", {
+      const res = await fetch("/api/auth/resend-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: unverifiedEmail }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Could not resend the code.");
+      }
       setOtpDigits(["", "", "", "", "", ""]);
       setResendSent(true);
       setTimeout(() => setResendSent(false), 10000);
+    } catch (err: any) {
+      setOtpError(err.message || "Could not resend the code.");
     } finally {
       setResendLoading(false);
+    }
+  }
+
+  // Passwordless: request a sign-in code for an email
+  async function handleRequestCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (!emailForCode.trim()) return;
+    setError(null);
+    setRequestingCode(true);
+    try {
+      const res = await fetch("/api/auth/resend-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailForCode.trim().toLowerCase() }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Could not send sign-in code.");
+      }
+      setUnverifiedEmail(emailForCode.trim().toLowerCase());
+      setOtpDigits(["", "", "", "", "", ""]);
+      setOtpError(null);
+    } catch (err: any) {
+      setError(err.message || "Could not send sign-in code.");
+    } finally {
+      setRequestingCode(false);
     }
   }
 
@@ -163,17 +202,59 @@ export default function Login() {
           <p className="text-slate-400">Sign in to your wealth management platform</p>
         </div>
 
-        {/* ── EMAIL VERIFICATION SCREEN ── */}
-        {unverifiedEmail ? (
+        {/* ── PASSWORDLESS REQUEST-CODE SCREEN ── */}
+        {passwordlessMode && !unverifiedEmail ? (
+          <Card className="bg-slate-800 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white">Sign in with email code</CardTitle>
+              <CardDescription className="text-slate-400">
+                Enter your email and we'll send you a 6-digit sign-in code.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleRequestCode} className="space-y-4">
+                {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+                <div className="space-y-2">
+                  <Label htmlFor="emailForCode" className="text-slate-300">Email address</Label>
+                  <Input
+                    id="emailForCode"
+                    type="email"
+                    value={emailForCode}
+                    onChange={(e) => setEmailForCode(e.target.value)}
+                    placeholder="you@example.com"
+                    required
+                    autoComplete="email"
+                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 focus:border-white/50"
+                  />
+                </div>
+                <Button type="submit" disabled={requestingCode} className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold">
+                  {requestingCode
+                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending code…</>
+                    : <>Send sign-in code <ArrowRight className="w-4 h-4 ml-1" /></>}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => { setPasswordlessMode(false); setError(null); }}
+                  className="w-full text-xs text-slate-400 hover:text-white transition-colors"
+                >
+                  ← Back to password sign-in
+                </button>
+              </form>
+            </CardContent>
+          </Card>
+        ) : unverifiedEmail ? (
           <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-6 text-center">
             <div className="flex flex-col items-center gap-3">
               <div className="w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center">
                 <Mail className="w-8 h-8 text-blue-400" />
               </div>
-              <h2 className="text-xl font-bold text-white">Verify your email</h2>
+              <h2 className="text-xl font-bold text-white">
+                {passwordlessMode ? "Enter your sign-in code" : "Verify your email"}
+              </h2>
               <p className="text-sm text-slate-400 max-w-xs">
-                Your account is not yet verified. Enter the 6-digit code sent to{" "}
-                <span className="text-white font-medium">{unverifiedEmail}</span>.
+                {passwordlessMode
+                  ? <>We sent a 6-digit sign-in code to <span className="text-white font-medium">{unverifiedEmail}</span>.</>
+                  : <>Your account is not yet verified. Enter the 6-digit code sent to <span className="text-white font-medium">{unverifiedEmail}</span>.</>}
               </p>
             </div>
 
@@ -321,6 +402,14 @@ export default function Login() {
                     </div>
                   </>
                 )}
+
+                <button
+                  type="button"
+                  onClick={() => { setError(null); setEmailForCode(""); setPasswordlessMode(true); }}
+                  className="w-full text-sm text-slate-300 hover:text-white underline underline-offset-2 transition-colors"
+                >
+                  Sign in with email code instead
+                </button>
 
                 <div className="text-center space-y-2">
                   <Link href="/forgot-password" className="text-sm text-white hover:text-white/70 transition-colors block">

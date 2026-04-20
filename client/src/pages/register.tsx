@@ -6,34 +6,46 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  Loader2, Shield, Coins, Eye, EyeOff, Mail, CheckCircle2,
-  ArrowRight, ArrowLeft, Smartphone, ChevronRight, X,
-  TrendingUp, Bitcoin, Check,
+  Loader2, Shield, Mail, CheckCircle2,
+  ArrowRight, ArrowLeft, ChevronRight, X,
+  TrendingUp, Bitcoin, Check, Wallet, LineChart,
 } from "lucide-react";
-import { SiGoogle, SiApple } from "react-icons/si";
 import { GoogleLogin } from "@react-oauth/google";
+import { SiGoogle } from "react-icons/si";
 
 const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
-type Step = "method" | "email-form" | "verify" | "profile" | "phone-form";
+type Step = "method" | "details" | "verify" | "services";
 
 const SERVICES = [
   {
     value: "fx",
     icon: TrendingUp,
-    title: "FX Exchange",
-    description: "Convert between major fiat currencies at live rates. Send international payments and remittances with full AUD settlement.",
+    title: "FX & Transfers",
+    description: "Send and receive international payments at live exchange rates with full AUD settlement.",
+  },
+  {
+    value: "multi-currency",
+    icon: Wallet,
+    title: "Multi-Currency Account",
+    description: "Hold and manage supported currencies in a single account with instant conversions.",
   },
   {
     value: "digital-asset-fx",
     icon: Bitcoin,
-    title: "Digital Asset FX Exchange",
-    description: "Buy, sell and exchange Bitcoin, Ethereum and stablecoins alongside your fiat currencies.",
+    title: "Digital Assets",
+    description: "Exchange and transfer Bitcoin, Ethereum and supported stablecoins.",
+  },
+  {
+    value: "investment",
+    icon: LineChart,
+    title: "Investment Services",
+    description: "Access selected investment opportunities curated for AMAX clients.",
   },
 ];
 
 function StepDots({ step }: { step: Step }) {
-  const order: Step[] = ["method", "email-form", "verify", "profile"];
+  const order: Step[] = ["method", "details", "verify", "services"];
   const labels = ["Method", "Details", "Verify", "Services"];
   const idx = order.indexOf(step);
   return (
@@ -68,22 +80,16 @@ export default function Register() {
   const [step, setStep] = useState<Step>("method");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [socialNotice, setSocialNotice] = useState<"google" | "apple" | "phone" | null>(null);
+  const [socialNotice, setSocialNotice] = useState<"google" | null>(null);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName]   = useState("");
   const [email, setEmail]         = useState("");
-  const [password, setPassword]   = useState("");
-  const [showPw, setShowPw]       = useState(false);
+  const [mobile, setMobile]       = useState("");
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [phoneNum, setPhoneNum]     = useState("");
-  const [phoneEmail, setPhoneEmail] = useState("");
-  const [phoneFirst, setPhoneFirst] = useState("");
-  const [phoneLast, setPhoneLast]   = useState("");
-  const [phoneDevOtp, setPhoneDevOtp] = useState<string | null>(null);
   const [resendSent, setResendSent] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [devOtp, setDevOtp] = useState<string | null>(null);
@@ -133,10 +139,9 @@ export default function Register() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Verification failed");
-      // Store new token (email now verified) and sync auth context
       localStorage.setItem("amax_jwt", data.token);
       await refreshUser();
-      setStep("profile");
+      setStep("services");
     } catch (err: any) {
       setError(err.message || "Invalid code. Please try again.");
     } finally {
@@ -149,14 +154,20 @@ export default function Register() {
     setResendSent(false);
     setError(null);
     try {
-      await fetch("/api/auth/resend-otp", {
+      const res = await fetch("/api/auth/resend-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Could not resend the code. Please try again.");
+      }
       setOtpDigits(["", "", "", "", "", ""]);
       setResendSent(true);
       setTimeout(() => setResendSent(false), 10000);
+    } catch (err: any) {
+      setError(err.message || "Could not resend the code.");
     } finally {
       setResendLoading(false);
     }
@@ -170,22 +181,31 @@ export default function Register() {
     });
   }
 
-  async function handleEmailSubmit(e: React.FormEvent) {
+  async function handleDetailsSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     if (!firstName.trim() || !lastName.trim()) { setError("Please enter your full name."); return; }
-    if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) { setError("Password must be at least 8 characters and include at least one letter and one number."); return; }
+    if (!mobile.trim() || mobile.replace(/\D/g, "").length < 8) {
+      setError("Please enter a valid mobile number.");
+      return;
+    }
     setIsLoading(true);
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch("/api/auth/phone/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim(), password }),
+        body: JSON.stringify({
+          phone: mobile.trim(),
+          email: email.trim(),
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Registration failed");
-      localStorage.setItem("amax_jwt", data.token);
+      // SECURITY: token is only issued after OTP verification — see /api/auth/verify-otp
       if (data.devOtp) setDevOtp(data.devOtp);
+      setOtpDigits(["", "", "", "", "", ""]);
       setStep("verify");
     } catch (err: any) {
       setError(err.message || "Registration failed. Please try again.");
@@ -194,7 +214,7 @@ export default function Register() {
     }
   }
 
-  async function handleProfileSubmit(e: React.FormEvent) {
+  async function handleServicesSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (selected.size === 0) { setError("Please select at least one service."); return; }
     navigate("/compliance");
@@ -202,39 +222,7 @@ export default function Register() {
 
   const socialNotices: Record<string, string> = {
     google: "Google sign-in is coming soon. Please use email registration for now.",
-    apple:  "Apple sign-in is coming soon. Please use email registration for now.",
   };
-
-  async function handlePhoneSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/auth/phone/request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: phoneNum,
-          email: phoneEmail.trim(),
-          firstName: phoneFirst.trim(),
-          lastName: phoneLast.trim(),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create account.");
-      localStorage.setItem("amax_jwt", data.token);
-      if (data.devOtp) { setPhoneDevOtp(data.devOtp); setDevOtp(data.devOtp); }
-      // Reuse the existing email-OTP verify step — the verify-otp endpoint
-      // identifies the user by email, so set it before navigating.
-      setEmail(phoneEmail.trim());
-      setOtpDigits(["", "", "", "", "", ""]);
-      setStep("verify");
-    } catch (err: any) {
-      setError(err.message || "Something went wrong.");
-    } finally {
-      setIsLoading(false);
-    }
-  }
 
   async function handleGoogleCredential(credential: string) {
     setIsLoading(true);
@@ -251,12 +239,8 @@ export default function Register() {
       localStorage.setItem("amax_jwt", data.token);
       await refreshUser();
       if (data.createdNew) {
-        // New Google sign-up — drop user into the same "Select services" step that
-        // email sign-up uses, so onboarding feels consistent. Email is already
-        // verified by Google so we skip the OTP step.
-        setStep("profile");
+        setStep("services");
       } else {
-        // Returning Google user — go straight to dashboard or KYC
         navigate(data?.user?.kycStatus === "verified" ? "/dashboard" : "/compliance");
       }
     } catch (err: any) {
@@ -284,7 +268,10 @@ export default function Register() {
           <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-4">
             <div className="mb-1">
               <h2 className="text-xl font-bold text-white">Create your account</h2>
-              <p className="text-sm text-slate-400 mt-1">
+              <p className="text-sm text-slate-400 mt-1.5 leading-relaxed">
+                Secure access to FX, multi-currency accounts, digital assets, and investment services.
+              </p>
+              <p className="text-sm text-slate-400 mt-3">
                 Already have an account?{" "}
                 <Link href="/login" className="text-white underline underline-offset-2">Sign in</Link>
               </p>
@@ -303,7 +290,7 @@ export default function Register() {
 
             {/* Email — primary */}
             <button
-              onClick={() => { setSocialNotice(null); setStep("email-form"); }}
+              onClick={() => { setSocialNotice(null); setStep("details"); }}
               className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-white text-slate-900 hover:bg-slate-100 transition-all font-semibold group"
             >
               <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
@@ -353,50 +340,18 @@ export default function Register() {
               </button>
             )}
 
-            {/* Apple */}
-            <button
-              onClick={() => setSocialNotice("apple")}
-              className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-slate-700/60 border border-slate-600 text-white hover:bg-slate-700 transition-all group"
-            >
-              <div className="w-9 h-9 rounded-lg bg-slate-600 flex items-center justify-center flex-shrink-0">
-                <SiApple className="w-5 h-5 text-white" />
-              </div>
-              <div className="text-left flex-1">
-                <div className="text-sm font-semibold">Continue with Apple</div>
-                <div className="text-xs text-slate-400 font-normal">Use your Apple ID</div>
-              </div>
-              <span className="text-[10px] bg-slate-600 text-slate-300 px-2 py-0.5 rounded-full font-medium shrink-0">
-                Coming soon
-              </span>
-            </button>
-
-            {/* Mobile */}
-            <button
-              onClick={() => { setSocialNotice(null); setError(null); setStep("phone-form"); }}
-              className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-slate-700/60 border border-slate-600 text-white hover:bg-slate-700 transition-all group"
-            >
-              <div className="w-9 h-9 rounded-lg bg-slate-600 flex items-center justify-center flex-shrink-0">
-                <Smartphone className="w-5 h-5 text-white" />
-              </div>
-              <div className="text-left flex-1">
-                <div className="text-sm font-semibold">Use Phone Number</div>
-                <div className="text-xs text-slate-400 font-normal">Verification code sent to your email</div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-            </button>
-
-            <p className="text-xs text-slate-500 text-center leading-relaxed pt-1">
-              By signing up you agree to our{" "}
+            <p className="text-xs text-slate-500 text-center leading-relaxed pt-2">
+              By creating an account, you agree to our{" "}
               <Link href="/terms" className="underline text-slate-400 hover:text-slate-200">Terms</Link>
               {" "}and{" "}
               <Link href="/privacy-policy" className="underline text-slate-400 hover:text-slate-200">Privacy Policy</Link>.
-              Identity verification is required as we are AUSTRAC-registered.
+              Identity verification is required to activate regulated services.
             </p>
           </div>
         )}
 
-        {/* ── EMAIL FORM ───────────────────────────────────────────────────── */}
-        {step === "email-form" && (
+        {/* ── DETAILS ──────────────────────────────────────────────────────── */}
+        {step === "details" && (
           <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-5">
             <div className="flex items-center gap-3">
               <button
@@ -406,12 +361,12 @@ export default function Register() {
                 <ArrowLeft className="w-4 h-4" />
               </button>
               <div>
-                <h2 className="text-xl font-bold text-white">Sign up with Email</h2>
-                <p className="text-xs text-slate-400">Create your AMAX account</p>
+                <h2 className="text-xl font-bold text-white">Enter your details</h2>
+                <p className="text-xs text-slate-400">We'll email you a verification code next.</p>
               </div>
             </div>
 
-            <form onSubmit={handleEmailSubmit} className="space-y-4">
+            <form onSubmit={handleDetailsSubmit} className="space-y-4">
               {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
               <div className="grid grid-cols-2 gap-3">
@@ -434,30 +389,21 @@ export default function Register() {
                 <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)}
                   placeholder="jane@example.com" required autoComplete="email"
                   className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50" />
+                <p className="text-xs text-slate-500">Your verification code will be sent to this email address.</p>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="password" className="text-slate-300 text-sm">Password</Label>
-                <div className="relative">
-                  <Input id="password" type={showPw ? "text" : "password"} value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder="At least 8 characters" required autoComplete="new-password"
-                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50 pr-10" />
-                  <button type="button" tabIndex={-1}
-                    onClick={() => setShowPw(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
-                    {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {password.length > 0 && (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) && (
-                  <p className="text-xs text-amber-400">Password must be at least 8 characters and include at least one letter and one number. Special characters are optional.</p>
-                )}
+                <Label htmlFor="mobile" className="text-slate-300 text-sm">Mobile number</Label>
+                <Input id="mobile" type="tel" value={mobile} onChange={e => setMobile(e.target.value)}
+                  placeholder="+61 412 345 678" required autoComplete="tel"
+                  className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50" />
+                <p className="text-xs text-slate-500">Used for account contact and compliance records.</p>
               </div>
 
               <Button type="submit" disabled={isLoading} className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold">
                 {isLoading
-                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating account…</>
-                  : <>Create account <ArrowRight className="w-4 h-4 ml-1" /></>}
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending code…</>
+                  : <>Send verification code <ArrowRight className="w-4 h-4 ml-1" /></>}
               </Button>
             </form>
           </div>
@@ -470,14 +416,14 @@ export default function Register() {
               <div className="w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center">
                 <Mail className="w-8 h-8 text-blue-400" />
               </div>
-              <h2 className="text-xl font-bold text-white">Check your inbox</h2>
+              <h2 className="text-xl font-bold text-white">Verify your email</h2>
               <p className="text-sm text-slate-400 max-w-xs">
-                We've sent a 6-digit verification code to{" "}
-                <span className="text-white font-medium">{email}</span>. Enter it below to activate your account.
+                We sent a 6-digit verification code to{" "}
+                <span className="text-white font-medium">{email}</span>.
               </p>
+              <p className="text-xs text-slate-500">Please enter the code below to continue.</p>
             </div>
 
-            {/* 6-digit OTP boxes */}
             <div className="flex justify-center gap-2" onPaste={handleOtpPaste}>
               {otpDigits.map((d, i) => (
                 <input
@@ -495,7 +441,6 @@ export default function Register() {
               ))}
             </div>
 
-            {/* Dev mode: show OTP when email not configured */}
             {devOtp && (
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-sm">
                 <p className="text-amber-400 font-semibold text-xs uppercase tracking-wider mb-1">Demo mode — email not sent</p>
@@ -512,39 +457,39 @@ export default function Register() {
               onClick={handleVerifyOtp}
               disabled={isVerifying || otpDigits.join("").length < 6}
             >
-              {isVerifying ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Verifying…</> : <>Verify my account <ArrowRight className="w-4 h-4 ml-1" /></>}
+              {isVerifying ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Verifying…</> : <>Verify and continue <ArrowRight className="w-4 h-4 ml-1" /></>}
             </Button>
 
-            <p className="text-xs text-slate-500">
-              Didn't receive a code? Check your spam folder or{" "}
+            <div className="flex items-center justify-center gap-4 text-xs text-slate-500">
               <button
                 className="text-slate-300 underline hover:text-white disabled:opacity-50"
                 disabled={resendLoading}
                 onClick={handleResend}
               >
-                {resendLoading ? "Sending…" : "resend the code"}
+                {resendLoading ? "Sending…" : "Resend code"}
               </button>
-            </p>
+              <span className="text-slate-600">·</span>
+              <button
+                className="text-slate-300 underline hover:text-white"
+                onClick={() => { setError(null); setOtpDigits(["", "", "", "", "", ""]); setStep("details"); }}
+              >
+                Change email
+              </button>
+            </div>
           </div>
         )}
 
         {/* ── SERVICE SELECTION ────────────────────────────────────────────── */}
-        {step === "profile" && (
+        {step === "services" && (
           <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-5">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => { setError(null); setStep("verify"); }}
-                className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-300 hover:text-white transition-all"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-              <div>
-                <h2 className="text-xl font-bold text-white">Choose your service</h2>
-                <p className="text-xs text-slate-400">Select one or both — you can add more later</p>
-              </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">Select your services</h2>
+              <p className="text-xs text-slate-400 mt-1">
+                This helps us tailor your account setup and meet regulatory requirements.
+              </p>
             </div>
 
-            <form onSubmit={handleProfileSubmit} className="space-y-4">
+            <form onSubmit={handleServicesSubmit} className="space-y-4">
               {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
               <div className="space-y-3">
@@ -583,75 +528,7 @@ export default function Register() {
               </div>
 
               <Button type="submit" className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold mt-2">
-                Continue to identity verification <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
-            </form>
-          </div>
-        )}
-
-        {/* ── PHONE FORM (Model B: phone collected, OTP delivered via email) ── */}
-        {step === "phone-form" && (
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-5">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => { setError(null); setStep("method"); }}
-                className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-300 hover:text-white transition-all"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-              <div>
-                <h2 className="text-xl font-bold text-white">Use Phone Number</h2>
-                <p className="text-xs text-slate-400">
-                  Enter your phone and email. Your verification code will be sent to your email.
-                </p>
-              </div>
-            </div>
-
-            <form onSubmit={handlePhoneSubmit} className="space-y-4">
-              {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-slate-300 text-sm">First name</Label>
-                  <Input value={phoneFirst} onChange={e => setPhoneFirst(e.target.value)}
-                    placeholder="Jane" required autoComplete="given-name"
-                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-slate-300 text-sm">Last name</Label>
-                  <Input value={phoneLast} onChange={e => setPhoneLast(e.target.value)}
-                    placeholder="Smith" required autoComplete="family-name"
-                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50" />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-slate-300 text-sm">Mobile number</Label>
-                <Input type="tel" value={phoneNum} onChange={e => setPhoneNum(e.target.value)}
-                  placeholder="+61 412 345 678" required autoComplete="tel"
-                  className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50" />
-                <p className="text-xs text-slate-500">Used for account contact and compliance records.</p>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-slate-300 text-sm">Email address</Label>
-                <Input type="email" value={phoneEmail} onChange={e => setPhoneEmail(e.target.value)}
-                  placeholder="jane@example.com" required autoComplete="email"
-                  className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50" />
-                <p className="text-xs text-slate-500">Your verification code will be sent here.</p>
-              </div>
-
-              {phoneDevOtp && (
-                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
-                  Dev OTP: {phoneDevOtp}
-                </div>
-              )}
-
-              <Button type="submit" disabled={isLoading} className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold">
-                {isLoading
-                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating account…</>
-                  : <>Send verification code <ArrowRight className="w-4 h-4 ml-1" /></>}
+                Continue <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </form>
           </div>
@@ -665,7 +542,7 @@ export default function Register() {
 
         <div className="flex items-center gap-2 text-slate-500 text-xs justify-center mt-4">
           <Shield className="w-3.5 h-3.5" />
-          <span>256-bit encrypted · AUSTRAC registered · ABN 54 690 827 608</span>
+          <span>256-bit encryption · AUSTRAC-registered · ABN 54 690 827 608</span>
         </div>
 
       </div>

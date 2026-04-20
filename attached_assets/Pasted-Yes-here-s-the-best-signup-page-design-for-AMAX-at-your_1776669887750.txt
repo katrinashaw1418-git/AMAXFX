@@ -1,0 +1,276 @@
+Yes — here’s the **best signup page design** for AMAX at your stage.
+
+## Recommendation
+
+Remove:
+
+* **Continue with Apple**
+* **Use Phone Number**
+
+Keep only:
+
+* **Continue with Email**
+* **Continue with Google**
+* **Sign in**
+
+Because your real model is:
+
+* **Email/Google = authentication**
+* **Mobile number = collected in details step**
+* **Email OTP = verification**
+* **Services = onboarding**
+
+That is cleaner, more premium, and less confusing.
+
+---
+
+# Final signup page structure
+
+## Header
+
+**AMAX GLOBAL**
+**Create your account**
+
+Small subtext:
+
+> Secure access to FX, multi-currency accounts, digital assets, and investment services.
+
+Right side or below:
+
+> Already have an account? **Sign in**
+
+---
+
+## Stepper
+
+**1 Method** → **2 Details** → **3 Verify** → **4 Services**
+
+Keep this. It is good.
+
+---
+
+# Step 1 — Method
+
+## Title
+
+**Choose how you’d like to get started**
+
+## Buttons
+
+### Primary
+
+**Continue with Email**
+Sign up with your email address
+
+### Secondary
+
+**Continue with Google**
+Use your Google account
+
+Remove Apple for now.
+
+Also remove **Use Phone Number** as a separate option.
+
+---
+
+# Step 2 — Details
+
+## Title
+
+**Enter your details**
+
+## Fields
+
+* First name
+* Last name
+* Email address
+* **Mobile number**
+
+Helper text under mobile:
+
+> Used for account contact and compliance records.
+
+Helper text under email:
+
+> Your verification code will be sent to this email address.
+
+## Button
+
+**Send verification code**
+
+---
+
+# Step 3 — Verify
+
+## Title
+
+**Verify your email**
+
+## Copy
+
+> We sent a 6-digit verification code to **[your@email.com](mailto:your@email.com)**
+
+Small secondary line:
+
+> Please enter the code below to continue.
+
+## Fields
+
+6 OTP boxes
+
+## Actions
+
+* **Verify and continue**
+* Resend code
+* Change email
+
+---
+
+# Step 4 — Services
+
+## Title
+
+**Select your services**
+
+## Subtitle
+
+> This helps us tailor your account setup and meet regulatory requirements.
+
+## Cards
+
+* **FX & Transfers**
+  Send and receive international payments
+
+* **Multi-Currency Account**
+  Hold and manage supported currencies
+
+* **Digital Assets**
+  Exchange and transfer supported digital assets
+
+* **Investment Services**
+  Access selected investment opportunities
+
+Allow multi-select.
+
+## Button
+
+**Continue**
+
+---
+
+# Bottom legal text
+
+Use this version:
+
+> By creating an account, you agree to our **Terms** and **Privacy Policy**. Identity verification is required to activate regulated services.
+
+Then below that:
+
+> 256-bit encryption · AUSTRAC-registered · ABN 54 690 827 608
+
+This reads more professional than “as we are AUSTRAC-registered.”
+
+---
+
+# Final text-on-screen version
+
+## Step 1
+
+**Create your account**
+Secure access to AMAX GLOBAL services.
+
+**Continue with Email**
+Sign up with your email address
+
+**Continue with Google**
+Use your Google account
+
+Already have an account? **Sign in**
+
+---
+
+## Step 2
+
+**Enter your details**
+
+First name
+Last name
+Email address
+Mobile number
+
+Used for account contact and compliance records.
+
+Your verification code will be sent to this email address.
+
+**Send verification code**
+
+---
+
+## Step 3
+
+**Verify your email**
+
+We sent a 6-digit verification code to **[your@email.com](mailto:your@email.com)**
+
+**Verify and continue**
+
+Resend code
+Change email
+
+---
+
+## Step 4
+
+**Select your services**
+
+This helps us tailor your account setup and meet regulatory requirements.
+
+[ ] FX & Transfers
+[ ] Multi-Currency Account
+[ ] Digital Assets
+[ ] Investment Services
+
+**Continue**
+
+---
+
+# What to remove from current page
+
+Remove these lines:
+
+* **Continue with Apple**
+* **Use Phone Number**
+* **Verification code sent to your email** under phone option
+
+Because that creates an unnecessary second auth branch.
+
+---
+
+# Best visual layout
+
+Use:
+
+* dark navy background
+* centered card
+* AMAX GLOBAL logo at top
+* stepper above the form
+* large primary button for Email
+* outlined secondary button for Google
+* generous spacing
+* minimal text
+* legal line pinned near bottom of the card
+
+---
+
+# My final opinion
+
+For AMAX, the cleanest signup page is:
+
+> **Email + Google only**
+> **Phone collected inside Details**
+> **Email OTP only**
+> **Services after verification**
+
+That is the right design.
+
+If you want, I can turn this into a **full React/Tailwind signup page component**.

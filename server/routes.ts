@@ -1208,11 +1208,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!email) return res.status(400).json({ error: "Email is required." });
       const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase().trim()));
       // Always return 200 to prevent email enumeration
-      if (!user || user.emailVerified) return res.json({ message: "If an account exists, a new code has been sent.", emailSent: false });
+      if (!user) return res.json({ message: "If an account exists, a new code has been sent.", emailSent: false });
 
+      // Issue a fresh OTP for both unverified (initial verification) and verified
+      // (passwordless sign-in) users. Code is single-use; expires in 10 minutes.
       const verifyToken = randomBytes(32).toString("hex");
       const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      const verifyExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const verifyExpiry = new Date(Date.now() + 10 * 60 * 1000);
       await db.update(users).set({ emailVerificationToken: verifyToken, emailVerificationTokenExpiry: verifyExpiry, emailOtp: newOtp }).where(eq(users.id, user.id));
 
       const baseUrl = `${req.protocol}://${req.get("host")}`;
@@ -1230,26 +1232,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!email || !otp) return res.status(400).json({ error: "Email and verification code are required." });
       const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase().trim()));
       if (!user) return res.status(400).json({ error: "Invalid verification code." });
-      if (user.emailVerified) {
-        // Already verified — issue token so they can log in
-        const token = signToken({ userId: user.id, username: user.username, email: user.email });
-        return res.json({ token, user: { id: user.id, username: user.username, email: user.email, firstName: user.firstName, lastName: user.lastName, kycStatus: user.kycStatus, userTier: user.userTier } });
-      }
-      // Check OTP match
-      const trimmed = otp.trim();
-      const validOtp = user.emailOtp && trimmed === user.emailOtp;
+      // SECURITY: always require a valid OTP to issue a token. Do NOT short-circuit
+      // on emailVerified — that would let anyone with a known email mint a JWT.
+      const trimmed = String(otp).trim();
+      const validOtp = !!user.emailOtp && trimmed === user.emailOtp;
       if (!validOtp) return res.status(400).json({ error: "Invalid verification code. Please check and try again." });
-      // Check expiry
       if (user.emailVerificationTokenExpiry && new Date() > user.emailVerificationTokenExpiry) {
         return res.status(400).json({ error: "Verification code has expired. Please request a new one." });
       }
+      // Single-use: clear OTP after successful verification.
       await db.update(users).set({
         emailVerified: true,
         emailVerificationToken: null,
         emailVerificationTokenExpiry: null,
         emailOtp: null,
       }).where(eq(users.id, user.id));
-      await writeAuditLog(user.id, "email_verified", "user", String(user.id), { email }, req.ip || null);
+      await writeAuditLog(
+        user.id,
+        user.emailVerified ? "login_email_otp" : "email_verified",
+        "user",
+        String(user.id),
+        { email },
+        req.ip || null,
+      );
       const token = signToken({ userId: user.id, username: user.username, email: user.email });
       res.json({ token, user: { id: user.id, username: user.username, email: user.email, firstName: user.firstName, lastName: user.lastName, kycStatus: user.kycStatus, userTier: user.userTier } });
     } catch (err) {
@@ -1502,14 +1507,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.ip || null
       );
 
-      const token = signToken({
-        userId: newUser.id,
-        username: newUser.username,
-        email: newUser.email,
-      });
-
+      // SECURITY: do NOT issue a JWT here. The user has not yet verified
+      // their email OTP. The token is issued by /api/auth/verify-otp once
+      // the 6-digit code is confirmed. This prevents anyone reaching
+      // protected routes by simply submitting the registration form.
       return res.status(201).json({
-        token,
         userId: newUser.id,
         email: newUser.email,
         emailSent: emailConfigured,
