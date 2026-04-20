@@ -1415,103 +1415,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ---------------------------------------------------------------------------
-  // Phone sign-in / sign-up via Twilio Verify
+  // Phone sign-up (Model B): collect phone + email + name, send OTP via EMAIL.
+  // Phone is stored as contact / CDD data; identity is verified via Sumsub KYC.
+  // After this endpoint, the client reuses /api/auth/verify-otp to confirm.
   // ---------------------------------------------------------------------------
-  app.post("/api/auth/phone/send-otp", async (req, res) => {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken  = process.env.TWILIO_AUTH_TOKEN;
-    const serviceSid = process.env.TWILIO_VERIFY_SERVICE_SID;
-    if (!accountSid || !authToken || !serviceSid) {
-      return res.status(503).json({ error: "Phone sign-in is not yet configured on this server." });
-    }
-    const { phone } = req.body || {};
-    if (!phone || !/^\+[1-9]\d{7,14}$/.test(phone)) {
-      return res.status(400).json({ error: "A valid phone number in E.164 format is required (e.g. +61412345678)." });
-    }
+  app.post("/api/auth/phone/request", async (req, res) => {
     try {
-      const Twilio = (await import("twilio")).default;
-      const client = Twilio(accountSid, authToken);
-      await client.verify.v2.services(serviceSid).verifications.create({ to: phone, channel: "sms" });
-      res.json({ sent: true });
-    } catch (err: any) {
-      console.error("[/api/auth/phone/send-otp] error:", err?.message);
-      res.status(500).json({ error: "Failed to send verification code. Please check the number and try again." });
-    }
-  });
+      const { phone, email, firstName, lastName } = req.body || {};
 
-  app.post("/api/auth/phone/verify-otp", async (req, res) => {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken  = process.env.TWILIO_AUTH_TOKEN;
-    const serviceSid = process.env.TWILIO_VERIFY_SERVICE_SID;
-    if (!accountSid || !authToken || !serviceSid) {
-      return res.status(503).json({ error: "Phone sign-in is not yet configured on this server." });
-    }
-    const { phone, code, mode } = req.body || {};
-    if (!phone || !code) {
-      return res.status(400).json({ error: "Phone number and verification code are required." });
-    }
-    const authMode: "login" | "register" = mode === "register" ? "register" : "login";
-    try {
-      const Twilio = (await import("twilio")).default;
-      const client = Twilio(accountSid, authToken);
-      const check = await client.verify.v2.services(serviceSid).verificationChecks.create({ to: phone, code: String(code) });
-      if (check.status !== "approved") {
-        return res.status(400).json({ error: "Invalid or expired code. Please try again." });
+      if (!phone || !/^\+?[1-9]\d{7,14}$/.test(String(phone).replace(/[\s\-()]/g, ""))) {
+        return res.status(400).json({ error: "Please enter a valid phone number." });
+      }
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) {
+        return res.status(400).json({ error: "Please enter a valid email address." });
+      }
+      if (!firstName?.trim() || !lastName?.trim()) {
+        return res.status(400).json({ error: "Please enter your full name." });
       }
 
-      let [user] = await db.select().from(users).where(eq(users.phoneNumber, phone));
-      let isNewUser = false;
+      const normalisedPhone = "+" + String(phone).replace(/[\s\-()]/g, "").replace(/^\+/, "");
+      const normalisedEmail = String(email).toLowerCase().trim();
 
-      if (!user) {
-        if (authMode === "login") {
-          return res.status(404).json({
-            error: "No account found for this phone number. Please sign up first.",
-            code: "NO_ACCOUNT",
-          });
-        }
-        const suffix = phone.replace(/\D/g, "").slice(-8);
-        let username = `phone_${suffix}`;
-        let attempt = 0;
-        while (await storage.getUserByUsername(username)) {
-          attempt++;
-          username = `phone_${suffix}_${attempt}`;
-        }
-        user = await storage.createUser({
-          username,
-          email: `${phone.replace(/\D/g, "")}@phone.amaxglobal.com.au`,
-          password: null,
-          firstName: "AMAX",
-          lastName: "User",
-          phoneNumber: phone,
-          emailVerified: true,
-          kycStatus: "pending",
-          userTier: "standard",
-        } as any);
-        await storage.createWallet({
-          userId: user.id, currency: "AUD", balance: "0.00", availableBalance: "0.00", walletType: "fiat",
+      const [byPhone] = await db.select().from(users).where(eq(users.phoneNumber, normalisedPhone));
+      if (byPhone) {
+        return res.status(409).json({
+          error: "An account with this phone number already exists. Please sign in.",
+          existingAccount: true,
         });
-        await writeAuditLog(user.id, "register_phone", "user", String(user.id), { phone }, req.ip || null);
-        isNewUser = true;
-      } else {
-        await writeAuditLog(user.id, "login_phone", "user", String(user.id), { phone }, req.ip || null);
       }
 
-      if ((user as any).accountFrozen) {
-        return res.status(403).json({ error: "This account has been suspended. Contact support." });
+      const existing = await storage.getUserByEmail(normalisedEmail);
+      if (existing) {
+        return res.status(409).json({
+          error: "An account with this email already exists. Please sign in.",
+          existingAccount: true,
+        });
       }
 
-      const token = signToken({ userId: user.id, username: user.username, email: user.email });
-      res.json({
-        token, isNewUser,
-        user: {
-          id: user.id, username: user.username, email: user.email,
-          firstName: user.firstName, lastName: user.lastName,
-          kycStatus: user.kycStatus, userTier: user.userTier,
-        },
+      const base = (normalisedEmail.split("@")[0] || "user").replace(/[^a-z0-9_]/g, "_");
+      let username = base;
+      let attempt = 0;
+      while (await storage.getUserByUsername(username)) {
+        attempt += 1;
+        username = `${base}${attempt}`;
+      }
+
+      const newUser = await storage.createUser({
+        username,
+        email: normalisedEmail,
+        password: null as any,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phoneNumber: normalisedPhone,
+        kycStatus: "pending",
+        userTier: "standard",
+      } as any);
+
+      await storage.createWallet({
+        userId: newUser.id,
+        currency: "AUD",
+        balance: "0.00",
+        availableBalance: "0.00",
+        walletType: "fiat",
+      });
+
+      const verifyToken = randomBytes(32).toString("hex");
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiry = new Date(Date.now() + 10 * 60 * 1000);
+
+      await db.update(users).set({
+        emailVerificationToken: verifyToken,
+        emailVerificationTokenExpiry: expiry,
+        emailOtp: otp,
+        emailVerified: false,
+      }).where(eq(users.id, newUser.id));
+
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      await sendVerificationEmail(newUser.email, newUser.firstName, verifyToken, otp, baseUrl).catch(() => {});
+
+      await writeAuditLog(
+        newUser.id,
+        "phone_register_started",
+        "user",
+        String(newUser.id),
+        { phone: normalisedPhone, email: normalisedEmail },
+        req.ip || null
+      );
+
+      const token = signToken({
+        userId: newUser.id,
+        username: newUser.username,
+        email: newUser.email,
+      });
+
+      return res.status(201).json({
+        token,
+        userId: newUser.id,
+        email: newUser.email,
+        emailSent: emailConfigured,
+        ...(!emailConfigured ? { devOtp: otp } : {}),
       });
     } catch (err: any) {
-      console.error("[/api/auth/phone/verify-otp] error:", err?.message);
-      res.status(500).json({ error: "Verification failed. Please try again." });
+      console.error("[/api/auth/phone/request]", err?.message || err);
+      return res.status(500).json({ error: "Registration failed. Please try again." });
     }
   });
 

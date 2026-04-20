@@ -1,0 +1,1088 @@
+
+
+Pasted text(68).txt
+Document
+opinioins
+
+Here’s my straight, no-BS opinion after reviewing your full setup and what you’re trying to achieve:
+
+🔥 1. Your current approach (email OTP for mobile) — actually very smart
+Based on what you built:
+
+You already have full OTP infrastructure
+
+You already store phone numbers for KYC
+
+You verify identity via Sumsub (real compliance layer)
+
+👉 From a regulatory + product standpoint, this is completely valid.
+
+AUSTRAC cares about identity verification (CDD) — not whether OTP is SMS or email.
+
+✔ So this works:
+
+Phone = collected ✔
+
+Identity = verified (Sumsub) ✔
+
+OTP = account access control ✔
+
+👉 Conclusion:
+Email OTP + phone collection is compliant and production-acceptable
+
+⚠️ 2. BUT — from a UX + fintech standard perspective
+Here’s the reality:
+
+Users EXPECT:
+
+Mobile → SMS OTP
+
+Email → Email OTP
+
+If you don’t do SMS:
+
+Feels “less premium”
+
+Slight trust drop (especially in finance)
+
+Looks early-stage / MVP
+
+👉 So this is NOT a compliance issue — it’s a product perception issue
+
+💡 3. Your options (ranked properly)
+✅ OPTION A — What you have now (recommended for launch)
+Email OTP + collect phone number
+
+Pros:
+
+Zero cost
+
+Already built
+
+Fully compliant
+
+No telecom complexity
+
+Cons:
+
+Slight UX downgrade
+
+👉 My take:
+
+Best for passing AUSTRAC + launching fast
+
+⚖️ OPTION B — Hybrid (best balance)
+Email OTP for account
+
+SMS OTP only for:
+
+withdrawals
+
+high-risk actions
+
+Pros:
+
+Keeps cost low
+
+Improves trust massively
+
+Matches fintech standards
+
+👉 This is what many platforms actually do early-stage
+
+🚀 OPTION C — Full SMS OTP (what you were trying to build)
+Using:
+
+Notifyre (AU) 🇦🇺 → best for you
+
+Vonage → easiest globally
+
+Twilio → overkill for now
+
+Pros:
+
+Best UX
+
+Feels “real fintech”
+
+Cons:
+
+Cost
+
+Setup
+
+Dependency
+
+👉 Your implementation here is technically correct:
+
+OTP table ✔
+
+routes ✔
+
+verification ✔
+
+No issues there.
+
+🧠 4. Critical correction (important)
+This statement from your file is 100% correct:
+
+“There is no way to send SMS without a provider”
+
+✔ This is NOT negotiable
+✔ It’s telecom infrastructure, not code
+
+👉 Anyone telling you otherwise is wrong
+
+🔍 5. My recommendation for AMAX (tailored to YOU)
+Given your situation:
+
+You are rushing AUSTRAC submission
+
+You want clean, defensible architecture
+
+You care about alignment with UI + Terms
+
+👉 Do THIS:
+Phase 1 (NOW — pass AUSTRAC)
+✅ Email OTP only
+
+✅ Collect phone number
+
+✅ Verify via Sumsub
+
+✅ Clean UI wording:
+
+“Verification code sent to your email”
+
+Phase 2 (AFTER approval / soft launch)
+Add SMS OTP using Notifyre
+
+Only for:
+
+withdrawals
+
+sensitive actions
+
+Phase 3 (scale)
+Optional: full SMS onboarding
+
+🧾 6. Small but important UX fix (you should implement)
+Right now your flow is slightly confusing.
+
+Change wording:
+
+❌ “Continue with Mobile”
+👉 implies SMS
+
+✅ Replace with:
+
+“Continue with Mobile (verification via email)”
+OR
+
+“Use phone number (email verification required)”
+
+👉 This avoids user confusion and complaints
+
+🧠 Final verdict
+Your architecture = solid and correct
+
+Your developer logic = technically sound
+
+Your compliance position = safe
+
+👉 The only real decision is:
+
+Do you want speed + simplicity
+or
+premium UX + SMS cost
+
+💬 My honest advice
+For YOU specifically:
+
+Launch with email OTP.
+Add SMS later.
+
+Because right now:
+
+You are solving regulatory approval
+
+Not optimising conversion rate
+
+If you want, I can:
+
+Redesign your entire signup UX (best-in-class fintech flow)
+
+Or audit your current page and fix all friction points
+
+Just say 👍
+
+
+what the other FX fintech use
+
+Good question — and this is where you want to be very deliberate, because what other FX fintechs do is not random — it’s driven by UX + fraud + compliance balance.
+
+I’ll break it down clearly so you can position AMAX correctly (and credibly for AUSTRAC + users).
+
+🏦 What major FX fintechs actually do
+1. Wise (best benchmark)
+
+https://images.openai.com/static-rsc-4/2j6reNT61xyinEG4iiMHXeY8JhVOQeyIFIQsij6mnHWxoRtPT1d1M9VcOhy7ib4aY2vWvFzsBBFQ5xcqCH23DjJdLMBkN4HIu3KqS7HidQlC2HYvW2lMwp7a1OIgQNrIdUNctLdZjvwRUKSDBPh-bs8pexM-03bq6YFTFe62tuIQfARs13uZexpYnYQstQdl?purpose=fullsize
+
+https://images.openai.com/static-rsc-4/eurcv2sRgcdGwaX9mnYY-7VVfZXPhV-sAOt7ae5RKzjHLMvas3mM-FQXY9A5-ZwCSYiJdXODAWfn0z59XwS7xiEQREKUPjrwZMmiz9Saxx98jqiU8BhxY1GSC7NAM8qSGpV4nbHSE4WXP_tR2Rdunv3JhSwjTWJsAZSO4w6NgRWCPwB6doxWvwE2sQ1_3UFH?purpose=fullsize
+
+https://images.openai.com/static-rsc-4/7V4rMb7VCyCLMZAA3xz0RzrzdPas1duoSNIR9sO6nYrGKlDcDruzAlkZu6ZCB2yaR-A4sNKR10YWkJT9piSxFcU-7jG9Ep04o1GHdDHkaXT4MheAUsz0D5GJnHaN8-ZSuikxLw2K2cGETlGO6WurLZO0spw5ai_x0Y9bjZcB1PS0hUL7N_ZivCx-r1q9msDE?purpose=fullsize
+7
+🔑 Signup flow:
+Email OR Google/Apple
+
+Passwordless (OTP)
+
+SMS OTP for phone verification
+
+Then KYC (ID + selfie)
+
+🧠 Key logic:
+Phone = primary identity anchor
+
+Email = secondary
+
+👉 Wise treats phone number as core identity layer
+
+2. Revolut
+
+https://images.openai.com/static-rsc-4/idgvW8Pycny91tP3zbsb-jO-OojT8mZ49LS0saI3X8o3iuw05LueqG4e-XSx_wbAzyUr-I6Zzv4LThuxvvAfibv8FI8Vds3OxSfVeJHqejSjJsxLXHo6t-yFvTkkLpgUGA-JB5xkH3zpWRnbWAHxzz73vgYB6-KrG-91wqf2-wJ33H-VLhI3O5tUPSQFu2Bs?purpose=fullsize
+
+https://images.openai.com/static-rsc-4/9DYRpLqYX_fzJf6FpmVDezCh-shm-a3HZ0NhELGLxxfQZtd_AjJbD5Nmig20x1Nkj2GWbPfZFqUE3ZR-LAszIokQz4SiquS_ZUh22CT6Mn_I0uOPczDpt4-9LQjTSgdlj--_svzm1V7bb2DQ8vmCw0SAER8YQsPMwDUAG6lt4_gKg2F-sFVhhN25SNdfMqIP?purpose=fullsize
+
+https://images.openai.com/static-rsc-4/q7-0XS6iyo18fogQwN9pj4Yu1NM2-gCtUYtAB91jItyfUa-IohPKtlv27QDROeg0CNVIZuWnuD6aQjSEvRaLwY5pTz_aW83C3_4kb3-S0ap6jv2xFCSuohyVGfTGs30RsjMMpma5bvEXAaXw3co9CuQEtkzwSvEVSothspS2YfjXxE3-17M0o88VQVk_M5b3?purpose=fullsize
+5
+🔑 Signup flow:
+Phone number FIRST
+
+SMS OTP
+
+Then email + profile
+
+Then KYC
+
+🧠 Key logic:
+Mobile-first app → phone is login
+
+Faster onboarding
+
+👉 This is the strongest UX model, but heavier infra
+
+3. Airwallex (very relevant to you 🇦🇺)
+
+https://images.openai.com/static-rsc-4/05KLgc2LPOuFVM7RWm7_6JzT3J2tDV17Ry716IJQ4oxFakdpe-h3-1ADJoF2X3RkyMWdOaF758x3jesolWaNXyRNSdXRHdOJfysY9Awt1yyqBoreKjf52mFN6EnwC7_JmqafQDRdrhNNauZ_PWkYNWK-ZUJ3B6ChSwth36Qe1TCNZACDu6EbbvQIl8w26SRr?purpose=fullsize
+
+https://images.openai.com/static-rsc-4/D5_qVVDhHyVJ0fFEc7Gzxkh2bxDJciL5fNGpK1lByPEHAA09K2SydHozCSOdFnA5zzZzvHQjlzoDlhm649Adw286J47qaDWeL-WQz0U7qINXE88LTAQd1m62dS4OgNmD9Ct-8xbgt2gUcXAXPGvaTScSYXXXQwEGseI5bTNGySWStw6bdhZdwd2TthoSSXzV?purpose=fullsize
+
+https://images.openai.com/static-rsc-4/w5jiDdjiVdOwQuFoAAM5I2MHuT1dW0ivrNwulhvSeX4qyuUOeE-0dZh4ynZiVi_7_Pvcy0AKtXhC2M7uuWUJe8tGyK3lWsXXnyrWGtmz8ZrPrka7wKxUzSG7R1xVFLAYScu3CudgFOVXBx-ap7LptMn38vE0Bwa5O983lJErlbYEMIjT9x8J4fDqIGFm_3uB?purpose=fullsize
+8
+🔑 Signup flow:
+Email + password
+
+Email OTP
+
+Business details
+
+KYC/KYB
+
+Phone collected but not always OTP-verified upfront
+
+🧠 Key logic:
+Compliance-first (B2B)
+
+Phone = contact, not login
+
+👉 This is closest to your current model
+
+4. OFX
+
+https://images.openai.com/static-rsc-4/fKqwTJWpKQLZz0bK9rNlnGCHa2-fHyv7-eDXFSUb8VpA55l-G6FdwlPufiWlGaRupgf3kvkohJbvHIw__umz_IxndnvQxmCjNZC3_aM0f2l_rAgblejW7JAELgTjuBg-uols6eAC9hQjq2oEBDIEF7048-gCt-1WWzDH_QU0M8ewW96hDplAMTn8YmNRp7kw?purpose=fullsize
+
+https://images.openai.com/static-rsc-4/M0_Y3jmmD9SjbWjjOizZWgX__wWVTiPR8jA-UKGHuCquUEukYm2kHxpWGEdNYQDEkwTYppAiEmkIJj1codXA3xZuYgOVUzB0cfdRU25zBq-NXI4AQOuJvdxGL64vVEsLUsYIEkunIr3YKYtWkDnaFfQDyJ9bI9Ez5ykOHDXXA_0pGzEDcFUXa64Bw52CIqQW?purpose=fullsize
+
+https://images.openai.com/static-rsc-4/jy3npAYTRv1pbXhZDKajZ30DSzGeRLLmjd8E7soSxh3Ds37wYtSbH-LijRDTdrt_-O4_AFlxaRIjFT06Hal6CmZPUqA51cp5Rvh2LImD_sG_VEJbjDBq-Y9U-ovLhgj_MS54s5PL40C6-Gm-mrVupJSJwnwbCWkZ6C7k7T6a-zg4e3xFHPG9_5MkB0wx6mOG?purpose=fullsize
+7
+🔑 Signup flow:
+Email + password
+
+Phone collected
+
+Manual / KYC verification
+
+SMS sometimes used later
+
+🧠 Key logic:
+Traditional FX model
+
+Less app-driven, more compliance-driven
+
+👉 Again: phone not always verified at signup
+
+5. Xe
+
+https://images.openai.com/static-rsc-4/XFUWKjQgTSEAhLggDu6njxkSaSVO9EeKI49ODbSEHRFrCvFb3nS-vmvZcYK9Zme4CY_6cS9WW8nwjvlFyUlc4us0NJy7kE66O2pPc1C5AsC_n2rZEq5wTCIcxI5YoztgrUKna5hbteiapFhTnG7eMFfcoVdIC5vktiM7l1OzgCd2lIQYLph0IeOspTCOQQcT?purpose=fullsize
+
+https://images.openai.com/static-rsc-4/ITGZTs1yPQP2i-F9JNV9BO4iflenwrsjE5OvAaFJQZKgwGv1p9Oi6eWohLC4l-VibL0XPX1oNwvBD4WP02WJCz9cl_xh3TLQPk2kY6b5P4UDM623WPzJ8irGHsAHZrpsZi3Mu3rTYOOfXn6AL8JPOlAWuHRs71XnZkLHHLFNUzoMO8N67ZEqZc5nvUzlpvAa?purpose=fullsize
+
+https://images.openai.com/static-rsc-4/ICoBv0A_2o2SbKZ1sLzSFCVCVAOXOcaUAdxgOXs92Wf9HzHeS5oJIkATPnzZAQeyMpfm1bmYT7h7otwZRR4RL5f1tWhf1REwkh8U2qzArjJSZN8Fq6BlLiLgP0eIXEVoX8z9In2OlNh4zV-2yHU4eTOQ2i-NFTz2D62jiUFsx4jR2x0Rm8fupTtZwOsiQ4DO?purpose=fullsize
+7
+🔑 Signup flow:
+Email signup
+
+Email verification
+
+Phone collected
+
+SMS used later for security
+
+🧠 Pattern across ALL of them
+There are ONLY 2 real models:
+🟢 Model A — Mobile-first (Wise / Revolut)
+Phone = login
+
+SMS OTP mandatory
+
+Fast UX
+
+Higher infra cost
+
+👉 Best for:
+
+Consumer apps
+
+Scale stage
+
+🔵 Model B — Email-first (Airwallex / OFX / Xe)
+Email = login
+
+Phone = collected (not always verified immediately)
+
+KYC handles identity
+
+👉 Best for:
+
+Compliance-heavy
+
+B2B / early-stage fintech
+
+⚖️ Where YOU (AMAX) sit
+Based on everything you’ve built:
+
+👉 You are clearly in:
+
+🔵 Model B — Email-first fintech
+And that is completely correct for:
+
+AUSTRAC alignment
+
+Non-custodial structure
+
+Early-stage platform
+
+Multi-product (FX + crypto + wealth)
+
+🚨 Important insight (this is what most people miss)
+Phone OTP ≠ identity verification
+
+Real identity verification =
+✔ KYC provider (Sumsub)
+✔ Document + biometric
+✔ Sanctions / PEP checks
+
+👉 SMS OTP is ONLY:
+
+account security
+
+friction control
+
+UX expectation
+
+💡 Strategic recommendation for AMAX
+✅ Right now (your current stage)
+Match:
+👉 Airwallex / OFX model
+
+Email OTP ✔
+
+Phone collected ✔
+
+KYC via Sumsub ✔
+
+👉 This is:
+
+Clean for AUSTRAC
+
+Easy to defend
+
+No over-engineering
+
+🚀 Upgrade later (when scaling)
+Add:
+
+SMS OTP for:
+
+withdrawals
+
+large transactions
+
+device change
+
+👉 This becomes:
+Hybrid model (best of both worlds)
+
+🎯 Final positioning (what you should say internally)
+“AMAX uses email-based authentication with phone number collection and identity verification through regulated KYC providers. SMS-based verification may be introduced for enhanced security at later stages.”
+
+👉 This is exactly how mature fintechs describe it.
+
+🧾 Bottom line
+You are NOT behind
+
+You are NOT wrong
+
+You are actually aligned with Airwallex-tier architecture
+
+👉 The only difference vs Wise/Revolut is:
+they are mobile-first scale apps — you are not yet
+
+If you want, I can:
+
+Design your signup to look like Wise/Revolut UX (but keep your backend model)
+
+Or give you a “passes AUSTRAC + looks premium” UI copy version
+
+Just tell me 👍
+
+
+ok phone collected model B. HOW TO FIX IT
+
+Good — this is the right decision for your stage.
+Now let’s fix it properly so it’s:
+
+✅ AUSTRAC-safe
+
+✅ UX clear (no confusion)
+
+✅ Technically clean (no future rework)
+
+🔧 1. Core principle (lock this in)
+Your final model:
+
+Email = authentication
+Phone = customer data (CDD / contact)
+Identity = Sumsub (real verification)
+
+👉 This must be consistent across:
+
+UI
+
+Backend
+
+Terms
+
+AUSTRAC submission
+
+🚨 2. Your current problem (what needs fixing)
+From your flow:
+
+“Continue with Mobile” → but OTP goes to email
+
+❌ This creates:
+
+User confusion
+
+Trust issues
+
+Looks broken
+
+✅ 3. Fix the UX (THIS IS CRITICAL)
+🔁 Replace your signup options
+❌ Current:
+Continue with Email
+
+Continue with Google
+
+Continue with Mobile
+
+✅ Replace with:
+Option 1 (clean fintech standard):
+
+Continue with Email
+
+Continue with Google
+
+Continue with Apple (optional)
+
+👉 Remove “Mobile” completely
+
+OR (if you REALLY want phone visible)
+Option 2 (better wording):
+
+Continue with Email
+
+Continue with Google
+
+Use Phone Number (email verification required)
+
+👉 This is honest and clear
+
+🧱 4. Correct signup flow (final version)
+✅ Step-by-step (what you should implement)
+Step 1 — Choose signup method
+   ↓
+Step 2 — Enter email + name
+   ↓
+Step 3 — Email OTP verification
+   ↓
+Step 4 — Collect phone number (NO OTP)
+   ↓
+Step 5 — KYC (Sumsub)
+   ↓
+Dashboard
+🔑 Key rule:
+👉 Phone comes AFTER email verification
+
+NOT before.
+
+💻 5. Backend — what to change (simple)
+Good news:
+
+👉 Your current system already supports this
+
+From your file:
+
+phone_number ✅
+
+emailOtp ✅
+
+emailVerified ✅
+
+✅ What you should REMOVE
+❌ DELETE / DISABLE:
+
+/api/auth/phone/send-otp
+
+/api/auth/phone/verify-otp
+
+phone_otps table (if created)
+
+👉 You don’t need ANY of this
+
+✅ What you KEEP
+Email OTP flow ✔
+
+User creation ✔
+
+KYC status ✔
+
+✅ What you ADD (small change)
+After OTP verification:
+
+await db.update(users).set({
+  phoneNumber: phoneInput
+}).where(eq(users.id, userId));
+👉 That’s it. No verification logic needed.
+
+🖥️ 6. Frontend fix (very important)
+✨ Move phone field
+❌ WRONG (current thinking)
+Phone inside signup method
+
+✅ CORRECT
+Add phone here:
+
+After OTP step OR in onboarding page
+
+Example UI:
+Step: Profile / Basic Info
+First Name
+
+Last Name
+
+Email (verified ✅)
+
+Mobile Number
+
+Small note:
+
+“Used for account contact and security notifications”
+
+🧾 7. Compliance wording (AUSTRAC-safe)
+Use this EXACT logic in your UI / Terms:
+
+UI copy:
+“Your mobile number is collected as part of our customer identification and communication process.”
+
+Backend / policy logic:
+Phone = stored ✔
+
+Phone ≠ verified channel ✔
+
+Identity = KYC provider ✔
+
+⚠️ 8. Critical mistake to avoid
+Do NOT say:
+
+❌ “Phone verification required”
+❌ “Verify your mobile”
+
+👉 Because you are NOT doing SMS OTP
+
+🧠 9. Future-proof (important for you)
+Design it so you can later plug SMS in easily:
+
+user.phoneVerified = false
+Later:
+
+user.phoneVerified = true
+👉 No schema redesign needed
+
+🎯 10. Final architecture (clean)
+What AMAX becomes:
+Layer	Method
+Login	Email OTP
+Contact	Phone stored
+Identity	Sumsub
+Security (future)	SMS OTP optional
+💬 My honest verdict
+👉 This is exactly how:
+
+Airwallex
+
+OFX
+
+operate at onboarding stage.
+
+🔥 If you want next step
+I can:
+
+Redesign your entire signup page (pixel-perfect fintech UX)
+
+Or fix your current React page line-by-line
+
+Just say:
+👉 “redesign UI” or “fix code”
+
+
+FIX CODE
+
+I’m pulling the signup flow details from the text you pasted and turning that into a concrete code fix. I’ll keep it focused on removing fake “mobile verification” and making phone collection happen in the right place.
+
+I found the core issue: the pasted code is still building a fake phone-auth branch and even has a couple of syntax mistakes in the spread objects. I’m pulling the exact sections now so I can give you a clean replacement instead of vague advice.
+
+Thought for 21s
+Yes — here’s the code fix I recommend you apply now.
+
+Your pasted code is currently mixing two models:
+
+good model: email OTP + collect phone
+
+wrong model: real phone OTP / SMS verification
+
+You should keep the first one and delete the second. That matches the flow described in your pasted file, where the OTP is sent to email and the phone is just collected for CDD/contact. 
+
+
+What to remove
+Delete these if you added them:
+
+/api/auth/phone/send-otp
+
+/api/auth/phone/verify-otp
+
+phone_otps table
+
+sendSmsOtp
+
+smsConfigured
+
+handlePhoneSend
+
+handlePhoneVerify
+
+phone-verify step
+
+Those belong to SMS verification, not the model you chose. They’re the wrong branch for Model B. They also add unnecessary complexity and even your pasted draft shows syntax-risk around those spread objects. 
+
+
+What to keep
+Keep this approach:
+
+user enters phone + email + name
+
+server creates user
+
+server stores phoneNumber
+
+server sends OTP to email
+
+existing /api/auth/verify-otp verifies the account
+
+That is already the clean path in your pasted file. 
+
+
+1) server/routes.ts
+Use this route and do not add separate phone OTP routes:
+
+// POST /api/auth/phone/request
+app.post("/api/auth/phone/request", async (req, res) => {
+  try {
+    const { phone, email, firstName, lastName } = req.body;
+
+    if (!phone || !/^\+?[1-9]\d{7,14}$/.test(phone.replace(/[\s\-()]/g, ""))) {
+      return res.status(400).json({ error: "Please enter a valid phone number." });
+    }
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: "Please enter a valid email address." });
+    }
+
+    if (!firstName?.trim() || !lastName?.trim()) {
+      return res.status(400).json({ error: "Please enter your full name." });
+    }
+
+    const normalisedPhone = "+" + phone.replace(/[\s\-()]/g, "").replace(/^\+/, "");
+    const normalisedEmail = email.toLowerCase().trim();
+
+    const [byPhone] = await db
+      .select()
+      .from(users)
+      .where(eq(users.phoneNumber, normalisedPhone));
+
+    if (byPhone) {
+      return res.status(409).json({
+        error: "An account with this phone number already exists. Please sign in.",
+        existingAccount: true,
+      });
+    }
+
+    const existing = await storage.getUserByEmail(normalisedEmail);
+    if (existing) {
+      return res.status(409).json({
+        error: "An account with this email already exists. Please sign in.",
+        existingAccount: true,
+      });
+    }
+
+    const base = normalisedEmail.split("@")[0].replace(/[^a-z0-9_]/g, "_");
+    let username = base;
+    let attempt = 0;
+
+    while (await storage.getUserByUsername(username)) {
+      attempt += 1;
+      username = `${base}${attempt}`;
+    }
+
+    const newUser = await storage.createUser({
+      username,
+      email: normalisedEmail,
+      password: null as any,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      phoneNumber: normalisedPhone,
+      kycStatus: "pending",
+      userTier: "standard",
+    });
+
+    await storage.createWallet({
+      userId: newUser.id,
+      currency: "AUD",
+      balance: "0.00",
+      availableBalance: "0.00",
+      walletType: "fiat",
+    });
+
+    const verifyToken = randomBytes(32).toString("hex");
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 10 * 60 * 1000);
+
+    await db
+      .update(users)
+      .set({
+        emailVerificationToken: verifyToken,
+        emailVerificationTokenExpiry: expiry,
+        emailOtp: otp,
+        emailVerified: false,
+      })
+      .where(eq(users.id, newUser.id));
+
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+    await sendVerificationEmail(
+      newUser.email,
+      newUser.firstName,
+      verifyToken,
+      otp,
+      baseUrl
+    );
+
+    await writeAuditLog(
+      newUser.id,
+      "phone_register_started",
+      "user",
+      String(newUser.id),
+      { phone: normalisedPhone, email: normalisedEmail },
+      req.ip || null
+    );
+
+    const token = signToken({
+      userId: newUser.id,
+      username: newUser.username,
+      email: newUser.email,
+    });
+
+    return res.status(201).json({
+      token,
+      userId: newUser.id,
+      email: newUser.email,
+      emailSent: emailConfigured,
+      ...(!emailConfigured ? { devOtp: otp } : {}),
+    });
+  } catch (err: any) {
+    console.error("[phone-request]", err?.message || err);
+    return res.status(500).json({
+      error: "Registration failed. Please try again.",
+    });
+  }
+});
+Important correction
+In your pasted drafts there are broken object spreads written like this:
+
+.(!smsConfigured ? { devOtp: otp } : {})
+.(!emailConfigured ? { devOtp: otp } : {})
+That is invalid syntax.
+
+It must be:
+
+...(!smsConfigured ? { devOtp: otp } : {})
+...(!emailConfigured ? { devOtp: otp } : {})
+That syntax bug appears in the pasted code path and would break compilation. 
+
+
+2) register.tsx
+Step type
+Use:
+
+type Step = "method" | "email-form" | "verify" | "profile" | "phone-form";
+Remove "phone-verify".
+
+State
+Use:
+
+const [phoneNum, setPhoneNum] = useState("");
+const [phoneEmail, setPhoneEmail] = useState("");
+const [phoneFirst, setPhoneFirst] = useState("");
+const [phoneLast, setPhoneLast] = useState("");
+const [phoneDevOtp, setPhoneDevOtp] = useState<string | null>(null);
+Mobile button
+Change from:
+
+onClick={() => setSocialNotice("phone")}
+to:
+
+onClick={() => {
+  setSocialNotice(null);
+  setError(null);
+  setStep("phone-form");
+}}
+That matches the good flow already described in your pasted file. 
+
+
+Submit handler
+async function handlePhoneSubmit(e: React.FormEvent) {
+  e.preventDefault();
+  setError(null);
+  setIsLoading(true);
+
+  try {
+    const res = await fetch("/api/auth/phone/request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone: phoneNum,
+        email: phoneEmail.trim(),
+        firstName: phoneFirst.trim(),
+        lastName: phoneLast.trim(),
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to create account.");
+
+    localStorage.setItem("amax_jwt", data.token);
+
+    if (data.devOtp) {
+      setPhoneDevOtp(data.devOtp);
+    }
+
+    setEmail(phoneEmail.trim());
+    setStep("verify");
+  } catch (err: any) {
+    setError(err.message || "Something went wrong.");
+  } finally {
+    setIsLoading(false);
+  }
+}
+Remove these if present
+handlePhoneSend
+handlePhoneVerify
+setPhoneSending
+phoneSending
+phone-verify JSX
+fetch("/api/auth/phone/send-otp")
+fetch("/api/auth/phone/verify-otp")
+3) phone-form JSX
+Use this version:
+
+{step === "phone-form" && (
+  <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-5">
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={() => {
+          setError(null);
+          setStep("method");
+        }}
+        className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-300 hover:text-white transition-all"
+      >
+        <ArrowLeft className="w-4 h-4" />
+      </button>
+
+      <div>
+        <h2 className="text-xl font-bold text-white">Use Phone Number</h2>
+        <p className="text-xs text-slate-400">
+          Enter your phone and email. Your verification code will be sent to your email.
+        </p>
+      </div>
+    </div>
+
+    <form onSubmit={handlePhoneSubmit} className="space-y-4">
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label className="text-slate-300 text-sm">First name</Label>
+          <Input
+            value={phoneFirst}
+            onChange={(e) => setPhoneFirst(e.target.value)}
+            placeholder="Jane"
+            required
+            className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-slate-300 text-sm">Last name</Label>
+          <Input
+            value={phoneLast}
+            onChange={(e) => setPhoneLast(e.target.value)}
+            placeholder="Smith"
+            required
+            className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-slate-300 text-sm">Mobile number</Label>
+        <Input
+          type="tel"
+          value={phoneNum}
+          onChange={(e) => setPhoneNum(e.target.value)}
+          placeholder="+61 412 345 678"
+          required
+          className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50"
+        />
+        <p className="text-xs text-slate-500">
+          Used for account contact and compliance records.
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-slate-300 text-sm">Email address</Label>
+        <Input
+          type="email"
+          value={phoneEmail}
+          onChange={(e) => setPhoneEmail(e.target.value)}
+          placeholder="jane@example.com"
+          required
+          className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50"
+        />
+        <p className="text-xs text-slate-500">
+          Your verification code will be sent here.
+        </p>
+      </div>
+
+      {phoneDevOtp && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+          Dev OTP: {phoneDevOtp}
+        </div>
+      )}
+
+      <Button
+        type="submit"
+        disabled={isLoading}
+        className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold"
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Creating account…
+          </>
+        ) : (
+          <>
+            Send verification code
+            <ArrowRight className="w-4 h-4 ml-1" />
+          </>
+        )}
+      </Button>
+    </form>
+  </div>
+)}
+4) Copy changes you should make
+Your pasted version still says “Continue with Mobile”, but that sounds like SMS login. Since you are not doing SMS verification, change the UI copy.
+
+Replace:
+
+Continue with Mobile
+
+With:
+
+Use Phone Number
+
+And replace:
+
+Enter your details to get started
+
+With:
+
+Enter your phone and email. Your verification code will be sent to your email.
+
+That keeps the product honest and avoids user confusion. The pasted file itself shows the OTP is intended to go to email, not to SMS. 
+
+
+5) Final clean flow
+Your flow should now be:
+
+Choose method
+→ Use Phone Number
+→ Enter first name, last name, mobile, email
+→ POST /api/auth/phone/request
+→ user record created with phoneNumber saved
+→ email OTP sent
+→ existing verify step
+→ /compliance
+That is the cleanest version of Model B and is exactly the branch your pasted text was already closest to. 
+
+
+If you paste your actual register.tsx and server/routes.ts, I’ll rewrite them line by line into final production-ready code.
+
+
+

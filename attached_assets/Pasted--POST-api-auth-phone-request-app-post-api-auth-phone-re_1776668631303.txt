@@ -1,0 +1,121 @@
+// POST /api/auth/phone/request
+app.post("/api/auth/phone/request", async (req, res) => {
+  try {
+    const { phone, email, firstName, lastName } = req.body;
+
+    if (!phone || !/^\+?[1-9]\d{7,14}$/.test(phone.replace(/[\s\-()]/g, ""))) {
+      return res.status(400).json({ error: "Please enter a valid phone number." });
+    }
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: "Please enter a valid email address." });
+    }
+
+    if (!firstName?.trim() || !lastName?.trim()) {
+      return res.status(400).json({ error: "Please enter your full name." });
+    }
+
+    const normalisedPhone = "+" + phone.replace(/[\s\-()]/g, "").replace(/^\+/, "");
+    const normalisedEmail = email.toLowerCase().trim();
+
+    const [byPhone] = await db
+      .select()
+      .from(users)
+      .where(eq(users.phoneNumber, normalisedPhone));
+
+    if (byPhone) {
+      return res.status(409).json({
+        error: "An account with this phone number already exists. Please sign in.",
+        existingAccount: true,
+      });
+    }
+
+    const existing = await storage.getUserByEmail(normalisedEmail);
+    if (existing) {
+      return res.status(409).json({
+        error: "An account with this email already exists. Please sign in.",
+        existingAccount: true,
+      });
+    }
+
+    const base = normalisedEmail.split("@")[0].replace(/[^a-z0-9_]/g, "_");
+    let username = base;
+    let attempt = 0;
+
+    while (await storage.getUserByUsername(username)) {
+      attempt += 1;
+      username = `${base}${attempt}`;
+    }
+
+    const newUser = await storage.createUser({
+      username,
+      email: normalisedEmail,
+      password: null as any,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      phoneNumber: normalisedPhone,
+      kycStatus: "pending",
+      userTier: "standard",
+    });
+
+    await storage.createWallet({
+      userId: newUser.id,
+      currency: "AUD",
+      balance: "0.00",
+      availableBalance: "0.00",
+      walletType: "fiat",
+    });
+
+    const verifyToken = randomBytes(32).toString("hex");
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 10 * 60 * 1000);
+
+    await db
+      .update(users)
+      .set({
+        emailVerificationToken: verifyToken,
+        emailVerificationTokenExpiry: expiry,
+        emailOtp: otp,
+        emailVerified: false,
+      })
+      .where(eq(users.id, newUser.id));
+
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+    await sendVerificationEmail(
+      newUser.email,
+      newUser.firstName,
+      verifyToken,
+      otp,
+      baseUrl
+    );
+
+    await writeAuditLog(
+      newUser.id,
+      "phone_register_started",
+      "user",
+      String(newUser.id),
+      { phone: normalisedPhone, email: normalisedEmail },
+      req.ip || null
+    );
+
+    const token = signToken({
+      userId: newUser.id,
+      username: newUser.username,
+      email: newUser.email,
+    });
+
+    return res.status(201).json({
+      token,
+      userId: newUser.id,
+      email: newUser.email,
+      emailSent: emailConfigured,
+      ...(!emailConfigured ? { devOtp: otp } : {}),
+    });
+  } catch (err: any) {
+    console.error("[phone-request]", err?.message || err);
+    return res.status(500).json({
+      error: "Registration failed. Please try again.",
+    });
+  }
+});

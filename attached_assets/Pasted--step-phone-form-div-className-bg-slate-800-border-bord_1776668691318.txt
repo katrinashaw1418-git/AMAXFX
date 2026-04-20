@@ -1,0 +1,109 @@
+{step === "phone-form" && (
+  <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-5">
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={() => {
+          setError(null);
+          setStep("method");
+        }}
+        className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-300 hover:text-white transition-all"
+      >
+        <ArrowLeft className="w-4 h-4" />
+      </button>
+
+      <div>
+        <h2 className="text-xl font-bold text-white">Use Phone Number</h2>
+        <p className="text-xs text-slate-400">
+          Enter your phone and email. Your verification code will be sent to your email.
+        </p>
+      </div>
+    </div>
+
+    <form onSubmit={handlePhoneSubmit} className="space-y-4">
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label className="text-slate-300 text-sm">First name</Label>
+          <Input
+            value={phoneFirst}
+            onChange={(e) => setPhoneFirst(e.target.value)}
+            placeholder="Jane"
+            required
+            className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-slate-300 text-sm">Last name</Label>
+          <Input
+            value={phoneLast}
+            onChange={(e) => setPhoneLast(e.target.value)}
+            placeholder="Smith"
+            required
+            className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-slate-300 text-sm">Mobile number</Label>
+        <Input
+          type="tel"
+          value={phoneNum}
+          onChange={(e) => setPhoneNum(e.target.value)}
+          placeholder="+61 412 345 678"
+          required
+          className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50"
+        />
+        <p className="text-xs text-slate-500">
+          Used for account contact and compliance records.
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-slate-300 text-sm">Email address</Label>
+        <Input
+          type="email"
+          value={phoneEmail}
+          onChange={(e) => setPhoneEmail(e.target.value)}
+          placeholder="jane@example.com"
+          required
+          className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50"
+        />
+        <p className="text-xs text-slate-500">
+          Your verification code will be sent here.
+        </p>
+      </div>
+
+      {phoneDevOtp && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+          Dev OTP: {phoneDevOtp}
+        </div>
+      )}
+
+      <Button
+        type="submit"
+        disabled={isLoading}
+        className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold"
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Creating account…
+          </>
+        ) : (
+          <>
+            Send verification code
+            <ArrowRight className="w-4 h-4 ml-1" />
+          </>
+        )}
+      </Button>
+    </form>
+  </div>
+)}
