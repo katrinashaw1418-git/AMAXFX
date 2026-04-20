@@ -1086,6 +1086,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
+      if (!user.password) {
+        await writeAuditLog(user.id, "login_failed", "user", String(user.id), { username, reason: "oauth_only" }, req.ip || null);
+        return res.status(401).json({ error: "This account uses Google sign-in. Please continue with Google." });
+      }
       const valid = await verifyPassword(password, user.password);
       if (!valid) {
         await writeAuditLog(user.id, "login_failed", "user", String(user.id), { username }, req.ip || null);
@@ -1295,6 +1299,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch {
       res.json({ success: true }); // Always succeed — client drops token regardless
+    }
+  });
+
+  // Google OAuth sign-in / sign-up — verifies access token with Google,
+  // finds-or-creates the user (linking by email), returns a JWT.
+  app.post("/api/auth/google", async (req, res) => {
+    try {
+      if (!process.env.GOOGLE_CLIENT_ID) {
+        return res.status(503).json({ error: "Google sign-in is not configured on this server." });
+      }
+      const { access_token } = req.body || {};
+      if (!access_token || typeof access_token !== "string") {
+        return res.status(400).json({ error: "Missing access_token" });
+      }
+
+      const profileRes = await fetch(
+        `https://www.googleapis.com/oauth2/v2/userinfo?access_token=${encodeURIComponent(access_token)}`
+      );
+      if (!profileRes.ok) {
+        return res.status(401).json({ error: "Failed to verify Google account." });
+      }
+      const profile: any = await profileRes.json();
+      const email: string | undefined = profile?.email;
+      const googleId: string | undefined = profile?.id;
+      if (!email || !googleId || !profile?.verified_email) {
+        return res.status(401).json({ error: "Google account email not verified." });
+      }
+      const givenName: string = profile.given_name || "";
+      const familyName: string = profile.family_name || "";
+
+      const normalisedEmail = email.toLowerCase().trim();
+      let user = await storage.getUserByEmail(normalisedEmail);
+      let createdNew = false;
+
+      if (!user) {
+        // Derive a unique username from email (same pattern as /register)
+        const base = normalisedEmail.split("@")[0].replace(/[^a-z0-9_]/g, "_") || "user";
+        let username = base;
+        let attempt = 0;
+        while (await storage.getUserByUsername(username)) {
+          attempt++;
+          username = `${base}${attempt}`;
+        }
+        user = await storage.createUser({
+          username,
+          email: normalisedEmail,
+          password: null,
+          googleId,
+          firstName: givenName || "Google",
+          lastName: familyName || "User",
+          kycStatus: "pending",
+          userTier: "standard",
+          emailVerified: true, // Google verified the email
+        } as any);
+        // Create default AUD wallet — same as /register
+        await storage.createWallet({
+          userId: user.id, currency: "AUD", balance: "0.00", availableBalance: "0.00", walletType: "fiat",
+        });
+        createdNew = true;
+        await writeAuditLog(user.id, "register_google", "user", String(user.id), { email: normalisedEmail }, req.ip || null);
+      } else if (!user.googleId) {
+        // Existing email account — link Google
+        await storage.updateUser(user.id, { googleId, emailVerified: true } as any);
+        user = (await storage.getUserByEmail(normalisedEmail))!;
+        await writeAuditLog(user.id, "link_google", "user", String(user.id), { email: normalisedEmail }, req.ip || null);
+      }
+
+      const token = signToken({ userId: user.id, username: user.username, email: user.email });
+      await writeAuditLog(user.id, "login_google", "user", String(user.id), { email: normalisedEmail }, req.ip || null);
+      res.json({
+        token,
+        createdNew,
+        user: {
+          id: user.id, username: user.username, email: user.email,
+          firstName: user.firstName, lastName: user.lastName,
+          kycStatus: user.kycStatus, userTier: user.userTier,
+        },
+      });
+    } catch (err: any) {
+      console.error("[/api/auth/google] error:", err?.message);
+      res.status(500).json({ error: "Google sign-in failed. Please try again." });
     }
   });
 

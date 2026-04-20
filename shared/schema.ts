@@ -7,7 +7,8 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
-  password: text("password").notNull(),
+  password: text("password"),
+  googleId: text("google_id").unique(),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   kycStatus: text("kyc_status").notNull().default("pending"), // pending, verified, rejected

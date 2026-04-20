@@ -7,14 +7,44 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Shield, Mail, ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
+import { SiGoogle } from "react-icons/si";
+import { useGoogleLogin } from "@react-oauth/google";
+
+const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
 export default function Login() {
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, refreshUser } = useAuth();
   const [, navigate] = useLocation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  const googleSignIn = GOOGLE_ENABLED ? useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setIsGoogleLoading(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/auth/google", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ access_token: tokenResponse.access_token }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Google sign-in failed");
+        localStorage.setItem("amax_jwt", data.token);
+        await refreshUser();
+        navigate(data?.user?.kycStatus === "verified" ? "/dashboard" : "/compliance");
+      } catch (err: any) {
+        setError(err.message || "Google sign-in failed. Please try again.");
+      } finally {
+        setIsGoogleLoading(false);
+      }
+    },
+    onError: () => setError("Google sign-in was cancelled or failed."),
+    scope: "profile email",
+  }) : null;
 
   // Email verification state (shown when login blocked due to unverified email)
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
@@ -255,6 +285,32 @@ export default function Login() {
                     "Sign In"
                   )}
                 </Button>
+
+                {GOOGLE_ENABLED && (
+                  <>
+                    <div className="relative my-2">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-slate-700" />
+                      </div>
+                      <div className="relative flex justify-center text-xs">
+                        <span className="bg-slate-800 px-2 text-slate-500">or</span>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => googleSignIn && googleSignIn()}
+                      disabled={isGoogleLoading || isLoading}
+                      className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold border border-slate-600"
+                    >
+                      {isGoogleLoading ? (
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Signing in with Google...</>
+                      ) : (
+                        <><SiGoogle className="w-4 h-4 mr-2" />Continue with Google</>
+                      )}
+                    </Button>
+                  </>
+                )}
+
                 <div className="text-center space-y-2">
                   <Link href="/forgot-password" className="text-sm text-white hover:text-white/70 transition-colors block">
                     Forgot your password?

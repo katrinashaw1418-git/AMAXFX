@@ -1,0 +1,203 @@
+
+
+AMAX-FX.zip
+zip
+
+Please do some research about login with gmail, mobile and app, and let me know how to fix the app attached on sign up page
+
+1:16 PM
+
+Ran 8 commands, viewed a file
+Ran 8 commands, viewed a file
+Now let me research Google Sign-In for mobile/web apps:
+
+
+Searched the web
+Searched the web
+Now I have everything I need to write a comprehensive, actionable fix guide. Let me check the server files briefly too:
+
+
+Ran 2 commands
+Ran 2 commands
+Now I have a thorough picture of the app. Let me write up the full research + fix guide:
+
+Now I have all the context I need. Here's a comprehensive breakdown of what I found in the app and exactly how to implement Google Sign-In (and phone/mobile):
+
+What your app currently does on the sign-up page
+Your register.tsx already has the UI buttons for Google, Apple, and Mobile sign-up — but they're all wired to show a socialNotice toast saying "Coming soon." The Google button triggers setSocialNotice("google") instead of any real OAuth flow. Your auth.tsx context has no loginWithGoogle method, and your server/auth.ts has no /api/auth/google endpoint.
+
+Here's exactly what you need to build to make Google Sign-In live:
+
+The full implementation plan
+Step 1 — Google Cloud Console setup
+Go to console.cloud.google.com → Create a new project (e.g. "AMAX-FX")
+APIs & Services → OAuth consent screen → External → fill in app name, support email, authorized domain (e.g. amaxglobal.com)
+Credentials → Create Credentials → OAuth 2.0 Client ID → Web Application
+Add authorized JavaScript origins: http://localhost:5000 (dev) + your production URL
+Copy the Client ID — you'll use it in both frontend and backend
+Step 2 — Install the package
+bash
+npm install @react-oauth/google
+This is Google's official React wrapper for the new Identity Services SDK.
+
+Step 3 — Wrap your app in GoogleOAuthProvider
+In client/src/main.tsx:
+
+tsx
+import { GoogleOAuthProvider } from '@react-oauth/google';
+
+<GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+  <App />
+</GoogleOAuthProvider>
+Add VITE_GOOGLE_CLIENT_ID=your_client_id_here to your .env file.
+
+Step 4 — Replace the Google button in register.tsx
+Replace the existing button's onClick from setSocialNotice("google") to this:
+
+tsx
+import { useGoogleLogin } from '@react-oauth/google';
+
+// Inside your Register component:
+const googleSignUp = useGoogleLogin({
+  onSuccess: async (tokenResponse) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: tokenResponse.access_token }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Google sign-in failed');
+      localStorage.setItem('amax_jwt', data.token);
+      await refreshUser();
+      navigate('/compliance'); // or '/dashboard' if KYC done
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  },
+  onError: () => setError('Google sign-in was cancelled or failed.'),
+  scope: 'profile email',
+});
+Then change the button's onClick to () => googleSignUp() and remove the "Coming soon" badge.
+
+Step 5 — Add the backend endpoint to server/routes.ts
+Install the Google auth library on the server side:
+
+bash
+npm install google-auth-library
+Then add this route in server/routes.ts (near your other /api/auth/ routes):
+
+typescript
+import { OAuth2Client } from 'google-auth-library';
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// POST /api/auth/google
+app.post('/api/auth/google', async (req, res) => {
+  const { access_token } = req.body;
+  if (!access_token) return res.status(400).json({ error: 'Missing access_token' });
+
+  try {
+    // Fetch profile from Google using the access token
+    const googleRes = await fetch(
+      `https://www.googleapis.com/oauth2/v2/userinfo?access_token=${access_token}`
+    );
+    if (!googleRes.ok) throw new Error('Failed to fetch Google profile');
+    
+    const profile = await googleRes.json();
+    const { email, given_name, family_name, id: googleId } = profile;
+
+    // Find existing user or create a new one
+    let user = await storage.getUserByEmail(email);
+    
+    if (!user) {
+      // New user — create account (no password needed for OAuth users)
+      user = await storage.createUser({
+        email,
+        firstName: given_name || '',
+        lastName: family_name || '',
+        username: email,
+        passwordHash: null, // OAuth users have no password
+        googleId,
+        emailVerified: true, // Google already verified their email
+      });
+    } else if (!user.googleId) {
+      // Existing email account — link Google ID to it
+      await storage.updateUser(user.id, { googleId, emailVerified: true });
+    }
+
+    const token = signToken({ userId: user.id, username: user.email, email: user.email });
+    res.json({ token, user: { id: user.id, email: user.email, firstName: user.firstName } });
+    
+  } catch (err: any) {
+    console.error('Google auth error:', err);
+    res.status(401).json({ error: 'Google authentication failed' });
+  }
+});
+Add GOOGLE_CLIENT_ID=your_client_id_here to your server .env.
+
+Step 6 — Update your database schema
+Your users table in server/storage.ts needs two new columns:
+
+sql
+ALTER TABLE users ADD COLUMN google_id TEXT UNIQUE;
+ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN password_hash TEXT; -- make nullable for OAuth users
+If you're using Drizzle ORM (which it looks like you are), add these to your schema definition:
+
+typescript
+googleId: text('google_id').unique(),
+emailVerified: boolean('email_verified').default(false),
+Step 7 — Also update login.tsx for sign-in (not just sign-up)
+The same useGoogleLogin hook works on the login page — just hit the same /api/auth/google endpoint. The backend's "find or create" logic handles both cases.
+
+Mobile / Phone sign-up
+For phone number login, the standard approach for a fintech app is Firebase Authentication (for the SMS OTP flow) or Twilio Verify. Given you already have email OTP infrastructure (/api/auth/verify-otp), the easiest path is:
+
+Add a phone input field (with country code selector using react-phone-number-input)
+Hit a new /api/auth/send-phone-otp endpoint that calls Twilio Verify API
+User enters the 6-digit code — same OTP UI you already have
+Verify against Twilio, then create/find the user
+Given AUSTRAC compliance requirements, phone verification is actually good to have as it adds a second factor of identity.
+
+Apple Sign-In
+Apple Sign-In requires an Apple Developer account ($99/year), a Service ID, and a private key. The flow is more complex. Recommend implementing Google first, then Apple when you have the Apple Developer enrollment sorted. The library react-apple-signin-auth handles the frontend side.
+
+Quick summary of what to do right now
+The Google Sign-In fix touches 4 files:
+
+File	Change
+client/src/main.tsx	Wrap in GoogleOAuthProvider
+client/src/pages/register.tsx	Replace setSocialNotice("google") with useGoogleLogin hook
+client/src/pages/login.tsx	Same Google hook for sign-in
+server/routes.ts	Add POST /api/auth/google endpoint
+Plus two .env entries: VITE_GOOGLE_CLIENT_ID (frontend) and GOOGLE_CLIENT_ID (server).
+
+The architecture already uses JWT exactly the right way — the recommended pattern is for the frontend to get a Google ID token, send it to your backend, have the backend verify it with Google, and then issue your own app JWT for subsequent requests. 
+Medium
+ Your existing signToken() function in server/auth.ts is already perfect for step 4 of that flow. You don't need to change any of the existing auth middleware.
+
+
+I checked current guidance for Google sign-in, phone login, Apple login, and general authentication UX/security. I could not find any attachment in this chat to inspect directly, so I have not verified your exact page yet. ([Google for Developers][1]) What I’d fix on your sign-up page first: 1
+
+pasted
+
+verify and cross check
+
+1:26 PM
+Let me cross-check both responses against your actual code:
+
+
+Check server routes for any existing OAuth handling
+Check server routes for any existing OAuth handling
+
+
+
+Claude is AI and can make mistakes. Please double-check responses.
+
+
+

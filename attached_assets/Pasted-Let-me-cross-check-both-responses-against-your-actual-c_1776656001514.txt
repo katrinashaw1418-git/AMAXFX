@@ -1,0 +1,81 @@
+Let me cross-check both responses against your actual code:Now I have the full picture. Let me do a definitive cross-check:Now I have everything I need for a fully verified cross-check. Here's the definitive verdict:
+
+---
+
+## ✅ Verified Cross-Check: What's Actually True vs What Needs Correcting
+
+### My previous response — what's accurate ✅
+
+These are confirmed correct against your actual codebase:
+
+**`register.tsx`** — The Google button calls `setSocialNotice("google")` instead of any real flow. Confirmed.
+
+**`login.tsx`** — Has zero Google/social auth code at all. No buttons, no hooks. Email/password only.
+
+**`server/routes.ts`** — Confirmed: no `/api/auth/google` endpoint exists anywhere.
+
+**`server/auth.ts`** — `signToken()`, `requireAuth()`, `hashPassword()` are all there and reusable as-is.
+
+**`storage.getUserByEmail()`** and `storage.createUser()` — confirmed method names match exactly what I said to use.
+
+---
+
+### My previous response — one correction needed ⚠️
+
+I said to add `emailVerified` and make `password` nullable to the schema. **Check your actual schema:**
+
+```
+password: text("password").notNull(),   ← currently NOT nullable
+emailVerified: boolean("email_verified").default(false)  ← already exists ✅
+```
+
+**`emailVerified` is already in your schema — don't add it again.**
+But **`password` is `.notNull()`** — this is the real blocker. OAuth users have no password. You have two clean options:
+
+**Option A (recommended) — make password nullable:**
+```typescript
+// shared/schema.ts — change line 10
+password: text("password"),  // remove .notNull()
+```
+Then add a DB migration. This is the cleanest approach.
+
+**Option B — use a sentinel value (no migration needed):**
+```typescript
+// In your /api/auth/google route, when creating a user:
+password: `__google__${googleId}`, // non-null placeholder, can never match any real hash
+```
+This avoids a schema migration but is a workaround. Fine for getting live fast.
+
+**`googleId` column does NOT exist yet** — confirmed. My advice to add it is correct.
+
+---
+
+### The other document — what to accept ✅ vs reject ❌
+
+**Accept:**
+
+- ✅ **Account linking logic** — correct and important. If a user has an email account and later signs in with Google using the same email, your backend should link them, not create a duplicate. My route handles this (the `else if (!user.googleId)` branch).
+- ✅ **Order of buttons (Google first)** — correct per Google's own branding guidelines. Your current order (Email first, then Google) is backwards for UX on mobile.
+- ✅ **Rate limiting on OTP sends** — valid concern, worth adding a cooldown check on `/api/auth/resend-otp`.
+- ✅ **Default `+61` for phone country code** — correct for your AUSTRAC-registered Australian audience.
+
+**Reject / doesn't apply to your stack:**
+
+- ❌ **"Use Firebase"** — Your app uses your own JWT auth (`server/auth.ts`), Drizzle ORM, and PostgreSQL. Migrating to Firebase would require replacing your entire auth layer, user table, and session management. Not needed — your existing architecture is solid and production-grade.
+- ❌ **"Email magic link instead of password"** — You already have a working OTP email verification system. This would be a regression, not an improvement.
+- ❌ **"Google auto sign-in loop"** — This is only relevant if you use Google One Tap. You're using `useGoogleLogin()` with a popup flow, which doesn't have this issue.
+- ❌ **"Add Apple on iOS"** — Apple Sign-In is only required by App Store rules if you're building a native iOS app. Your app is a web app. Not applicable yet.
+
+---
+
+### The actual minimal fix — 4 precise changes
+
+| File | Exact change |
+|---|---|
+| `shared/schema.ts` line 10 | `password: text("password"),` (make nullable) OR use sentinel value |
+| `shared/schema.ts` after `emailOtp` | Add `googleId: text("google_id").unique(),` |
+| `client/src/main.tsx` | Wrap in `<GoogleOAuthProvider clientId={...}>` |
+| `client/src/pages/register.tsx` | Replace `setSocialNotice("google")` with `useGoogleLogin` hook |
+| `server/routes.ts` after line ~1291 | Add `POST /api/auth/google` endpoint |
+
+Everything else in both responses — the `@react-oauth/google` package, the userinfo fetch from Google, the JWT issuance — is confirmed correct for your stack.

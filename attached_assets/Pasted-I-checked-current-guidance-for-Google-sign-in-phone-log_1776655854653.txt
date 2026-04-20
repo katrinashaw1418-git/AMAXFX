@@ -1,0 +1,79 @@
+I checked current guidance for Google sign-in, phone login, Apple login, and general authentication UX/security. I could not find any attachment in this chat to inspect directly, so I have not verified your exact page yet. ([Google for Developers][1])
+
+What I’d fix on your sign-up page first:
+
+1. **Do not separate “sign up” and “log in” too hard for Google/mobile.**
+   For Google and phone number, the cleaner pattern is one shared entry flow: the user taps **Continue with Google** or **Continue with mobile**, and your backend decides whether this is a new account or an existing one. Google’s current guidance also favors making the Google button prominent and using the official rendered button rather than a made-up version. ([Google for Developers][2])
+
+2. **Put the options in this order on mobile/web:**
+   **Continue with Google**
+   **Continue with Apple** on iPhone/iPad apps
+   **Continue with mobile number**
+   then a smaller **Continue with email** option if you still want it.
+   Google says its button should be at least as prominent as other third-party sign-in options, and Apple provides specific Sign in with Apple guidance for apps and websites. If your iOS app offers third-party sign-in such as Google, you should review Apple’s App Review rules carefully because this is a common approval issue. ([Google for Developers][3])
+
+3. **Use account linking, or you will create duplicate users.**
+   This is one of the biggest real-world bugs. A person may first sign up with email, then later tap Google with the same email, or start with mobile and later use Google. Your auth system should link these providers to one user record instead of creating separate accounts. Firebase explicitly supports linking multiple auth providers to a single account. ([Firebase][4])
+
+4. **For phone login, make the country code explicit and restrict allowed regions.**
+   Phone auth should start with a clear country picker, default to `+61` if your audience is Australia, and validate numbers before sending OTP. Firebase also recommends setting an allow/deny SMS region policy, because new projects may allow no regions by default. ([Firebase][5])
+
+5. **Avoid login loops after Google sign-in or One Tap.**
+   Google documents that automatic sign-in can create a dead-loop after sign-out unless you disable auto-select or use the sign-out class correctly. If your app keeps bouncing users back into Google sign-in, this is a likely cause. ([Google for Developers][6])
+
+6. **Use OTP/passwordless carefully.**
+   For a sign-up page, a good modern pattern is:
+
+* Google / Apple for fastest conversion
+* Mobile OTP as backup
+* Email magic link instead of password, if you want less friction
+  Firebase supports email-link authentication, which also verifies the email during sign-in. ([Firebase][7])
+
+7. **Add the missing trust and security pieces on the page.**
+   OWASP recommends rate limiting, MFA where appropriate, and protections around registration/login endpoints. At minimum, your page and backend should include throttling on OTP sends, cooldown timers, bot protection on repeated attempts, generic error messages, and step-up verification for risky account changes. ([OWASP Cheat Sheet Series][8])
+
+A strong sign-up page for your app would look like this:
+
+**Create your account**
+Continue with Google
+Continue with Apple
+Continue with mobile number
+Continue with email
+
+Then below that:
+“By continuing, you agree to the Terms and Privacy Policy.”
+
+And important backend logic:
+
+* if Google/Apple/mobile matches an existing verified user, sign them in
+* if it matches an existing unlinked account, prompt: “You already have an account. Link this sign-in method?”
+* if new user, create account and continue to onboarding
+* never create a second user automatically just because the provider changed ([Firebase][4])
+
+My practical recommendation for you:
+
+* **Best UX:** Google + Apple + mobile OTP
+* **Best fallback:** email magic link
+* **Best architecture:** one user table, one identity per user, many linked providers
+* **Best signup logic:** one combined auth screen, not separate fragmented flows ([Firebase][9])
+
+Likely fixes if your current page is “not working”:
+
+* custom Google button instead of official Google Identity button
+* no Apple option on iOS flow
+* phone OTP region/config not enabled
+* duplicate accounts because provider linking is missing
+* redirect/sign-out loop caused by Google auto sign-in settings
+* separate sign-up and sign-in logic that conflicts with social/mobile auth ([Google for Developers][2])
+
+Upload the sign-up page screenshot or code, and I’ll mark up exactly what to change line by line.
+
+[1]: https://developers.google.com/identity/gsi/web/guides/personalized-button?utm_source=chatgpt.com "Sign in with Google button UX | Web guides"
+[2]: https://developers.google.com/identity/gsi/web/guides/display-button?utm_source=chatgpt.com "Display the Sign In With Google button | Web guides"
+[3]: https://developers.google.com/identity/branding-guidelines?utm_source=chatgpt.com "Sign in with Google Branding Guidelines"
+[4]: https://firebase.google.com/docs/auth/web/account-linking?utm_source=chatgpt.com "Link Multiple Auth Providers to an Account Using JavaScript"
+[5]: https://firebase.google.com/docs/auth/android/phone-auth?utm_source=chatgpt.com "Authenticate with Firebase on Android using a Phone Number"
+[6]: https://developers.google.com/identity/gsi/web/guides/automatic-sign-in-sign-out?utm_source=chatgpt.com "Automatic sign-in and sign-out | Web guides"
+[7]: https://firebase.google.com/docs/auth/web/email-link-auth?utm_source=chatgpt.com "Authenticate with Firebase Using Email Link in JavaScript"
+[8]: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html?utm_source=chatgpt.com "Authentication - OWASP Cheat Sheet Series"
+[9]: https://firebase.google.com/docs/auth?utm_source=chatgpt.com "Firebase Authentication"
