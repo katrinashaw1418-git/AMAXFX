@@ -3,6 +3,11 @@
 ## Overview
 This platform is a comprehensive cross-border wealth management solution designed for high-net-worth individuals, the global Chinese diaspora, and SMEs with international financial needs. It integrates traditional finance and cryptocurrency services, offering dual-channel support for FX and crypto trading, multi-currency wallets, AI-powered wealth advisory, and robust compliance features. The vision is to provide a unified, intelligent, and secure platform for managing diverse global assets.
 
+## Authentication & Identity Positioning Statement
+> AMAX uses email-based authentication with phone number collection and identity verification through regulated KYC providers (Sumsub). SMS-based verification may be introduced for enhanced security at later stages.
+
+This is the canonical phrasing to use in Terms, Privacy Policy, and AUSTRAC submissions. The architecture follows the email-first ("Model B") pattern used by Airwallex, OFX, and Xe — phone is collected as CDD/contact data but the verification code is delivered via the existing Gmail SMTP pipeline, removing the need for an SMS provider while remaining fully AUSTRAC-aligned. Phase 2 (post-AUSTRAC approval) will introduce SMS OTP for withdrawals and device-change events only.
+
 ## Recent Changes (April 2026) — Sign-Up + Compliance Step Fix
 
 ### User Registration
