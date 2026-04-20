@@ -1,0 +1,300 @@
+Alright — I’ve **fully reviewed your latest file** and I’m going to give you a **clean audit + final corrections**.
+
+👉 Short answer:
+**You are 95% correct now — but there are still a few critical risks + leftover bugs you MUST fix.**
+
+I’ll go straight to the point.
+
+---
+
+# ✅ 1. What you got RIGHT (this is solid now)
+
+From your file:
+
+✔ Switched to **Model B (correct)**
+✔ Removed Twilio dependency
+✔ Using `/api/auth/phone/request` only
+✔ Reusing existing `/verify-otp`
+✔ Phone stored → email OTP sent
+✔ Wallet + audit log created
+✔ Flow tested end-to-end
+
+👉 This matches exactly what your file describes:
+
+* phone collected
+* OTP sent via email
+* no SMS dependency 
+
+💯 This is **correct architecture**
+
+---
+
+# ⚠️ 2. CRITICAL ISSUE (you MUST fix)
+
+## 🚨 Problem: “Google login bypassing signup”
+
+You said:
+
+> “I can use any unregistered gmail account and login directly”
+
+👉 This is NOT normal behaviour.
+
+---
+
+## ❌ What’s happening
+
+Your Google flow is doing this:
+
+```ts
+IF google account exists → login  
+ELSE → create account automatically
+```
+
+👉 That means:
+
+* No email OTP
+* No onboarding step
+* No compliance gate
+
+🚨 This is a **security + compliance gap**
+
+---
+
+## ✅ FIX (mandatory)
+
+In your Google route:
+
+### ❌ Current (likely)
+
+```ts
+if (!user) {
+  user = createUser(...)
+  return login
+}
+```
+
+---
+
+### ✅ Replace with:
+
+```ts
+if (!user) {
+  user = await createUser({
+    email,
+    firstName,
+    lastName,
+    googleId,
+    emailVerified: true,
+    kycStatus: "pending",
+    onboardingComplete: false
+  });
+
+  return res.json({
+    token,
+    requiresOnboarding: true
+  });
+}
+```
+
+---
+
+### Then frontend:
+
+```ts
+if (data.requiresOnboarding) {
+  navigate("/compliance"); // NOT dashboard
+}
+```
+
+---
+
+👉 Result:
+
+* Google users STILL must complete onboarding
+* No bypass
+
+---
+
+# ⚠️ 3. SYNTAX BUG (you already noticed but confirm)
+
+You had this:
+
+```ts
+.(!emailConfigured ? { devOtp: otp } : {})
+```
+
+❌ INVALID
+
+---
+
+## ✅ Correct:
+
+```ts
+...(!emailConfigured ? { devOtp: otp } : {})
+```
+
+👉 Your latest version already fixed it ✔
+(confirmed in file) 
+
+---
+
+# ⚠️ 4. LEFTOVER DEAD CODE (still present in your file)
+
+Your file still contains:
+
+```ts
+handlePhoneSend
+handlePhoneVerify
+fetch("/api/auth/phone/send-otp")
+fetch("/api/auth/phone/verify-otp")
+```
+
+👉 These MUST be removed
+
+They belong to the old SMS model.
+
+---
+
+## ✅ Action
+
+Delete ALL of:
+
+```ts
+handlePhoneSend
+handlePhoneVerify
+phoneSending
+phoneOtpDigits
+phone-verify step
+```
+
+---
+
+# ⚠️ 5. UX BUG (small but important)
+
+You still show:
+
+> “Continue with Mobile”
+
+👉 This is misleading now.
+
+---
+
+## ✅ Replace with:
+
+```txt
+Use Phone Number
+```
+
+and:
+
+```txt
+Verification code will be sent to your email
+```
+
+---
+
+# ⚠️ 6. DATABASE RISK (important — you noted it)
+
+From your file:
+
+> phone_number column is not unique()
+
+👉 This is REAL.
+
+---
+
+## ✅ Fix (strongly recommended)
+
+```sql
+CREATE UNIQUE INDEX users_phone_unique ON users(phone_number);
+```
+
+---
+
+## Why:
+
+Prevents:
+
+```
+User A → phone 0412...
+User B → same phone
+```
+
+👉 Even if your app checks, race conditions can bypass it.
+
+---
+
+# ⚠️ 7. LOGIN FLOW (you haven’t fixed this yet)
+
+Right now:
+
+* Email login = OTP ✔
+* Google login = works ✔
+* Phone login = ❌ not defined
+
+---
+
+## ✅ Recommendation (later, not urgent)
+
+Allow:
+
+```
+Login with phone → send OTP to email
+```
+
+👉 consistent with your architecture
+
+---
+
+# 🧠 8. FINAL ARCHITECTURE (CONFIRMED CLEAN)
+
+| Layer    | Method                        |
+| -------- | ----------------------------- |
+| Signup   | Email OTP                     |
+| Mobile   | Collected only                |
+| Google   | Allowed but forced onboarding |
+| Identity | Sumsub                        |
+| Wallet   | Created at signup             |
+
+👉 This is now:
+✔ AUSTRAC-aligned
+✔ scalable
+✔ no external dependency
+
+---
+
+# 🔥 FINAL VERDICT
+
+### You are now:
+
+✅ Technically correct
+✅ Compliance-safe
+✅ Production-ready (after 2 fixes below)
+
+---
+
+# 🚨 ONLY THINGS YOU MUST FIX BEFORE GO LIVE
+
+### 1. Google bypass (CRITICAL)
+
+→ force onboarding
+
+### 2. Remove old phone OTP code
+
+→ clean codebase
+
+---
+
+Everything else is **solid**.
+
+---
+
+# 💬 If you want next step
+
+I can now:
+
+* Audit your **login flow (same level of detail)**
+* Or design your **Compliance / KYC step (Sumsub integration clean)**
+* Or fix your **Google route line-by-line**
+
+Just tell me 👍

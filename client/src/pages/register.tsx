@@ -379,8 +379,8 @@ export default function Register() {
                 <Smartphone className="w-5 h-5 text-white" />
               </div>
               <div className="text-left flex-1">
-                <div className="text-sm font-semibold">Continue with Mobile</div>
-                <div className="text-xs text-slate-400 font-normal">Sign up with your phone number</div>
+                <div className="text-sm font-semibold">Use Phone Number</div>
+                <div className="text-xs text-slate-400 font-normal">Verification code sent to your email</div>
               </div>
               <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
             </button>
