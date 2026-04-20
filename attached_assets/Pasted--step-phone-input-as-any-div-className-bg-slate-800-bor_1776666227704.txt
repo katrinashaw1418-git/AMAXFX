@@ -1,0 +1,69 @@
+{step === ("phone-input" as any) && (
+  <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-5">
+    <div className="flex items-center gap-3">
+      <button onClick={() => { setError(null); setStep("method"); }}
+        className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-300 hover:text-white transition-all">
+        <ArrowLeft className="w-4 h-4" />
+      </button>
+      <div>
+        <h2 className="text-xl font-bold text-white">Continue with Mobile</h2>
+        <p className="text-xs text-slate-400">Enter your phone number to receive a code</p>
+      </div>
+    </div>
+    {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+    <div className="space-y-2">
+      <Label className="text-slate-300 text-sm">Phone number</Label>
+      {/* react-phone-number-input renders a country picker + number field */}
+      <input
+        type="tel"
+        value={phoneNumber}
+        onChange={e => setPhoneNumber(e.target.value)}
+        placeholder="+61 412 345 678"
+        className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:border-white/50 focus:outline-none"
+      />
+      <p className="text-xs text-slate-500">Include country code e.g. +61 for Australia</p>
+    </div>
+    <Button onClick={handlePhoneSend} disabled={phoneSending} className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold">
+      {phoneSending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending…</> : <>Send verification code <ArrowRight className="w-4 h-4 ml-1" /></>}
+    </Button>
+  </div>
+)}
+
+{step === ("phone-verify" as any) && (
+  <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-6 text-center">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-16 h-16 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center">
+        <Smartphone className="w-8 h-8 text-green-400" />
+      </div>
+      <h2 className="text-xl font-bold text-white">Check your phone</h2>
+      <p className="text-sm text-slate-400 max-w-xs">
+        We sent a 6-digit code to <span className="text-white font-medium">{phoneNumber}</span>
+      </p>
+    </div>
+    <div className="flex justify-center gap-2">
+      {phoneOtpDigits.map((d, i) => (
+        <input key={i} type="text" inputMode="numeric" maxLength={1} value={d}
+          onChange={e => {
+            if (!/^[0-9]?$/.test(e.target.value)) return;
+            const next = [...phoneOtpDigits]; next[i] = e.target.value;
+            setPhoneOtpDigits(next);
+            if (e.target.value && i < 5) (document.getElementById(`potp-${i+1}`) as HTMLInputElement)?.focus();
+          }}
+          id={`potp-${i}`}
+          className="w-11 h-14 text-center text-2xl font-bold bg-slate-700 border border-slate-500 rounded-xl text-white focus:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-400/30 transition-all"
+        />
+      ))}
+    </div>
+    {error && <p className="text-sm text-red-400">{error}</p>}
+    <Button onClick={handlePhoneVerify} disabled={isVerifying || phoneOtpDigits.join("").length < 6}
+      className="w-full bg-green-600 hover:bg-green-500 text-white font-semibold">
+      {isVerifying ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Verifying…</> : <>Verify phone number <ArrowRight className="w-4 h-4 ml-1" /></>}
+    </Button>
+    <p className="text-xs text-slate-500">
+      Wrong number?{" "}
+      <button onClick={() => setStep("phone-input" as any)} className="text-slate-300 underline hover:text-white">
+        Go back
+      </button>
+    </p>
+  </div>
+)}

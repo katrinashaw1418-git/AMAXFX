@@ -15,7 +15,7 @@ import { GoogleLogin } from "@react-oauth/google";
 
 const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
-type Step = "method" | "email-form" | "verify" | "profile";
+type Step = "method" | "email-form" | "verify" | "profile" | "phone-input" | "phone-verify";
 
 const SERVICES = [
   {
@@ -79,6 +79,9 @@ export default function Register() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("+61");
+  const [phoneOtpDigits, setPhoneOtpDigits] = useState(["", "", "", "", "", ""]);
+  const [phoneSending, setPhoneSending] = useState(false);
   const [resendSent, setResendSent] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [devOtp, setDevOtp] = useState<string | null>(null);
@@ -198,8 +201,57 @@ export default function Register() {
   const socialNotices: Record<string, string> = {
     google: "Google sign-in is coming soon. Please use email registration for now.",
     apple:  "Apple sign-in is coming soon. Please use email registration for now.",
-    phone:  "Mobile / phone sign-up is coming soon. Please use email registration for now.",
+    phone:  "Mobile / phone sign-up is not available yet. Please use email or Google registration for now.",
   };
+
+  async function handlePhoneSend() {
+    if (!phoneNumber || !/^\+[1-9]\d{7,14}$/.test(phoneNumber)) {
+      setError("Please enter your full phone number including country code, e.g. +61412345678.");
+      return;
+    }
+    setPhoneSending(true); setError(null);
+    try {
+      const res = await fetch("/api/auth/phone/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phoneNumber }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send code");
+      setPhoneOtpDigits(["", "", "", "", "", ""]);
+      setStep("phone-verify");
+    } catch (err: any) {
+      setError(err.message || "Failed to send code.");
+    } finally {
+      setPhoneSending(false);
+    }
+  }
+
+  async function handlePhoneVerify() {
+    const code = phoneOtpDigits.join("");
+    if (code.length < 6) { setError("Please enter all 6 digits."); return; }
+    setIsVerifying(true); setError(null);
+    try {
+      const res = await fetch("/api/auth/phone/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phoneNumber, code, mode: "register" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Verification failed");
+      localStorage.setItem("amax_jwt", data.token);
+      await refreshUser();
+      if (data.isNewUser) {
+        setStep("profile");
+      } else {
+        navigate(data?.user?.kycStatus === "verified" ? "/dashboard" : "/compliance");
+      }
+    } catch (err: any) {
+      setError(err.message || "Verification failed. Please try again.");
+    } finally {
+      setIsVerifying(false);
+    }
+  }
 
   async function handleGoogleCredential(credential: string) {
     setIsLoading(true);
@@ -337,7 +389,7 @@ export default function Register() {
 
             {/* Mobile */}
             <button
-              onClick={() => setSocialNotice("phone")}
+              onClick={() => { setSocialNotice(null); setError(null); setStep("phone-input"); }}
               className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-slate-700/60 border border-slate-600 text-white hover:bg-slate-700 transition-all group"
             >
               <div className="w-9 h-9 rounded-lg bg-slate-600 flex items-center justify-center flex-shrink-0">
@@ -347,9 +399,7 @@ export default function Register() {
                 <div className="text-sm font-semibold">Continue with Mobile</div>
                 <div className="text-xs text-slate-400 font-normal">Sign up with your phone number</div>
               </div>
-              <span className="text-[10px] bg-slate-600 text-slate-300 px-2 py-0.5 rounded-full font-medium shrink-0">
-                Coming soon
-              </span>
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
             </button>
 
             <p className="text-xs text-slate-500 text-center leading-relaxed pt-1">
@@ -553,6 +603,110 @@ export default function Register() {
                 Continue to identity verification <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </form>
+          </div>
+        )}
+
+        {/* ── PHONE INPUT ──────────────────────────────────────────────────── */}
+        {step === "phone-input" && (
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-5">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => { setError(null); setStep("method"); }}
+                className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-300 hover:text-white transition-all"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <div>
+                <h2 className="text-xl font-bold text-white">Continue with Mobile</h2>
+                <p className="text-xs text-slate-400">Enter your phone number to receive a verification code</p>
+              </div>
+            </div>
+
+            {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+
+            <div className="space-y-2">
+              <Label htmlFor="phone-number" className="text-slate-300 text-sm">Phone number</Label>
+              <Input
+                id="phone-number"
+                type="tel"
+                value={phoneNumber}
+                onChange={e => setPhoneNumber(e.target.value)}
+                placeholder="+61412345678"
+                autoComplete="tel"
+                className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50"
+              />
+              <p className="text-xs text-slate-500">Include country code, e.g. +61 for Australia. We will text a 6-digit code.</p>
+            </div>
+
+            <Button
+              onClick={handlePhoneSend}
+              disabled={phoneSending}
+              className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold"
+            >
+              {phoneSending
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending…</>
+                : <>Send verification code <ArrowRight className="w-4 h-4 ml-1" /></>}
+            </Button>
+          </div>
+        )}
+
+        {/* ── PHONE VERIFY ─────────────────────────────────────────────────── */}
+        {step === "phone-verify" && (
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-6 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-16 h-16 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center">
+                <Smartphone className="w-8 h-8 text-green-400" />
+              </div>
+              <h2 className="text-xl font-bold text-white">Check your phone</h2>
+              <p className="text-sm text-slate-400 max-w-xs">
+                We sent a 6-digit code to <span className="text-white font-medium">{phoneNumber}</span>
+              </p>
+            </div>
+
+            <div className="flex justify-center gap-2">
+              {phoneOtpDigits.map((d, i) => (
+                <input
+                  key={i}
+                  id={`potp-${i}`}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={d}
+                  onChange={e => {
+                    if (!/^[0-9]?$/.test(e.target.value)) return;
+                    const next = [...phoneOtpDigits];
+                    next[i] = e.target.value;
+                    setPhoneOtpDigits(next);
+                    if (e.target.value && i < 5) (document.getElementById(`potp-${i + 1}`) as HTMLInputElement)?.focus();
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === "Backspace" && !phoneOtpDigits[i] && i > 0) {
+                      (document.getElementById(`potp-${i - 1}`) as HTMLInputElement)?.focus();
+                    }
+                  }}
+                  className="w-11 h-14 text-center text-2xl font-bold bg-slate-700 border border-slate-500 rounded-xl text-white focus:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-400/30 transition-all"
+                />
+              ))}
+            </div>
+
+            {error && <p className="text-sm text-red-400">{error}</p>}
+
+            <Button
+              onClick={handlePhoneVerify}
+              disabled={isVerifying || phoneOtpDigits.join("").length < 6}
+              className="w-full bg-green-600 hover:bg-green-500 text-white font-semibold"
+            >
+              {isVerifying
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Verifying…</>
+                : <>Verify phone number <ArrowRight className="w-4 h-4 ml-1" /></>}
+            </Button>
+
+            <p className="text-xs text-slate-500">
+              Wrong number?{" "}
+              <button onClick={() => { setError(null); setStep("phone-input"); }} className="text-slate-300 underline hover:text-white">
+                Go back
+              </button>
+            </p>
           </div>
         )}
 
