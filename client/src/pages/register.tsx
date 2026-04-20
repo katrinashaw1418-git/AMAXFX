@@ -215,7 +215,15 @@ export default function Register() {
       if (!res.ok) throw new Error(data.error || "Google sign-in failed");
       localStorage.setItem("amax_jwt", data.token);
       await refreshUser();
-      navigate(data.createdNew ? "/compliance" : (data?.user?.kycStatus === "verified" ? "/dashboard" : "/compliance"));
+      if (data.createdNew) {
+        // New Google sign-up — drop user into the same "Select services" step that
+        // email sign-up uses, so onboarding feels consistent. Email is already
+        // verified by Google so we skip the OTP step.
+        setStep("profile");
+      } else {
+        // Returning Google user — go straight to dashboard or KYC
+        navigate(data?.user?.kycStatus === "verified" ? "/dashboard" : "/compliance");
+      }
     } catch (err: any) {
       setError(err.message || "Google sign-in failed. Please try again.");
     } finally {
