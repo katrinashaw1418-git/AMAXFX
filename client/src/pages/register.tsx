@@ -269,13 +269,13 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "#002366" }}>
       <div className="w-full max-w-md">
 
         {/* Logo */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <img src="/amax-coin-icon.png" alt="AMAX GLOBAL" className="h-10 w-auto" />
+            <img src="/amax-icon-white.png" alt="AMAX GLOBAL" className="h-10 w-auto" />
             <span className="font-bold text-white text-2xl tracking-widest">AMAX GLOBAL</span>
           </div>
           <StepDots step={step} />
