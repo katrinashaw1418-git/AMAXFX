@@ -1314,6 +1314,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Missing access_token" });
       }
 
+      // Step 1 — Validate the access token's audience matches OUR client ID.
+      // This prevents tokens minted for other Google OAuth apps being accepted here.
+      const tokenInfoRes = await fetch(
+        `https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(access_token)}`
+      );
+      if (!tokenInfoRes.ok) {
+        return res.status(401).json({ error: "Invalid Google access token." });
+      }
+      const tokenInfo: any = await tokenInfoRes.json();
+      const expectedAud = process.env.GOOGLE_CLIENT_ID;
+      if (tokenInfo?.aud !== expectedAud && tokenInfo?.azp !== expectedAud) {
+        return res.status(401).json({ error: "Google token was not issued to this application." });
+      }
+      if (tokenInfo?.expires_in && Number(tokenInfo.expires_in) <= 0) {
+        return res.status(401).json({ error: "Google access token has expired." });
+      }
+
+      // Step 2 — Fetch the verified profile.
       const profileRes = await fetch(
         `https://www.googleapis.com/oauth2/v2/userinfo?access_token=${encodeURIComponent(access_token)}`
       );
@@ -1325,6 +1343,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const googleId: string | undefined = profile?.id;
       if (!email || !googleId || !profile?.verified_email) {
         return res.status(401).json({ error: "Google account email not verified." });
+      }
+      // Defence-in-depth: tokeninfo's user_id (sub) must match userinfo's id.
+      if (tokenInfo?.sub && tokenInfo.sub !== googleId) {
+        return res.status(401).json({ error: "Google identity mismatch." });
       }
       const givenName: string = profile.given_name || "";
       const familyName: string = profile.family_name || "";
@@ -1364,6 +1386,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateUser(user.id, { googleId, emailVerified: true } as any);
         user = (await storage.getUserByEmail(normalisedEmail))!;
         await writeAuditLog(user.id, "link_google", "user", String(user.id), { email: normalisedEmail }, req.ip || null);
+      } else if (user.googleId !== googleId) {
+        // Account already linked to a DIFFERENT Google identity — refuse to issue a token.
+        await writeAuditLog(user.id, "google_id_mismatch", "user", String(user.id), { email: normalisedEmail }, req.ip || null);
+        return res.status(409).json({ error: "This email is linked to a different Google account. Please contact support." });
       }
 
       const token = signToken({ userId: user.id, username: user.username, email: user.email });

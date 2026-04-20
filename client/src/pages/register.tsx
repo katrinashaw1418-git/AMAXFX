@@ -201,8 +201,10 @@ export default function Register() {
     phone:  "Mobile / phone sign-up is coming soon. Please use email registration for now.",
   };
 
-  const googleSignIn = GOOGLE_ENABLED ? useGoogleLogin({
+  // Hook is always called (Rules of Hooks) — onSuccess is a no-op when disabled.
+  const googleSignIn = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
+      if (!GOOGLE_ENABLED) return;
       setIsLoading(true);
       setError(null);
       setSocialNotice(null);
@@ -225,10 +227,10 @@ export default function Register() {
     },
     onError: () => setError("Google sign-in was cancelled or failed."),
     scope: "profile email",
-  }) : null;
+  });
 
   function handleGoogleClick() {
-    if (googleSignIn) {
+    if (GOOGLE_ENABLED) {
       googleSignIn();
     } else {
       setSocialNotice("google");

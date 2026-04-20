@@ -53,6 +53,9 @@ app.use((req, res, next) => {
     const { sql: sqlTag } = await import("drizzle-orm");
     await migrationDb.execute(sqlTag`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_otp text`);
     await migrationDb.execute(sqlTag`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified boolean NOT NULL DEFAULT false`);
+    await migrationDb.execute(sqlTag`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id text`);
+    await migrationDb.execute(sqlTag`ALTER TABLE users ALTER COLUMN password DROP NOT NULL`);
+    await migrationDb.execute(sqlTag`DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_google_id_unique') THEN ALTER TABLE users ADD CONSTRAINT users_google_id_unique UNIQUE (google_id); END IF; END $$`);
   } catch (e: any) {
     console.error("[startup-migration] failed:", e?.message);
   }

@@ -21,8 +21,10 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  const googleSignIn = GOOGLE_ENABLED ? useGoogleLogin({
+  // Hook is always called (Rules of Hooks) — onSuccess is a no-op when disabled.
+  const googleSignIn = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
+      if (!GOOGLE_ENABLED) return;
       setIsGoogleLoading(true);
       setError(null);
       try {
@@ -44,7 +46,7 @@ export default function Login() {
     },
     onError: () => setError("Google sign-in was cancelled or failed."),
     scope: "profile email",
-  }) : null;
+  });
 
   // Email verification state (shown when login blocked due to unverified email)
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
@@ -298,7 +300,7 @@ export default function Login() {
                     </div>
                     <Button
                       type="button"
-                      onClick={() => googleSignIn && googleSignIn()}
+                      onClick={() => googleSignIn()}
                       disabled={isGoogleLoading || isLoading}
                       className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold border border-slate-600"
                     >
