@@ -7,8 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Shield, Mail, ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
-import { SiGoogle } from "react-icons/si";
-import { useGoogleLogin } from "@react-oauth/google";
+import { GoogleLogin } from "@react-oauth/google";
 
 const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
@@ -21,32 +20,26 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  // Hook is always called (Rules of Hooks) — onSuccess is a no-op when disabled.
-  const googleSignIn = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      if (!GOOGLE_ENABLED) return;
-      setIsGoogleLoading(true);
-      setError(null);
-      try {
-        const res = await fetch("/api/auth/google", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ access_token: tokenResponse.access_token }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Google sign-in failed");
-        localStorage.setItem("amax_jwt", data.token);
-        await refreshUser();
-        navigate(data?.user?.kycStatus === "verified" ? "/dashboard" : "/compliance");
-      } catch (err: any) {
-        setError(err.message || "Google sign-in failed. Please try again.");
-      } finally {
-        setIsGoogleLoading(false);
-      }
-    },
-    onError: () => setError("Google sign-in was cancelled or failed."),
-    scope: "profile email",
-  });
+  async function handleGoogleCredential(credential: string) {
+    setIsGoogleLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Google sign-in failed");
+      localStorage.setItem("amax_jwt", data.token);
+      await refreshUser();
+      navigate(data?.user?.kycStatus === "verified" ? "/dashboard" : "/compliance");
+    } catch (err: any) {
+      setError(err.message || "Google sign-in failed. Please try again.");
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  }
 
   // Email verification state (shown when login blocked due to unverified email)
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
@@ -298,18 +291,29 @@ export default function Login() {
                         <span className="bg-slate-800 px-2 text-slate-500">or</span>
                       </div>
                     </div>
-                    <Button
-                      type="button"
-                      onClick={() => googleSignIn()}
-                      disabled={isGoogleLoading || isLoading}
-                      className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold border border-slate-600"
-                    >
+                    <div className="w-full flex justify-center [color-scheme:dark]">
                       {isGoogleLoading ? (
-                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Signing in with Google...</>
+                        <div className="flex items-center justify-center text-sm text-slate-300 py-3">
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />Signing in with Google...
+                        </div>
                       ) : (
-                        <><SiGoogle className="w-4 h-4 mr-2" />Continue with Google</>
+                        <GoogleLogin
+                          onSuccess={(credentialResponse) => {
+                            if (credentialResponse.credential) {
+                              handleGoogleCredential(credentialResponse.credential);
+                            } else {
+                              setError("Google sign-in failed — no credential returned.");
+                            }
+                          }}
+                          onError={() => setError("Google sign-in was cancelled or failed.")}
+                          theme="filled_black"
+                          size="large"
+                          text="signin_with"
+                          shape="rectangular"
+                          width="368"
+                        />
                       )}
-                    </Button>
+                    </div>
                   </>
                 )}
 

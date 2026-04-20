@@ -11,7 +11,7 @@ import {
   TrendingUp, Bitcoin, Check,
 } from "lucide-react";
 import { SiGoogle, SiApple } from "react-icons/si";
-import { useGoogleLogin } from "@react-oauth/google";
+import { GoogleLogin } from "@react-oauth/google";
 
 const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
@@ -201,39 +201,25 @@ export default function Register() {
     phone:  "Mobile / phone sign-up is coming soon. Please use email registration for now.",
   };
 
-  // Hook is always called (Rules of Hooks) — onSuccess is a no-op when disabled.
-  const googleSignIn = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      if (!GOOGLE_ENABLED) return;
-      setIsLoading(true);
-      setError(null);
-      setSocialNotice(null);
-      try {
-        const res = await fetch("/api/auth/google", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ access_token: tokenResponse.access_token }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Google sign-in failed");
-        localStorage.setItem("amax_jwt", data.token);
-        await refreshUser();
-        navigate("/compliance");
-      } catch (err: any) {
-        setError(err.message || "Google sign-in failed. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    onError: () => setError("Google sign-in was cancelled or failed."),
-    scope: "profile email",
-  });
-
-  function handleGoogleClick() {
-    if (GOOGLE_ENABLED) {
-      googleSignIn();
-    } else {
-      setSocialNotice("google");
+  async function handleGoogleCredential(credential: string) {
+    setIsLoading(true);
+    setError(null);
+    setSocialNotice(null);
+    try {
+      const res = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Google sign-in failed");
+      localStorage.setItem("amax_jwt", data.token);
+      await refreshUser();
+      navigate(data.createdNew ? "/compliance" : (data?.user?.kycStatus === "verified" ? "/dashboard" : "/compliance"));
+    } catch (err: any) {
+      setError(err.message || "Google sign-in failed. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -288,29 +274,41 @@ export default function Register() {
             </button>
 
             {/* Google */}
-            <button
-              onClick={handleGoogleClick}
-              disabled={isLoading}
-              className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-slate-700/60 border border-slate-600 text-white hover:bg-slate-700 transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <div className="w-9 h-9 rounded-lg bg-slate-600 flex items-center justify-center flex-shrink-0">
-                <SiGoogle className="w-5 h-5 text-white" />
+            {GOOGLE_ENABLED ? (
+              <div className="w-full flex justify-center [color-scheme:dark]">
+                <GoogleLogin
+                  onSuccess={(credentialResponse) => {
+                    if (credentialResponse.credential) {
+                      handleGoogleCredential(credentialResponse.credential);
+                    } else {
+                      setError("Google sign-in failed — no credential returned.");
+                    }
+                  }}
+                  onError={() => setError("Google sign-in was cancelled or failed.")}
+                  theme="filled_black"
+                  size="large"
+                  text="continue_with"
+                  shape="rectangular"
+                  width="368"
+                />
               </div>
-              <div className="text-left flex-1">
-                <div className="text-sm font-semibold">Continue with Google</div>
-                <div className="text-xs text-slate-400 font-normal">
-                  {GOOGLE_ENABLED ? "Use your Google account" : "Use your Google account"}
+            ) : (
+              <button
+                onClick={() => setSocialNotice("google")}
+                className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-slate-700/60 border border-slate-600 text-white hover:bg-slate-700 transition-all group"
+              >
+                <div className="w-9 h-9 rounded-lg bg-slate-600 flex items-center justify-center flex-shrink-0">
+                  <SiGoogle className="w-5 h-5 text-white" />
                 </div>
-              </div>
-              {!GOOGLE_ENABLED && (
+                <div className="text-left flex-1">
+                  <div className="text-sm font-semibold">Continue with Google</div>
+                  <div className="text-xs text-slate-400 font-normal">Use your Google account</div>
+                </div>
                 <span className="text-[10px] bg-slate-600 text-slate-300 px-2 py-0.5 rounded-full font-medium shrink-0">
                   Coming soon
                 </span>
-              )}
-              {GOOGLE_ENABLED && (
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-              )}
-            </button>
+              </button>
+            )}
 
             {/* Apple */}
             <button

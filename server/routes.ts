@@ -1302,54 +1302,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Google OAuth sign-in / sign-up — verifies access token with Google,
+  // Google OAuth sign-in / sign-up — verifies an ID token (JWT) with Google,
   // finds-or-creates the user (linking by email), returns a JWT.
+  // Uses Google's recommended ID token flow: cryptographic verification, single round trip.
   app.post("/api/auth/google", async (req, res) => {
     try {
       if (!process.env.GOOGLE_CLIENT_ID) {
         return res.status(503).json({ error: "Google sign-in is not configured on this server." });
       }
-      const { access_token } = req.body || {};
-      if (!access_token || typeof access_token !== "string") {
-        return res.status(400).json({ error: "Missing access_token" });
+      const { credential } = req.body || {};
+      if (!credential || typeof credential !== "string") {
+        return res.status(400).json({ error: "Missing Google credential" });
       }
 
-      // Step 1 — Validate the access token's audience matches OUR client ID.
-      // This prevents tokens minted for other Google OAuth apps being accepted here.
-      const tokenInfoRes = await fetch(
-        `https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(access_token)}`
-      );
-      if (!tokenInfoRes.ok) {
-        return res.status(401).json({ error: "Invalid Google access token." });
+      // Verify the ID token's signature, issuer, audience, and expiry against Google's public keys.
+      const { OAuth2Client } = await import("google-auth-library");
+      const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+      let payload: any;
+      try {
+        const ticket = await client.verifyIdToken({
+          idToken: credential,
+          audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        payload = ticket.getPayload();
+      } catch (verifyErr: any) {
+        console.error("[/api/auth/google] verifyIdToken failed:", verifyErr?.message);
+        return res.status(401).json({ error: "Invalid or expired Google credential." });
       }
-      const tokenInfo: any = await tokenInfoRes.json();
-      const expectedAud = process.env.GOOGLE_CLIENT_ID;
-      if (tokenInfo?.aud !== expectedAud && tokenInfo?.azp !== expectedAud) {
+
+      if (!payload) return res.status(401).json({ error: "Invalid Google credential." });
+
+      // Defence-in-depth: re-check audience and email-verified claim.
+      if (payload.aud !== process.env.GOOGLE_CLIENT_ID) {
         return res.status(401).json({ error: "Google token was not issued to this application." });
       }
-      if (tokenInfo?.expires_in && Number(tokenInfo.expires_in) <= 0) {
-        return res.status(401).json({ error: "Google access token has expired." });
+      if (!payload.email_verified) {
+        return res.status(401).json({ error: "Your Google email is not verified. Please verify it with Google first." });
       }
 
-      // Step 2 — Fetch the verified profile.
-      const profileRes = await fetch(
-        `https://www.googleapis.com/oauth2/v2/userinfo?access_token=${encodeURIComponent(access_token)}`
-      );
-      if (!profileRes.ok) {
-        return res.status(401).json({ error: "Failed to verify Google account." });
+      const googleId: string = payload.sub;             // permanent unique Google account identifier
+      const email: string | undefined = payload.email;
+      const givenName: string = payload.given_name || "";
+      const familyName: string = payload.family_name || "";
+      if (!email || !googleId) {
+        return res.status(401).json({ error: "Google account is missing required profile fields." });
       }
-      const profile: any = await profileRes.json();
-      const email: string | undefined = profile?.email;
-      const googleId: string | undefined = profile?.id;
-      if (!email || !googleId || !profile?.verified_email) {
-        return res.status(401).json({ error: "Google account email not verified." });
-      }
-      // Defence-in-depth: tokeninfo's user_id (sub) must match userinfo's id.
-      if (tokenInfo?.sub && tokenInfo.sub !== googleId) {
-        return res.status(401).json({ error: "Google identity mismatch." });
-      }
-      const givenName: string = profile.given_name || "";
-      const familyName: string = profile.family_name || "";
 
       const normalisedEmail = email.toLowerCase().trim();
       let user = await storage.getUserByEmail(normalisedEmail);
