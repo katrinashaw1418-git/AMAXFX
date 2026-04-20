@@ -309,16 +309,10 @@ export default function Register() {
             {/* Email — primary */}
             <button
               onClick={() => { setSocialNotice(null); setStep("details"); }}
-              className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-[#002366] text-white hover:bg-[#012a6e] transition-all font-semibold group"
+              className="w-full h-11 flex items-center justify-center gap-2 px-4 rounded-md bg-[#002366] text-white hover:bg-[#012a6e] transition-all font-semibold text-sm"
             >
-              <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
-                <Mail className="w-5 h-5 text-white" />
-              </div>
-              <div className="text-left flex-1">
-                <div className="text-sm font-semibold">Continue with Email</div>
-                <div className="text-xs text-white/70 font-normal">Sign up with your email address</div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-white/70 group-hover:translate-x-0.5 transition-transform" />
+              <Mail className="w-5 h-5" />
+              <span>Continue with Email</span>
             </button>
 
             {/* Google */}
@@ -337,24 +331,17 @@ export default function Register() {
                   size="large"
                   text="continue_with"
                   shape="rectangular"
-                  width="368"
+                  width="400"
                 />
               </div>
             ) : (
               <button
                 onClick={() => setSocialNotice("google")}
-                className="w-full flex items-center gap-4 px-4 py-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 transition-all group"
+                className="w-full h-11 flex items-center justify-center gap-2 px-4 rounded-md bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition-all font-medium text-sm"
               >
-                <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0">
-                  <SiGoogle className="w-5 h-5 text-slate-700" />
-                </div>
-                <div className="text-left flex-1">
-                  <div className="text-sm font-semibold">Continue with Google</div>
-                  <div className="text-xs text-slate-500 font-normal">Use your Google account</div>
-                </div>
-                <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-medium shrink-0">
-                  Coming soon
-                </span>
+                <SiGoogle className="w-5 h-5" />
+                <span>Continue with Google</span>
+                <span className="ml-1 text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-medium">soon</span>
               </button>
             )}
 
@@ -503,20 +490,24 @@ export default function Register() {
               {isVerifying ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Verifying…</> : <>Verify and continue <ArrowRight className="w-4 h-4 ml-1" /></>}
             </Button>
 
-            <div className="flex items-center justify-center gap-4 text-xs text-slate-500">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full border-[#002366]/30 text-[#002366] hover:bg-[#002366]/5 hover:text-[#002366] font-medium"
+              onClick={handleResend}
+              disabled={resendLoading}
+            >
+              {resendLoading
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending…</>
+                : <><Mail className="w-4 h-4 mr-2" />Send verification code again</>}
+            </Button>
+
+            <div className="text-center">
               <button
-                className="text-[#002366] underline hover:text-[#012a6e] disabled:opacity-50"
-                disabled={resendLoading}
-                onClick={handleResend}
-              >
-                {resendLoading ? "Sending…" : "Resend code"}
-              </button>
-              <span className="text-slate-400">·</span>
-              <button
-                className="text-[#002366] underline hover:text-[#012a6e]"
+                className="text-xs text-slate-500 underline hover:text-slate-700"
                 onClick={() => { setError(null); setOtpDigits(["", "", "", "", "", ""]); setStep("details"); }}
               >
-                Change email
+                Change email address
               </button>
             </div>
           </div>

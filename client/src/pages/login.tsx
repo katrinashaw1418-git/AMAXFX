@@ -396,7 +396,7 @@ export default function Login() {
                           size="large"
                           text="signin_with"
                           shape="rectangular"
-                          width="368"
+                          width="400"
                         />
                       )}
                     </div>
