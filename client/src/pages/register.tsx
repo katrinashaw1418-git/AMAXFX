@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Loader2, Shield, Mail, CheckCircle2,
   ArrowRight, ArrowLeft, ChevronRight, X,
@@ -16,6 +17,32 @@ import { SiGoogle } from "react-icons/si";
 const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
 type Step = "method" | "details" | "verify" | "services";
+
+const COUNTRY_CODES: { code: string; dial: string; flag: string; name: string }[] = [
+  { code: "AU", dial: "+61",  flag: "🇦🇺", name: "Australia" },
+  { code: "NZ", dial: "+64",  flag: "🇳🇿", name: "New Zealand" },
+  { code: "US", dial: "+1",   flag: "🇺🇸", name: "United States" },
+  { code: "GB", dial: "+44",  flag: "🇬🇧", name: "United Kingdom" },
+  { code: "CA", dial: "+1",   flag: "🇨🇦", name: "Canada" },
+  { code: "CN", dial: "+86",  flag: "🇨🇳", name: "China" },
+  { code: "HK", dial: "+852", flag: "🇭🇰", name: "Hong Kong" },
+  { code: "TW", dial: "+886", flag: "🇹🇼", name: "Taiwan" },
+  { code: "SG", dial: "+65",  flag: "🇸🇬", name: "Singapore" },
+  { code: "MY", dial: "+60",  flag: "🇲🇾", name: "Malaysia" },
+  { code: "JP", dial: "+81",  flag: "🇯🇵", name: "Japan" },
+  { code: "KR", dial: "+82",  flag: "🇰🇷", name: "South Korea" },
+  { code: "IN", dial: "+91",  flag: "🇮🇳", name: "India" },
+  { code: "ID", dial: "+62",  flag: "🇮🇩", name: "Indonesia" },
+  { code: "PH", dial: "+63",  flag: "🇵🇭", name: "Philippines" },
+  { code: "TH", dial: "+66",  flag: "🇹🇭", name: "Thailand" },
+  { code: "VN", dial: "+84",  flag: "🇻🇳", name: "Vietnam" },
+  { code: "AE", dial: "+971", flag: "🇦🇪", name: "United Arab Emirates" },
+  { code: "DE", dial: "+49",  flag: "🇩🇪", name: "Germany" },
+  { code: "FR", dial: "+33",  flag: "🇫🇷", name: "France" },
+  { code: "IT", dial: "+39",  flag: "🇮🇹", name: "Italy" },
+  { code: "ES", dial: "+34",  flag: "🇪🇸", name: "Spain" },
+  { code: "CH", dial: "+41",  flag: "🇨🇭", name: "Switzerland" },
+];
 
 const SERVICES = [
   {
@@ -73,7 +100,8 @@ export default function Register() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName]   = useState("");
   const [email, setEmail]         = useState("");
-  const [mobile, setMobile]       = useState("");
+  const [mobileDial, setMobileDial] = useState("+61");
+  const [mobile, setMobile]         = useState("");
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
@@ -173,17 +201,19 @@ export default function Register() {
     e.preventDefault();
     setError(null);
     if (!firstName.trim() || !lastName.trim()) { setError("Please enter your full name."); return; }
-    if (!mobile.trim() || mobile.replace(/\D/g, "").length < 8) {
+    const mobileDigits = mobile.replace(/\D/g, "");
+    if (!mobileDigits || mobileDigits.length < 6) {
       setError("Please enter a valid mobile number.");
       return;
     }
+    const fullPhone = `${mobileDial}${mobileDigits}`;
     setIsLoading(true);
     try {
       const res = await fetch("/api/auth/phone/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          phone: mobile.trim(),
+          phone: fullPhone,
           email: email.trim(),
           firstName: firstName.trim(),
           lastName: lastName.trim(),
@@ -382,9 +412,34 @@ export default function Register() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="mobile" className="text-slate-300 text-sm">Mobile number</Label>
-                <Input id="mobile" type="tel" value={mobile} onChange={e => setMobile(e.target.value)}
-                  placeholder="+61 412 345 678" required autoComplete="tel"
-                  className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50" />
+                <div className="flex gap-2">
+                  <Select value={mobileDial} onValueChange={setMobileDial}>
+                    <SelectTrigger
+                      className="w-[130px] bg-slate-700 border-slate-600 text-white focus:border-white/50"
+                      aria-label="Country code"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-800 border-slate-700 text-white max-h-72">
+                      {COUNTRY_CODES.map(c => (
+                        <SelectItem
+                          key={`${c.code}-${c.dial}`}
+                          value={c.dial}
+                          className="text-white focus:bg-slate-700 focus:text-white"
+                        >
+                          <span className="inline-flex items-center gap-2">
+                            <span className="text-base leading-none">{c.flag}</span>
+                            <span className="font-mono text-sm">{c.dial}</span>
+                            <span className="text-xs text-slate-400">{c.name}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input id="mobile" type="tel" value={mobile} onChange={e => setMobile(e.target.value)}
+                    placeholder="412 345 678" required autoComplete="tel-national"
+                    className="flex-1 bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:border-white/50" />
+                </div>
                 <p className="text-xs text-slate-500">Used for account contact and compliance records.</p>
               </div>
 
