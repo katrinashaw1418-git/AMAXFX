@@ -24,3 +24,9 @@ id = "w8VkMbYBr10XQHLm2p8jA"
 uri = "file://exports/amax_database.tar.gz"
 type = "unspecified"
 title = "AMAX database export (Postgres dump, gzipped)"
+
+[[outputs]]
+id = "4mKJ7-X5Mu4hW91sv_88j"
+uri = "file://exports/amax_database.zip"
+type = "unspecified"
+title = "AMAX database export (Postgres dump, .zip)"
