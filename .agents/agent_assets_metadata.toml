@@ -18,3 +18,9 @@ id = "ZEpl9dm8n4jRQCAesBhoo"
 uri = "file://attached_assets/amax-logo-blue-full.png"
 type = "image"
 title = "AMAX Full Logo — Blue Version"
+
+[[outputs]]
+id = "w8VkMbYBr10XQHLm2p8jA"
+uri = "file://exports/amax_database.tar.gz"
+type = "unspecified"
+title = "AMAX database export (Postgres dump, gzipped)"
