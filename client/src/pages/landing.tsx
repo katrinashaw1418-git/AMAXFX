@@ -453,7 +453,7 @@ export default function Landing() {
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             <div>
               <div className="mb-3 flex items-center gap-2">
-                <img src="/amax-logo-new.png" alt="AMAX GLOBAL" className="h-9 w-auto" />
+                <img src="/amaxglobal-rounded-square-icon.png" alt="AMAX Global" className="h-9 w-auto" />
                 <span className="font-bold text-white text-lg tracking-widest whitespace-nowrap">AMAX GLOBAL</span>
               </div>
               <p className="text-sm text-white/60 leading-relaxed">
