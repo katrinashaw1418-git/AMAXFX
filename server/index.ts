@@ -1,7 +1,10 @@
 import express, { type Request, Response, NextFunction } from "express";
 import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+// Production-safe helpers are split out so this bundle does not statically
+// import the `vite` package. setupVite (which requires vite) is lazy-loaded
+// further down via a runtime dynamic import — only in development.
+import { log, serveStatic } from "./static";
 
 const app = express();
 app.set("trust proxy", 1); // Trust first proxy hop (Replit's reverse proxy sets X-Forwarded-For)
@@ -103,6 +106,14 @@ app.use((req, res, next) => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
+    // Vite is a devDependency and is not present on production runtimes
+    // (DigitalOcean App Platform, etc.). Load `./vite` via a Function-
+    // constructor dynamic import so esbuild's static analysis cannot inline
+    // it into dist/index.js. This branch is never taken in production.
+    const dynamicImport = new Function("p", "return import(p)") as (
+      p: string,
+    ) => Promise<typeof import("./vite")>;
+    const { setupVite } = await dynamicImport("./vite.js");
     await setupVite(app, server);
   } else {
     serveStatic(app);
