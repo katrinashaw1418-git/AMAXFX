@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import { type Express } from "express";
 import fs from "fs";
 import path from "path";
 import { createServer as createViteServer, createLogger } from "vite";
@@ -6,18 +6,15 @@ import { type Server } from "http";
 import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
 
+// Development-only Vite middleware setup. This module imports the `vite`
+// package and the project's `vite.config.ts` at the top level. To keep the
+// production bundle free of those imports, server/index.ts loads THIS module
+// via a Function-constructor dynamic import that esbuild cannot resolve at
+// build time — so the bundler never inlines it into dist/index.js.
+//
+// Production-safe helpers (log, serveStatic) live in server/static.ts.
+
 const viteLogger = createLogger();
-
-export function log(message: string, source = "express") {
-  const formattedTime = new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-
-  console.log(`${formattedTime} [${source}] ${message}`);
-}
 
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
@@ -64,22 +61,5 @@ export async function setupVite(app: Express, server: Server) {
       vite.ssrFixStacktrace(e as Error);
       next(e);
     }
-  });
-}
-
-export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "public");
-
-  if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
-    );
-  }
-
-  app.use(express.static(distPath));
-
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
