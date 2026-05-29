@@ -43,11 +43,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
     <div className="flex flex-col h-full bg-white">
       {/* Logo Section — Royal Navy bar at top */}
       <div className="px-5 py-4 flex items-center gap-3" style={{ background: NAVY, borderBottom: `1px solid ${NAVY}` }}>
-        <img src="/amaxglobal-rounded-square-icon.png" alt="AMAX Global" className="w-9 h-9 flex-shrink-0" />
-        <div>
-          <h1 className="text-base font-bold text-white leading-tight tracking-widest">AMAX GLOBAL</h1>
-          <p className="text-xs text-white/70">FX &amp; Digital Payments</p>
-        </div>
+        <img src="/amax-bluebackground-yacht-water-logo.png" alt="AMAX Global FX" className="h-10 w-auto object-contain" />
       </div>
 
       {/* Navigation Menu */}
