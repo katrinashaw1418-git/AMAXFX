@@ -21,6 +21,7 @@ import {
   BarChart3,
   Send,
   Mail,
+  MapPin,
   Phone,
   Building2,
   Briefcase,
@@ -375,6 +376,9 @@ export default function Landing() {
               {[
                 { Icon: Phone,  title: "Phone",  href: "tel:+61283201908",              label: "+61 2 8320 1908" },
                 { Icon: Mail,   title: "Email",  href: "mailto:info@amaxglobal.com.au", label: "info@amaxglobal.com.au" },
+                // Registered office. Matches the ABN register (NSW 2216) and the address
+                // already published on the AML policy page — kept in step if either changes.
+                { Icon: MapPin, title: "Address", href: "",                            label: "Level 2, 8–12 King Street, Rockdale NSW 2216" },
               ].map(({ Icon, title, href, label }) => (
                 <div key={title} className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-blue-100">
