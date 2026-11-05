@@ -223,7 +223,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="font-semibold text-gray-900">Digital Asset Exchange</p>
-              <p className="text-xs text-gray-500">Fiat ↔ digital assets via Independent Reserve</p>
+              <p className="text-xs text-gray-500">Fiat ↔ digital assets via an exchange partner</p>
             </div>
           </CardContent>
         </Card>

@@ -26,7 +26,7 @@ export default function PrivacyPolicy() {
 
       <main className="max-w-4xl mx-auto px-6 py-16">
         <h1 className="text-4xl font-bold mb-2">Privacy Policy</h1>
-        <p className="text-sm mb-10 text-white/60">Last updated: {new Date().toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}</p>
+        <p className="text-sm mb-10 text-white/60">Last updated: 5 November 2026</p>
 
         <div className="space-y-8 leading-relaxed text-white/80">
           <div className="rounded-lg p-5 text-sm" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", color: "#ffffff" }}>
@@ -38,7 +38,7 @@ export default function PrivacyPolicy() {
             { title: "2. Information We Collect", body: <><p>We may collect the following categories of personal information:</p><ul className="list-disc list-inside space-y-1 mt-2 text-white/80"><li>Identity information (full name, date of birth, government-issued ID)</li><li>Contact information (email address, phone number, residential address)</li><li>Financial information (bank account details, transaction history)</li><li>KYC/AML verification data (as required by AUSTRAC obligations)</li><li>Device and usage data (IP address, browser type, session logs)</li></ul></> },
             { title: "3. How We Use Your Information", body: <><p>We use your personal information to:</p><ul className="list-disc list-inside space-y-1 mt-2 text-white/80"><li>Verify your identity and comply with KYC/AML obligations</li><li>Process transactions and provide platform services</li><li>Comply with AUSTRAC reporting requirements</li><li>Prevent fraud, money laundering, and terrorist financing</li><li>Communicate service and compliance-related updates</li></ul></> },
             { title: "4. Disclosure of Information", body: <>We may disclose your personal information to regulatory authorities (including AUSTRAC), law enforcement agencies, and third-party service providers engaged in operating the platform — only to the extent required by law or necessary to provide our services.</> },
-            { title: "5. Data Security", body: <>We implement industry-standard security measures including 256-bit TLS encryption, access controls, two-factor authentication, and audit logging to protect your personal information from unauthorised access, disclosure, or misuse.</> },
+            { title: "5. Data Security", body: <>We use security measures including encrypted connections, access controls and audit logging to protect personal information from unauthorised access, disclosure or misuse.</> },
             { title: "6. Contact", body: <>For privacy-related enquiries, please contact us at <a href="mailto:info@amaxglobal.com.au" className="text-white underline hover:text-white/70">info@amaxglobal.com.au</a>.</> },
           ].map(({ title, body }) => (
             <section key={title}>
@@ -51,7 +51,7 @@ export default function PrivacyPolicy() {
 
       <footer className="py-6 mt-16" style={{ borderTop: "1px solid #152e4a" }}>
         <div className="max-w-4xl mx-auto px-6 text-center text-xs text-white/70">
-          © {new Date().getFullYear()} AMAX. ABN 54 690 827 608. AUSTRAC Registered Digital Currency Exchange.
+          © {new Date().getFullYear()} AMAX GLOBAL Pty Ltd. ABN 54 690 827 608. AUSTRAC registration applications under assessment; not yet providing services.
         </div>
       </footer>
     </div>

@@ -30,67 +30,67 @@ import {
 
 const NAVY = "#002366";
 
+// Regulatory status wording. AMAX GLOBAL Pty Ltd is enrolled with AUSTRAC and has
+// applied for registration on the Remittance Sector Register and the Virtual Asset
+// Service Provider Register. It is NOT registered and is not providing designated
+// services. Do not describe AMAX as "registered", "regulated" or "licensed" until
+// AUSTRAC confirms registration in writing. Any change to regulatory wording on this
+// site must be approved by the AML/CTF Compliance Officer first.
+const STATUS_LINE =
+  "Pre-launch: AMAX GLOBAL Pty Ltd has applied to AUSTRAC for registration and is not yet providing remittance or digital currency exchange services.";
+
 const services = [
   {
-    icon: ArrowRightLeft,
-    title: "FX Exchange",
-    description: "Convert between major currencies including AUD, USD, EUR, GBP, CAD, SGD, JPY, HKD and more at competitive interbank rates.",
-    features: ["Real-time exchange rates", "Multi-currency accounts", "Instant settlement"],
-    iconBg: "bg-purple-100", iconColor: "text-purple-700",
-  },
-  {
-    icon: Wallet,
-    title: "Multi-Currency Accounts",
-    description: "Send and receive funds across multiple currencies with full transaction history. Balances reflect funds held with regulated partner institutions — AMAX does not hold client funds.",
-    features: ["Multi-currency balances", "Instant transfers", "Full audit trail"],
-    iconBg: "bg-blue-100", iconColor: "text-blue-700",
+    icon: Globe2,
+    title: "FX Remittance",
+    description: "Send money domestically and overseas. Each transfer is funded for that transfer only, converted at the rate you accept and paid to the recipient's bank account.",
+    features: ["Rate and fees shown before you confirm", "Recipients checked before payment", "Funded one transfer at a time"],
+    iconBg: "bg-green-100", iconColor: "text-green-700",
   },
   {
     icon: Bitcoin,
-    title: "Crypto Exchange",
-    description: "Buy, sell, and hold digital assets including BTC, ETH, USDT, and USDC through a compliant, regulated platform.",
-    features: ["BTC, ETH, USDT & USDC", "Real-time market prices", "Transparent fee structure"],
+    title: "Digital Currency Exchange",
+    description: "Buy or sell BTC, ETH, USDT and USDC. Purchases are delivered to your own verified wallet and sale proceeds are paid to your own verified bank account.",
+    features: ["BTC, ETH, USDT & USDC", "Delivered to your own wallet", "AMAX does not hold your crypto"],
     iconBg: "bg-amber-100", iconColor: "text-amber-700",
   },
   {
-    icon: Globe2,
-    title: "Remittance",
-    description: "Send funds domestically and internationally with streamlined processing, competitive FX, and full compliance tracking.",
-    features: ["Cross-border transfers", "40+ supported corridors", "Same-day processing"],
-    iconBg: "bg-green-100", iconColor: "text-green-700",
+    icon: Shield,
+    title: "Compliance Built In",
+    description: "Identity verification, sanctions and PEP screening and transaction monitoring are designed to apply before and during every transaction.",
+    features: ["Identity verified before any service", "Sanctions & PEP screening", "Ongoing transaction monitoring"],
+    iconBg: "bg-blue-100", iconColor: "text-blue-700",
   },
 ];
 
 const steps = [
-  { step: "01", title: "Create Your Account", description: "Register and complete identity verification (KYC/AML) in minutes." },
-  { step: "02", title: "Fund Your Account",     description: "Deposit funds via bank transfer into your multi-currency account, held with regulated partner institutions." },
-  { step: "03", title: "Exchange or Remit",    description: "Convert currencies or send cross-border payments at transparent rates." },
-  { step: "04", title: "Track Everything",     description: "Monitor all transactions in real time with a complete audit trail." },
+  { step: "01", title: "Verify Your Identity", description: "Complete identity verification before using any service." },
+  { step: "02", title: "Get a Quote",          description: "See the exchange rate and fees before you confirm." },
+  { step: "03", title: "Fund the Transaction", description: "Pay in from your own bank account (or your own wallet, for a crypto sale) for that transaction only." },
+  { step: "04", title: "Receive the Payout",   description: "Money or crypto is sent to the verified destination. Nothing is held for you in between." },
 ];
 
 const compliancePoints = [
-  "Full KYC/AML identity verification on all users",
-  "Transaction monitoring and suspicious activity reporting (SAR)",
-  "AUSTRAC registered Digital Currency Exchange (DCE)",
-  "Segregated client funds — never co-mingled with operational funds",
-  "256-bit encryption across all data at rest and in transit",
-  "Complete audit logs retained for regulatory review",
+  "Identity verification before any designated service is provided",
+  "Sanctions, PEP and adverse-media screening at onboarding and on an ongoing basis",
+  "Transaction monitoring, with suspicious matters reported to AUSTRAC",
+  "No customer money or crypto held between transactions",
+  "AUSTRAC registration applications under assessment — services not yet available",
+  "Records kept for at least 7 years",
 ];
 
 const keyFeatures = [
-  { icon: Zap,       label: "Instant Settlements", description: "Near real-time FX and account transfers",  iconBg: "bg-purple-100", iconColor: "text-purple-700" },
-  { icon: BarChart3, label: "Competitive Rates",    description: "Tight spreads on 20+ currency pairs",     iconBg: "bg-green-100",  iconColor: "text-green-700" },
-  { icon: Globe2,    label: "Global Coverage",      description: "Send and receive in 40+ countries",        iconBg: "bg-blue-100",   iconColor: "text-blue-700" },
-  { icon: Lock,      label: "Bank-Grade Security",  description: "256-bit TLS, 2FA, and session audit logs", iconBg: "bg-slate-100",  iconColor: "text-slate-700" },
-  { icon: FileCheck, label: "Regulatory Compliant", description: "AUSTRAC registered & fully audited",      iconBg: "bg-green-100",  iconColor: "text-green-700" },
-  { icon: Users,     label: "Dedicated Support",    description: "Human support for all compliance queries", iconBg: "bg-purple-100", iconColor: "text-purple-700" },
+  { icon: BarChart3, label: "Upfront Pricing",       description: "Exchange rate and fees displayed before you confirm",             iconBg: "bg-green-100",  iconColor: "text-green-700" },
+  { icon: Wallet,    label: "No Balances Held",      description: "Every transaction is paid out; AMAX does not hold customer funds between transactions", iconBg: "bg-purple-100", iconColor: "text-purple-700" },
+  { icon: Lock,      label: "Secure by Design",      description: "Encrypted connections and audit logging",                          iconBg: "bg-slate-100",  iconColor: "text-slate-700" },
+  { icon: FileCheck, label: "Compliance First",      description: "AML/CTF Program in place; AUSTRAC registration applications under assessment", iconBg: "bg-green-100",  iconColor: "text-green-700" },
+  { icon: Building2, label: "Australian Company",    description: "AMAX GLOBAL Pty Ltd, ABN 54 690 827 608",                          iconBg: "bg-blue-100",   iconColor: "text-blue-700" },
+  { icon: Users,     label: "Human Support",         description: "Email and phone support",                                         iconBg: "bg-purple-100", iconColor: "text-purple-700" },
 ];
 
 const targetCustomers = [
-  { icon: UserCheck, title: "Retail Users",            description: "Individuals sending money overseas, managing multi-currency savings, or holding digital assets with full regulatory protection.",    iconBg: "bg-purple-100", iconColor: "text-purple-700" },
-  { icon: Briefcase, title: "SMEs & Businesses",       description: "Small and medium enterprises paying international suppliers, managing foreign currency exposure, or receiving cross-border payments.", iconBg: "bg-green-100",  iconColor: "text-green-700" },
-  { icon: Globe2,    title: "International Transfers", description: "Migrant workers, expats, and families sending remittances across AUD and major Asian, European, and North American corridors.",       iconBg: "bg-blue-100",   iconColor: "text-blue-700" },
-  { icon: Building2, title: "Institutional Clients",   description: "Corporate treasury teams and financial intermediaries requiring compliant FX execution, reporting, and audit-ready transaction records.", iconBg: "bg-slate-100", iconColor: "text-slate-700" },
+  { icon: UserCheck, title: "Individuals",            description: "Australian residents sending money domestically or overseas, or buying and selling digital currency.", iconBg: "bg-purple-100", iconColor: "text-purple-700" },
+  { icon: Briefcase, title: "Sole Traders & Companies", description: "Australian businesses paying suppliers or receiving funds across borders.",                         iconBg: "bg-green-100",  iconColor: "text-green-700" },
 ];
 
 const NAVY_BTN  = "bg-[#002366] hover:bg-[#012a6e] text-white font-semibold";
@@ -102,8 +102,16 @@ export default function Landing() {
   const [contactForm, setContactForm] = useState({ name: "", email: "", message: "" });
   const [contactSent, setContactSent] = useState(false);
 
+  // There is no contact-form backend on this deployment, so the form opens the
+  // visitor's email app with the message addressed to info@amaxglobal.com.au.
+  // (Previously the form showed "Message Sent" without sending anything.)
   function handleContactSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const subject = encodeURIComponent(`AMAX enquiry / register interest — ${contactForm.name}`);
+    const body = encodeURIComponent(
+      `Name: ${contactForm.name}\nEmail: ${contactForm.email}\n\n${contactForm.message}`,
+    );
+    window.location.href = `mailto:info@amaxglobal.com.au?subject=${subject}&body=${body}`;
     setContactSent(true);
     setContactForm({ name: "", email: "", message: "" });
   }
@@ -113,8 +121,8 @@ export default function Landing() {
 
       {/* ── Sticky Nav ── */}
       <div className="sticky top-0 z-50">
-        <div className="text-white/60 text-sm text-center py-2 px-6" style={{ background: NAVY }}>
-          Platform in development — services launching following completion of AUSTRAC registration and operational readiness.
+        <div className="text-white/80 text-sm text-center py-2 px-6" style={{ background: NAVY }}>
+          {STATUS_LINE}
         </div>
         <header style={{ background: "#ffffff" }}>
           <div className="max-w-6xl mx-auto px-6 py-1 flex items-center justify-between">
@@ -134,11 +142,11 @@ export default function Landing() {
                   Sign In
                 </Button>
               </Link>
-              <Link href="/register">
+              <a href="#contact">
                 <Button className={`${NAVY_BTN} text-sm px-4`}>
-                  Sign Up <ChevronRight className="w-4 h-4 ml-1" />
+                  Register Interest <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
-              </Link>
+              </a>
             </div>
           </div>
         </header>
@@ -148,38 +156,34 @@ export default function Landing() {
       <section className="py-24 text-center text-white" style={{ background: NAVY }}>
         <div className="max-w-6xl mx-auto px-6">
           <Badge className="bg-white/10 text-white border border-white/20 mb-6">
-            AUSTRAC Registered Digital Currency Exchange
+            Pre-launch · AUSTRAC registration applications under assessment
           </Badge>
           <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-6">
-            Secure FX, Multi-Currency Accounts &{" "}
-            <span className="text-blue-300">Crypto Exchange</span>
+            FX Remittance &{" "}
+            <span className="text-blue-300">Digital Currency Exchange</span>
             <br />Platform
           </h1>
           <p className="text-xl text-white/80 max-w-2xl mx-auto mb-10">
-            Send, receive, exchange, and manage funds across fiat and digital currencies — built with compliance and security at its core.
+            Send money and exchange between fiat and digital currencies. Each transaction is funded, converted and paid out to your own verified account or wallet.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/register">
-              <Button size="lg" className={`${WHITE_BTN} px-8`}>Get Started</Button>
-            </Link>
+            <a href="#contact">
+              <Button size="lg" className={`${WHITE_BTN} px-8`}>Register Interest</Button>
+            </a>
             <a href="#how-it-works">
               <Button size="lg" variant="outline" className="px-8 text-white hover:text-white hover:bg-white/10 border-white/30" style={{ background: "transparent" }}>
-                How It Works
+                How It Will Work
               </Button>
             </a>
           </div>
-          <p className="mt-6 text-sm text-white/50">
-            Already have an account?{" "}
-            <Link href="/login" className="text-white underline underline-offset-2 hover:text-white/80 transition-colors">
-              Sign In
-            </Link>
+          <p className="mt-6 text-sm text-white/60">
+            We are not accepting new customers yet. Services will start only if AUSTRAC registration is granted.
           </p>
           <div className="flex flex-wrap gap-6 justify-center mt-16 text-sm text-white/70">
             {[
-              { Icon: Shield,       label: "256-bit Encrypted" },
-              { Icon: FileCheck,    label: "AUSTRAC Registered" },
-              { Icon: Lock,         label: "KYC/AML Verified" },
-              { Icon: CheckCircle2, label: "Segregated Client Funds" },
+              { Icon: Shield,       label: "Encrypted connections" },
+              { Icon: FileCheck,    label: "Identity verified before any service" },
+              { Icon: CheckCircle2, label: "No funds held between transactions" },
             ].map(({ Icon, label }) => (
               <div key={label} className="flex items-center gap-2">
                 <Icon className="w-4 h-4 text-blue-300" />
@@ -194,13 +198,13 @@ export default function Landing() {
       <section id="services" className="py-20" style={{ background: "#ffffff" }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
-            <Badge className="mb-3" style={{ background: "#e8f0fe", color: NAVY, border: "none" }}>Our Services</Badge>
-            <h2 className="text-3xl font-bold mb-4" style={{ color: NAVY }}>Four Core Offerings</h2>
+            <Badge className="mb-3" style={{ background: "#e8f0fe", color: NAVY, border: "none" }}>Planned Services</Badge>
+            <h2 className="text-3xl font-bold mb-4" style={{ color: NAVY }}>What AMAX Will Offer</h2>
             <p className="max-w-xl mx-auto text-slate-500">
-              Built on a compliant, secure infrastructure — aligned with AUSTRAC's regulated service categories.
+              Services will start only after AUSTRAC registration is granted and our operating and compliance arrangements are in place.
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map((service) => {
               const Icon = service.icon;
               return (
@@ -232,8 +236,8 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
             <Badge className="bg-white/10 text-white border border-white/20 mb-3">How It Works</Badge>
-            <h2 className="text-3xl font-bold mb-4 text-white">Four Simple Steps</h2>
-            <p className="text-white/70 max-w-xl mx-auto">Start sending and exchanging in minutes.</p>
+            <h2 className="text-3xl font-bold mb-4 text-white">How It Will Work</h2>
+            <p className="text-white/70 max-w-xl mx-auto">The same four steps apply to every transaction.</p>
           </div>
           <div className="grid md:grid-cols-4 gap-8">
             {steps.map((step, index) => (
@@ -258,7 +262,7 @@ export default function Landing() {
           <div className="text-center mb-14">
             <Badge className="mb-3" style={{ background: "#e8f0fe", color: NAVY, border: "none" }}>Platform</Badge>
             <h2 className="text-3xl font-bold mb-4" style={{ color: NAVY }}>Key Features</h2>
-            <p className="text-slate-500 max-w-xl mx-auto">Built for reliability, transparency, and regulatory confidence.</p>
+            <p className="text-slate-500 max-w-xl mx-auto">What customers can expect when AMAX launches.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {keyFeatures.map((feature) => {
@@ -285,12 +289,15 @@ export default function Landing() {
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div>
               <Badge className="mb-4" style={{ background: "#e8f0fe", color: NAVY, border: "none" }}>Regulatory Compliance</Badge>
-              <h2 className="text-3xl font-bold mb-4" style={{ color: NAVY }}>Built for Regulators, Trusted by Users</h2>
-              <p className="mb-8 leading-relaxed text-slate-500">
-                AMAX operates under a strict compliance framework aligned with AUSTRAC guidelines for Digital Currency Exchanges and Remittance Network Providers. Every transaction is monitored, recorded, and available for regulatory inspection.
+              <h2 className="text-3xl font-bold mb-4" style={{ color: NAVY }}>Our Regulatory Status</h2>
+              <p className="mb-4 leading-relaxed text-slate-500">
+                AMAX GLOBAL Pty Ltd is enrolled with AUSTRAC as a reporting entity and has applied for registration on AUSTRAC's Remittance Sector Register and Virtual Asset Service Provider Register. Those applications are under assessment.
               </p>
-              <Link href="/login">
-                <Button className={NAVY_BTN}>Access the Platform</Button>
+              <p className="mb-8 leading-relaxed text-slate-500">
+                AMAX is not registered and will not provide remittance or digital currency exchange services unless and until registration is granted.
+              </p>
+              <Link href="/aml-policy">
+                <Button className={NAVY_BTN}>Read our AML/CTF Policy</Button>
               </Link>
             </div>
             <div>
@@ -322,7 +329,7 @@ export default function Landing() {
             <Badge className="mb-3" style={{ background: "#e8f0fe", color: NAVY, border: "none" }}>Customers</Badge>
             <h2 className="text-3xl font-bold mb-4" style={{ color: NAVY }}>Who We Serve</h2>
             <p className="text-slate-500 max-w-xl mx-auto">
-              AMAX is designed for individuals and businesses that need regulated, transparent access to FX, multi-currency accounts, crypto, and cross-border payments.
+              AMAX will serve Australian-based individuals and businesses that pass identity verification.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 gap-6">
@@ -350,13 +357,10 @@ export default function Landing() {
           <Badge className="mb-4" style={{ background: "#e8f0fe", color: NAVY, border: "none" }}>About AMAX</Badge>
           <h2 className="text-3xl font-bold mb-6" style={{ color: NAVY }}>Australia-Based. Compliance-First.</h2>
           <p className="leading-relaxed text-lg text-slate-600 mb-4">
-            AMAX is an Australian-based FX and remittance service provider, building regulated infrastructure for foreign exchange, multi-currency accounts, cryptocurrency trading, and cross-border remittance.
-          </p>
-          <p className="leading-relaxed text-slate-500 mb-4">
-            Our founding team brings experience across financial services, compliance, and technology — with a singular focus on building a platform that regulators, banks, and customers can trust.
+            AMAX GLOBAL Pty Ltd is an Australian company building a platform for FX remittance and digital currency exchange.
           </p>
           <p className="leading-relaxed text-slate-500">
-            Our mission is to make regulated access to global currencies and digital assets simpler, faster, and safer for all Australians.
+            The platform is in pre-launch. We will open to customers only after AUSTRAC registration is granted and our operating and compliance arrangements are in place.
           </p>
         </div>
       </section>
@@ -366,9 +370,9 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-14">
             <Badge className="mb-3" style={{ background: "#e8f0fe", color: NAVY, border: "none" }}>Get in Touch</Badge>
-            <h2 className="text-3xl font-bold mb-4" style={{ color: NAVY }}>Contact Us</h2>
+            <h2 className="text-3xl font-bold mb-4" style={{ color: NAVY }}>Register Interest or Contact Us</h2>
             <p className="text-slate-500 max-w-xl mx-auto">
-              Have a question about the platform, our compliance framework, or partnership opportunities? We'd love to hear from you.
+              We are not accepting customers yet. Send us your details if you would like to hear when AMAX launches, or contact us with any question.
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-12 items-start">
@@ -399,8 +403,8 @@ export default function Landing() {
                 {contactSent ? (
                   <div className="text-center py-8">
                     <CheckCircle2 className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-                    <h3 className="font-semibold text-lg mb-2" style={{ color: NAVY }}>Message Sent</h3>
-                    <p className="text-sm text-slate-500">Thank you for reaching out. We'll be in touch shortly.</p>
+                    <h3 className="font-semibold text-lg mb-2" style={{ color: NAVY }}>Check Your Email App</h3>
+                    <p className="text-sm text-slate-500">Your message has opened in your email app, addressed to info@amaxglobal.com.au. Press send there to complete it.</p>
                     <Button className={`mt-6 ${NAVY_BTN}`} onClick={() => setContactSent(false)}>Send Another</Button>
                   </div>
                 ) : (
@@ -421,8 +425,9 @@ export default function Landing() {
                         value={contactForm.message} onChange={(e) => setContactForm((f) => ({ ...f, message: e.target.value }))} required />
                     </div>
                     <Button type="submit" className={`w-full ${NAVY_BTN}`}>
-                      <Send className="w-4 h-4 mr-2" />Send Message
+                      <Send className="w-4 h-4 mr-2" />Email Your Message
                     </Button>
+                    <p className="text-xs text-slate-400 text-center">Opens your email app. Or email info@amaxglobal.com.au directly.</p>
                   </form>
                 )}
               </CardContent>
@@ -434,19 +439,14 @@ export default function Landing() {
       {/* ── CTA ── */}
       <section className="py-16" style={{ background: NAVY }}>
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">Ready to Get Started?</h2>
+          <h2 className="text-3xl font-bold text-white mb-4">Interested in AMAX?</h2>
           <p className="text-white/70 mb-8">
-            Join AMAX and experience compliant, fast, and transparent FX exchange, multi-currency accounts, crypto trading, and remittance — all in one platform.
+            We are not accepting customers yet. Register your interest and we will contact you if and when AMAX launches.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/register">
-              <Button size="lg" className={`${WHITE_BTN} px-10`}>Sign Up Now</Button>
-            </Link>
-            <Link href="/login">
-              <Button size="lg" variant="outline" className="px-10 text-white hover:text-white hover:bg-white/10 border-white/30" style={{ background: "transparent" }}>
-                Sign In
-              </Button>
-            </Link>
+            <a href="#contact">
+              <Button size="lg" className={`${WHITE_BTN} px-10`}>Register Interest</Button>
+            </a>
           </div>
         </div>
       </section>
@@ -460,7 +460,7 @@ export default function Landing() {
                 <img src="/amax-bluebackground-yacht-water-transparent-logo.png" alt="AMAX Global FX" className="h-16 w-auto object-contain" />
               </div>
               <p className="text-sm text-white/60 leading-relaxed">
-                Australia-based regulated platform for FX exchange, multi-currency accounts, cryptocurrency trading, and cross-border remittance.
+                Australian company building an FX remittance and digital currency exchange platform. Not yet providing services.
               </p>
               <p className="text-sm text-white/60 leading-relaxed mt-1">ABN 54 690 827 608</p>
             </div>
@@ -482,8 +482,8 @@ export default function Landing() {
             </div>
           </div>
           <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-white/40" style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-            <p>© {new Date().getFullYear()} AMAX. All rights reserved. AUSTRAC Registered Digital Currency Exchange. ABN 54 690 827 608</p>
-            <p>Regulated in Australia. Platform launching following regulatory registration.</p>
+            <p>© {new Date().getFullYear()} AMAX GLOBAL Pty Ltd. All rights reserved. ABN 54 690 827 608</p>
+            <p>AUSTRAC registration applications under assessment. Not yet providing remittance or digital currency exchange services.</p>
           </div>
         </div>
       </footer>

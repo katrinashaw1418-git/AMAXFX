@@ -74,8 +74,8 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
 
       {/* Regulatory labels */}
       <div className="px-4 pb-2 space-y-1">
-        <p className="text-[10px] text-gray-400 px-3">FX &amp; Remittance — AUSTRAC registered</p>
-        <p className="text-[10px] text-gray-400 px-3">DCE — AUSTRAC registered</p>
+        <p className="text-[10px] text-gray-400 px-3">Pre-launch — no live services</p>
+        <p className="text-[10px] text-gray-400 px-3">AUSTRAC registration pending</p>
       </div>
 
       {/* User Profile Section */}

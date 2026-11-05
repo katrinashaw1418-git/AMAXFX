@@ -140,7 +140,7 @@ export default function Crypto() {
       toast({
         title: "Order Submitted",
         description: isCryptoBuy
-          ? `Exchange instruction submitted. ${toCurrency} will be delivered by Independent Reserve to your nominated wallet once on-chain delivery is confirmed — typically within 1 business day.`
+          ? `Exchange instruction submitted. ${toCurrency} will be delivered by the exchange partner to your nominated wallet once on-chain delivery is confirmed — typically within 1 business day.`
           : `Exchange instruction submitted. ${toCurrency} proceeds will be transferred to your nominated account by our external regulated partner once settlement is confirmed — typically within 1 business day.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
@@ -247,7 +247,7 @@ export default function Crypto() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Digital Asset Exchange</h1>
-          <p className="text-gray-500 text-sm mt-1">Fiat ↔ digital asset exchange facilitated via Independent Reserve (external regulated partner)</p>
+          <p className="text-gray-500 text-sm mt-1">Fiat ↔ digital asset exchange via an external exchange partner (not yet appointed)</p>
         </div>
         {!rateLoading && (
           <div className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg text-sm">
@@ -272,16 +272,14 @@ export default function Crypto() {
         <Shield className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
         <div className="text-sm text-amber-800 space-y-1">
           <p>
-            <span className="font-semibold">AUSTRAC DCE Registration — Exchange &amp; Delivery Only:</span>{" "}
-            AMAX GLOBAL Pty Ltd (ABN 54 690 827 608) is registered as a Digital Currency Exchange (DCE) with AUSTRAC.
+            <span className="font-semibold">Pre-launch — Exchange &amp; Delivery Only:</span>{" "}
+            AMAX GLOBAL Pty Ltd (ABN 54 690 827 608) has applied to AUSTRAC for registration and is not yet providing digital currency exchange services.
             AMAX does not hold, store, or custody digital assets on your behalf and does not maintain crypto accounts
             for users.
           </p>
           <p className="text-xs text-amber-700">
-            <span className="font-medium">Settlement custodian:</span>{" "}
-            Exchange and delivery is executed via Independent Reserve Pty Ltd (ABN 46 164 681 443,
-            AUSTRAC DCE-100461150-001), Australia's longest-running institutional exchange.
-            Independent Reserve maintains 1:1 asset segregation with no rehypothecation.
+            <span className="font-medium">Exchange partner:</span>{" "}
+            Exchange and delivery will be executed by an AUSTRAC-registered exchange partner (not yet appointed).
             All transactions are subject to AML/CTF monitoring and FATF Travel Rule obligations.
           </p>
         </div>
@@ -300,7 +298,7 @@ export default function Crypto() {
         <CardContent className="py-4 px-6">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <p className="text-slate-400 text-xs uppercase tracking-wide mb-1">Live Spot Rate — Independent Reserve</p>
+              <p className="text-slate-400 text-xs uppercase tracking-wide mb-1">Indicative Spot Rate</p>
               <p className="text-2xl font-bold text-white">
                 {rateLoading ? (
                   <span className="text-slate-400 text-base">Loading…</span>
@@ -345,8 +343,7 @@ export default function Crypto() {
                     <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                     <span>
                       <strong>Buying Digital Assets — AUD → Crypto:</strong> AMAX routes the customer's
-                      exchange instruction through Independent Reserve Pty Ltd, an AUSTRAC-registered
-                      digital currency exchange providing execution and custodial infrastructure, who
+                      exchange instruction through an AUSTRAC-registered exchange partner (not yet appointed) providing execution and custodial infrastructure, which
                       executes the transaction and delivers digital assets directly to the customer's
                       nominated external wallet. AMAX does not operate digital asset accounts or custodial
                       wallets on behalf of customers. No AMAX crypto account is created or maintained at
@@ -381,7 +378,7 @@ export default function Crypto() {
                   <div className="flex items-center gap-3">
                     <div className="flex-1 border-t border-dashed border-gray-200" />
                     <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-gray-50 border border-gray-200 rounded-full px-3 py-1">
-                      <ArrowDown className="w-3 h-3" /> Exchange via Independent Reserve
+                      <ArrowDown className="w-3 h-3" /> Exchange via exchange partner
                     </div>
                     <div className="flex-1 border-t border-dashed border-gray-200" />
                   </div>
@@ -398,7 +395,7 @@ export default function Crypto() {
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-blue-600 flex items-center gap-1">
-                      <Send className="w-3 h-3" /> Delivered by Independent Reserve to your external wallet — enter address below
+                      <Send className="w-3 h-3" /> Delivered by the exchange partner to your external wallet — enter address below
                     </p>
                   </div>
 
@@ -419,9 +416,9 @@ export default function Crypto() {
                       className="font-mono text-sm"
                     />
                     <p className="text-xs text-gray-500">
-                      Independent Reserve delivers {toCurrency} directly to your nominated wallet as part
+                      The exchange partner delivers {toCurrency} directly to your nominated wallet as part
                       of the exchange arranged by AMAX. Deliveries to incorrect addresses cannot be
-                      reversed by AMAX or Independent Reserve.
+                      reversed by AMAX or the exchange partner.
                     </p>
                     {destinationWallet && !isValidWalletAddress(destinationWallet, toCurrency) && (
                       <p className="text-xs text-red-600 flex items-center gap-1">
@@ -445,7 +442,7 @@ export default function Crypto() {
                         </p>
                         <p className="text-xs text-blue-700 mt-0.5">
                           Required under the <em>AML/CTF Amendment Act 2024</em> (Cth), effective 1 July 2026.
-                          As originator VASP, AMAX must collect and transmit this information to Independent Reserve.
+                          As originator VASP, AMAX must collect and transmit this information to the exchange partner.
                         </p>
                       </div>
                     </div>
@@ -478,7 +475,7 @@ export default function Crypto() {
                           id="dest-custodian"
                           value={destCustodianName}
                           onChange={e => setDestCustodianName(e.target.value)}
-                          placeholder="e.g. Coinbase, Binance, Kraken, Independent Reserve"
+                          placeholder="Name of the exchange or wallet provider"
                           className="text-sm h-9"
                         />
                       </div>
@@ -572,10 +569,8 @@ export default function Crypto() {
                   <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-amber-50 border border-amber-200 text-amber-800">
                     <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                     <span>
-                      This exchange is arranged by AMAX GLOBAL Pty Ltd (ABN 54 690 827 608) under its AUSTRAC DCE
-                      registration and executed via Independent Reserve Pty Ltd (ABN 46 164 681 443,
-                      DCE-100461150-001). AMAX does not hold, custody, or exercise control over digital assets at any
-                      stage. Purchased {toCurrency} is delivered by Independent Reserve directly to the customer's
+                      This exchange will be arranged by AMAX GLOBAL Pty Ltd (ABN 54 690 827 608) only if AUSTRAC registration is granted, and executed via an AUSTRAC-registered exchange partner (not yet appointed). AMAX does not hold, custody, or exercise control over digital assets at any
+                      stage. Purchased {toCurrency} is delivered by the exchange partner directly to the customer's
                       nominated external wallet address. AMAX does not operate digital asset accounts or custodial
                       wallets on behalf of customers. Digital assets are not legal tender, are subject to significant
                       price volatility, and exchanges are irreversible once confirmed.
@@ -633,12 +628,10 @@ export default function Crypto() {
                     <Shield className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-600" />
                     <span>
                       <strong>Selling Digital Assets — Crypto → AUD:</strong> Digital asset transactions
-                      are executed via Independent Reserve Pty Ltd, an AUSTRAC-registered digital currency
-                      exchange providing execution and custodial infrastructure. AMAX does not hold,
+                      will be executed via an AUSTRAC-registered exchange partner (not yet appointed) providing execution and custodial infrastructure. AMAX does not hold,
                       custody, or exercise control over digital assets at any stage. Digital assets are
-                      transferred directly from the customer's nominated wallet to Independent Reserve for
-                      execution and settlement. Following on-chain confirmation, AUD proceeds are remitted
-                      by Independent Reserve via regulated third-party banking partners to the customer's
+                      transferred directly from the customer's nominated wallet to the exchange partner for
+                      execution and settlement. Following on-chain confirmation, AUD proceeds are remitted by the exchange partner via regulated third-party banking partners to the customer's
                       nominated bank account. Settlement timing is subject to network conditions and
                       third-party processing timeframes.
                     </span>
@@ -651,7 +644,7 @@ export default function Crypto() {
                       <p className="text-sm font-semibold text-gray-800">Sell Enquiry</p>
                       <p className="text-xs text-gray-500 mt-0.5">
                         Complete all fields below. Our compliance team will confirm your rate and provide
-                        Independent Reserve's one-time deposit address in writing before you send anything.{" "}
+                        the exchange partner's one-time deposit address in writing before you send anything.{" "}
                         <strong>Do not send crypto until you receive written confirmation.</strong>
                       </p>
                     </div>
@@ -758,7 +751,7 @@ export default function Crypto() {
                       <p className="text-xs text-gray-500">
                         The wallet address you will send {sellCurrency} from. Required under the FATF Travel Rule
                         (AML/CTF Amendment Act 2024, effective 1 July 2026). AMAX must collect and transmit originator
-                        wallet information to Independent Reserve before your transaction is processed.
+                        wallet information to the exchange partner before your transaction is processed.
                       </p>
                     </div>
 
@@ -800,7 +793,7 @@ export default function Crypto() {
                             className="text-sm h-9"
                           />
                           <p className="text-xs text-blue-700">
-                            AMAX is required to transmit the institution name to Independent Reserve as part of Travel
+                            AMAX is required to transmit the institution name to the exchange partner as part of Travel
                             Rule compliance. Providing inaccurate information may delay or prevent your transaction.
                           </p>
                         </div>
@@ -822,7 +815,7 @@ export default function Crypto() {
                       />
                       <p className="text-xs text-blue-700">
                         Under FATF Recommendation 16, AMAX must record the originator's full legal name alongside
-                        the sending wallet address before transmitting Travel Rule data to Independent Reserve.
+                        the sending wallet address before transmitting Travel Rule data to the exchange partner.
                       </p>
                     </div>
 
@@ -842,7 +835,7 @@ export default function Crypto() {
                       <p className="text-xs text-blue-700">
                         FATF Recommendation 16 requires a physical address, date of birth, or unique identification
                         number to accompany the originator's name. Physical address is the preferred identifier for
-                        cross-border transfers. This information will be transmitted to Independent Reserve.
+                        cross-border transfers. This information will be transmitted to the exchange partner.
                       </p>
                     </div>
 
@@ -860,7 +853,7 @@ export default function Crypto() {
                         className="text-sm"
                       />
                       <p className="text-xs text-gray-500">
-                        Written confirmation with Independent Reserve's one-time deposit address will be
+                        Written confirmation with the exchange partner's one-time deposit address will be
                         sent here. Do not send crypto until you have received this confirmation.
                       </p>
                     </div>
@@ -870,7 +863,7 @@ export default function Crypto() {
                       <p className="text-xs font-medium text-gray-700">Acknowledgements <span className="text-red-500">*</span> (all required)</p>
                       {([
                         { key: "wallet",       text: `I confirm the sending wallet address above is the wallet I will use to send ${sellCurrency}. I understand providing an incorrect address may cause my transaction to be rejected or flagged.` },
-                        { key: "walletType",   text: "I confirm my wallet type declaration is accurate. I understand this information is transmitted to Independent Reserve under FATF Travel Rule obligations." },
+                        { key: "walletType",   text: "I confirm my wallet type declaration is accurate. I understand this information is transmitted to the exchange partner under FATF Travel Rule obligations." },
                         { key: "notConfirmed", text: "I understand this enquiry is not a confirmed exchange. My rate and deposit address will be provided in a separate written confirmation before I send any crypto." },
                         { key: "amlCtf",       text: "I acknowledge this exchange is subject to KYC, AML/CTF monitoring, and AUSTRAC recordkeeping obligations. High-value or suspicious transactions may be reported to AUSTRAC." },
                         { key: "irreversible", text: "I understand that once I send crypto to the confirmed deposit address, the transaction is irreversible." },
@@ -930,7 +923,7 @@ export default function Crypto() {
                           : "TBD";
                         const subject = encodeURIComponent(`AMAX Crypto SELL Enquiry — ${sellAmount} ${sellCurrency}`);
                         const body = encodeURIComponent(
-                          `Hello AMAX Compliance Team,\n\nI would like to sell the following digital assets via Independent Reserve:\n\nAsset: ${sellCurrency}\nAmount: ${sellAmount}\nIndicative AUD proceeds: ${estProceeds}\n\nFATF Travel Rule Information (FATF R.16):\nOriginator full legal name: ${originatorName.trim()}\nOriginator physical address: ${originatorAddress.trim()}\nSending wallet address: ${originatorWallet}\nSending wallet type: ${walletTypeStr}\n\nPlease confirm the rate, verify my KYC, and instruct Independent Reserve to provide a one-time deposit address for my transaction.\n\nI understand this is an enquiry only. I will not send any crypto until I receive written confirmation from AMAX with Independent Reserve's deposit address.\n\nReply to: ${sellEmail}\n\nThank you.`
+                          `Hello AMAX Compliance Team,\n\nI would like to sell the following digital assets:\n\nAsset: ${sellCurrency}\nAmount: ${sellAmount}\nIndicative AUD proceeds: ${estProceeds}\n\nFATF Travel Rule Information (FATF R.16):\nOriginator full legal name: ${originatorName.trim()}\nOriginator physical address: ${originatorAddress.trim()}\nSending wallet address: ${originatorWallet}\nSending wallet type: ${walletTypeStr}\n\nPlease confirm the rate, verify my KYC, and instruct the exchange partner to provide a one-time deposit address for my transaction.\n\nI understand this is an enquiry only. I will not send any crypto until I receive written confirmation from AMAX with the exchange partner's deposit address.\n\nReply to: ${sellEmail}\n\nThank you.`
                         );
                         window.open(`mailto:info@amaxglobal.com.au?subject=${subject}&body=${body}`, "_self");
                       }}
@@ -956,15 +949,15 @@ export default function Crypto() {
                         },
                         {
                           step: "Step 2 — Rate confirmation and deposit address",
-                          detail: "Our compliance team confirms your KYC, locks your rate, and instructs Independent Reserve to generate a one-time deposit address for your transaction. You receive written confirmation by email — typically within 2 business hours.",
+                          detail: "Our compliance team confirms your KYC, locks your rate, and instructs the exchange partner to generate a one-time deposit address for your transaction. You receive written confirmation by email — typically within 2 business hours.",
                         },
                         {
-                          step: `Step 3 — Send your ${sellCurrency} to Independent Reserve`,
-                          detail: `Only after receiving written confirmation should you send ${sellCurrency} — directly to Independent Reserve's one-time deposit address. Do not send to any other address. AMAX does not maintain crypto wallets and will never ask you to send crypto to an AMAX address.`,
+                          step: `Step 3 — Send your ${sellCurrency} to the exchange partner`,
+                          detail: `Only after receiving written confirmation should you send ${sellCurrency} — directly to the exchange partner's one-time deposit address. Do not send to any other address. AMAX does not maintain crypto wallets and will never ask you to send crypto to an AMAX address.`,
                         },
                         {
                           step: "Step 4 — AUD credited to your account",
-                          detail: `Independent Reserve confirms receipt on-chain${sellCurrency === "BTC" ? " (typically 3+ BTC confirmations)" : ""}, executes the exchange at your confirmed rate, and remits AUD proceeds to our regulated banking partner. Your account is credited within 1 business day of on-chain confirmation.`,
+                          detail: `The exchange partner confirms receipt on-chain${sellCurrency === "BTC" ? " (typically 3+ BTC confirmations)" : ""}, executes the exchange at your confirmed rate, and remits AUD proceeds to our regulated banking partner. Your account is credited within 1 business day of on-chain confirmation.`,
                         },
                       ].map(({ step, detail }) => (
                         <div key={step} className="flex gap-3">
@@ -993,23 +986,18 @@ export default function Crypto() {
                     {showDisclosure && (
                       <div className="p-4 text-xs text-gray-600 space-y-3 leading-relaxed border-t bg-white">
                         <p>
-                          This sell transaction is arranged by AMAX GLOBAL Pty Ltd (ABN 54 690 827 608), registered as a
-                          Digital Currency Exchange (DCE) with AUSTRAC. The exchange is executed by Independent Reserve
-                          Pty Ltd (AUSTRAC DCE-100461150-001), which acts as the independent exchange and settlement
-                          counterparty.
+                          This sell transaction will be arranged by AMAX GLOBAL Pty Ltd (ABN 54 690 827 608), which has applied to AUSTRAC for registration. The exchange will be executed by an AUSTRAC-registered exchange partner (not yet appointed), acting as the independent exchange and settlement counterparty.
                         </p>
                         <p>
                           AMAX does not hold, receive, control, or custody your digital assets at any point in this
-                          process. Your crypto is sent directly to Independent Reserve. AUD proceeds are remitted by
-                          Independent Reserve to our regulated banking partner and credited to your account. AMAX acts
+                          process. Your crypto is sent directly to the exchange partner. AUD proceeds are remitted by the exchange partner to our regulated banking partner and credited to your account. AMAX acts
                           as program manager only — funds are held by the regulated partner, not by AMAX GLOBAL Pty Ltd.
                         </p>
                         <p>
                           This transaction is subject to AML/CTF monitoring under the{" "}
                           <em>Anti-Money Laundering and Counter-Terrorism Financing Act 2006</em> (Cth) and the FATF
                           Travel Rule as implemented through the <em>AML/CTF Amendment Act 2024</em> (Cth), effective
-                          1 July 2026. Originator wallet information collected above will be transmitted to Independent
-                          Reserve as required. Threshold transactions of AUD 10,000 or more, and all suspicious
+                          1 July 2026. Originator wallet information collected above will be transmitted to the exchange partner as required. Threshold transactions of AUD 10,000 or more, and all suspicious
                           transactions regardless of value, may be reported to AUSTRAC. AMAX retains transaction
                           records for 7 years as required under AUSTRAC recordkeeping obligations.
                         </p>
@@ -1097,10 +1085,8 @@ export default function Crypto() {
         <p className="text-xs text-gray-500">
           All digital asset exchange transactions are facilitated through external regulated partners. AMAX acts as a
           non-custodial platform and does not hold client funds or digital assets. AMAX GLOBAL Pty Ltd (ABN 54 690 827 608)
-          is registered as a Digital Currency Exchange (DCE) with AUSTRAC. Execution and delivery is performed by
-          Independent Reserve Pty Ltd (ABN 46 164 681 443, AUSTRAC DCE-100461150-001, ISO 27001 certified), an
-          Australian-domiciled institutional exchange with 1:1 asset segregation and no rehypothecation. Purchased
-          digital assets are delivered by Independent Reserve directly to your nominated external wallet address. All
+          has applied to AUSTRAC for registration and is not yet providing services. Execution and delivery will be performed by an AUSTRAC-registered exchange partner (not yet appointed). Purchased
+          digital assets are delivered by the exchange partner directly to your nominated external wallet address. All
           transactions are subject to AML/CTF monitoring under the <em>Anti-Money Laundering and Counter-Terrorism
           Financing Act 2006</em> (Cth) and FATF Travel Rule obligations (effective 1 July 2026). Digital assets are
           not legal tender, not backed by government guarantee, and subject to significant price risk. Past performance
@@ -1119,7 +1105,7 @@ export default function Crypto() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="text-xs px-3 py-1.5 rounded-full font-medium w-fit bg-amber-100 text-amber-800">
-              Buy — Fiat → Digital Asset via Independent Reserve
+              Buy — Fiat → Digital Asset via exchange partner
             </div>
             <div className="bg-gray-50 rounded-lg p-4 space-y-3 text-sm">
               <div className="flex justify-between">
@@ -1165,8 +1151,7 @@ export default function Crypto() {
               <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
               <span>
                 Delivery to incorrect addresses cannot be reversed. By confirming, you authorise AMAX GLOBAL
-                Pty Ltd (ABN 54 690 827 608) to route this exchange through Independent Reserve Pty Ltd
-                (DCE-100461150-001) and deliver {toCurrency} to the specified wallet. AMAX does not custody
+                Pty Ltd (ABN 54 690 827 608) to route this exchange through its exchange partner and deliver {toCurrency} to the specified wallet. AMAX does not custody
                 digital assets. This transaction is subject to AML/CTF monitoring and Travel Rule reporting
                 obligations and may be disclosed to AUSTRAC.
               </span>

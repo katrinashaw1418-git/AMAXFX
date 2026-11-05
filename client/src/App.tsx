@@ -21,7 +21,10 @@ import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import NotFound from "@/pages/not-found";
 import AdminCompliance from "@/pages/admin-compliance";
-import Register from "@/pages/register";
+// Public sign-up is closed until AUSTRAC registration is granted. To reopen it,
+// route /register back to "@/pages/register" AND set PUBLIC_REGISTRATION_OPEN=true
+// on the server — only with the AML/CTF Compliance Officer's written approval.
+import RegistrationClosed from "@/pages/registration-closed";
 import VerifyEmail from "@/pages/verify-email";
 import Signout from "@/pages/signout";
 import { Loader2 } from "lucide-react";
@@ -76,7 +79,7 @@ function Router() {
       <Route path="/aml-policy"     component={AmlPolicy}      />
       <Route path="/admin-compliance" component={AdminCompliance} />
       <Route path="/login"          component={Login}          />
-      <Route path="/register"       component={Register}       />
+      <Route path="/register"       component={RegistrationClosed} />
       <Route path="/verify-email"   component={VerifyEmail}    />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword}  />
