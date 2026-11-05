@@ -167,7 +167,7 @@ export default function CurrencyBalances({ hideSummary = false }: { hideSummary?
         <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-400" />
         <span>
           Digital asset exchange (BTC, ETH, USDT, USDC) is available via the Crypto Exchange page.
-          AMAX does not hold digital assets — all crypto is settled through Independent Reserve Pty Ltd (AUSTRAC DCE-100461150-001).
+          AMAX does not hold digital assets — crypto will be settled through an AUSTRAC-registered exchange partner (not yet appointed).
         </span>
       </div>
     </div>

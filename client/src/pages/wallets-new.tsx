@@ -1411,7 +1411,7 @@ export default function Wallets() {
                           id="vasp-name"
                           value={vaspName}
                           onChange={e => setVaspName(e.target.value)}
-                          placeholder="e.g. Coinbase, Binance, Kraken, Independent Reserve"
+                          placeholder="Name of the exchange or wallet provider"
                           className="h-8 text-sm"
                         />
                         <p className="text-xs text-muted-foreground mt-0.5">Name of the regulated exchange or VASP that controls the destination wallet — required to transmit Travel Rule data to the receiving institution.</p>

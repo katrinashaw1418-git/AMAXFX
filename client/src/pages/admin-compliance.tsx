@@ -527,7 +527,7 @@ export default function AdminCompliance() {
                   Pending Exchange Settlements
                 </CardTitle>
                 <p className="text-xs text-muted-foreground">
-                  Exchanges awaiting external confirmation. Fiat→crypto: confirm after Independent Reserve on-chain delivery.
+                  Exchanges awaiting external confirmation. Fiat→crypto: confirm after the exchange partner's on-chain delivery.
                   Fiat→fiat: confirm after external regulated partner settlement. Completing credits the TO wallet; failing refunds the FROM wallet.
                 </p>
               </CardHeader>

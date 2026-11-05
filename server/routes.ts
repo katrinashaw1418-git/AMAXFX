@@ -44,6 +44,22 @@ import {
 // ---------------------------------------------------------------------------
 const CRYPTO_CURRENCIES = ["BTC", "ETH", "USDT", "USDC"];
 
+// Public sign-up is CLOSED by default. AMAX GLOBAL Pty Ltd is enrolled with AUSTRAC
+// but not registered on the Remittance Sector Register or the Virtual Asset Service
+// Provider Register, so it must not onboard customers. New accounts (email, Google
+// or phone sign-up) are refused unless PUBLIC_REGISTRATION_OPEN is explicitly "true".
+// Only set it after registration is granted, with the AML/CTF Compliance Officer's
+// written approval. Existing accounts can still sign in.
+const PUBLIC_REGISTRATION_OPEN = process.env.PUBLIC_REGISTRATION_OPEN === "true";
+
+function refuseRegistration(res: import("express").Response) {
+  return res.status(403).json({
+    code: "registration_closed",
+    error:
+      "AMAX is not accepting new customers yet. AMAX GLOBAL Pty Ltd has applied to AUSTRAC for registration and is not yet providing services. To register your interest, email info@amaxglobal.com.au.",
+  });
+}
+
 function classifyAssetType(from?: string | null, to?: string | null): "fiat" | "crypto" | "cross" {
   const fromCrypto = from ? CRYPTO_CURRENCIES.includes(from) : false;
   const toCrypto   = to   ? CRYPTO_CURRENCIES.includes(to)   : false;
@@ -1058,10 +1074,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             { userId: uid, type: "exchange",   fromCurrency: "AUD", toCurrency: "USD", amount: "25000.00", fee: "62.50", exchangeRate: "0.64800000", status: "completed", settlementStatus: "partner_executed", description: "FX Conversion AUD → USD", assetType: "fiat", direction: "exchange", purposeOfTransfer: "investment", createdAt: new Date("2025-10-22T09:45:00") },
             { userId: uid, type: "exchange",   fromCurrency: "AUD", toCurrency: "CNY", amount: "18000.00", fee: "45.00", exchangeRate: "4.62000000", status: "completed", settlementStatus: "partner_executed", description: "FX Conversion AUD → CNY", assetType: "fiat", direction: "exchange", purposeOfTransfer: "personal_transfers", createdAt: new Date("2025-11-01T13:20:00") },
             { userId: uid, type: "exchange",   fromCurrency: "AUD", toCurrency: "GBP", amount: "10000.00", fee: "25.00", exchangeRate: "0.51200000", status: "completed", settlementStatus: "partner_executed", description: "FX Conversion AUD → GBP", assetType: "fiat", direction: "exchange", purposeOfTransfer: "business_payments", createdAt: new Date("2025-11-20T08:15:00") },
-            // Digital Asset Exchange (crypto buy/sell via Independent Reserve)
-            { userId: uid, type: "exchange",   fromCurrency: "AUD", toCurrency: "BTC", amount: "5000.00",  fee: "25.00", exchangeRate: "0.00001524", status: "completed", settlementStatus: "partner_executed", description: "Digital Asset Exchange AUD → BTC via Independent Reserve", assetType: "cross", direction: "exchange", beneficiaryName: "Independent Reserve Pty Ltd", purposeOfTransfer: "investment", createdAt: new Date("2025-10-28T10:00:00") },
-            { userId: uid, type: "exchange",   fromCurrency: "BTC", toCurrency: "AUD", amount: "0.02500000", fee: "0.00012500", exchangeRate: "65420.00000000", status: "completed", settlementStatus: "partner_executed", description: "Digital Asset Exchange BTC → AUD via Independent Reserve", assetType: "cross", direction: "exchange", beneficiaryName: "Independent Reserve Pty Ltd", purposeOfTransfer: "investment", createdAt: new Date("2025-11-15T14:55:00") },
-            { userId: uid, type: "exchange",   fromCurrency: "AUD", toCurrency: "ETH", amount: "8000.00",  fee: "40.00", exchangeRate: "0.00033500", status: "completed", settlementStatus: "partner_executed", description: "Digital Asset Exchange AUD → ETH via Independent Reserve", assetType: "cross", direction: "exchange", beneficiaryName: "Independent Reserve Pty Ltd", purposeOfTransfer: "investment", createdAt: new Date("2025-12-02T09:30:00") },
+            // Digital Asset Exchange (crypto buy/sell via exchange partner)
+            { userId: uid, type: "exchange",   fromCurrency: "AUD", toCurrency: "BTC", amount: "5000.00",  fee: "25.00", exchangeRate: "0.00001524", status: "completed", settlementStatus: "partner_executed", description: "Digital Asset Exchange AUD → BTC via exchange partner", assetType: "cross", direction: "exchange", beneficiaryName: "exchange partner", purposeOfTransfer: "investment", createdAt: new Date("2025-10-28T10:00:00") },
+            { userId: uid, type: "exchange",   fromCurrency: "BTC", toCurrency: "AUD", amount: "0.02500000", fee: "0.00012500", exchangeRate: "65420.00000000", status: "completed", settlementStatus: "partner_executed", description: "Digital Asset Exchange BTC → AUD via exchange partner", assetType: "cross", direction: "exchange", beneficiaryName: "exchange partner", purposeOfTransfer: "investment", createdAt: new Date("2025-11-15T14:55:00") },
+            { userId: uid, type: "exchange",   fromCurrency: "AUD", toCurrency: "ETH", amount: "8000.00",  fee: "40.00", exchangeRate: "0.00033500", status: "completed", settlementStatus: "partner_executed", description: "Digital Asset Exchange AUD → ETH via exchange partner", assetType: "cross", direction: "exchange", beneficiaryName: "exchange partner", purposeOfTransfer: "investment", createdAt: new Date("2025-12-02T09:30:00") },
           ];
           for (const tx of txs) {
             await db.insert(transactions as any).values(tx).onConflictDoNothing();
@@ -1114,6 +1130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register new user
   app.post("/api/auth/register", async (req, res) => {
+    if (!PUBLIC_REGISTRATION_OPEN) return refuseRegistration(res);
     try {
       const { firstName, lastName, email, password } = req.body;
       if (!firstName || !lastName || !email || !password) {
@@ -1362,10 +1379,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Login mode: do NOT auto-create accounts. Force user through the registration flow first.
         if (authMode === "login") {
           return res.status(404).json({
-            error: "No account found for this Google email. Please sign up first.",
+            error: "No account found for this Google email. AMAX is not accepting new customers yet.",
             code: "NO_ACCOUNT",
           });
         }
+        // Registration is closed until AUSTRAC registration is granted.
+        if (!PUBLIC_REGISTRATION_OPEN) return refuseRegistration(res);
         // Derive a unique username from email (same pattern as /register)
         const base = normalisedEmail.split("@")[0].replace(/[^a-z0-9_]/g, "_") || "user";
         let username = base;
@@ -1425,6 +1444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // After this endpoint, the client reuses /api/auth/verify-otp to confirm.
   // ---------------------------------------------------------------------------
   app.post("/api/auth/phone/request", async (req, res) => {
+    if (!PUBLIC_REGISTRATION_OPEN) return refuseRegistration(res);
     try {
       const { phone, email, firstName, lastName } = req.body || {};
 
@@ -2969,12 +2989,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           settlementStatus: "pending_partner_execution",
           description: isFiatToCrypto
             ? [
-                `${fromCurrency} → ${toCurrency} Exchange — Delivery via Independent Reserve`,
+                `${fromCurrency} → ${toCurrency} Exchange — Delivery via exchange partner`,
                 destinationWallet ? `Destination: ${destinationWallet}` : null,
                 walletType ? `Wallet type: ${walletType === "self_hosted" ? "self-hosted" : `custodial (${custodianName ?? "unknown"})`}` : null,
               ].filter(Boolean).join(" | ")
             : `${fromCurrency} to ${toCurrency} Exchange`,
-          sourceExchange: isFiatToCrypto ? "Independent Reserve (DCE-100461150-001)" : null,
+          sourceExchange: isFiatToCrypto ? "Exchange partner (not yet appointed)" : null,
           blockchainTxHash: null,
           assetType: classifyAssetType(fromCurrency, toCurrency),
           direction: "exchange",

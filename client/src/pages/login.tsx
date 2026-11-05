@@ -31,8 +31,7 @@ export default function Login() {
       });
       const data = await res.json();
       if (res.status === 404 && data?.code === "NO_ACCOUNT") {
-        setError("No account found for this Google email. Please sign up first.");
-        setTimeout(() => navigate("/register"), 1800);
+        setError("No account found for this Google email. AMAX is not accepting new customers yet.");
         return;
       }
       if (!res.ok) throw new Error(data.error || "Google sign-in failed");
@@ -415,9 +414,9 @@ export default function Login() {
                     Forgot your password?
                   </Link>
                   <p className="text-sm text-slate-600">
-                    Don't have an account?{" "}
+                    New to AMAX? We're not accepting new customers yet.{" "}
                     <Link href="/register" className="text-[#002366] underline underline-offset-2 hover:text-[#012a6e] font-medium">
-                      Create one
+                      Find out more
                     </Link>
                   </p>
                 </div>

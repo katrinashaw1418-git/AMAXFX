@@ -292,7 +292,7 @@ export default function FxExchange() {
               {/* Disclosure */}
               <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-blue-50 border border-blue-200 text-blue-800">
                 <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                <span>All FX conversion transactions are facilitated through external regulated partners. AMAX does not custody client funds or digital assets. Settlement is typically same day, subject to regulated banking partner processing times. AMAX GLOBAL Pty Ltd (ABN 54 690 827 608) is registered with AUSTRAC for remittance and FX services.</span>
+                <span>All FX conversion transactions are facilitated through external regulated partners. AMAX does not custody client funds or digital assets. Settlement is typically same day, subject to regulated banking partner processing times. AMAX GLOBAL Pty Ltd (ABN 54 690 827 608) has applied to AUSTRAC for registration and is not yet providing services.</span>
               </div>
 
               <Button className="w-full" onClick={openConfirm} disabled={exchangeMutation.isPending || rateLoading}>
@@ -368,7 +368,7 @@ export default function FxExchange() {
       <div className="flex items-start gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
         <Info className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-gray-500">
-          All FX and digital asset conversion transactions are arranged by AMAX and executed by external regulated liquidity providers. AMAX does not act as principal, does not provide dealing services, and does not hold client funds or digital assets. AMAX GLOBAL Pty Ltd (ABN 54 690 827 608) is registered with AUSTRAC for remittance and foreign exchange services. Conversion rates are indicative and subject to change. All transactions are subject to AML/CTF monitoring obligations under the Anti-Money Laundering and Counter-Terrorism Financing Act 2006.
+          All FX and digital asset conversion transactions are arranged by AMAX and executed by external regulated liquidity providers. AMAX does not act as principal, does not provide dealing services, and does not hold client funds or digital assets. AMAX GLOBAL Pty Ltd (ABN 54 690 827 608) has applied to AUSTRAC for registration and is not yet providing services. Conversion rates are indicative and subject to change. All transactions are subject to AML/CTF monitoring obligations under the Anti-Money Laundering and Counter-Terrorism Financing Act 2006.
         </p>
       </div>
 
